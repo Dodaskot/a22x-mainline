@@ -1,5 +1,9 @@
 # Mainline Linux for the Samsung Galaxy A22 5G (SM-A226B, `a22x`)
 
+Main repository: https://gitlab.com/pessdres/a22x-mainline
+(mirror: https://github.com/Dodaskot/a22x-mainline; prebuilt images are also
+attached to the GitHub releases).
+
 Linux 7.2 port for the Samsung Galaxy A22 5G, MediaTek MT6833 (Dimensity 700).
 It boots from the stock Samsung LK bootloader as an ordinary `boot.img`:
 no bootloader, modem or other partition is replaced. The userspace used
