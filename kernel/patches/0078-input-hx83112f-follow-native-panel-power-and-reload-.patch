@@ -1,0 +1,212 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 20:18:12 +0200
+Subject: [PATCH 078/131] input: hx83112f: follow native panel power and reload
+ zero-flash touch
+
+---
+ .../mt6833-samsung-a22x-native-display.dts    |  8 ++-
+ drivers/gpu/drm/panel/Kconfig                 |  5 +-
+ drivers/gpu/drm/panel/panel-himax-hx83112f.c  |  8 ++-
+ drivers/input/touchscreen/Kconfig             |  1 +
+ .../himax_hx83112f/himax_platform.c           | 65 +++++++++++++++++--
+ 5 files changed, 76 insertions(+), 11 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+index 6cfa08ce4..ba6e609e8 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+@@ -96,7 +96,7 @@ dsi0_ml: dsi@14013000 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 
+-			panel@0 {
++			panel_ml: panel@0 {
+ 				compatible = "jdi,hx83112f-a22x";
+ 				reg = <0>;
+ 				reset-gpios = <&pio_ml 86 GPIO_ACTIVE_LOW>;
+@@ -123,6 +123,12 @@ &backlight {
+ 	status = "disabled";
+ };
+ 
++&spi1 {
++	novatek@0 {
++		panel = <&panel_ml>;
++	};
++};
++
+ &spm {
+ 	power-domain@6 {
+ 		reg = <MT6833_POWER_DOMAIN_DISP>;
+diff --git a/drivers/gpu/drm/panel/Kconfig b/drivers/gpu/drm/panel/Kconfig
+index 3bd96e3c0..4072b710c 100644
+--- a/drivers/gpu/drm/panel/Kconfig
++++ b/drivers/gpu/drm/panel/Kconfig
+@@ -219,11 +219,12 @@ config DRM_PANEL_HIMAX_HX83112A
+ 
+ config DRM_PANEL_HIMAX_HX83112F
+ 	tristate "JDI HX83112F C-PHY panel for Galaxy A22 5G"
+-	depends on OF && DRM_MIPI_DSI && BACKLIGHT_CLASS_DEVICE
+-	select REGULATOR
++	depends on OF && DRM_MIPI_DSI && BACKLIGHT_CLASS_DEVICE && REGULATOR
+ 	help
+ 	  Enable the 1080x2408 JDI HX83112F panel on Samsung Galaxy A22 5G.
+ 	  The panel uses three C-PHY trios and supports 60 and 90 Hz modes.
++	  It includes DCS brightness control and sequences both bias rails
++	  when the DRM connector is disabled or the system suspends.
+ 
+ config DRM_PANEL_HIMAX_HX83112B
+ 	tristate "Himax HX83112B-based DSI panel"
+diff --git a/drivers/gpu/drm/panel/panel-himax-hx83112f.c b/drivers/gpu/drm/panel/panel-himax-hx83112f.c
+index 4dcfa8551..1655d6b82 100644
+--- a/drivers/gpu/drm/panel/panel-himax-hx83112f.c
++++ b/drivers/gpu/drm/panel/panel-himax-hx83112f.c
+@@ -244,7 +244,9 @@ static int hx83112f_disable(struct drm_panel *panel)
+ 	ctx->enabled = false;
+ 	ret = mipi_dsi_dcs_set_display_off(ctx->dsi);
+ 	msleep(50);
+-	return ret;
++	if (ret < 0)
++		dev_warn(&ctx->dsi->dev, "Display-off command failed: %d\n", ret);
++	return 0;
+ }
+ 
+ static int hx83112f_unprepare(struct drm_panel *panel)
+@@ -260,7 +262,9 @@ static int hx83112f_unprepare(struct drm_panel *panel)
+ 	gpiod_set_value_cansleep(ctx->reset, 1);
+ 	hx83112f_power_off(ctx);
+ 
+-	return dsi_ctx.accum_err;
++	if (dsi_ctx.accum_err)
++		dev_warn(&ctx->dsi->dev, "Sleep command failed: %d\n", dsi_ctx.accum_err);
++	return 0;
+ }
+ 
+ #define HX83112F_MODE(vfp, fps) { \
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index 6f12ec784..c8cdc6701 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -1405,6 +1405,7 @@ config TOUCHSCREEN_ZINITIX
+ config TOUCHSCREEN_HIMAX_HX83112F
+ 	tristate "Himax HX83112F zero-flash SPI touchscreen"
+ 	depends on SPI && OF
++	depends on DRM_PANEL || !DRM_PANEL
+ 	select FW_LOADER
+ 	help
+ 	  Himax HX83112F in-cell (TDDI) touch controller on SPI, as used in
+diff --git a/drivers/input/touchscreen/himax_hx83112f/himax_platform.c b/drivers/input/touchscreen/himax_hx83112f/himax_platform.c
+index f829c7a54..91e282079 100644
+--- a/drivers/input/touchscreen/himax_hx83112f/himax_platform.c
++++ b/drivers/input/touchscreen/himax_hx83112f/himax_platform.c
+@@ -10,6 +10,7 @@
+ #include <linux/module.h>
+ #include <linux/pm.h>
+ #include <linux/property.h>
++#include <drm/drm_panel.h>
+ #include "himax_platform.h"
+ #include "himax_common.h"
+ 
+@@ -24,6 +25,8 @@ static uint8_t *gBuffer;
+ static struct spi_device *hx_spi;
+ static struct gpio_desc *hx_reset_gpio;
+ static struct gpio_desc *hx_irq_gpio;
++static struct drm_panel_follower hx_panel_follower;
++static bool hx_follows_panel;
+ struct device *g_device;
+ 
+ int himax_dev_set(struct himax_ts_data *ts)
+@@ -209,6 +212,40 @@ int himax_ts_unregister_interrupt(void)
+ 	return 0;
+ }
+ 
++static int himax_panel_prepared(struct drm_panel_follower *follower)
++{
++	int ret;
++
++	/* Zero-flash firmware may only be loaded while the shared rails are on. */
++	if (!g_hx_chip_inited) {
++		ret = himax_chip_common_init();
++		if (ret < 0)
++			return ret;
++		dev_info(g_device, "HX83112F touch ready after panel power-on\n");
++		return 0;
++	}
++	return himax_chip_common_resume(private_ts);
++}
++
++static int himax_panel_unpreparing(struct drm_panel_follower *follower)
++{
++	if (!g_hx_chip_inited)
++		return 0;
++#if defined(HX_BOOT_UPGRADE) || defined(HX_ZERO_FLASH)
++	cancel_delayed_work_sync(&private_ts->work_boot_upgrade);
++#endif
++	himax_chip_common_suspend(private_ts);
++	/* Drain a running SPI IRQ before the panel removes its shared power. */
++	if (private_ts->use_irq)
++		synchronize_irq(private_ts->hx_irq);
++	return 0;
++}
++
++static const struct drm_panel_follower_funcs himax_panel_follower_funcs = {
++	.panel_prepared = himax_panel_prepared,
++	.panel_unpreparing = himax_panel_unpreparing,
++};
++
+ static int himax_hx83112f_probe(struct spi_device *spi)
+ {
+ 	struct himax_ts_data *ts;
+@@ -247,10 +284,18 @@ static int himax_hx83112f_probe(struct spi_device *spi)
+ 	g_fw_boot_upgrade_name = "Himax_firmware_fw_jdi.bin";
+ 	g_fw_mp_upgrade_name = "Himax_firmware_mp_jdi.bin";
+ 
+-	ret = himax_chip_common_init();
+-	if (ret < 0)
+-		goto err;
+-	dev_info(&spi->dev, "HX83112F touch ready, irq %d\n", spi->irq);
++	hx_follows_panel = drm_is_panel_follower(&spi->dev);
++	if (hx_follows_panel) {
++		hx_panel_follower.funcs = &himax_panel_follower_funcs;
++		ret = drm_panel_add_follower(&spi->dev, &hx_panel_follower);
++		if (ret)
++			goto err;
++	} else {
++		ret = himax_chip_common_init();
++		if (ret < 0)
++			goto err;
++		dev_info(&spi->dev, "HX83112F touch ready, irq %d\n", spi->irq);
++	}
+ 	return 0;
+ err:
+ 	kfree(ts);
+@@ -260,19 +305,27 @@ static int himax_hx83112f_probe(struct spi_device *spi)
+ 
+ static void himax_hx83112f_remove(struct spi_device *spi)
+ {
++	if (hx_follows_panel)
++		drm_panel_remove_follower(&hx_panel_follower);
+ 	if (g_hx_chip_inited)
+ 		himax_chip_common_deinit();
++	else
++		kfree(spi_get_drvdata(spi));
++	private_ts = NULL;
++	g_hx_chip_inited = false;
+ }
+ 
+ static int himax_hx83112f_suspend(struct device *dev)
+ {
+-	himax_chip_common_suspend(private_ts);
++	if (!hx_follows_panel && g_hx_chip_inited)
++		himax_chip_common_suspend(private_ts);
+ 	return 0;
+ }
+ 
+ static int himax_hx83112f_resume(struct device *dev)
+ {
+-	himax_chip_common_resume(private_ts);
++	if (!hx_follows_panel && g_hx_chip_inited)
++		himax_chip_common_resume(private_ts);
+ 	return 0;
+ }
+ 

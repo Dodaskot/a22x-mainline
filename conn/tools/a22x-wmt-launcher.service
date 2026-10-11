@@ -1,0 +1,6 @@
+[Unit]
+Description=a22x WMT launcher (answers CONSYS patch requests)
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/a22x-conn/wmtlaunch.py serve
+Restart=on-failure

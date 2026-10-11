@@ -1,0 +1,10 @@
+# out-of-tree build of the vendor connectivity stack for the a22x mainline kernel
+subdir-ccflags-y += -I$(src)/compat/include -include $(src)/compat/include/mtk_compat.h
+subdir-ccflags-y += -DBTIF_DBG_SUPPORT=0 -Wno-error -Wno-strict-prototypes -Wno-error=strict-prototypes
+subdir-ccflags-y += -Wno-null-pointer-subtraction -Wno-cast-function-type-strict -Wno-array-bounds -Wno-missing-prototypes -Wno-incompatible-pointer-types-discards-qualifiers -Wno-visibility -Wno-unused-but-set-variable -Wno-unused-variable -Wno-unused-function -ferror-limit=0
+subdir-ccflags-y += -I$(src)/common/common_main/include -I$(src)/common/common_main/linux/include -DMTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
+obj-m += btif/common/
+obj-m += common/
+obj-m += bt/hci/
+obj-m += wlan/adaptor/
+obj-m += wlan/core/gen4m/

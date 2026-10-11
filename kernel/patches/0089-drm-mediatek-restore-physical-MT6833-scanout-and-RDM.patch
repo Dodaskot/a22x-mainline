@@ -1,0 +1,103 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 21:34:38 +0200
+Subject: [PATCH 089/131] drm/mediatek: restore physical MT6833 scanout and
+ RDMA shadow bypass
+
+---
+ .../mt6833-samsung-a22x-native-display.dts    |  3 ++-
+ drivers/gpu/drm/mediatek/mtk_disp_rdma.c      | 27 ++++++++++++++++++-
+ 2 files changed, 28 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+index fac374d49..d7dbd2ac7 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+@@ -69,7 +69,8 @@ disp_mutex_ml: mutex@14001000 {
+ 
+ 		disp_rdma0_ml: rdma@14007000 {
+ 			compatible = "mediatek,mt6833-disp-rdma";
+-			reg = <0 0x14007000 0 0x1000>;
++			reg = <0 0x14007000 0 0x1000>, <0 0x14004000 0 0x1000>;
++			reg-names = "rdma", "larb";
+ 			interrupts = <GIC_SPI 257 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&mm_clk_ml CLK_MM_DISP_RDMA0>,
+ 				 <&mm_clk_ml CLK_MM_SMI_INFRA>,
+diff --git a/drivers/gpu/drm/mediatek/mtk_disp_rdma.c b/drivers/gpu/drm/mediatek/mtk_disp_rdma.c
+index 4d85ed95b..b8f5ba48f 100644
+--- a/drivers/gpu/drm/mediatek/mtk_disp_rdma.c
++++ b/drivers/gpu/drm/mediatek/mtk_disp_rdma.c
+@@ -51,6 +51,11 @@
+ #define RDMA_OUTPUT_VALID_FIFO_THRESHOLD(bytes)		((bytes) / 16)
+ #define RDMA_FIFO_SIZE(rdma)			((rdma)->data->fifo_size)
+ #define DISP_RDMA_MEM_START_ADDR		0x0f00
++#define MT6833_RDMA_SHADOW_UPDATE		0x00bc
++#define RDMA_BYPASS_SHADOW		BIT(1)
++#define RDMA_READ_WORK_REG		BIT(2)
++#define MT6833_LARB_RDMA_NONSEC_CON	0x0388
++#define LARB_PORT_MMU_EN			BIT(0)
+ 
+ #define RDMA_MEM_GMC				0x40402020
+ 
+@@ -83,6 +88,7 @@ struct mtk_disp_rdma {
+ 	struct clk			*clk;
+ 	struct clk_bulk_data fabric_clks[4];
+ 	void __iomem			*regs;
++	void __iomem			*larb_regs;
+ 	struct cmdq_client_reg		cmdq_reg;
+ 	const struct mtk_disp_rdma_data	*data;
+ 	void				(*vblank_cb)(void *data);
+@@ -93,12 +99,15 @@ struct mtk_disp_rdma {
+ static irqreturn_t mtk_disp_rdma_irq_handler(int irq, void *dev_id)
+ {
+ 	struct mtk_disp_rdma *priv = dev_id;
++	u32 status = readl(priv->regs + DISP_REG_RDMA_INT_STATUS);
+ 
+ 	/* Clear frame completion interrupt */
+ 	writel(0x0, priv->regs + DISP_REG_RDMA_INT_STATUS);
+ 
++	if (!(status & RDMA_FRAME_END_INT))
++		return status ? IRQ_HANDLED : IRQ_NONE;
+ 	if (!priv->vblank_cb)
+-		return IRQ_NONE;
++		return IRQ_HANDLED;
+ 
+ 	priv->vblank_cb(priv->vblank_cb_data);
+ 
+@@ -172,6 +181,13 @@ int mtk_rdma_clk_enable(struct device *dev)
+ 	ret = clk_prepare_enable(rdma->clk);
+ 	if (ret && rdma->data->has_fabric_clks)
+ 		clk_bulk_disable_unprepare(ARRAY_SIZE(rdma->fabric_clks), rdma->fabric_clks);
++	if (!ret && rdma->larb_regs) {
++		u32 con = readl(rdma->larb_regs + MT6833_LARB_RDMA_NONSEC_CON);
++
++		/* DISP power loss resets this port to translated addresses. */
++		writel(con & ~LARB_PORT_MMU_EN,
++		       rdma->larb_regs + MT6833_LARB_RDMA_NONSEC_CON);
++	}
+ 	return ret;
+ }
+ 
+@@ -186,6 +202,11 @@ void mtk_rdma_clk_disable(struct device *dev)
+ 
+ void mtk_rdma_start(struct device *dev)
+ {
++	struct mtk_disp_rdma *rdma = dev_get_drvdata(dev);
++
++	if (rdma->data->has_fabric_clks)
++		writel(RDMA_BYPASS_SHADOW | RDMA_READ_WORK_REG,
++		       rdma->regs + MT6833_RDMA_SHADOW_UPDATE);
+ 	rdma_update_bits(dev, DISP_REG_RDMA_GLOBAL_CON, RDMA_ENGINE_EN,
+ 			 RDMA_ENGINE_EN);
+ }
+@@ -370,6 +391,10 @@ static int mtk_disp_rdma_probe(struct platform_device *pdev)
+ 
+ 	priv->data = of_device_get_match_data(dev);
+ 	if (priv->data->has_fabric_clks) {
++		priv->larb_regs = devm_platform_ioremap_resource(pdev, 1);
++		if (IS_ERR(priv->larb_regs))
++			return dev_err_probe(dev, PTR_ERR(priv->larb_regs),
++					     "Failed to map physical RDMA LARB port\n");
+ 		priv->fabric_clks[0].id = "smi-infra";
+ 		priv->fabric_clks[1].id = "smi-common";
+ 		priv->fabric_clks[2].id = "smi-gals";

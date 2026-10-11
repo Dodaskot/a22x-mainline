@@ -1,0 +1,141 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 10:54:32 +0200
+Subject: [PATCH 021/131] soc: mediatek: pwrap: add MT6833; a22x: MT6359 RTC
+ and keys
+
+MT6833 uses the MT6873 PMIF-SPI wrapper with the SWINF_2 software
+access window moved to 0x880 (from the Samsung SM-A226B kernel source).
+MT6359 regulators stay unmanaged for now.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 43 +++++++++++++++++++
+ drivers/soc/mediatek/mtk-pmic-wrap.c          | 28 ++++++++++++
+ 2 files changed, 71 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index a1cdd0cc0..f4bf41a21 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -18,6 +18,7 @@
+ #include <dt-bindings/clock/mt6833-clk.h>
+ #include <dt-bindings/phy/phy.h>
+ #include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/input.h>
+ #include <dt-bindings/interrupt-controller/irq.h>
+ #include <dt-bindings/pinctrl/mt6833-pinfunc.h>
+ #include "mt6833-samsung-a22x-lk-compat.dtsi"
+@@ -333,3 +334,45 @@ adc-battery {
+ 		power-supplies = <&mt6360_chg>;
+ 	};
+ };
++
++/ {
++	/*
++	 * PMIC wrapper + MT6359 main PMIC. Separate node name from the stock
++	 * "pwrap@10026000" (kept disabled) so the two do not get merged.
++	 * The pwrap is already initialised by the bootloader.
++	 */
++	pmic-wrapper@10026000 {
++		compatible = "mediatek,mt6833-pwrap";
++		reg = <0 0x10026000 0 0x1000>;
++		reg-names = "pwrap";
++		interrupts = <0 220 4>;
++		clocks = <&infracfg_ao CLK_IFRAO_PMIC_AP>,
++			 <&infracfg_ao CLK_IFRAO_PMIC_TMR>;
++		clock-names = "spi", "wrap";
++
++		mt6359: pmic {
++			compatible = "mediatek,mt6359";
++			interrupts-extended = <&pio_ml 118 IRQ_TYPE_LEVEL_HIGH>;
++			interrupt-controller;
++			#interrupt-cells = <2>;
++
++			rtc {
++				compatible = "mediatek,mt6358-rtc";
++			};
++
++			keys {
++				compatible = "mediatek,mt6359-keys";
++
++				power-key {
++					linux,keycodes = <KEY_POWER>;
++					wakeup-source;
++				};
++
++				/* Wired to the volume-down button on SM-A226B. */
++				home-key {
++					linux,keycodes = <KEY_VOLUMEDOWN>;
++				};
++			};
++		};
++	};
++};
+diff --git a/drivers/soc/mediatek/mtk-pmic-wrap.c b/drivers/soc/mediatek/mtk-pmic-wrap.c
+index 0bcd85826..757aeca55 100644
+--- a/drivers/soc/mediatek/mtk-pmic-wrap.c
++++ b/drivers/soc/mediatek/mtk-pmic-wrap.c
+@@ -758,6 +758,18 @@ static const int mt6797_regs[] = {
+ 	[PWRAP_DCM_DBC_PRD] =		0x1D4,
+ };
+ 
++/* MT6833: MT6873 PMIF-SPI layout with the SWINF_2 window at 0x880. */
++static const int mt6833_regs[] = {
++	[PWRAP_INIT_DONE2] =		0x0,
++	[PWRAP_TIMER_EN] =		0x3E4,
++	[PWRAP_INT_EN] =		0x450,
++	[PWRAP_WACS2_CMD] =		0x880,
++	[PWRAP_SWINF_2_WDATA_31_0] =	0x884,
++	[PWRAP_SWINF_2_RDATA_31_0] =	0x894,
++	[PWRAP_WACS2_VLDCLR] =		0x8A4,
++	[PWRAP_WACS2_RDATA] =		0x8A8,
++};
++
+ static const int mt6873_regs[] = {
+ 	[PWRAP_INIT_DONE2] =		0x0,
+ 	[PWRAP_TIMER_EN] =		0x3E0,
+@@ -1318,6 +1330,7 @@ enum pwrap_type {
+ 	PWRAP_MT6779,
+ 	PWRAP_MT6795,
+ 	PWRAP_MT6797,
++	PWRAP_MT6833,
+ 	PWRAP_MT6873,
+ 	PWRAP_MT7622,
+ 	PWRAP_MT8135,
+@@ -1852,6 +1865,7 @@ static int pwrap_init_cipher(struct pmic_wrapper *wrp)
+ 	case PWRAP_MT7622:
+ 		pwrap_writel(wrp, 0, PWRAP_CIPHER_EN);
+ 		break;
++	case PWRAP_MT6833:
+ 	case PWRAP_MT6873:
+ 	case PWRAP_MT8183:
+ 	case PWRAP_MT8195:
+@@ -2328,6 +2342,19 @@ static const struct pmic_wrapper_type pwrap_mt6797 = {
+ 	.init_soc_specific = NULL,
+ };
+ 
++static const struct pmic_wrapper_type pwrap_mt6833 = {
++	.regs = mt6833_regs,
++	.type = PWRAP_MT6833,
++	.arb_en_all = 0x777f,
++	.int_en_all = 0,	/* left off by the vendor kernel as well */
++	.int1_en_all = 0,
++	.spi_w = PWRAP_MAN_CMD_SPI_WRITE,
++	.wdt_src = PWRAP_WDT_SRC_MASK_ALL,
++	.caps = PWRAP_CAP_ARB,
++	.init_reg_clock = pwrap_common_init_reg_clock,
++	.init_soc_specific = NULL,
++};
++
+ static const struct pmic_wrapper_type pwrap_mt6873 = {
+ 	.regs = mt6873_regs,
+ 	.type = PWRAP_MT6873,
+@@ -2450,6 +2477,7 @@ static const struct of_device_id of_pwrap_match_tbl[] = {
+ 	{ .compatible = "mediatek,mt6779-pwrap", .data = &pwrap_mt6779 },
+ 	{ .compatible = "mediatek,mt6795-pwrap", .data = &pwrap_mt6795 },
+ 	{ .compatible = "mediatek,mt6797-pwrap", .data = &pwrap_mt6797 },
++	{ .compatible = "mediatek,mt6833-pwrap", .data = &pwrap_mt6833 },
+ 	{ .compatible = "mediatek,mt6873-pwrap", .data = &pwrap_mt6873 },
+ 	{ .compatible = "mediatek,mt7622-pwrap", .data = &pwrap_mt7622 },
+ 	{ .compatible = "mediatek,mt8135-pwrap", .data = &pwrap_mt8135 },

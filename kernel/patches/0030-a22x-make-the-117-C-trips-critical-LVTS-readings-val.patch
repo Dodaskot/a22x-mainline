@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 18:17:15 +0200
+Subject: [PATCH 030/131] a22x: make the 117 C trips critical (LVTS readings
+ validated)
+
+Idle ~43 C, 90 s full 8-core load at 2 GHz settles at 80-82 C.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index cd13c470b..ea9939c78 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -879,7 +879,7 @@ little_hot: trip-hot {
+ 				little_crit: trip-crit {
+ 					temperature = <117000>;
+ 					hysteresis = <0>;
+-					type = "hot";	/* critical once LVTS readings are validated */
++					type = "critical";
+ 				};
+ 			};
+ 			cooling-maps {
+@@ -926,7 +926,7 @@ big_hot: trip-hot {
+ 				big_crit: trip-crit {
+ 					temperature = <117000>;
+ 					hysteresis = <0>;
+-					type = "hot";	/* critical once LVTS readings are validated */
++					type = "critical";
+ 				};
+ 			};
+ 			cooling-maps {
+@@ -965,7 +965,7 @@ gpu_hot: trip-hot {
+ 				gpu_crit: trip-crit {
+ 					temperature = <117000>;
+ 					hysteresis = <0>;
+-					type = "hot";	/* critical once LVTS readings are validated */
++					type = "critical";
+ 				};
+ 			};
+ 			cooling-maps {
+@@ -1002,7 +1002,7 @@ soc_hot: trip-hot {
+ 				soc_crit: trip-crit {
+ 					temperature = <117000>;
+ 					hysteresis = <0>;
+-					type = "hot";	/* critical once LVTS readings are validated */
++					type = "critical";
+ 				};
+ 			};
+ 		};

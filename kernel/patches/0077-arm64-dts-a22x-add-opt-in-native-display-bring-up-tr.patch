@@ -1,0 +1,165 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 20:15:08 +0200
+Subject: [PATCH 077/131] arm64: dts: a22x: add opt-in native display bring-up
+ tree
+
+---
+ arch/arm64/boot/dts/mediatek/Makefile         |   2 +
+ .../mt6833-samsung-a22x-native-display.dts    | 134 ++++++++++++++++++
+ 2 files changed, 136 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+
+diff --git a/arch/arm64/boot/dts/mediatek/Makefile b/arch/arm64/boot/dts/mediatek/Makefile
+index 0cfb46619..df830f4b4 100644
+--- a/arch/arm64/boot/dts/mediatek/Makefile
++++ b/arch/arm64/boot/dts/mediatek/Makefile
+@@ -8,6 +8,8 @@ dtb-$(CONFIG_ARCH_MEDIATEK) += mt6797-evb.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt6797-x20-dev.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt6833-samsung-a22x.dtb
+ DTC_FLAGS_mt6833-samsung-a22x := -@
++dtb-$(CONFIG_ARCH_MEDIATEK) += mt6833-samsung-a22x-native-display.dtb
++DTC_FLAGS_mt6833-samsung-a22x-native-display := -@
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7622-rfb1.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7622-bananapi-bpi-r64.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7981b-cudy-wr3000-v1.dtb
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+new file mode 100644
+index 000000000..6cfa08ce4
+--- /dev/null
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+@@ -0,0 +1,134 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/* Opt-in native display bring-up; the regular a22x DT remains the fallback. */
++#include "mt6833-samsung-a22x.dts"
++
++/ {
++	aliases {
++		rdma0 = &disp_rdma0_ml;
++		mutex0 = &disp_mutex_ml;
++		dsi0 = &dsi0_ml;
++	};
++
++	chosen {
++		framebuffer@7c9b0000 {
++			status = "disabled";
++		};
++	};
++
++	panel_vdd_ml: regulator-panel-vdd {
++		compatible = "regulator-fixed";
++		regulator-name = "panel-enable";
++		gpio = <&pio_ml 136 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		regulator-boot-on;
++	};
++
++	panel_vsp_ml: regulator-panel-vsp {
++		compatible = "regulator-fixed";
++		regulator-name = "panel-positive-bias";
++		gpio = <&pio_ml 137 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		regulator-boot-on;
++	};
++
++	panel_vsn_ml: regulator-panel-vsn {
++		compatible = "regulator-fixed";
++		regulator-name = "panel-negative-bias";
++		gpio = <&pio_ml 138 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		regulator-boot-on;
++	};
++
++	/* Separate sibling topology: LK modifies its original /dsi@... nodes. */
++	display-ml {
++		compatible = "simple-bus";
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
++
++		mmsys_ml: syscon@14000000 {
++			compatible = "mediatek,mt6833-display", "syscon";
++			reg = <0 0x14000000 0 0x1000>;
++			#clock-cells = <1>;
++			power-domains = <&spm MT6833_POWER_DOMAIN_DISP>;
++		};
++
++		disp_mutex_ml: mutex@14001000 {
++			compatible = "mediatek,mt6833-disp-mutex";
++			reg = <0 0x14001000 0 0x1000>;
++			clocks = <&mmsys_ml CLK_MM_DISP_MUTEX0>;
++			power-domains = <&spm MT6833_POWER_DOMAIN_DISP>;
++		};
++
++		disp_rdma0_ml: rdma@14007000 {
++			compatible = "mediatek,mt6833-disp-rdma";
++			reg = <0 0x14007000 0 0x1000>;
++			interrupts = <GIC_SPI 257 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&mmsys_ml CLK_MM_DISP_RDMA0>,
++				 <&mmsys_ml CLK_MM_SMI_INFRA>,
++				 <&mmsys_ml CLK_MM_SMI_COMMON>,
++				 <&mmsys_ml CLK_MM_SMI_GALS>,
++				 <&mmsys_ml CLK_MM_SMI_IOMMU>;
++			clock-names = "rdma", "smi-infra", "smi-common", "smi-gals", "smi-iommu";
++			power-domains = <&spm MT6833_POWER_DOMAIN_DISP>;
++		};
++
++		mipi_tx0_ml: phy@11e50000 {
++			compatible = "mediatek,mt6833-mipi-tx-cphy";
++			reg = <0 0x11e50000 0 0x1000>;
++			clocks = <&uart_clk>;
++			#clock-cells = <0>;
++			#phy-cells = <0>;
++			clock-output-names = "mipi_tx0_ml_pll";
++		};
++
++		dsi0_ml: dsi@14013000 {
++			compatible = "mediatek,mt6833-dsi-cphy";
++			reg = <0 0x14013000 0 0x1000>;
++			interrupts = <GIC_SPI 269 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&mmsys_ml CLK_MM_DSI0>,
++				 <&mmsys_ml CLK_MM_DSI0_DSI_CK_DOMAIN>, <&mipi_tx0_ml>;
++			clock-names = "engine", "digital", "hs";
++			power-domains = <&spm MT6833_POWER_DOMAIN_DISP>;
++			phys = <&mipi_tx0_ml>;
++			phy-names = "dphy";
++			mediatek,cphy-timing = <35 26>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			panel@0 {
++				compatible = "jdi,hx83112f-a22x";
++				reg = <0>;
++				reset-gpios = <&pio_ml 86 GPIO_ACTIVE_LOW>;
++				vdd-supply = <&panel_vdd_ml>;
++				vsp-supply = <&panel_vsp_ml>;
++				vsn-supply = <&panel_vsn_ml>;
++				port {
++					panel_in_ml: endpoint {
++						remote-endpoint = <&dsi_out_ml>;
++					};
++				};
++			};
++
++			port {
++				dsi_out_ml: endpoint {
++					remote-endpoint = <&panel_in_ml>;
++				};
++			};
++		};
++	};
++};
++
++&backlight {
++	status = "disabled";
++};
++
++&spm {
++	power-domain@6 {
++		reg = <MT6833_POWER_DOMAIN_DISP>;
++		clocks = <&topckgen CLK_TOP_DISP_SEL>;
++		clock-names = "disp";
++		mediatek,infracfg = <&infracfg_ao>;
++		#power-domain-cells = <0>;
++	};
++};

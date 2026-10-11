@@ -1,0 +1,16 @@
+# build trees and outputs
+/kernel/linux/
+/kernel/out/
+/conn/out/
+*.o
+*.ko
+*.mod
+*.mod.c
+*.cmd
+*.order
+Module.symvers
+/boot/images/
+/boot/initramfs.cpio.gz
+# proprietary firmware: never commit
+*.bin
+__pycache__/

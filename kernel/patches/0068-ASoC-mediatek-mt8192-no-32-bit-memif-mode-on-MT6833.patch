@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sun, 4 Oct 2026 21:53:22 +0200
+Subject: [PATCH 068/131] ASoC: mediatek: mt8192: no 32-bit memif mode on
+ MT6833
+
+The MT6833 vendor driver sets memif_32bit_supported = 0. With the MT8192
+value (1) S32_LE selects HD mode 2, which MT6833 plays back as noise;
+use MSB-aligned 24-bit mode instead.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ sound/soc/mediatek/mt8192/mt8192-afe-pcm.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/sound/soc/mediatek/mt8192/mt8192-afe-pcm.c b/sound/soc/mediatek/mt8192/mt8192-afe-pcm.c
+index 2424c0401..33e075967 100644
+--- a/sound/soc/mediatek/mt8192/mt8192-afe-pcm.c
++++ b/sound/soc/mediatek/mt8192/mt8192-afe-pcm.c
+@@ -2298,7 +2298,12 @@ static int mt8192_afe_pcm_dev_probe(struct platform_device *pdev)
+ 	afe->irq_fs = mt8192_irq_fs;
+ 	afe->get_dai_fs = mt8192_get_dai_fs;
+ 	afe->get_memif_pbuf_size = mt8192_get_memif_pbuf_size;
+-	afe->memif_32bit_supported = 1;
++	/*
++	 * MT6833 memifs have no true 32-bit mode (its vendor driver sets 0):
++	 * S32 is played as MSB-aligned 24-bit, otherwise it comes out as noise.
++	 */
++	afe->memif_32bit_supported =
++		!of_device_is_compatible(dev->of_node, "mediatek,mt6833-audio");
+ 
+ 	afe->runtime_resume = mt8192_afe_runtime_resume;
+ 	afe->runtime_suspend = mt8192_afe_runtime_suspend;

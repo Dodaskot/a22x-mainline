@@ -1,0 +1,263 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Wed, 7 Oct 2026 09:13:00 +0200
+Subject: [PATCH 113/131] soc: mediatek: own unused UFS PMIC clock buffer with
+ verified restoration
+
+---
+ .../mt6833-samsung-a22x-native-display.dts    |   1 +
+ drivers/soc/mediatek/mtk-mt6833-lpm.c         | 172 ++++++++++++++++++
+ 2 files changed, 173 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+index c691f74a4..01178e4fb 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+@@ -55,6 +55,7 @@ lpm_ml: power-controller@c55fce0 {
+ 			      "boot-ufs-source";
+ 		/* This eMMC board has no active UFS controller. Gating is opt-in. */
+ 		mediatek,unused-ufs = <&ufshci>;
++		mediatek,ufs-clock-pmic = <&mt6359>;
+ 	};
+ 
+ 	mdp_clocks_ml: clock-controller@1f000000 {
+diff --git a/drivers/soc/mediatek/mtk-mt6833-lpm.c b/drivers/soc/mediatek/mtk-mt6833-lpm.c
+index e757513ad..8cf66113b 100644
+--- a/drivers/soc/mediatek/mtk-mt6833-lpm.c
++++ b/drivers/soc/mediatek/mtk-mt6833-lpm.c
+@@ -8,14 +8,17 @@
+ #include <linux/io.h>
+ #include <linux/iopoll.h>
+ #include <linux/irq.h>
++#include <linux/mfd/mt6359p/registers.h>
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
++#include <linux/of_platform.h>
+ #include <linux/of_reserved_mem.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_qos.h>
+ #include <linux/psci.h>
++#include <linux/regmap.h>
+ #include <linux/sizes.h>
+ #include <linux/soc/mediatek/mt6833-lpm.h>
+ #include <linux/suspend.h>
+@@ -54,6 +57,14 @@
+ #define MCUPM_EEM_ENABLE_OFFSET	0x4fe
+ #define MCUPM_SN_ENABLE_OFFSET	0x4ff
+ 
++/* Exact MT6359P DCXO register ABI from Samsung's MT6833 clock-buffer driver.
++ * Only output 7 (unused UFS) is owned; SET/CLR writes preserve other fields.
++ */
++#define MT6359P_DCXO_CW09		0x79e
++#define MT6359P_DCXO_CW09_SET	0x7a0
++#define MT6359P_DCXO_CW09_CLR	0x7a2
++#define MT6359P_UFS_XO_MASK	GENMASK(14, 12)
++
+ static const char * const boot_peripheral_clock_names[] = {
+ 	"boot-uart1", "boot-spi0", "boot-spi3", "boot-spi4",
+ 	"boot-spi5", "boot-spi6", "boot-spi7",
+@@ -94,6 +105,11 @@ struct mt6833_lpm {
+ 	bool ufs_sources_held;
+ 	bool ufs_clocks_held;
+ 	bool boot_ufs_gated;
++	struct regmap *ufs_pmic;
++	u32 ufs_xo_saved;
++	bool ufs_xo_saved_valid;
++	bool ufs_xo_off;
++	bool ufs_xo_fault;
+ 	bool idle_blocked;
+ 	bool platform_initialized;
+ 	bool ready;
+@@ -503,6 +519,8 @@ static ssize_t boot_ufs_gated_store(struct device *dev,
+ 	guard(mutex)(&lpm->lock);
+ 	if (!lpm->ufs_unused)
+ 		return -ENODEV;
++	if (!gate && lpm->ufs_xo_saved_valid)
++		return -EBUSY;
+ 	if (!lpm->idle_blocked || lpm->deep_enabled || lpm->stage_only ||
+ 	    lpm->s2idle_enabled)
+ 		return -EBUSY;
+@@ -550,6 +568,122 @@ static ssize_t boot_ufs_gated_store(struct device *dev,
+ }
+ static DEVICE_ATTR_RW(boot_ufs_gated);
+ 
++static int mt6833_ufs_xo_write(struct mt6833_lpm *lpm, u32 bits)
++{
++	u32 value;
++	int ret;
++
++	ret = regmap_write(lpm->ufs_pmic, MT6359P_DCXO_CW09_CLR,
++			   MT6359P_UFS_XO_MASK);
++	if (ret)
++		return ret;
++	if (bits) {
++		ret = regmap_write(lpm->ufs_pmic, MT6359P_DCXO_CW09_SET, bits);
++		if (ret)
++			return ret;
++	}
++	ret = regmap_read(lpm->ufs_pmic, MT6359P_DCXO_CW09, &value);
++	if (ret)
++		return ret;
++	return (value & MT6359P_UFS_XO_MASK) == bits ? 0 : -EIO;
++}
++
++static ssize_t ufs_xo_off_show(struct device *dev,
++			     struct device_attribute *attr, char *buf)
++{
++	struct mt6833_lpm *lpm = dev_get_drvdata(dev);
++
++	guard(mutex)(&lpm->lock);
++	return sysfs_emit(buf, "%u\n", lpm->ufs_xo_off);
++}
++
++static ssize_t ufs_xo_off_store(struct device *dev,
++			      struct device_attribute *attr,
++			      const char *buf, size_t count)
++{
++	struct mt6833_lpm *lpm = dev_get_drvdata(dev);
++	u32 value;
++	bool off;
++	int ret, restore;
++
++	ret = kstrtobool(buf, &off);
++	if (ret)
++		return ret;
++	guard(mutex)(&lpm->lock);
++	if (!lpm->ufs_unused || !lpm->ufs_pmic)
++		return -ENODEV;
++	if (!lpm->idle_blocked || lpm->deep_enabled || lpm->stage_only ||
++	    lpm->s2idle_enabled)
++		return -EBUSY;
++	if (off && (!lpm->boot_ufs_gated || lpm->ufs_xo_fault))
++		return -EBUSY;
++	/* Returning to the inherited state is also allowed after a failed
++	 * transaction. Never discard saved state until readback confirms it.
++	 */
++	if (!off && lpm->ufs_xo_saved_valid) {
++		ret = mt6833_ufs_xo_write(lpm, lpm->ufs_xo_saved);
++		if (ret) {
++			lpm->ufs_xo_fault = true;
++			return ret;
++		}
++		lpm->ufs_xo_off = false;
++		lpm->ufs_xo_saved_valid = false;
++		lpm->ufs_xo_fault = false;
++		dev_info(dev, "unused UFS PMIC XO control restored\n");
++		return count;
++	}
++	if (!off)
++		return count;
++	ret = regmap_read(lpm->ufs_pmic, MT6359P_DCXO_CW09, &value);
++	if (ret)
++		return ret;
++	if (lpm->ufs_xo_off) {
++		if (value & MT6359P_UFS_XO_MASK) {
++			lpm->ufs_xo_fault = true;
++			return -EIO;
++		}
++		return count;
++	}
++	lpm->ufs_xo_saved = value & MT6359P_UFS_XO_MASK;
++	lpm->ufs_xo_saved_valid = true;
++	ret = mt6833_ufs_xo_write(lpm, 0);
++	if (ret) {
++		restore = mt6833_ufs_xo_write(lpm, lpm->ufs_xo_saved);
++		if (restore) {
++			lpm->ufs_xo_fault = true;
++			dev_err(dev, "UFS XO restore failed: %d; saved state retained\n",
++				restore);
++		} else {
++			lpm->ufs_xo_saved_valid = false;
++		}
++		return ret;
++	}
++	lpm->ufs_xo_off = true;
++	dev_info(dev, "unused UFS PMIC XO control disabled and verified\n");
++	return count;
++}
++static struct device_attribute dev_attr_ufs_xo_off =
++	__ATTR(ufs_xo_off, 0600, ufs_xo_off_show, ufs_xo_off_store);
++
++static ssize_t ufs_xo_status_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct mt6833_lpm *lpm = dev_get_drvdata(dev);
++	u32 value;
++	int ret;
++
++	guard(mutex)(&lpm->lock);
++	if (!lpm->ufs_pmic)
++		return -ENODEV;
++	ret = regmap_read(lpm->ufs_pmic, MT6359P_DCXO_CW09, &value);
++	if (ret)
++		return ret;
++	return sysfs_emit(buf, "off=%u\nfault=%u\nsaved_valid=%u\nsaved=0x%x\ncw09=0x%x\n",
++			  lpm->ufs_xo_off, lpm->ufs_xo_fault,
++			  lpm->ufs_xo_saved_valid, lpm->ufs_xo_saved, value);
++}
++static DEVICE_ATTR_RO(ufs_xo_status);
++
+ static struct device_node *mt6833_firmware_config(struct device *dev)
+ {
+ 	struct device_node *np;
+@@ -1137,6 +1271,8 @@ static struct attribute *mt6833_lpm_attrs[] = {
+ 	&dev_attr_counters.attr,
+ 	&dev_attr_boot_peripherals_gated.attr,
+ 	&dev_attr_boot_ufs_gated.attr,
++	&dev_attr_ufs_xo_off.attr,
++	&dev_attr_ufs_xo_status.attr,
+ 	NULL,
+ };
+ ATTRIBUTE_GROUPS(mt6833_lpm);
+@@ -1191,6 +1327,39 @@ static int mt6833_lpm_probe(struct platform_device *pdev)
+ 				return dev_err_probe(dev, ret, "missing UFS source clocks\n");
+ 		}
+ 	}
++	{
++		struct platform_device *pmic;
++		struct device_node *np;
++		u32 chip;
++
++		np = of_parse_phandle(dev->of_node, "mediatek,ufs-clock-pmic", 0);
++		if (np) {
++			if (!lpm->ufs_unused ||
++			    !of_device_is_compatible(np, "mediatek,mt6359")) {
++				of_node_put(np);
++				return -EINVAL;
++			}
++			pmic = of_find_device_by_node(np);
++			of_node_put(np);
++			if (!pmic)
++				return -EPROBE_DEFER;
++			lpm->ufs_pmic = pmic->dev.parent ?
++				dev_get_regmap(pmic->dev.parent, NULL) : NULL;
++			if (!lpm->ufs_pmic) {
++				put_device(&pmic->dev);
++				return -EPROBE_DEFER;
++			}
++			ret = regmap_read(lpm->ufs_pmic, MT6359P_HWCID, &chip);
++			if (!ret && chip != 0x5930)
++				ret = -ENODEV;
++			if (!ret && !device_link_add(dev, &pmic->dev,
++						    DL_FLAG_AUTOREMOVE_CONSUMER))
++				ret = -ENOMEM;
++			put_device(&pmic->dev);
++			if (ret)
++				return dev_err_probe(dev, ret, "invalid UFS clock PMIC\n");
++		}
++	}
+ 	lpm->s2idle_attempts = devm_kcalloc(dev, nr_cpu_ids,
+ 					 sizeof(*lpm->s2idle_attempts), GFP_KERNEL);
+ 	lpm->s2idle_resumes = devm_kcalloc(dev, nr_cpu_ids,
+@@ -1294,6 +1463,9 @@ static void mt6833_lpm_remove(struct platform_device *pdev)
+ {
+ 	struct mt6833_lpm *lpm = platform_get_drvdata(pdev);
+ 
++	if (lpm->ufs_xo_saved_valid &&
++	    mt6833_ufs_xo_write(lpm, lpm->ufs_xo_saved))
++		dev_err(lpm->dev, "failed to restore UFS XO during remove\n");
+ 	if (lpm->ufs_clocks_held)
+ 		clk_bulk_disable_unprepare(ARRAY_SIZE(lpm->ufs_clocks),
+ 					   lpm->ufs_clocks);

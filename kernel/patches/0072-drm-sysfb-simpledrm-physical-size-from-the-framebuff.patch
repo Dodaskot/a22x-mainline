@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sun, 4 Oct 2026 22:24:49 +0200
+Subject: [PATCH 072/131] drm/sysfb: simpledrm: physical size from the
+ framebuffer node; a22x: set it
+
+simpledrm only takes width-mm/height-mm from a separate panel node.
+Also accept them on the simple-framebuffer node itself and set them on
+a22x (68 x 152 mm, stock panel driver), so the on-screen keyboard is not
+sized for a 96 dpi screen. The panel-phandle variant left the screen
+stuck at the boot logo on a22x.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 7 +++++++
+ drivers/gpu/drm/sysfb/simpledrm.c                    | 4 ++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 0c2280c5a..b3da113b9 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -51,6 +51,13 @@ framebuffer@7c9b0000 {
+ 			stride = <(1088 * 4)>;
+ 			format = "a8r8g8b8";
+ 			backlight = <&backlight>;
++			/*
++			 * Physical size (stock panel driver: 68.43 x 152.57 mm), else
++			 * simpledrm assumes 96 dpi and the OSK gets far too thin. Not a
++			 * "panel" phandle: that variant hung at the boot logo (v73).
++			 */
++			width-mm = <68>;
++			height-mm = <152>;
+ 		};
+ 	};
+ 
+diff --git a/drivers/gpu/drm/sysfb/simpledrm.c b/drivers/gpu/drm/sysfb/simpledrm.c
+index ec587ec26..c0f6435f8 100644
+--- a/drivers/gpu/drm/sysfb/simpledrm.c
++++ b/drivers/gpu/drm/sysfb/simpledrm.c
+@@ -705,6 +705,10 @@ static struct simpledrm_device *simpledrm_device_create(struct drm_driver *drv,
+ 			simplefb_read_u32_of(dev, panel_node, "width-mm", &width_mm);
+ 			simplefb_read_u32_of(dev, panel_node, "height-mm", &height_mm);
+ 			of_node_put(panel_node);
++		} else {
++			/* a22x: the size can also sit on the framebuffer node */
++			of_property_read_u32(of_node, "width-mm", &width_mm);
++			of_property_read_u32(of_node, "height-mm", &height_mm);
+ 		}
+ 	} else {
+ 		drm_err(dev, "no simplefb configuration found\n");

@@ -1,0 +1,261 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Thu, 8 Oct 2026 14:38:26 +0200
+Subject: [PATCH 118/131] usb: mediatek: restore MT6833 PHY and MUSB state
+ across system sleep
+
+---
+ drivers/phy/mediatek/phy-mtk-tphy.c | 79 +++++++++++++++++++++++++++--
+ drivers/usb/musb/mediatek.c         | 49 ++++++++++++++++--
+ 2 files changed, 119 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/phy/mediatek/phy-mtk-tphy.c b/drivers/phy/mediatek/phy-mtk-tphy.c
+index acf506529..09ad3f97a 100644
+--- a/drivers/phy/mediatek/phy-mtk-tphy.c
++++ b/drivers/phy/mediatek/phy-mtk-tphy.c
+@@ -111,11 +111,15 @@
+ 
+ #define U3P_U2PHYDTM1		0x06C
+ #define P2C_RG_UART_EN			BIT(16)
++#define P2C_FORCE_MODE_MASK		GENMASK(13, 8)
++#define P2C_RG_MODE_MASK			GENMASK(5, 0)
+ #define P2C_FORCE_IDDIG		BIT(9)
+ #define P2C_RG_VBUSVALID		BIT(5)
+ #define P2C_RG_SESSEND			BIT(4)
++#define P2C_RG_BVALID			BIT(3)
+ #define P2C_RG_AVALID			BIT(2)
+ #define P2C_RG_IDDIG			BIT(1)
++#define P2C_RG_IDPULLUP			BIT(0)
+ 
+ #define U3P_U2PHYBC12C		0x080
+ #define P2C_RG_CHGDT_EN		BIT(0)
+@@ -278,11 +282,11 @@ enum mtk_phy_version {
+ /**
+  * struct mtk_phy_pdata - SoC specific platform data
+  * @avoid_rx_sen_degradation: Avoid TX Sensitivity level degradation (MT6795/8173 only)
+- * @sw_pll_48m_to_26m:        Workaround for V3 IP (MT8195) - switch the 48MHz PLL from
+- *                            fractional mode to integer to output 26MHz for U2PHY
++ * @sw_pll_48m_to_26m:        Apply software 26 MHz PLL settings (MT8195, MT6833)
+  * @sw_efuse_supported:       Switches off eFuse auto-load from PHY and applies values
+  *                            read from different nvmem (usually different eFuse array)
+  *                            that is pointed at in the device tree node for this PHY
++ * @u2_sw_sleep:             MT6833 software PHY sleep and forced mode signals
+  * @slew_ref_clock_mhz:         Default reference clock (in MHz) for slew rate calibration
+  * @slew_rate_coefficient:    Coefficient for slew rate calibration
+  * @version:                  PHY IP Version
+@@ -291,6 +295,7 @@ struct mtk_phy_pdata {
+ 	bool avoid_rx_sen_degradation;
+ 	bool sw_pll_48m_to_26m;
+ 	bool sw_efuse_supported;
++	bool u2_sw_sleep;
+ 	u8 slew_ref_clock_mhz;
+ 	u8 slew_rate_coefficient;
+ 	enum mtk_phy_version version;
+@@ -825,6 +830,10 @@ static void u2_phy_instance_init(struct mtk_tphy *tphy,
+ 	void __iomem *com = u2_banks->com;
+ 	u32 index = instance->index;
+ 
++	/* Program the MT6833 PLL before releasing the forced sleep signals. */
++	if (tphy->pdata->u2_sw_sleep)
++		u2_phy_pll_26m_set(tphy, instance);
++
+ 	/* switch to USB function, and enable usb pll */
+ 	mtk_phy_clear_bits(com + U3P_U2PHYDTM0, P2C_FORCE_UART_EN | P2C_FORCE_SUSPENDM);
+ 
+@@ -858,8 +867,8 @@ static void u2_phy_instance_init(struct mtk_tphy *tphy,
+ 
+ 	mtk_phy_update_field(com + U3P_USBPHYACR6, PA6_RG_U2_SQTH, 2);
+ 
+-	/* Workaround only for mt8195, HW fix it for others (V3) */
+-	u2_phy_pll_26m_set(tphy, instance);
++	if (!tphy->pdata->u2_sw_sleep)
++		u2_phy_pll_26m_set(tphy, instance);
+ 
+ 	dev_dbg(tphy->dev, "%s(%d)\n", __func__, index);
+ }
+@@ -893,6 +902,35 @@ static void u2_phy_instance_power_off(struct mtk_tphy *tphy,
+ 	void __iomem *com = u2_banks->com;
+ 	u32 index = instance->index;
+ 
++	if (tphy->pdata->u2_sw_sleep) {
++		/* MT6833 USB2_PHY_V2 save-current sequence: force the UTMI
++		 * signals idle before removing the controller clock path.
++		 */
++		mtk_phy_clear_bits(com + U3P_U2PHYDTM0, P2C_FORCE_UART_EN);
++		mtk_phy_clear_bits(com + U3P_U2PHYDTM1, P2C_RG_UART_EN);
++		mtk_phy_clear_bits(com + U3P_U2PHYACR4, P2C_U2_GPIO_CTR_MSK);
++		mtk_phy_clear_bits(com + U3P_USBPHYACR6,
++				   PA6_RG_U2_BC11_SW_EN | PA6_RG_U2_OTG_VBUSCMP_EN);
++		mtk_phy_set_bits(com + U3P_U2PHYDTM0, P2C_RG_SUSPENDM);
++		mtk_phy_set_bits(com + U3P_U2PHYDTM0, P2C_FORCE_SUSPENDM);
++		mtk_phy_set_bits(com + U3P_U2PHYDTM0,
++				 P2C_RG_DPPULLDOWN | P2C_RG_DMPULLDOWN);
++		mtk_phy_update_field(com + U3P_U2PHYDTM0, P2C_RG_XCVRSEL, 1);
++		mtk_phy_set_bits(com + U3P_U2PHYDTM0, P2C_RG_TERMSEL);
++		mtk_phy_clear_bits(com + U3P_U2PHYDTM0, P2C_RG_DATAIN);
++		mtk_phy_set_bits(com + U3P_U2PHYDTM0,
++				 P2C_FORCE_DP_PULLDOWN | P2C_FORCE_DM_PULLDOWN |
++				 P2C_FORCE_XCVRSEL | P2C_FORCE_TERMSEL | P2C_FORCE_DATAIN);
++		udelay(800);
++		mtk_phy_clear_bits(com + U3P_U2PHYDTM0, P2C_RG_SUSPENDM);
++		udelay(1);
++		/* IDPULLUP=1, SESSEND=1, all other forced mode inputs idle. */
++		mtk_phy_update_bits(com + U3P_U2PHYDTM1,
++				    P2C_FORCE_MODE_MASK | P2C_RG_MODE_MASK,
++				    P2C_FORCE_MODE_MASK | P2C_RG_IDPULLUP | P2C_RG_SESSEND);
++		return;
++	}
++
+ 	/* OTG Disable */
+ 	mtk_phy_clear_bits(com + U3P_USBPHYACR6, PA6_RG_U2_OTG_VBUSCMP_EN);
+ 
+@@ -934,13 +972,27 @@ static void u2_phy_instance_set_mode(struct mtk_tphy *tphy,
+ 	switch (mode) {
+ 	case PHY_MODE_USB_DEVICE:
+ 		tmp |= P2C_FORCE_IDDIG | P2C_RG_IDDIG;
++		if (tphy->pdata->u2_sw_sleep) {
++			/* MT6833 device path has no separate VBUS notifier. */
++			tmp &= ~(P2C_FORCE_MODE_MASK | P2C_RG_MODE_MASK);
++			tmp |= P2C_FORCE_MODE_MASK | P2C_RG_VBUSVALID |
++			       P2C_RG_BVALID | P2C_RG_AVALID | P2C_RG_IDDIG |
++			       P2C_RG_IDPULLUP;
++		}
+ 		break;
+ 	case PHY_MODE_USB_HOST:
+ 		tmp |= P2C_FORCE_IDDIG;
+ 		tmp &= ~P2C_RG_IDDIG;
++		if (tphy->pdata->u2_sw_sleep) {
++			tmp &= ~(P2C_FORCE_MODE_MASK | P2C_RG_MODE_MASK);
++			tmp |= P2C_FORCE_MODE_MASK | P2C_RG_VBUSVALID |
++			       P2C_RG_BVALID | P2C_RG_AVALID | P2C_RG_IDPULLUP;
++		}
+ 		break;
+ 	case PHY_MODE_USB_OTG:
+ 		tmp &= ~(P2C_FORCE_IDDIG | P2C_RG_IDDIG);
++		if (tphy->pdata->u2_sw_sleep)
++			tmp &= ~P2C_FORCE_MODE_MASK;
+ 		break;
+ 	default:
+ 		return;
+@@ -1405,7 +1457,16 @@ static int mtk_phy_power_on(struct phy *phy)
+ 	struct mtk_tphy *tphy = dev_get_drvdata(phy->dev.parent);
+ 
+ 	if (instance->type == PHY_TYPE_USB2) {
++		if (tphy->pdata->u2_sw_sleep) {
++			/* Restore software-owned settings after INFRA power loss. */
++			udelay(50);
++			phy_efuse_set(instance);
++			u2_phy_instance_init(tphy, instance);
++			u2_phy_props_set(tphy, instance);
++		}
+ 		u2_phy_instance_power_on(tphy, instance);
++		if (tphy->pdata->u2_sw_sleep)
++			udelay(800);
+ 		hs_slew_rate_calibrate(tphy, instance);
+ 	} else if (instance->type == PHY_TYPE_PCIE) {
+ 		pcie_phy_instance_power_on(tphy, instance);
+@@ -1551,9 +1612,19 @@ static const struct mtk_phy_pdata mt8195_pdata = {
+ 	.version = MTK_PHY_V3,
+ };
+ 
++static const struct mtk_phy_pdata mt6833_pdata = {
++	.sw_pll_48m_to_26m = true,
++	.sw_efuse_supported = true,
++	.u2_sw_sleep = true,
++	.slew_ref_clock_mhz = 26,
++	.slew_rate_coefficient = 28,
++	.version = MTK_PHY_V2,
++};
++
+ static const struct of_device_id mtk_tphy_id_table[] = {
+ 	{ .compatible = "mediatek,mt2701-u3phy", .data = &tphy_v1_pdata },
+ 	{ .compatible = "mediatek,mt2712-u3phy", .data = &tphy_v2_pdata },
++	{ .compatible = "mediatek,mt6833-tphy", .data = &mt6833_pdata },
+ 	{ .compatible = "mediatek,mt8173-u3phy", .data = &mt8173_pdata },
+ 	{ .compatible = "mediatek,mt8195-tphy", .data = &mt8195_pdata },
+ 	{ .compatible = "mediatek,generic-tphy-v1", .data = &tphy_v1_pdata },
+diff --git a/drivers/usb/musb/mediatek.c b/drivers/usb/musb/mediatek.c
+index 53c51a5fe..892934e19 100644
+--- a/drivers/usb/musb/mediatek.c
++++ b/drivers/usb/musb/mediatek.c
+@@ -51,6 +51,10 @@ struct mtk_glue {
+ 	enum usb_role role;
+ 	struct usb_role_switch *role_sw;
+ 	bool clks_suspended;
++	bool phy_suspended;
++	u32 suspend_l1_mask;
++	u16 suspend_rx_toggle_en;
++	u16 suspend_tx_toggle_en;
+ };
+ 
+ static int mtk_musb_clks_get(struct mtk_glue *glue)
+@@ -517,6 +521,8 @@ static void mtk_musb_remove(struct platform_device *pdev)
+ static int mtk_musb_suspend_noirq(struct device *dev)
+ {
+ 	struct mtk_glue *glue = dev_get_drvdata(dev);
++	struct musb *musb = glue->musb;
++	int ret;
+ 
+ 	if (!of_device_is_compatible(dev->of_node, "mediatek,mt6833-musb"))
+ 		return 0;
+@@ -525,6 +531,19 @@ static int mtk_musb_suspend_noirq(struct device *dev)
+ 	 */
+ 	if (device_may_wakeup(&glue->musb_pdev->dev))
+ 		return 0;
++	if (glue->clks_suspended || glue->phy_suspended)
++		return -EBUSY;
++
++	/* Generic MUSB context does not include these MediaTek registers. */
++	glue->suspend_l1_mask = musb_readl(musb->mregs, USB_L1INTM);
++	glue->suspend_rx_toggle_en = musb_readw(musb->mregs, MUSB_RXTOGEN);
++	glue->suspend_tx_toggle_en = musb_readw(musb->mregs, MUSB_TXTOGEN);
++	if (glue->role != USB_ROLE_NONE) {
++		ret = phy_power_off(glue->phy);
++		if (ret)
++			return ret;
++		glue->phy_suspended = true;
++	}
+ 	clk_bulk_disable_unprepare(MTK_MUSB_CLKS_NUM, glue->clks);
+ 	glue->clks_suspended = true;
+ 	dev_dbg(dev, "USB interface clocks gated for system sleep\n");
+@@ -534,15 +553,35 @@ static int mtk_musb_suspend_noirq(struct device *dev)
+ static int mtk_musb_resume_noirq(struct device *dev)
+ {
+ 	struct mtk_glue *glue = dev_get_drvdata(dev);
++	struct musb *musb = glue->musb;
+ 	int ret;
+ 
+-	if (!glue->clks_suspended)
++	if (!glue->clks_suspended && !glue->phy_suspended)
+ 		return 0;
+ 	/* Restore clocks before the child accesses its saved register context. */
+-	ret = clk_bulk_prepare_enable(MTK_MUSB_CLKS_NUM, glue->clks);
+-	if (ret)
+-		return ret;
+-	glue->clks_suspended = false;
++	if (glue->clks_suspended) {
++		ret = clk_bulk_prepare_enable(MTK_MUSB_CLKS_NUM, glue->clks);
++		if (ret)
++			return ret;
++		glue->clks_suspended = false;
++	}
++	if (glue->phy_suspended) {
++		ret = phy_power_on(glue->phy);
++		if (ret)
++			return ret;
++		glue->phy_suspended = false;
++		ret = phy_set_mode(glue->phy, glue->phy_mode);
++		if (ret)
++			return ret;
++	}
++	musb_writew(musb->mregs, MUSB_RXTOGEN, glue->suspend_rx_toggle_en);
++	musb_writew(musb->mregs, MUSB_TXTOGEN, glue->suspend_tx_toggle_en);
++#if defined(CONFIG_USB_INVENTRA_DMA)
++	/* MTK DMA interrupt status is W1C, unmask bits are write-to-set. */
++	musb_writel(musb->mregs, MUSB_HSDMA_INTR,
++		    DMA_INTR_STATUS_MSK | DMA_INTR_UNMASK_SET_MSK);
++#endif
++	musb_writel(musb->mregs, USB_L1INTM, glue->suspend_l1_mask);
+ 	dev_dbg(dev, "USB interface clocks restored after system sleep\n");
+ 	return 0;
+ }

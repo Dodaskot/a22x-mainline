@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Thu, 8 Oct 2026 14:38:26 +0200
+Subject: [PATCH 117/131] dt-bindings: phy: mediatek: describe MT6833 T-PHY
+
+---
+ Documentation/devicetree/bindings/phy/mediatek,tphy.yaml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/Documentation/devicetree/bindings/phy/mediatek,tphy.yaml b/Documentation/devicetree/bindings/phy/mediatek,tphy.yaml
+index ff5c77ef1..eb8b200f9 100644
+--- a/Documentation/devicetree/bindings/phy/mediatek,tphy.yaml
++++ b/Documentation/devicetree/bindings/phy/mediatek,tphy.yaml
+@@ -78,6 +78,7 @@ properties:
+       - items:
+           - enum:
+               - mediatek,mt2712-tphy
++              - mediatek,mt6833-tphy
+               - mediatek,mt6893-tphy
+               - mediatek,mt7629-tphy
+               - mediatek,mt7981-tphy

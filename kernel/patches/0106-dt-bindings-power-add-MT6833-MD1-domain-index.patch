@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 6 Oct 2026 21:42:34 +0200
+Subject: [PATCH 106/131] dt-bindings: power: add MT6833 MD1 domain index
+
+---
+ include/dt-bindings/power/mediatek,mt6833-power.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/dt-bindings/power/mediatek,mt6833-power.h b/include/dt-bindings/power/mediatek,mt6833-power.h
+index 548f7d4a9..d18151178 100644
+--- a/include/dt-bindings/power/mediatek,mt6833-power.h
++++ b/include/dt-bindings/power/mediatek,mt6833-power.h
+@@ -9,5 +9,6 @@
+ #define MT6833_POWER_DOMAIN_AUDIO	4
+ #define MT6833_POWER_DOMAIN_CONN	5
+ #define MT6833_POWER_DOMAIN_DISP	6
++#define MT6833_POWER_DOMAIN_MD1	7
+ 
+ #endif /* _DT_BINDINGS_POWER_MT6833_POWER_H */

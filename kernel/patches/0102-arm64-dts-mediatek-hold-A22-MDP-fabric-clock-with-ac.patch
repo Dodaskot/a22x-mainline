@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 6 Oct 2026 17:23:46 +0200
+Subject: [PATCH 102/131] arm64: dts: mediatek: hold A22 MDP fabric clock with
+ active display
+
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts   | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+index d7e07e016..db258adf0 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+@@ -184,12 +184,13 @@ &spm {
+ 	power-domain@6 {
+ 		reg = <MT6833_POWER_DOMAIN_DISP>;
+ 		clocks = <&topckgen CLK_TOP_DISP_SEL>,
++			 <&topckgen CLK_TOP_MDP_SEL>,
+ 			 <&mm_clk_ml CLK_MM_SMI_INFRA>,
+ 			 <&mm_clk_ml CLK_MM_SMI_COMMON>,
+ 			 <&mm_clk_ml CLK_MM_SMI_GALS>,
+ 			 <&mm_clk_ml CLK_MM_SMI_IOMMU>,
+ 			 <&mm_clk_ml CLK_MM_APB_BUS>;
+-		clock-names = "disp", "smi-infra", "smi-common", "smi-gals",
++		clock-names = "disp", "mdp", "smi-infra", "smi-common", "smi-gals",
+ 			      "smi-iommu", "mm-apb";
+ 		mediatek,infracfg = <&infracfg_ao>;
+ 		#power-domain-cells = <0>;

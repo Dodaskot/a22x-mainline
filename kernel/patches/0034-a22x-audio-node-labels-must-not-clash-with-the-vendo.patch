@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 18:33:37 +0200
+Subject: [PATCH 034/131] a22x: audio node labels must not clash with the
+ vendor ones
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 42 +++++++++----------
+ 1 file changed, 21 insertions(+), 21 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 4c5582310..bdb19be75 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -462,7 +462,7 @@ rtc {
+ 				compatible = "mediatek,mt6358-rtc";
+ 			};
+ 
+-			mt6359codec: mt6359codec {
++			mt6359codec {
+ 				mediatek,dmic-mode = <0>;	/* two-wire */
+ 				mediatek,mic-type-0 = <1>;	/* ACC */
+ 				mediatek,mic-type-1 = <1>;
+@@ -1234,34 +1234,34 @@ soc_crit: trip-crit {
+ 
+ /* Audio: MT8192-compatible AFE + MT6359 codec (speaker amplifier pending) */
+ / {
+-	audsys: syscon@11210000 {
++	audsys_ml: syscon@11210000 {
+ 		compatible = "mediatek,mt6833-audsys", "syscon";
+ 		reg = <0 0x11210000 0 0x2000>;
+ 		#clock-cells = <1>;
+ 
+-		afe: audio-controller {
++		afe_ml: audio-controller {
+ 			compatible = "mediatek,mt6833-audio";
+ 			interrupts = <0 202 4>;
+ 			mediatek,apmixedsys = <&apmixed>;
+ 			mediatek,infracfg = <&infracfg_ao>;
+ 			mediatek,topckgen = <&topckgen>;
+ 			power-domains = <&spm MT6833_POWER_DOMAIN_AUDIO>;
+-			clocks = <&audsys CLK_AUDSYS_AFE>,
+-				 <&audsys CLK_AUDSYS_DAC>,
+-				 <&audsys CLK_AUDSYS_DAC_PREDIS>,
+-				 <&audsys CLK_AUDSYS_ADC>,
+-				 <&audsys CLK_AUDSYS_ADDA6_ADC>,
+-				 <&audsys CLK_AUDSYS_22M>,
+-				 <&audsys CLK_AUDSYS_24M>,
+-				 <&audsys CLK_AUDSYS_APLL_TUNER>,
+-				 <&audsys CLK_AUDSYS_APLL2_TUNER>,
+-				 <&audsys CLK_AUDSYS_TDM>,
+-				 <&audsys CLK_AUDSYS_TML>,
+-				 <&audsys CLK_AUDSYS_NLE>,
+-				 <&audsys CLK_AUDSYS_DAC_HIRES>,
+-				 <&audsys CLK_AUDSYS_ADC_HIRES>,
+-				 <&audsys CLK_AUDSYS_ADC_HIRES_TML>,
+-				 <&audsys CLK_AUDSYS_ADDA6_ADC_HIRES>,
++			clocks = <&audsys_ml CLK_AUDSYS_AFE>,
++				 <&audsys_ml CLK_AUDSYS_DAC>,
++				 <&audsys_ml CLK_AUDSYS_DAC_PREDIS>,
++				 <&audsys_ml CLK_AUDSYS_ADC>,
++				 <&audsys_ml CLK_AUDSYS_ADDA6_ADC>,
++				 <&audsys_ml CLK_AUDSYS_22M>,
++				 <&audsys_ml CLK_AUDSYS_24M>,
++				 <&audsys_ml CLK_AUDSYS_APLL_TUNER>,
++				 <&audsys_ml CLK_AUDSYS_APLL2_TUNER>,
++				 <&audsys_ml CLK_AUDSYS_TDM>,
++				 <&audsys_ml CLK_AUDSYS_TML>,
++				 <&audsys_ml CLK_AUDSYS_NLE>,
++				 <&audsys_ml CLK_AUDSYS_DAC_HIRES>,
++				 <&audsys_ml CLK_AUDSYS_ADC_HIRES>,
++				 <&audsys_ml CLK_AUDSYS_ADC_HIRES_TML>,
++				 <&audsys_ml CLK_AUDSYS_ADDA6_ADC_HIRES>,
+ 				 <&infracfg_ao CLK_IFRAO_AUDIO>,
+ 				 <&infracfg_ao CLK_IFRAO_AUDIO_26M_BCLK>,
+ 				 <&topckgen CLK_TOP_AUDIO_SEL>,
+@@ -1324,9 +1324,9 @@ afe: audio-controller {
+ 		};
+ 	};
+ 
+-	sound: sound {
++	sound_ml: sound {
+ 		compatible = "mediatek,mt6833-mt6359-sound";
+-		mediatek,platform = <&afe>;
++		mediatek,platform = <&afe_ml>;
+ 		pinctrl-names = "aud_clk_mosi_off", "aud_clk_mosi_on", "aud_dat_mosi_off", "aud_dat_mosi_on", "aud_dat_miso_off", "aud_dat_miso_on", "aud_gpio_i2s3_off", "aud_gpio_i2s3_on", "aud_gpio_i2s0_off", "aud_gpio_i2s0_on";
+ 			pinctrl-0 = <&aud_clk_mosi_off_ml>;
+ 			pinctrl-1 = <&aud_clk_mosi_on_ml>;

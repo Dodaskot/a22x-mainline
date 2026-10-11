@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 01:54:30 +0200
+Subject: [PATCH 016/131] arm64: dts: mediatek: a22x: use real MT6833 clocks
+ for eMMC, drop stand-ins
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 25 +++----------------
+ 1 file changed, 4 insertions(+), 21 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index f8e7fc1c2..3b35b4130 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -112,25 +112,6 @@ pins-bus {
+ 		};
+ 	};
+ 
+-	/*
+-	 * Stand-in clocks until there is a mainline MT6833 clock driver.
+-	 * Preloader/LK leave these running; rates were measured on the stock
+-	 * kernel through /proc/clkdbg (dump_clks).
+-	 */
+-	clk_msdc50_0: clock-msdc50-0 {
+-		compatible = "fixed-clock";
+-		#clock-cells = <0>;
+-		clock-frequency = <384000000>;
+-		clock-output-names = "standin-msdc50_0_ck";
+-	};
+-
+-	clk_axi: clock-axi {
+-		compatible = "fixed-clock";
+-		#clock-cells = <0>;
+-		clock-frequency = <156000000>;
+-		clock-output-names = "standin-axi_ck";
+-	};
+-
+ 	/* VEMC, left enabled by the bootloader for the boot eMMC. */
+ 	reg_vemc: regulator-vemc {
+ 		compatible = "regulator-fixed";
+@@ -146,8 +127,10 @@ mmc0: mmc@11230000 {
+ 		reg = <0 0x11230000 0 0x10000>,
+ 		      <0 0x11f50000 0 0x1000>;
+ 		interrupts = <0 99 4>;
+-		clocks = <&clk_msdc50_0>, <&clk_axi>;
+-		clock-names = "source", "hclk";
++		clocks = <&topckgen CLK_TOP_MSDC50_0_SEL>,
++			 <&infracfg_ao CLK_IFRAO_MSDC0>,
++			 <&infracfg_ao CLK_IFRAO_MSDC0_SRC>;
++		clock-names = "source", "hclk", "source_cg";
+ 		bus-width = <8>;
+ 		max-frequency = <200000000>;
+ 		cap-mmc-highspeed;

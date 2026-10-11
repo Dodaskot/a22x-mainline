@@ -1,0 +1,500 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sun, 4 Oct 2026 21:46:18 +0200
+Subject: [PATCH 067/131] power: supply: add MT6359 fuel gauge; use it on a22x
+
+Read the FGADC coulomb counter of the MT6359 PMIC (left running by the
+bootloader): instantaneous current and the charge counter. The state of
+charge is taken from the OCV table at probe (terminal voltage corrected
+by I*R) and then follows the counter, also across suspend. A full
+charge re-anchors it to 100 %, near empty it is pulled towards the OCV
+estimate. Replaces the voltage-only adc-battery on a22x.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts |  14 +-
+ drivers/power/supply/Kconfig                  |   8 +
+ drivers/power/supply/Makefile                 |   1 +
+ drivers/power/supply/mt6359-fuel-gauge.c      | 410 ++++++++++++++++++
+ 4 files changed, 429 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/power/supply/mt6359-fuel-gauge.c
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 9d5aba8a8..73b62a78a 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -590,6 +590,8 @@ / {
+ 	battery: battery {
+ 		compatible = "simple-battery";
+ 		charge-full-design-microamp-hours = <5000000>;
++		/* ~120 mOhm at 25 C, stock W1 SCUD/BYD 5000 mAh profiles */
++		factory-internal-resistance-micro-ohms = <120000>;
+ 		voltage-min-design-microvolt = <3400000>;
+ 		voltage-max-design-microvolt = <4400000>;
+ 		ocv-capacity-celsius = <25>;
+@@ -616,10 +618,14 @@ battery: battery {
+ 						<3400000 0>;
+ 	};
+ 
+-	adc-battery {
+-		compatible = "adc-battery";
+-		io-channels = <&mt6360_adc 4>, <&mt6360_adc 6>;
+-		io-channel-names = "voltage", "current";
++	/* coulomb counter of the MT6359 PMIC; VBAT from the MT6360 ADC */
++	fuel-gauge {
++		compatible = "mediatek,mt6359-fuel-gauge";
++		mediatek,pmic = <&mt6359>;
++		/* R_FG_VALUE 5 mOhm, CAR_TUNE 100 % (stock mt6833_battery_prop.dtsi) */
++		mediatek,sense-resistor-micro-ohms = <5000>;
++		io-channels = <&mt6360_adc 4>;
++		io-channel-names = "voltage";
+ 		monitored-battery = <&battery>;
+ 		power-supplies = <&mt6360_chg>;
+ 	};
+diff --git a/drivers/power/supply/Kconfig b/drivers/power/supply/Kconfig
+index f0ede1cec..8f91d1b20 100644
+--- a/drivers/power/supply/Kconfig
++++ b/drivers/power/supply/Kconfig
+@@ -38,6 +38,14 @@ config APM_POWER
+ config ADC_BATTERY_HELPER
+ 	tristate
+ 
++config FUEL_GAUGE_MT6359
++	tristate "MediaTek MT6359 fuel gauge"
++	depends on MFD_MT6397 || COMPILE_TEST
++	depends on IIO
++	help
++	  Battery state of charge from the coulomb counter (FGADC) of the
++	  MediaTek MT6359 PMIC. The bootloader must leave the FGADC enabled.
++
+ config GENERIC_ADC_BATTERY
+ 	tristate "Generic battery support using IIO"
+ 	depends on IIO
+diff --git a/drivers/power/supply/Makefile b/drivers/power/supply/Makefile
+index 31fe4a145..168152a38 100644
+--- a/drivers/power/supply/Makefile
++++ b/drivers/power/supply/Makefile
+@@ -8,6 +8,7 @@ power_supply-$(CONFIG_LEDS_TRIGGERS)	+= power_supply_leds.o
+ obj-$(CONFIG_POWER_SUPPLY)	+= power_supply.o
+ obj-$(CONFIG_POWER_SUPPLY_HWMON) += power_supply_hwmon.o
+ obj-$(CONFIG_ADC_BATTERY_HELPER) += adc-battery-helper.o
++obj-$(CONFIG_FUEL_GAUGE_MT6359)	+= mt6359-fuel-gauge.o
+ obj-$(CONFIG_GENERIC_ADC_BATTERY)	+= generic-adc-battery.o
+ 
+ obj-$(CONFIG_APM_POWER)		+= apm_power.o
+diff --git a/drivers/power/supply/mt6359-fuel-gauge.c b/drivers/power/supply/mt6359-fuel-gauge.c
+new file mode 100644
+index 000000000..92830fb36
+--- /dev/null
++++ b/drivers/power/supply/mt6359-fuel-gauge.c
+@@ -0,0 +1,410 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * MediaTek MT6359(P) fuel gauge (FGADC coulomb counter).
++ *
++ * The bootloader leaves the FGADC running (FG_ON=1, clocks ungated); this
++ * driver only reads it. The state of charge is taken from the OCV table once
++ * at probe (cell voltage corrected by I*R with the measured current), then
++ * followed by the hardware charge counter, which keeps counting in suspend.
++ * A full charge re-anchors it to 100 %; near empty the count is pulled down
++ * towards the OCV estimate, so a worn cell does not die at "10 %".
++ *
++ * Register layout and units from the vendor mt6359_gauge.c (GM3.0):
++ *   current: 610.352 uA/LSB, CAR: 0.085 uAh/LSB, both for a 5 mOhm sense
++ *   resistor and scaled by 5 mOhm / R_sense; positive = charging.
++ */
++#include <linux/iio/consumer.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
++#include <linux/platform_device.h>
++#include <linux/power_supply.h>
++#include <linux/regmap.h>
++#include <linux/workqueue.h>
++
++#define MT6359_FGADC_CON0		0xd08
++#define MT6359_FGADC_CON1		0xd0a
++#define MT6359_FGADC_CAR_CON0		0xd16
++#define MT6359_FGADC_CAR_CON1		0xd18
++#define MT6359_FGADC_CUR_CON0		0xd8a
++
++#define FGADC_CON0_FG_ON		BIT(0)
++#define FGADC_CON1_READ_PRE		BIT(0)
++#define FGADC_CON1_SW_CLEAR		BIT(3)
++#define FGADC_CON1_LATCHDATA_ST		BIT(15)
++
++#define FG_CUR_NA_PER_LSB		610352	/* at 5 mOhm */
++#define FG_CAR_PAH_PER_LSB		85000	/* pico-Ah (0.085 uAh) at 5 mOhm */
++#define FG_DEFAULT_RSENSE_UOHM		5000
++#define FG_DEFAULT_RBAT_UOHM		120000
++#define FG_POLL_INTERVAL		(30 * HZ)
++#define FG_LOW_OCV_CAPACITY		15	/* % below which OCV is trusted */
++#define FG_LOW_MAX_ERROR		5	/* % allowed above the OCV estimate */
++
++struct mt6359_fg {
++	struct device *dev;
++	struct regmap *regmap;
++	struct mutex lock;			/* serialises latch/read */
++	struct power_supply *psy;
++	struct power_supply_battery_info *info;
++	struct iio_channel *vbat;
++	struct delayed_work work;
++
++	u32 rsense_uohm;
++	u32 rbat_uohm;
++	s64 full_uah;			/* charge-full-design */
++	s64 car0_uah;			/* counter value at the anchor point */
++	s64 charge0_uah;		/* charge at the anchor point */
++	bool anchored;
++};
++
++/* Latch the counters, run @read, release the latch (vendor sequence). */
++static int mt6359_fg_latched_read(struct mt6359_fg *fg, unsigned int reg,
++				  unsigned int *val, unsigned int *val_hi)
++{
++	unsigned int st;
++	int ret, err;
++
++	mutex_lock(&fg->lock);
++	ret = regmap_update_bits(fg->regmap, MT6359_FGADC_CON1,
++				 FGADC_CON1_READ_PRE, FGADC_CON1_READ_PRE);
++	if (ret)
++		goto out;
++	ret = regmap_read_poll_timeout(fg->regmap, MT6359_FGADC_CON1, st,
++				       st & FGADC_CON1_LATCHDATA_ST, 10, 10000);
++	if (!ret) {
++		ret = regmap_read(fg->regmap, reg, val);
++		if (!ret && val_hi)
++			ret = regmap_read(fg->regmap, reg + 2, val_hi);
++	}
++
++	err = regmap_update_bits(fg->regmap, MT6359_FGADC_CON1,
++				 FGADC_CON1_SW_CLEAR | FGADC_CON1_READ_PRE,
++				 FGADC_CON1_SW_CLEAR);
++	if (!err)
++		err = regmap_read_poll_timeout(fg->regmap, MT6359_FGADC_CON1,
++					       st, !(st & FGADC_CON1_LATCHDATA_ST),
++					       10, 10000);
++	regmap_update_bits(fg->regmap, MT6359_FGADC_CON1,
++			   FGADC_CON1_SW_CLEAR, 0);
++	if (!ret)
++		ret = err;
++out:
++	mutex_unlock(&fg->lock);
++	return ret;
++}
++
++static s64 mt6359_fg_scale(struct mt6359_fg *fg, s64 v)
++{
++	return div_s64(v * FG_DEFAULT_RSENSE_UOHM, fg->rsense_uohm);
++}
++
++static int mt6359_fg_current_ua(struct mt6359_fg *fg, int *ua)
++{
++	unsigned int raw;
++	s64 lsb;
++	int ret;
++
++	ret = mt6359_fg_latched_read(fg, MT6359_FGADC_CUR_CON0, &raw, NULL);
++	if (ret)
++		return ret;
++	/* vendor convention: > 0x7fff is discharging, magnitude 0xffff - raw */
++	lsb = raw > 0x7fff ? -(s64)(0xffff - raw) : raw;
++	*ua = mt6359_fg_scale(fg, div_s64(lsb * FG_CUR_NA_PER_LSB, 1000));
++	return 0;
++}
++
++static int mt6359_fg_car_uah(struct mt6359_fg *fg, s64 *uah)
++{
++	unsigned int lo, hi;
++	s64 lsb;
++	int ret;
++
++	ret = mt6359_fg_latched_read(fg, MT6359_FGADC_CAR_CON0, &lo, &hi);
++	if (ret)
++		return ret;
++	lsb = (s64)(lo & 0xffff) | (s64)(hi & 0x7fff) << 16;
++	if (hi & BIT(15))
++		lsb = -(0x7fffffffLL - lsb);
++	*uah = mt6359_fg_scale(fg, div_s64(lsb * FG_CAR_PAH_PER_LSB, 1000000));
++	return 0;
++}
++
++static int mt6359_fg_voltage_uv(struct mt6359_fg *fg, int *uv)
++{
++	int ret = iio_read_channel_processed_scale(fg->vbat, uv, 1000);
++
++	return ret < 0 ? ret : 0;
++}
++
++static int mt6359_fg_ocv_capacity(struct mt6359_fg *fg, int *cap)
++{
++	int uv, ua, ret;
++
++	ret = mt6359_fg_voltage_uv(fg, &uv);
++	if (ret)
++		return ret;
++	ret = mt6359_fg_current_ua(fg, &ua);
++	if (ret)
++		return ret;
++	/* charging current raises the terminal voltage above OCV */
++	uv -= (int)div_s64((s64)ua * fg->rbat_uohm, 1000000);
++	*cap = power_supply_batinfo_ocv2cap(fg->info, uv, 25);
++	if (*cap < 0)
++		return *cap;
++	return 0;
++}
++
++static int mt6359_fg_anchor(struct mt6359_fg *fg, int capacity)
++{
++	s64 car;
++	int ret = mt6359_fg_car_uah(fg, &car);
++
++	if (ret)
++		return ret;
++	fg->car0_uah = car;
++	fg->charge0_uah = div_s64(fg->full_uah * capacity, 100);
++	fg->anchored = true;
++	dev_dbg(fg->dev, "anchored at %d%%\n", capacity);
++	return 0;
++}
++
++static int mt6359_fg_charge_now(struct mt6359_fg *fg, s64 *uah)
++{
++	s64 car;
++	int ret, cap;
++
++	if (!fg->anchored) {
++		ret = mt6359_fg_ocv_capacity(fg, &cap);
++		if (!ret)
++			ret = mt6359_fg_anchor(fg, cap);
++		if (ret)
++			return ret;
++	}
++	ret = mt6359_fg_car_uah(fg, &car);
++	if (ret)
++		return ret;
++	*uah = clamp_t(s64, fg->charge0_uah + car - fg->car0_uah, 0, fg->full_uah);
++	return 0;
++}
++
++static int mt6359_fg_supplier_status(struct mt6359_fg *fg)
++{
++	union power_supply_propval val;
++
++	if (power_supply_get_property_from_supplier(fg->psy,
++						    POWER_SUPPLY_PROP_STATUS,
++						    &val))
++		return POWER_SUPPLY_STATUS_UNKNOWN;
++	return val.intval;
++}
++
++static void mt6359_fg_work(struct work_struct *work)
++{
++	struct mt6359_fg *fg = container_of(work, struct mt6359_fg, work.work);
++
++	int status = mt6359_fg_supplier_status(fg);
++	int ocv_cap, cap;
++	s64 uah;
++
++	/* the charger ended the charge cycle: the cell is full */
++	if (status == POWER_SUPPLY_STATUS_FULL) {
++		mt6359_fg_anchor(fg, 100);
++	} else if (status != POWER_SUPPLY_STATUS_CHARGING &&
++		   !mt6359_fg_charge_now(fg, &uah) &&
++		   !mt6359_fg_ocv_capacity(fg, &ocv_cap) &&
++		   ocv_cap < FG_LOW_OCV_CAPACITY) {
++		/* 1 % per poll, so the reading never jumps */
++		cap = div_s64(uah * 100, fg->full_uah);
++		if (cap > ocv_cap + FG_LOW_MAX_ERROR)
++			mt6359_fg_anchor(fg, cap - 1);
++	}
++
++	power_supply_changed(fg->psy);
++	schedule_delayed_work(&fg->work, FG_POLL_INTERVAL);
++}
++
++static int mt6359_fg_get_property(struct power_supply *psy,
++				  enum power_supply_property psp,
++				  union power_supply_propval *val)
++{
++	struct mt6359_fg *fg = power_supply_get_drvdata(psy);
++	s64 uah;
++	int ret = 0, ua;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		val->intval = mt6359_fg_supplier_status(fg);
++		if (val->intval == POWER_SUPPLY_STATUS_UNKNOWN) {
++			ret = mt6359_fg_current_ua(fg, &ua);
++			val->intval = ua > 0 ? POWER_SUPPLY_STATUS_CHARGING :
++					       POWER_SUPPLY_STATUS_DISCHARGING;
++		}
++		break;
++	case POWER_SUPPLY_PROP_PRESENT:
++		val->intval = 1;
++		break;
++	case POWER_SUPPLY_PROP_TECHNOLOGY:
++		val->intval = POWER_SUPPLY_TECHNOLOGY_LIPO;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++		ret = mt6359_fg_voltage_uv(fg, &val->intval);
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
++		val->intval = fg->info->voltage_min_design_uv;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
++		val->intval = fg->info->voltage_max_design_uv;
++		break;
++	case POWER_SUPPLY_PROP_CURRENT_NOW:
++		ret = mt6359_fg_current_ua(fg, &val->intval);
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_FULL:
++	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
++		val->intval = fg->full_uah;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_NOW:
++		ret = mt6359_fg_charge_now(fg, &uah);
++		val->intval = uah;
++		break;
++	case POWER_SUPPLY_PROP_CAPACITY:
++		ret = mt6359_fg_charge_now(fg, &uah);
++		val->intval = div_s64(uah * 100 + fg->full_uah / 2, fg->full_uah);
++		break;
++	default:
++		return -EINVAL;
++	}
++	return ret;
++}
++
++static void mt6359_fg_external_power_changed(struct power_supply *psy)
++{
++	struct mt6359_fg *fg = power_supply_get_drvdata(psy);
++
++	mod_delayed_work(system_wq, &fg->work, HZ);
++}
++
++static const enum power_supply_property mt6359_fg_props[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
++	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
++	POWER_SUPPLY_PROP_CURRENT_NOW,
++	POWER_SUPPLY_PROP_CHARGE_FULL,
++	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
++	POWER_SUPPLY_PROP_CHARGE_NOW,
++	POWER_SUPPLY_PROP_CAPACITY,
++};
++
++static const struct power_supply_desc mt6359_fg_desc = {
++	.name = "battery",
++	.type = POWER_SUPPLY_TYPE_BATTERY,
++	.properties = mt6359_fg_props,
++	.num_properties = ARRAY_SIZE(mt6359_fg_props),
++	.get_property = mt6359_fg_get_property,
++	.external_power_changed = mt6359_fg_external_power_changed,
++};
++
++static struct regmap *mt6359_fg_get_regmap(struct device *dev)
++{
++	struct device_node *np;
++	struct platform_device *pmic;
++	struct regmap *map;
++
++	np = of_parse_phandle(dev->of_node, "mediatek,pmic", 0);
++	if (!np)
++		return ERR_PTR(-ENODEV);
++	pmic = of_find_device_by_node(np);
++	of_node_put(np);
++	if (!pmic)
++		return ERR_PTR(-EPROBE_DEFER);
++	/* the MT6359 MFD uses the regmap of its parent, the PMIC wrapper */
++	map = pmic->dev.parent ? dev_get_regmap(pmic->dev.parent, NULL) : NULL;
++	put_device(&pmic->dev);
++	return map ?: ERR_PTR(-EPROBE_DEFER);
++}
++
++static void mt6359_fg_cancel_work(void *data)
++{
++	cancel_delayed_work_sync(data);
++}
++
++static int mt6359_fg_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct power_supply_config cfg = {};
++	struct mt6359_fg *fg;
++	unsigned int con0;
++	int ret;
++
++	fg = devm_kzalloc(dev, sizeof(*fg), GFP_KERNEL);
++	if (!fg)
++		return -ENOMEM;
++	fg->dev = dev;
++	ret = devm_mutex_init(dev, &fg->lock);
++	if (ret)
++		return ret;
++	INIT_DELAYED_WORK(&fg->work, mt6359_fg_work);
++
++	fg->regmap = mt6359_fg_get_regmap(dev);
++	if (IS_ERR(fg->regmap))
++		return dev_err_probe(dev, PTR_ERR(fg->regmap), "no PMIC regmap\n");
++
++	ret = regmap_read(fg->regmap, MT6359_FGADC_CON0, &con0);
++	if (ret)
++		return ret;
++	if (!(con0 & FGADC_CON0_FG_ON))
++		return dev_err_probe(dev, -ENODEV, "FGADC not enabled by the bootloader\n");
++
++	fg->vbat = devm_iio_channel_get(dev, "voltage");
++	if (IS_ERR(fg->vbat))
++		return dev_err_probe(dev, PTR_ERR(fg->vbat), "no voltage channel\n");
++
++	fg->rsense_uohm = FG_DEFAULT_RSENSE_UOHM;
++	of_property_read_u32(dev->of_node, "mediatek,sense-resistor-micro-ohms",
++			     &fg->rsense_uohm);
++	if (!fg->rsense_uohm)
++		return -EINVAL;
++
++	cfg.drv_data = fg;
++	cfg.fwnode = dev_fwnode(dev);
++	fg->psy = devm_power_supply_register(dev, &mt6359_fg_desc, &cfg);
++	if (IS_ERR(fg->psy))
++		return dev_err_probe(dev, PTR_ERR(fg->psy), "register failed\n");
++
++	ret = power_supply_get_battery_info(fg->psy, &fg->info);
++	if (ret)
++		return dev_err_probe(dev, ret, "no monitored-battery\n");
++	if (fg->info->charge_full_design_uah <= 0 || !fg->info->ocv_table_size[0])
++		return dev_err_probe(dev, -EINVAL, "battery needs capacity and OCV table\n");
++	fg->full_uah = fg->info->charge_full_design_uah;
++	fg->rbat_uohm = fg->info->factory_internal_resistance_uohm > 0 ?
++			fg->info->factory_internal_resistance_uohm :
++			FG_DEFAULT_RBAT_UOHM;
++
++	ret = devm_add_action_or_reset(dev, mt6359_fg_cancel_work, &fg->work);
++	if (ret)
++		return ret;
++	schedule_delayed_work(&fg->work, 0);
++	return 0;
++}
++
++static const struct of_device_id mt6359_fg_of_match[] = {
++	{ .compatible = "mediatek,mt6359-fuel-gauge" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, mt6359_fg_of_match);
++
++static struct platform_driver mt6359_fg_driver = {
++	.probe = mt6359_fg_probe,
++	.driver = {
++		.name = "mt6359-fuel-gauge",
++		.of_match_table = mt6359_fg_of_match,
++	},
++};
++module_platform_driver(mt6359_fg_driver);
++
++MODULE_DESCRIPTION("MediaTek MT6359 fuel gauge (coulomb counter)");
++MODULE_LICENSE("GPL");

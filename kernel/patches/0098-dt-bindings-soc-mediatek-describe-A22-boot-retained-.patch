@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 6 Oct 2026 14:04:53 +0200
+Subject: [PATCH 098/131] dt-bindings: soc: mediatek: describe A22
+ boot-retained peripheral clocks
+
+---
+ .../soc/mediatek/mediatek,mt6833-lpm.yaml        | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt6833-lpm.yaml b/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt6833-lpm.yaml
+index 2a3b3e350..780a44cf5 100644
+--- a/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt6833-lpm.yaml
++++ b/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt6833-lpm.yaml
+@@ -45,6 +45,20 @@ properties:
+     maxItems: 1
+     description: Existing reserved MCUPM shared DRAM, at least 0x110568 bytes
+ 
++  clocks:
++    description: Unused board peripheral clocks retained by the bootloader
++    maxItems: 7
++
++  clock-names:
++    items:
++      - const: boot-uart1
++      - const: boot-spi0
++      - const: boot-spi3
++      - const: boot-spi4
++      - const: boot-spi5
++      - const: boot-spi6
++      - const: boot-spi7
++
+   mediatek,firmware-config:
+     $ref: /schemas/types.yaml#/definitions/phandle
+     description: |
+@@ -57,6 +71,8 @@ required:
+   - reg
+   - reg-names
+   - memory-region
++  - clocks
++  - clock-names
+   - mediatek,firmware-config
+ 
+ additionalProperties: false

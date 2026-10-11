@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 20:21:03 +0200
+Subject: [PATCH 042/131] drm/simpledrm: report the connector as DSI when a
+ panel backlight is attached
+
+KWin treats an Unknown connector as an external screen and dims the image
+in software instead of using the backlight device.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ drivers/gpu/drm/sysfb/simpledrm.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/sysfb/simpledrm.c b/drivers/gpu/drm/sysfb/simpledrm.c
+index 1d40956ce..ec587ec26 100644
+--- a/drivers/gpu/drm/sysfb/simpledrm.c
++++ b/drivers/gpu/drm/sysfb/simpledrm.c
+@@ -834,8 +834,14 @@ static struct simpledrm_device *simpledrm_device_create(struct drm_driver *drv,
+ 	/* Connector */
+ 
+ 	connector = &sdev->connector;
++	/*
++	 * A framebuffer with its own panel backlight is the built-in display;
++	 * report it as such so compositors drive the backlight instead of
++	 * dimming the image. The firmware-set mode is DSI on these phones.
++	 */
+ 	ret = drm_connector_init(dev, connector, &simpledrm_connector_funcs,
+-				 DRM_MODE_CONNECTOR_Unknown);
++				 sdev->backlight ? DRM_MODE_CONNECTOR_DSI :
++						   DRM_MODE_CONNECTOR_Unknown);
+ 	if (ret)
+ 		return ERR_PTR(ret);
+ 	drm_connector_helper_add(connector, &simpledrm_connector_helper_funcs);

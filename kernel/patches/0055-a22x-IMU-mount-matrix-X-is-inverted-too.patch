@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sun, 4 Oct 2026 10:12:14 +0200
+Subject: [PATCH 055/131] a22x: IMU mount matrix - X is inverted too
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index d0c1efed2..80ec18455 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -418,8 +418,8 @@ imu@0 {
+ 		interrupt-names = "INT1";
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&imu_int_pins>;
+-		/* measured: face up reads -g on Z, upright reads -g on Y */
+-		mount-matrix = "1", "0", "0",
++		/* measured: the chip reports the gravity vector on all three axes */
++		mount-matrix = "-1", "0", "0",
+ 			       "0", "-1", "0",
+ 			       "0", "0", "-1";
+ 	};

@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 01:25:51 +0200
+Subject: [PATCH 011/131] himax_hx83112f: verbose logging during bring-up
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ drivers/input/touchscreen/himax_hx83112f/himax_platform.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/input/touchscreen/himax_hx83112f/himax_platform.h b/drivers/input/touchscreen/himax_hx83112f/himax_platform.h
+index 3e774bd83..84239c711 100644
+--- a/drivers/input/touchscreen/himax_hx83112f/himax_platform.h
++++ b/drivers/input/touchscreen/himax_hx83112f/himax_platform.h
+@@ -21,7 +21,7 @@
+ extern struct device *g_device;
+ 
+ #define D(x...) dev_dbg(g_device, "[HXTP] " x)
+-#define I(x...) dev_dbg(g_device, "[HXTP] " x)
++#define I(x...) dev_info(g_device, "[HXTP] " x)
+ #define W(x...) dev_warn(g_device, "[HXTP] " x)
+ #define E(x...) dev_err(g_device, "[HXTP] " x)
+ #define DIF(x...) \

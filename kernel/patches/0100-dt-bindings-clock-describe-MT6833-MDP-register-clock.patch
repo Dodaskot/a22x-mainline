@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 6 Oct 2026 14:28:56 +0200
+Subject: [PATCH 100/131] dt-bindings: clock: describe MT6833 MDP register
+ clock ownership
+
+---
+ .../clock/mediatek,mt6833-mdp-clocks.yaml     | 45 +++++++++++++++++++
+ .../soc/mediatek/mediatek,mt6833-lpm.yaml     |  8 +++-
+ 2 files changed, 52 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/clock/mediatek,mt6833-mdp-clocks.yaml
+
+diff --git a/Documentation/devicetree/bindings/clock/mediatek,mt6833-mdp-clocks.yaml b/Documentation/devicetree/bindings/clock/mediatek,mt6833-mdp-clocks.yaml
+new file mode 100644
+index 000000000..0dc75ad90
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/mediatek,mt6833-mdp-clocks.yaml
+@@ -0,0 +1,45 @@
++# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
++%YAML 1.2
++---
++$id: http://devicetree.org/schemas/clock/mediatek,mt6833-mdp-clocks.yaml#
++$schema: http://devicetree.org/meta-schemas/core.yaml#
++
++title: MediaTek MT6833 media data path clocks
++
++maintainers:
++  - Dodaskot <pessdres@gmail.com>
++
++description: |
++  Clock gates of the MT6833 MDP island. Its inherited power state is
++  checked through the SPM syscon before registers are accessed; this
++  interface does not implement an unverified island power-switch sequence.
++
++properties:
++  compatible:
++    const: mediatek,mt6833-mdp-clocks
++
++  reg:
++    maxItems: 1
++
++  '#clock-cells':
++    const: 1
++
++  clocks:
++    maxItems: 1
++
++  clock-names:
++    const: bus
++
++  mediatek,spm:
++    $ref: /schemas/types.yaml#/definitions/phandle
++    description: SPM syscon containing both MDP power status registers
++
++required:
++  - compatible
++  - reg
++  - '#clock-cells'
++  - clocks
++  - clock-names
++  - mediatek,spm
++
++additionalProperties: false
+diff --git a/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt6833-lpm.yaml b/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt6833-lpm.yaml
+index 780a44cf5..0105a822e 100644
+--- a/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt6833-lpm.yaml
++++ b/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt6833-lpm.yaml
+@@ -47,7 +47,7 @@ properties:
+ 
+   clocks:
+     description: Unused board peripheral clocks retained by the bootloader
+-    maxItems: 7
++    maxItems: 13
+ 
+   clock-names:
+     items:
+@@ -58,6 +58,12 @@ properties:
+       - const: boot-spi5
+       - const: boot-spi6
+       - const: boot-spi7
++      - const: boot-mdp-rdma0
++      - const: boot-mdp-rdma1
++      - const: boot-mdp-smi0
++      - const: boot-mdp-wrot0
++      - const: boot-mdp-wrot1
++      - const: boot-mdp-fake0
+ 
+   mediatek,firmware-config:
+     $ref: /schemas/types.yaml#/definitions/phandle

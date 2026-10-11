@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 10 Oct 2026 16:00:00 +0200
+Subject: [PATCH 129/131] arm64: dts: mediatek: test A22x big CPU 900mV ceiling
+ before frequency extension
+
+Qualify a per-device ceiling at unchanged 2 GHz before frequency
+extension. Keep 100 mV SRAM headroom under the 1 V SRAM clamp. This is
+not a generic EEM voltage table.
+
+Signed-off-by: Dodaskot <pessdres@gmail.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts      | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 45390a2af..3c2fd10fe 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -1247,43 +1247,43 @@ opp-1534000000 {
+ 
+ 		opp-1650000000 {
+ 			opp-hz = /bits/ 64 <1650000000>;
+-			opp-microvolt = <906250>;
++			opp-microvolt = <900000>;
+ 			required-opps = <&cci_opp_825>;
+ 		};
+ 
+ 		opp-1720000000 {
+ 			opp-hz = /bits/ 64 <1720000000>;
+-			opp-microvolt = <925000>;
++			opp-microvolt = <900000>;
+ 			required-opps = <&cci_opp_825>;
+ 		};
+ 
+ 		opp-1790000000 {
+ 			opp-hz = /bits/ 64 <1790000000>;
+-			opp-microvolt = <943750>;
++			opp-microvolt = <900000>;
+ 			required-opps = <&cci_opp_900>;
+ 		};
+ 
+ 		opp-1836000000 {
+ 			opp-hz = /bits/ 64 <1836000000>;
+-			opp-microvolt = <950000>;
++			opp-microvolt = <900000>;
+ 			required-opps = <&cci_opp_900>;
+ 		};
+ 
+ 		opp-1906000000 {
+ 			opp-hz = /bits/ 64 <1906000000>;
+-			opp-microvolt = <968750>;
++			opp-microvolt = <900000>;
+ 			required-opps = <&cci_opp_975>;
+ 		};
+ 
+ 		opp-1953000000 {
+ 			opp-hz = /bits/ 64 <1953000000>;
+-			opp-microvolt = <981250>;
++			opp-microvolt = <900000>;
+ 			required-opps = <&cci_opp_975>;
+ 		};
+ 
+ 		opp-2000000000 {
+ 			opp-hz = /bits/ 64 <2000000000>;
+-			opp-microvolt = <993750>;
++			opp-microvolt = <900000>;
+ 			required-opps = <&cci_opp_975>;
+ 		};
+ 	};

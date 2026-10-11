@@ -1,0 +1,164 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 10:43:23 +0200
+Subject: [PATCH 019/131] a22x: battery level from MT6360 ADC (VBAT) and the
+ stock OCV profile
+
+- iio: mt6360-adc: report scales in IIO units (mV, mA, milli degC)
+- power: generic-adc-battery: CAPACITY from monitored-battery OCV table,
+  CHARGE_FULL_DESIGN
+- dts: simple-battery with OCV curve resampled from the Samsung MTK GM3.0
+  profile (25 degC), adc-battery on MT6360 VBAT/IBAT
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 42 +++++++++++++++++++
+ drivers/iio/adc/mt6360-adc.c                  | 17 +++++---
+ drivers/power/supply/generic-adc-battery.c    | 24 +++++++++++
+ 3 files changed, 77 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index be2ece14b..140602447 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -284,3 +284,45 @@ mt6360_adc: adc {
+ 		};
+ 	};
+ };
++
++/ {
++	/*
++	 * Samsung EB-BA226ABY (5000 mAh). OCV curve resampled from the stock
++	 * MTK GM3.0 profile (bat_gm30, battery0_profile_t1, 25 degC).
++	 */
++	battery: battery {
++		compatible = "simple-battery";
++		charge-full-design-microamp-hours = <5000000>;
++		voltage-min-design-microvolt = <3400000>;
++		voltage-max-design-microvolt = <4400000>;
++		ocv-capacity-celsius = <25>;
++		ocv-capacity-table-0 = <4357000 100>,
++						<4280721 95>,
++						<4221383 90>,
++						<4165774 85>,
++						<4110504 80>,
++						<4070075 75>,
++						<3996095 70>,
++						<3963975 65>,
++						<3931597 60>,
++						<3880589 55>,
++						<3842700 50>,
++						<3819808 45>,
++						<3802441 40>,
++						<3787965 35>,
++						<3776921 30>,
++						<3762025 25>,
++						<3743598 20>,
++						<3716495 15>,
++						<3691341 10>,
++						<3650438 5>,
++						<3400000 0>;
++	};
++
++	adc-battery {
++		compatible = "adc-battery";
++		io-channels = <&mt6360_adc 4>, <&mt6360_adc 6>;
++		io-channel-names = "voltage", "current";
++		monitored-battery = <&battery>;
++	};
++};
+diff --git a/drivers/iio/adc/mt6360-adc.c b/drivers/iio/adc/mt6360-adc.c
+index e59b13e88..1b77bf536 100644
+--- a/drivers/iio/adc/mt6360-adc.c
++++ b/drivers/iio/adc/mt6360-adc.c
+@@ -152,11 +152,14 @@ static int mt6360_adc_read_scale(struct mt6360_adc_data *mad, int channel, int *
+ 	case MT6360_CHAN_CHG_VDDP:
+ 	case MT6360_CHAN_VREF_TS:
+ 	case MT6360_CHAN_TS:
++		/* 1.25 mV per LSB (IIO voltages are in mV) */
+ 		*val = 1250;
+-		return IIO_VAL_INT;
++		*val2 = 1000;
++		return IIO_VAL_FRACTIONAL;
+ 	case MT6360_CHAN_VBUSDIV5:
+ 		*val = 6250;
+-		return IIO_VAL_INT;
++		*val2 = 1000;
++		return IIO_VAL_FRACTIONAL;
+ 	case MT6360_CHAN_VBUSDIV2:
+ 	case MT6360_CHAN_IBUS:
+ 	case MT6360_CHAN_IBAT:
+@@ -174,11 +177,13 @@ static int mt6360_adc_read_scale(struct mt6360_adc_data *mad, int channel, int *
+ 				*val = 1900;
+ 		}
+ 
+-		return IIO_VAL_INT;
+-	case MT6360_CHAN_TEMP_JC:
+-		*val = 105;
+-		*val2 = 100;
++		/* uV / uA per LSB -> mV / mA */
++		*val2 = 1000;
+ 		return IIO_VAL_FRACTIONAL;
++	case MT6360_CHAN_TEMP_JC:
++		/* 1.05 degC per LSB, IIO temperatures are in milli degC */
++		*val = 1050;
++		return IIO_VAL_INT;
+ 	}
+ 
+ 	return -EINVAL;
+diff --git a/drivers/power/supply/generic-adc-battery.c b/drivers/power/supply/generic-adc-battery.c
+index f5f2566b3..ba139649b 100644
+--- a/drivers/power/supply/generic-adc-battery.c
++++ b/drivers/power/supply/generic-adc-battery.c
+@@ -48,6 +48,7 @@ struct gab {
+ 	struct delayed_work bat_work;
+ 	int status;
+ 	struct gpio_desc *charge_finished;
++	struct power_supply_battery_info *info;
+ };
+ 
+ static struct gab *to_generic_bat(struct power_supply *psy)
+@@ -64,6 +65,8 @@ static void gab_ext_power_changed(struct power_supply *psy)
+ 
+ static const enum power_supply_property gab_props[] = {
+ 	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+ };
+ 
+ /*
+@@ -107,6 +110,23 @@ static int gab_get_property(struct power_supply *psy,
+ 	case POWER_SUPPLY_PROP_STATUS:
+ 		val->intval = adc_bat->status;
+ 		return 0;
++	case POWER_SUPPLY_PROP_CAPACITY: {
++		int uv, ret;
++
++		/* Estimate from the monitored battery's OCV table, if any. */
++		if (!adc_bat->info || !adc_bat->channel[GAB_VOLTAGE])
++			return -ENODATA;
++		ret = gab_read_channel(adc_bat, GAB_VOLTAGE, &uv);
++		if (ret < 0)
++			return ret;
++		val->intval = power_supply_batinfo_ocv2cap(adc_bat->info, uv, 25);
++		return val->intval < 0 ? -ENODATA : 0;
++	}
++	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
++		if (!adc_bat->info || adc_bat->info->charge_full_design_uah < 0)
++			return -ENODATA;
++		val->intval = adc_bat->info->charge_full_design_uah;
++		return 0;
+ 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+ 		return gab_read_channel(adc_bat, GAB_VOLTAGE, &val->intval);
+ 	case POWER_SUPPLY_PROP_CURRENT_NOW:
+@@ -233,6 +253,10 @@ static int gab_probe(struct platform_device *pdev)
+ 	if (IS_ERR(adc_bat->psy))
+ 		return dev_err_probe(&pdev->dev, PTR_ERR(adc_bat->psy), "Failed to register power-supply device\n");
+ 
++	/* Optional: OCV table / design capacity from "monitored-battery". */
++	if (power_supply_get_battery_info(adc_bat->psy, &adc_bat->info))
++		adc_bat->info = NULL;
++
+ 	ret = devm_delayed_work_autocancel(&pdev->dev, &adc_bat->bat_work, gab_work);
+ 	if (ret)
+ 		return dev_err_probe(&pdev->dev, ret, "Failed to register delayed work\n");

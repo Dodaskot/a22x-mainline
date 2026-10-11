@@ -1,0 +1,303 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 10 Oct 2026 00:28:37 +0200
+Subject: [PATCH 124/131] a22x: s2idle IPI race, real VEMC for eMMC, ABOV SAR
+ stop
+
+cpuidle-psci: skip the vendor s2idle PSCI entry when a reschedule is
+already pending. s2idle_enter() kicks all CPUs with
+wake_up_all_idle_cpus(); a CPU already heading into firmware then got an
+immediate CPU_SUSPEND return (SGI0 pending, observed via ICC_HPPIR1_EL1)
+that was reported as a failed entry.
+
+dts: supply mmc0 from the MT6359P VEMC LDO (ldo_vemc_1, 3.0 V) instead
+of a fixed always-on stand-in, so the MMC core switches the eMMC VCC off
+in suspend as the stock msdc path does. Enable I2C9 with the ABOV SAR
+sensor.
+
+misc: minimal ABOV SAR driver that keeps the sensor stopped (CTRL_MODE
+0x07 = 0x02, as the stock driver does when grip sensing is off), with a
+sysfs mode attribute for measurements.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts |  56 ++++++--
+ drivers/cpuidle/cpuidle-psci.c                |   9 ++
+ drivers/misc/Kconfig                          |   7 +
+ drivers/misc/Makefile                         |   1 +
+ drivers/misc/a22x-abov-sar.c                  | 124 ++++++++++++++++++
+ 5 files changed, 186 insertions(+), 11 deletions(-)
+ create mode 100644 drivers/misc/a22x-abov-sar.c
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 54927e450..f5d32fd5e 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -215,6 +215,13 @@ pins-bus {
+ 			};
+ 		};
+ 
++		i2c9_pins: i2c9-pins {
++			pins-bus {
++				pinmux = <PINMUX_GPIO141__FUNC_SCL9>,
++					 <PINMUX_GPIO142__FUNC_SDA9>;
++			};
++		};
++
+ 		i2c5_pins: i2c5-pins {
+ 			pins-bus {
+ 				pinmux = <PINMUX_GPIO107__FUNC_SCL5>,
+@@ -297,16 +304,6 @@ pins-bus {
+ 		};
+ 	};
+ 
+-	/* VEMC, left enabled by the bootloader for the boot eMMC. */
+-	reg_vemc: regulator-vemc {
+-		compatible = "regulator-fixed";
+-		regulator-name = "vemc";
+-		regulator-min-microvolt = <3000000>;
+-		regulator-max-microvolt = <3000000>;
+-		regulator-always-on;
+-		regulator-boot-on;
+-	};
+-
+ 	mmc0: mmc@11230000 {
+ 		compatible = "mediatek,mt8183-mmc";
+ 		reg = <0 0x11230000 0 0x10000>,
+@@ -320,7 +317,8 @@ mmc0: mmc@11230000 {
+ 		max-frequency = <200000000>;
+ 		cap-mmc-highspeed;
+ 		mmc-hs200-1_8v;
+-		vmmc-supply = <&reg_vemc>;
++		/* MMC core powers the card off in suspend like the stock msdc path */
++		vmmc-supply = <&mt6359_vemc_reg>;
+ 		pinctrl-names = "default", "state_uhs";
+ 		pinctrl-0 = <&mmc0_pins>;
+ 		pinctrl-1 = <&mmc0_pins>;
+@@ -486,6 +484,34 @@ &imp_iic_wrap_ws {
+ 	status = "okay";
+ };
+ 
++&imp_iic_wrap_s {
++	status = "okay";
++};
++
++/ {
++	/* SAR/grip sensor bus; the sensor (VIO28) scans from power-on otherwise */
++	i2c9_ml: i2c@11d01000 {
++		compatible = "mediatek,mt6833-i2c", "mediatek,mt8192-i2c";
++		reg = <0 0x11d01000 0 0x1000>,
++		      <0 0x10217900 0 0x180>;
++		interrupts = <0 121 4>;
++		clocks = <&imp_iic_wrap_s CLK_IMPS_AP_CLOCK_RO_I2C9>,
++			 <&infracfg_ao CLK_IFRAO_AP_DMA>;
++		clock-names = "main", "dma";
++		clock-div = <1>;
++		clock-frequency = <400000>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&i2c9_pins>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		sar-sensor@20 {
++			compatible = "a22x,abov-sar";
++			reg = <0x20>;
++		};
++	};
++};
++
+ / {
+ 	/*
+ 	 * I2C5 with the MT6360 sub-PMIC (charger, ADC, LDOs, Type-C). A separate
+@@ -697,6 +723,14 @@ mt6359codec {
+ 			/* Explicit constraints for the rails managed by Linux. */
+ 			regulators {
+ 				/* Match the MT6359 codec's DAPM supply name. */
++				/* eMMC VCC; MT6359P table, voltage selector follows VM_MODE */
++				mt6359_vemc_reg: ldo_vemc_1 {
++					regulator-name = "vemc";
++					regulator-min-microvolt = <3000000>;
++					regulator-max-microvolt = <3000000>;
++					regulator-boot-on;
++				};
++
+ 				ldo_vaud18 {
+ 					regulator-name = "vaud18";
+ 					regulator-min-microvolt = <1800000>;
+diff --git a/drivers/cpuidle/cpuidle-psci.c b/drivers/cpuidle/cpuidle-psci.c
+index 5d0e98e9e..63b369e9d 100644
+--- a/drivers/cpuidle/cpuidle-psci.c
++++ b/drivers/cpuidle/cpuidle-psci.c
+@@ -242,6 +242,15 @@ static int psci_mt6833_enter_s2idle(struct cpuidle_device *dev,
+ 	u32 state = mt6833_lpm_s2idle_active() ?
+ 		MT6833_LPM_SUSPEND_STATE : states[idx];
+ 
++	/*
++	 * s2idle_enter() kicks every CPU with wake_up_all_idle_cpus(). A CPU that
++	 * is already on its way into firmware then gets an immediate CPU_SUSPEND
++	 * return (reschedule SGI pending) that is reported as an error. Let the
++	 * idle loop handle the pending reschedule and come back instead.
++	 */
++	if (state == MT6833_LPM_SUSPEND_STATE && need_resched())
++		return idx;
++
+ 	/* Normal runtime entry remains the existing PSCI callback. Only this
+ 	 * frozen-tick s2idle path can select the guarded vendor system state.
+ 	 */
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 390256ed9..c3335abda 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -634,6 +634,13 @@ config MCHP_LAN966X_PCI
+ 	    - lan966x-miim (MDIO_MSCC_MIIM)
+ 	    - lan966x-switch (LAN966X_SWITCH)
+ 
++config A22X_ABOV_SAR
++	tristate "Samsung Galaxy A22 5G ABOV SAR sensor stop driver"
++	depends on I2C && OF
++	help
++	  Keeps the ABOV capacitive SAR/grip sensor of the Samsung Galaxy
++	  A22 5G stopped, as the stock driver does when grip sensing is off.
++
+ source "drivers/misc/c2port/Kconfig"
+ source "drivers/misc/eeprom/Kconfig"
+ source "drivers/misc/cb710/Kconfig"
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index fed47c767..b5f4e5297 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -74,3 +74,4 @@ obj-$(CONFIG_MCHP_LAN966X_PCI)	+= lan966x-pci.o
+ obj-y				+= keba/
+ obj-y				+= amd-sbi/
+ obj-$(CONFIG_MISC_RP1)		+= rp1/
++obj-$(CONFIG_A22X_ABOV_SAR)	+= a22x-abov-sar.o
+diff --git a/drivers/misc/a22x-abov-sar.c b/drivers/misc/a22x-abov-sar.c
+new file mode 100644
+index 000000000..da334ad09
+--- /dev/null
++++ b/drivers/misc/a22x-abov-sar.c
+@@ -0,0 +1,124 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * ABOV capacitive SAR/grip sensor on the Samsung Galaxy A22 5G (i2c9, 0x20).
++ *
++ * Without a driver the chip runs its power-on scan for ever. The stock
++ * driver stops it (CTRL_MODE 0x07 = 0x02) unless userspace enables the grip
++ * channels, and puts it into sleep or stop for system suspend. This driver
++ * only keeps the chip stopped; "mode" in sysfs allows ACTIVE/SLEEP/STOP for
++ * measurements. No sensing is reported.
++ */
++#include <linux/i2c.h>
++#include <linux/module.h>
++#include <linux/mod_devicetable.h>
++#include <linux/pm.h>
++
++#define ABOV_CTRL_MODE		0x07
++#define ABOV_MODE_ACTIVE	0x00
++#define ABOV_MODE_SLEEP		0x01
++#define ABOV_MODE_STOP		0x02
++
++struct abov_sar {
++	struct i2c_client *client;
++	u8 mode;
++};
++
++static int abov_sar_set_mode(struct abov_sar *sar, u8 mode)
++{
++	int ret = i2c_smbus_write_byte_data(sar->client, ABOV_CTRL_MODE, mode);
++
++	if (ret)
++		return ret;
++	ret = i2c_smbus_read_byte_data(sar->client, ABOV_CTRL_MODE);
++	if (ret < 0)
++		return ret;
++	return ret == mode ? 0 : -EIO;
++}
++
++static ssize_t mode_show(struct device *dev, struct device_attribute *attr, char *buf)
++{
++	struct abov_sar *sar = dev_get_drvdata(dev);
++	int ret = i2c_smbus_read_byte_data(sar->client, ABOV_CTRL_MODE);
++
++	if (ret < 0)
++		return ret;
++	return sysfs_emit(buf, "%d\n", ret);
++}
++
++static ssize_t mode_store(struct device *dev, struct device_attribute *attr,
++			  const char *buf, size_t count)
++{
++	struct abov_sar *sar = dev_get_drvdata(dev);
++	u8 mode;
++	int ret;
++
++	ret = kstrtou8(buf, 0, &mode);
++	if (ret)
++		return ret;
++	if (mode > ABOV_MODE_STOP)
++		return -EINVAL;
++	ret = abov_sar_set_mode(sar, mode);
++	if (ret)
++		return ret;
++	sar->mode = mode;
++	return count;
++}
++static DEVICE_ATTR_RW(mode);
++
++static struct attribute *abov_sar_attrs[] = {
++	&dev_attr_mode.attr,
++	NULL
++};
++ATTRIBUTE_GROUPS(abov_sar);
++
++static int abov_sar_probe(struct i2c_client *client)
++{
++	struct abov_sar *sar;
++	int ret;
++
++	sar = devm_kzalloc(&client->dev, sizeof(*sar), GFP_KERNEL);
++	if (!sar)
++		return -ENOMEM;
++	sar->client = client;
++	i2c_set_clientdata(client, sar);
++
++	ret = i2c_smbus_read_byte_data(client, ABOV_CTRL_MODE);
++	if (ret < 0)
++		return dev_err_probe(&client->dev, ret, "no response\n");
++	dev_info(&client->dev, "power-on mode %#x, stopping\n", ret);
++
++	sar->mode = ABOV_MODE_STOP;
++	ret = abov_sar_set_mode(sar, sar->mode);
++	if (ret)
++		return dev_err_probe(&client->dev, ret, "cannot stop sensor\n");
++	return 0;
++}
++
++static int abov_sar_resume(struct device *dev)
++{
++	struct abov_sar *sar = dev_get_drvdata(dev);
++
++	/* The supply stays on; re-assert the selected mode in case it changed. */
++	return abov_sar_set_mode(sar, sar->mode);
++}
++static DEFINE_SIMPLE_DEV_PM_OPS(abov_sar_pm_ops, NULL, abov_sar_resume);
++
++static const struct of_device_id abov_sar_of_match[] = {
++	{ .compatible = "a22x,abov-sar" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, abov_sar_of_match);
++
++static struct i2c_driver abov_sar_driver = {
++	.driver = {
++		.name = "a22x-abov-sar",
++		.of_match_table = abov_sar_of_match,
++		.dev_groups = abov_sar_groups,
++		.pm = pm_sleep_ptr(&abov_sar_pm_ops),
++	},
++	.probe = abov_sar_probe,
++};
++module_i2c_driver(abov_sar_driver);
++
++MODULE_DESCRIPTION("Samsung A22 5G ABOV SAR sensor stop driver");
++MODULE_LICENSE("GPL");

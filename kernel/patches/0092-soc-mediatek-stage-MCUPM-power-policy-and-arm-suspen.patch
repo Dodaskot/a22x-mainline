@@ -1,0 +1,140 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 6 Oct 2026 08:08:27 +0200
+Subject: [PATCH 092/131] soc: mediatek: stage MCUPM power policy and arm
+ suspend test failsafe
+
+---
+ drivers/soc/mediatek/mtk-mt6833-lpm.c | 63 ++++++++++++++++++++++++---
+ drivers/watchdog/mtk_wdt.c            | 16 +++++++
+ 2 files changed, 73 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/soc/mediatek/mtk-mt6833-lpm.c b/drivers/soc/mediatek/mtk-mt6833-lpm.c
+index 312f89922..f092f3be6 100644
+--- a/drivers/soc/mediatek/mtk-mt6833-lpm.c
++++ b/drivers/soc/mediatek/mtk-mt6833-lpm.c
+@@ -74,6 +74,7 @@ struct mt6833_lpm {
+ 	unsigned int suspend_entries;
+ 	int suspend_result;
+ 	u32 wake_irq_count;
++	u32 power_policy;
+ 	u32 last_ack;
+ 	unsigned long mcusys_status;
+ 	unsigned long spm_status;
+@@ -264,6 +265,57 @@ static ssize_t status_show(struct device *dev, struct device_attribute *attr,
+ }
+ static DEVICE_ATTR_RO(status);
+ 
++static void mt6833_power_policy_apply(struct mt6833_lpm *lpm)
++{
++	/* Runtime CPUs are held in WFI. Disable controls before changing modes. */
++	writel(0, lpm->mbox + MCUPM_PWR_CTRL * sizeof(u32));
++	/* Complete disabling controls before publishing replacement modes. */
++	wmb();
++	writel(lpm->power_policy & BIT(1) ? 2 : 0,
++	       lpm->mbox + MCUPM_BUCK_MODE * sizeof(u32));
++	writel(lpm->power_policy & BIT(2) ? 2 : 0,
++	       lpm->mbox + MCUPM_PLL_MODE * sizeof(u32));
++	/* Publish both mode fields before enabling their firmware controls. */
++	wmb();
++	writel(lpm->power_policy, lpm->mbox + MCUPM_PWR_CTRL * sizeof(u32));
++	/* Complete policy publication before AP_READY or further PM operations. */
++	wmb();
++}
++
++static ssize_t power_policy_show(struct device *dev,
++				 struct device_attribute *attr, char *buf)
++{
++	struct mt6833_lpm *lpm = dev_get_drvdata(dev);
++
++	guard(mutex)(&lpm->lock);
++	return sysfs_emit(buf, "0x%x\n", lpm->power_policy);
++}
++
++static ssize_t power_policy_store(struct device *dev,
++				  struct device_attribute *attr,
++				  const char *buf, size_t count)
++{
++	struct mt6833_lpm *lpm = dev_get_drvdata(dev);
++	u32 policy;
++	int ret;
++
++	ret = kstrtou32(buf, 0, &policy);
++	/* Disabled, MCUSYS only, MCUSYS/buck/PLL, or stock with CM_MGR. */
++	if (ret || (policy != 0 && policy != 1 && policy != 7 && policy != 15))
++		return -EINVAL;
++	guard(mutex)(&lpm->lock);
++	if (lpm->deep_enabled)
++		return -EBUSY;
++	if (lpm->ready && (!lpm->idle_blocked ||
++			   mt6833_mbox_read(lpm, MCUPM_TASK_STATE) != 3))
++		return -EBUSY;
++	lpm->power_policy = policy;
++	if (lpm->ready)
++		mt6833_power_policy_apply(lpm);
++	return count;
++}
++static DEVICE_ATTR_RW(power_policy);
++
+ /* The caller holds lock. Only the platform channel's bit/data are touched. */
+ static int mt6833_channel_call(struct mt6833_lpm *lpm, void __iomem *mbox,
+ 			      u32 bit, const u32 *data, unsigned int words)
+@@ -393,12 +445,10 @@ static ssize_t prepare_store(struct device *dev, struct device_attribute *attr,
+ 		cpu_latency_qos_add_request(&lpm->latency, 0);
+ 		lpm->idle_blocked = true;
+ 	}
+-	writel(2, lpm->mbox + MCUPM_BUCK_MODE * sizeof(u32));
+-	writel(2, lpm->mbox + MCUPM_PLL_MODE * sizeof(u32));
+-	/* a22x_defconfig also enables CM_MGR, so its stock control mask is 15. */
+-	writel(15, lpm->mbox + MCUPM_PWR_CTRL * sizeof(u32));
+-	/* Complete policy writes before firmware observes AP_READY. */
+-	wmb();
++	/* Readiness must not implicitly enable unvalidated buck/PLL control.
++	 * Stock mask 15 is available separately for explicitly armed tests.
++	 */
++	mt6833_power_policy_apply(lpm);
+ 	writel(ready_value, lpm->mbox + MCUPM_AP_READY * sizeof(u32));
+ 	ret = readl_poll_timeout(lpm->mbox + MCUPM_TASK_STATE * sizeof(u32), state,
+ 				state == 2 || state == 3, 1000, 2000000);
+@@ -752,6 +802,7 @@ static struct attribute *mt6833_lpm_attrs[] = {
+ 	&dev_attr_mailbox.attr,
+ 	&dev_attr_resources.attr,
+ 	&dev_attr_fixed_voltage.attr,
++	&dev_attr_power_policy.attr,
+ 	&dev_attr_deep_enabled.attr,
+ 	&dev_attr_counters.attr,
+ 	NULL,
+diff --git a/drivers/watchdog/mtk_wdt.c b/drivers/watchdog/mtk_wdt.c
+index 1fe4f01d3..2a32b2d32 100644
+--- a/drivers/watchdog/mtk_wdt.c
++++ b/drivers/watchdog/mtk_wdt.c
+@@ -68,6 +68,11 @@
+ 
+ static bool nowayout = WATCHDOG_NOWAYOUT;
+ static unsigned int timeout;
++/* Explicitly armed for short suspend bring-up tests; off for normal sleep. */
++static bool suspend_test_failsafe;
++module_param(suspend_test_failsafe, bool, 0600);
++MODULE_PARM_DESC(suspend_test_failsafe,
++		"Keep an already running watchdog armed during short suspend tests");
+ 
+ struct mtk_wdt_dev {
+ 	struct watchdog_device wdt_dev;
+@@ -476,6 +481,17 @@ static int mtk_wdt_suspend(struct device *dev)
+ 
+ 	if (watchdog_active(&mtk_wdt->wdt_dev) ||
+ 	    watchdog_hw_running(&mtk_wdt->wdt_dev)) {
++		if (READ_ONCE(suspend_test_failsafe)) {
++			/* The core still pauses its worker. A hung test therefore
++			 * expires the hardware timer rather than needing a key reset.
++			 */
++			mtk_wdt_start(&mtk_wdt->wdt_dev);
++			mtk_wdt_ping(&mtk_wdt->wdt_dev);
++			dev_info(dev, "suspend test watchdog armed: %u seconds, mode=%#x\n",
++				 mtk_wdt->wdt_dev.timeout,
++				 readl(mtk_wdt->wdt_base + WDT_MODE));
++			return 0;
++		}
+ 		mtk_wdt_stop(&mtk_wdt->wdt_dev);
+ 		dev_dbg(dev, "watchdog stopped for system suspend: mode=%#x\n",
+ 			readl(mtk_wdt->wdt_base + WDT_MODE));

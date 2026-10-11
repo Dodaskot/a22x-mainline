@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 00:23:34 +0200
+Subject: [PATCH 075/131] power: supply: mt6359-fuel-gauge: poll on a freezable
+ workqueue
+
+The 30 s poll ran during s2idle, waking the system and reading the
+(suspended) VBAT ADC (-ESHUTDOWN). The hardware counter keeps counting
+while frozen, so nothing is lost.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ drivers/power/supply/mt6359-fuel-gauge.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/power/supply/mt6359-fuel-gauge.c b/drivers/power/supply/mt6359-fuel-gauge.c
+index 92830fb36..f1030297f 100644
+--- a/drivers/power/supply/mt6359-fuel-gauge.c
++++ b/drivers/power/supply/mt6359-fuel-gauge.c
+@@ -221,7 +221,8 @@ static void mt6359_fg_work(struct work_struct *work)
+ 	}
+ 
+ 	power_supply_changed(fg->psy);
+-	schedule_delayed_work(&fg->work, FG_POLL_INTERVAL);
++	/* freezable: no wakeups (and no ADC reads) while the system sleeps */
++	queue_delayed_work(system_freezable_wq, &fg->work, FG_POLL_INTERVAL);
+ }
+ 
+ static int mt6359_fg_get_property(struct power_supply *psy,
+@@ -281,7 +282,7 @@ static void mt6359_fg_external_power_changed(struct power_supply *psy)
+ {
+ 	struct mt6359_fg *fg = power_supply_get_drvdata(psy);
+ 
+-	mod_delayed_work(system_wq, &fg->work, HZ);
++	mod_delayed_work(system_freezable_wq, &fg->work, HZ);
+ }
+ 
+ static const enum power_supply_property mt6359_fg_props[] = {
+@@ -387,7 +388,7 @@ static int mt6359_fg_probe(struct platform_device *pdev)
+ 	ret = devm_add_action_or_reset(dev, mt6359_fg_cancel_work, &fg->work);
+ 	if (ret)
+ 		return ret;
+-	schedule_delayed_work(&fg->work, 0);
++	queue_delayed_work(system_freezable_wq, &fg->work, 0);
+ 	return 0;
+ }
+ 

@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 18:45:05 +0200
+Subject: [PATCH 039/131] a22x: MTKAIF clock/sync pins belong to the MOSI pin
+ state; 3rd DAC clocks
+
+The MT8192 AFE GPIO code has no separate clk_mosi state, so AUD_CLK_MOSI
+and AUD_SYNC_MOSI were never muxed.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 54 ++++++++-----------
+ 1 file changed, 22 insertions(+), 32 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 50958f3d0..db0f470dd 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -99,28 +99,12 @@ pins-reset {
+ 			};
+ 		};
+ 
+-		/* AFE <-> MT6359 (MTKAIF) and speaker amplifier I2S, vendor states */
+-		aud_clk_mosi_off_ml: aud-clk-mosi-off {
+-			pins-off {
+-				pinmux = <PINMUX_GPIO152__FUNC_GPIO152>,
+-					 <PINMUX_GPIO153__FUNC_GPIO153>;
+-				input-enable;
+-				bias-pull-down;
+-			};
+-		};
+-
+-		aud_clk_mosi_on_ml: aud-clk-mosi-on {
+-			pins-on {
+-				pinmux = <PINMUX_GPIO152__FUNC_AUD_CLK_MOSI>,
+-					 <PINMUX_GPIO153__FUNC_AUD_SYNC_MOSI>;
+-				input-schmitt-enable;
+-				bias-disable;
+-			};
+-		};
+-
++		/* AFE <-> MT6359 (MTKAIF, clock/sync in the MOSI state as on MT8192) and speaker I2S */
+ 		aud_dat_mosi_off_ml: aud-dat-mosi-off {
+ 			pins-off {
+-				pinmux = <PINMUX_GPIO154__FUNC_GPIO154>,
++				pinmux = <PINMUX_GPIO152__FUNC_GPIO152>,
++					 <PINMUX_GPIO153__FUNC_GPIO153>,
++					 <PINMUX_GPIO154__FUNC_GPIO154>,
+ 					 <PINMUX_GPIO155__FUNC_GPIO155>;
+ 				input-enable;
+ 				bias-pull-down;
+@@ -129,7 +113,9 @@ pins-off {
+ 
+ 		aud_dat_mosi_on_ml: aud-dat-mosi-on {
+ 			pins-on {
+-				pinmux = <PINMUX_GPIO154__FUNC_AUD_DAT_MOSI0>,
++				pinmux = <PINMUX_GPIO152__FUNC_AUD_CLK_MOSI>,
++					 <PINMUX_GPIO153__FUNC_AUD_SYNC_MOSI>,
++					 <PINMUX_GPIO154__FUNC_AUD_DAT_MOSI0>,
+ 					 <PINMUX_GPIO155__FUNC_AUD_DAT_MOSI1>;
+ 				input-schmitt-enable;
+ 				bias-disable;
+@@ -1274,6 +1260,10 @@ afe_ml: audio-controller {
+ 				 <&audsys_ml CLK_AUDSYS_ADC_HIRES>,
+ 				 <&audsys_ml CLK_AUDSYS_ADC_HIRES_TML>,
+ 				 <&audsys_ml CLK_AUDSYS_ADDA6_ADC_HIRES>,
++				 <&audsys_ml CLK_AUDSYS_3RD_DAC>,
++				 <&audsys_ml CLK_AUDSYS_3RD_DAC_PREDIS>,
++				 <&audsys_ml CLK_AUDSYS_3RD_DAC_TML>,
++				 <&audsys_ml CLK_AUDSYS_3RD_DAC_HIRES>,
+ 				 <&infracfg_ao CLK_IFRAO_AUDIO>,
+ 				 <&infracfg_ao CLK_IFRAO_AUDIO_26M_BCLK>,
+ 				 <&topckgen CLK_TOP_AUDIO_SEL>,
+@@ -1316,6 +1306,8 @@ afe_ml: audio-controller {
+ 				      "aud_tml_clk", "aud_nle",
+ 				      "aud_dac_hires_clk", "aud_adc_hires_clk",
+ 				      "aud_adc_hires_tml", "aud_adda6_adc_hires_clk",
++				      "aud_3rd_dac_clk", "aud_3rd_dac_predis_clk",
++				      "aud_3rd_dac_tml", "aud_3rd_dac_hires_clk",
+ 				      "aud_infra_clk", "aud_infra_26m_clk",
+ 				      "top_mux_audio", "top_mux_audio_int",
+ 				      "top_mainpll_d4_d4", "top_mux_aud_1",
+@@ -1347,16 +1339,14 @@ sound_ml: sound {
+ 		compatible = "mediatek,mt6833-mt6359-sound";
+ 		status = "okay";
+ 		mediatek,platform = <&afe_ml>;
+-		pinctrl-names = "aud_clk_mosi_off", "aud_clk_mosi_on", "aud_dat_mosi_off", "aud_dat_mosi_on", "aud_dat_miso_off", "aud_dat_miso_on", "aud_gpio_i2s3_off", "aud_gpio_i2s3_on", "aud_gpio_i2s0_off", "aud_gpio_i2s0_on";
+-			pinctrl-0 = <&aud_clk_mosi_off_ml>;
+-			pinctrl-1 = <&aud_clk_mosi_on_ml>;
+-			pinctrl-2 = <&aud_dat_mosi_off_ml>;
+-			pinctrl-3 = <&aud_dat_mosi_on_ml>;
+-			pinctrl-4 = <&aud_dat_miso_off_ml>;
+-			pinctrl-5 = <&aud_dat_miso_on_ml>;
+-			pinctrl-6 = <&aud_gpio_i2s3_off_ml>;
+-			pinctrl-7 = <&aud_gpio_i2s3_on_ml>;
+-			pinctrl-8 = <&aud_gpio_i2s0_off_ml>;
+-			pinctrl-9 = <&aud_gpio_i2s0_on_ml>;
++		pinctrl-names = "aud_dat_mosi_off", "aud_dat_mosi_on", "aud_dat_miso_off", "aud_dat_miso_on", "aud_gpio_i2s3_off", "aud_gpio_i2s3_on", "aud_gpio_i2s0_off", "aud_gpio_i2s0_on";
++		pinctrl-0 = <&aud_dat_mosi_off_ml>;
++		pinctrl-1 = <&aud_dat_mosi_on_ml>;
++		pinctrl-2 = <&aud_dat_miso_off_ml>;
++		pinctrl-3 = <&aud_dat_miso_on_ml>;
++		pinctrl-4 = <&aud_gpio_i2s3_off_ml>;
++		pinctrl-5 = <&aud_gpio_i2s3_on_ml>;
++		pinctrl-6 = <&aud_gpio_i2s0_off_ml>;
++		pinctrl-7 = <&aud_gpio_i2s0_on_ml>;
+ 	};
+ };

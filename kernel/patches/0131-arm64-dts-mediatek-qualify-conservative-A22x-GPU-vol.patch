@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 10 Oct 2026 16:00:00 +0200
+Subject: [PATCH 131/131] arm64: dts: mediatek: qualify conservative A22x GPU
+ voltages and settling time
+
+Keep the validated 955 MHz ceiling, its 781.25 mV voltage and 850 mV
+SRAM. Restore lower OPPs (390..955 MHz) at 750..781.25 mV with a 40 us
+regulator settling time covering the vendor 10 mV/us slew. These are
+not the EEM-calibrated Android voltages.
+
+Signed-off-by: Dodaskot <pessdres@gmail.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 32 +++++++++----------
+ 1 file changed, 15 insertions(+), 17 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index d81fecc22..29d83f771 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -742,8 +742,8 @@ mt6359_vproc1_buck_reg: buck_vproc1 {
+ 					regulator-name = "vgpu";
+ 					regulator-min-microvolt = <625000>;
+ 					regulator-max-microvolt = <781250>;
+-					/* MT6359 driver has no slew info; vendor waits ~5 mV/us */
+-					regulator-ramp-delay = <5000>;
++					/* Cover the vendor 10 mV/us slew plus 9 us settling. */
++					regulator-settling-time-us = <40>;
+ 					regulator-enable-ramp-delay = <200>;
+ 				};
+ 
+@@ -964,14 +964,12 @@ gpu: gpu@13000000 {
+ 	};
+ 
+ 	/*
+-	 * Frequencies from the Samsung/MediaTek MT6833 GPU table. The vendor
+-	 * voltages (0.625 V and up) rely on EEMG calibration, which is not done
+-	 * here: with them the GPU randomly hung or read garbage (job timeouts,
+-	 * SLAVE/translation faults, about every second boot). A fixed 0.78125 V
+-	 * (the 955 MHz voltage) with VSRAM 0.85 V was clean on every test boot.
+-	 * The vendor table lists 1000/1068 MHz, but MFGPLL_CON1 ignores any
+-	 * PCW above the 955 MHz setting on this chip (Dimensity 700 is rated
+-	 * for 950 MHz), so the table stops there.
++	 * Conservative A22x GPU DVFS qualification: retain the validated
++	 * 955 MHz ceiling and 0.85 V SRAM. Keep lower OPPs at or above
++	 * 0.75 V; these are not the EEM-calibrated Android voltages.
++	 * Earlier lower GPU and SRAM values changed together and faulted.
++	 * A 40 us regulator settling time covers the vendor fixed delay
++	 * that a slew-rate-only constraint misses on small transitions.
+ 	 */
+ 	gpu_opp_table: opp-table-gpu {
+ 		compatible = "operating-points-v2";
+@@ -979,31 +977,31 @@ gpu_opp_table: opp-table-gpu {
+ 
+ 		opp-390000000 {
+ 			opp-hz = /bits/ 64 <390000000>;
+-			opp-microvolt = <781250>;
++			opp-microvolt = <750000>;
+ 		};
+ 		opp-467000000 {
+ 			opp-hz = /bits/ 64 <467000000>;
+-			opp-microvolt = <781250>;
++			opp-microvolt = <750000>;
+ 		};
+ 		opp-545000000 {
+ 			opp-hz = /bits/ 64 <545000000>;
+-			opp-microvolt = <781250>;
++			opp-microvolt = <750000>;
+ 		};
+ 		opp-622000000 {
+ 			opp-hz = /bits/ 64 <622000000>;
+-			opp-microvolt = <781250>;
++			opp-microvolt = <750000>;
+ 		};
+ 		opp-700000000 {
+ 			opp-hz = /bits/ 64 <700000000>;
+-			opp-microvolt = <781250>;
++			opp-microvolt = <750000>;
+ 		};
+ 		opp-790000000 {
+ 			opp-hz = /bits/ 64 <790000000>;
+-			opp-microvolt = <781250>;
++			opp-microvolt = <762500>;
+ 		};
+ 		opp-880000000 {
+ 			opp-hz = /bits/ 64 <880000000>;
+-			opp-microvolt = <781250>;
++			opp-microvolt = <775000>;
+ 		};
+ 		opp-955000000 {
+ 			opp-hz = /bits/ 64 <955000000>;

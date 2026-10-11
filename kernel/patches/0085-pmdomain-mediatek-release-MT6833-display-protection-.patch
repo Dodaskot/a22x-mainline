@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 20:58:20 +0200
+Subject: [PATCH 085/131] pmdomain: mediatek: release MT6833 display protection
+ before MMIO
+
+The subsystem clock gates are inside DISP. Their register access must wait
+until SCPSYS has released bus protection, as in the vendor power sequence.
+Use the existing strict-protection capability before testing power cycles.
+
+Signed-off-by: Dodaskot <pessdres@gmail.com>
+---
+ drivers/pmdomain/mediatek/mt6833-pm-domains.h | 2 ++
+ drivers/pmdomain/mediatek/mtk-pm-domains.c    | 6 +++---
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pmdomain/mediatek/mt6833-pm-domains.h b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+index 86474bbb0..9f359551c 100644
+--- a/drivers/pmdomain/mediatek/mt6833-pm-domains.h
++++ b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+@@ -110,6 +110,8 @@ static const struct scpsys_domain_data scpsys_domain_data_mt6833[] = {
+ 	},
+ 	[MT6833_POWER_DOMAIN_DISP] = {
+ 		.name = "disp",
++		/* MM gate registers must only be accessed after bus release. */
++		.caps = MTK_SCPD_STRICT_BUS_PROTECTION,
+ 		.sta_mask = BIT(20),
+ 		.ctl_offs = 0x0354,
+ 		.pwr_sta_offs = 0x016c,
+diff --git a/drivers/pmdomain/mediatek/mtk-pm-domains.c b/drivers/pmdomain/mediatek/mtk-pm-domains.c
+index 4ca2aab8c..83e444ede 100644
+--- a/drivers/pmdomain/mediatek/mtk-pm-domains.c
++++ b/drivers/pmdomain/mediatek/mtk-pm-domains.c
+@@ -271,9 +271,9 @@ static int scpsys_bus_protect_enable(struct scpsys_domain *pd, u8 flags)
+ 			ret = scpsys_bus_protect_set(pd, bpd);
+ 		if (ret) {
+ 			dev_err_ratelimited(pd->scpsys->dev,
+-				"%s bus protection step %d (reg %#x mask %#x) failed: %d\n",
+-				pd->data->name, i, bpd->bus_prot_sta,
+-				bpd->bus_prot_sta_mask, ret);
++					    "%s bus protection step %d (reg %#x mask %#x) failed: %d\n",
++					    pd->data->name, i, bpd->bus_prot_sta,
++					    bpd->bus_prot_sta_mask, ret);
+ 			return ret;
+ 		}
+ 	}

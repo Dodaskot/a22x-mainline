@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 22:58:54 +0200
+Subject: [PATCH 049/131] a22x: flash LED named white:flash (Plasma's torch
+ toggle matches *:flash)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 886ebba3c..e44fdfff2 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -462,7 +462,6 @@ led@4 {
+ 					reg = <4>;
+ 					function = LED_FUNCTION_FLASH;
+ 					color = <LED_COLOR_ID_WHITE>;
+-					function-enumerator = <1>;
+ 					led-max-microamp = <100000>;
+ 					flash-max-microamp = <750000>;
+ 					flash-max-timeout-us = <1248000>;

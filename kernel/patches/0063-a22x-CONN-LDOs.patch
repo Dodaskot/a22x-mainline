@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sun, 4 Oct 2026 11:19:42 +0200
+Subject: [PATCH 063/131] a22x: CONN LDOs
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 25 +++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 56c33f2b8..9318c3562 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -733,6 +733,31 @@ mt6359_vibr_ldo_reg: ldo_vibr {
+ 					regulator-max-microvolt = <3300000>;
+ 				};
+ 
++				/* connectivity (CONSYS + MT6631), ranges from the vendor DT */
++				mt6359_vcn18_ldo_reg: ldo_vcn18 {
++					regulator-name = "vcn18";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++				};
++
++				mt6359_vcn13_ldo_reg: ldo_vcn13 {
++					regulator-name = "vcn13";
++					regulator-min-microvolt = <900000>;
++					regulator-max-microvolt = <1300000>;
++				};
++
++				mt6359_vcn33_1_ldo_reg: ldo_vcn33_1 {
++					regulator-name = "vcn33_1";
++					regulator-min-microvolt = <2800000>;
++					regulator-max-microvolt = <3500000>;
++				};
++
++				mt6359_vcn33_2_ldo_reg: ldo_vcn33_2 {
++					regulator-name = "vcn33_2";
++					regulator-min-microvolt = <2800000>;
++					regulator-max-microvolt = <3500000>;
++				};
++
+ 				mt6359_vsram_md_ldo_reg: ldo_vsram_md {
+ 					regulator-name = "vsram_gpu";
+ 					regulator-min-microvolt = <850000>;

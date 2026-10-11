@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 6 Oct 2026 12:27:08 +0200
+Subject: [PATCH 094/131] soc: mediatek: keep ordinary s2idle independent of
+ MCUPM readiness
+
+---
+ drivers/soc/mediatek/mtk-mt6833-lpm.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/soc/mediatek/mtk-mt6833-lpm.c b/drivers/soc/mediatek/mtk-mt6833-lpm.c
+index 083b83268..c6bc57254 100644
+--- a/drivers/soc/mediatek/mtk-mt6833-lpm.c
++++ b/drivers/soc/mediatek/mtk-mt6833-lpm.c
+@@ -125,6 +125,11 @@ static int mt6833_suspend_begin(suspend_state_t state)
+ 	struct mt6833_lpm *lpm = mt6833_suspend_lpm;
+ 
+ 	mutex_lock(&lpm->lock);
++	/* PM also falls back to these begin/end callbacks for s2idle. Its
++	 * ordinary path needs no MCUPM initialization or deep opt-in.
++	 */
++	if (state == PM_SUSPEND_TO_IDLE)
++		return 0;
+ 	/* PM invokes end even when begin rejects the request. */
+ 	if (!lpm->stage_only && (!lpm->deep_enabled || !mt6833_lpm_prepared(lpm)))
+ 		return -EAGAIN;

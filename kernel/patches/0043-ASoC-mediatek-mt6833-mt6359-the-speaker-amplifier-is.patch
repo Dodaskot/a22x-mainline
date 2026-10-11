@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 20:35:48 +0200
+Subject: [PATCH 043/131] ASoC: mediatek: mt6833-mt6359: the speaker amplifier
+ is fed from LINEOUT L
+
+Verified on SM-A226B: audio only reaches the loudspeaker through the
+MT6359 line output (LOL Mux = Playback_L_DAC).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ sound/soc/mediatek/mt8192/mt6833-mt6359.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/sound/soc/mediatek/mt8192/mt6833-mt6359.c b/sound/soc/mediatek/mt8192/mt6833-mt6359.c
+index 315f1094b..390432660 100644
+--- a/sound/soc/mediatek/mt8192/mt6833-mt6359.c
++++ b/sound/soc/mediatek/mt8192/mt6833-mt6359.c
+@@ -5,8 +5,8 @@
+  * The MT6833 AFE is register compatible with MT8192 and is driven by the
+  * MT8192 AFE driver. This card is a reduced MT8192/MT6359 card: earpiece,
+  * headset and microphones through MT6359 (ADDA). The loudspeaker amplifier
+- * (an analog SIA8109 on the SM-A226B) hangs off the MT6359 headphone
+- * "Ext Spk Amp" outputs and is described in DT as an auxiliary device.
++ * (an analog SIA8109 on the SM-A226B) is fed from the MT6359 line output
++ * (LOL Mux "Playback_L_DAC") and is described in DT as an auxiliary device.
+  *
+  * MTKAIF calibration from mt8192-mt6359-rt1015-rt5682.c.
+  */
+@@ -353,9 +353,9 @@ static const struct snd_soc_dapm_widget mt6833_mt6359_widgets[] = {
+ 	SND_SOC_DAPM_SPK("Speaker", NULL),
+ };
+ 
++/* The SIA8109 input is wired to the MT6359 line output (LOL Mux) */
+ static const struct snd_soc_dapm_route mt6833_mt6359_spk_routes[] = {
+-	{ "Speaker Amp IN", NULL, "Headphone L Ext Spk Amp" },
+-	{ "Speaker Amp IN", NULL, "Headphone R Ext Spk Amp" },
++	{ "Speaker Amp IN", NULL, "LINEOUT L" },
+ 	{ "Speaker", NULL, "Speaker Amp OUT" },
+ };
+ 

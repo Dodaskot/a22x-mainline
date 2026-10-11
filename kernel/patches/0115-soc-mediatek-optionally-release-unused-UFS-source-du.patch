@@ -1,0 +1,213 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Wed, 7 Oct 2026 10:35:53 +0200
+Subject: [PATCH 115/131] soc: mediatek: optionally release unused UFS source
+ during s2idle
+
+---
+ drivers/soc/mediatek/mtk-mt6833-lpm.c | 124 +++++++++++++++++++++++++-
+ 1 file changed, 121 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/soc/mediatek/mtk-mt6833-lpm.c b/drivers/soc/mediatek/mtk-mt6833-lpm.c
+index e757513ad..bc333b2b9 100644
+--- a/drivers/soc/mediatek/mtk-mt6833-lpm.c
++++ b/drivers/soc/mediatek/mtk-mt6833-lpm.c
+@@ -94,6 +94,10 @@ struct mt6833_lpm {
+ 	bool ufs_sources_held;
+ 	bool ufs_clocks_held;
+ 	bool boot_ufs_gated;
++	bool ufs_source_sleep_gate;
++	bool ufs_source_sleep_gated;
++	u32 ufs_source_sleep_entries;
++	u32 ufs_source_restore_errors;
+ 	bool idle_blocked;
+ 	bool platform_initialized;
+ 	bool ready;
+@@ -155,6 +159,60 @@ static bool mt6833_lpm_prepared(struct mt6833_lpm *lpm)
+ #ifndef MODULE
+ static struct mt6833_lpm *mt6833_suspend_lpm;
+ 
++static int mt6833_ufs_source_restore(struct mt6833_lpm *lpm)
++{
++	int ret;
++
++	if (!lpm->ufs_source_sleep_gated)
++		return 0;
++	ret = clk_bulk_prepare_enable(ARRAY_SIZE(lpm->ufs_sources),
++				      lpm->ufs_sources);
++	if (ret) {
++		lpm->ufs_source_restore_errors++;
++		lpm->s2idle_enabled = false;
++		dev_err(lpm->dev, "UFS source restore failed: %d\n", ret);
++		return ret;
++	}
++	lpm->ufs_sources_held = true;
++	lpm->ufs_source_sleep_gated = false;
++	return 0;
++}
++
++static int mt6833_ufs_source_suspend(struct mt6833_lpm *lpm)
++{
++	unsigned int i;
++	int ret;
++
++	if (!lpm->ufs_source_sleep_gate)
++		return 0;
++	if (!lpm->ufs_unused || !lpm->boot_ufs_gated ||
++	    lpm->ufs_clocks_held || !lpm->ufs_sources_held ||
++	    lpm->ufs_source_sleep_gated)
++		return -EBUSY;
++	for (i = 0; i < ARRAY_SIZE(lpm->ufs_clocks); i++)
++		if (__clk_is_enabled(lpm->ufs_clocks[i].clk))
++			return -EBUSY;
++	/* Devices have completed noirq suspend. Release only our reference;
++	 * CCF retains any other consumer's references to shared parent PLLs.
++	 * Keeping prepare references would keep MediaTek PLLs powered, too.
++	 */
++	for (i = 0; i < ARRAY_SIZE(lpm->ufs_sources); i++)
++		if (__clk_get_enable_count(lpm->ufs_sources[i].clk) != 1)
++			return -EBUSY;
++	clk_bulk_disable_unprepare(ARRAY_SIZE(lpm->ufs_sources),
++				   lpm->ufs_sources);
++	lpm->ufs_sources_held = false;
++	lpm->ufs_source_sleep_gated = true;
++	for (i = 0; i < ARRAY_SIZE(lpm->ufs_sources); i++) {
++		if (!__clk_is_enabled(lpm->ufs_sources[i].clk))
++			continue;
++		ret = mt6833_ufs_source_restore(lpm);
++		return ret ?: -EBUSY;
++	}
++	lpm->ufs_source_sleep_entries++;
++	return 0;
++}
++
+ bool mt6833_lpm_s2idle_active(void)
+ {
+ 	struct mt6833_lpm *lpm = READ_ONCE(mt6833_suspend_lpm);
+@@ -239,6 +297,8 @@ static int mt6833_suspend_enter(suspend_state_t state)
+ 
+ static void mt6833_suspend_end(void)
+ {
++	/* Also covers aborted preparation and retries a failed early restore. */
++	mt6833_ufs_source_restore(mt6833_suspend_lpm);
+ 	mutex_unlock(&mt6833_suspend_lpm->lock);
+ }
+ 
+@@ -257,11 +317,15 @@ static int mt6833_s2idle_begin(void)
+ static int mt6833_s2idle_prepare_late(void)
+ {
+ 	struct mt6833_lpm *lpm = mt6833_suspend_lpm;
++	int ret;
+ 
+ 	if (!lpm->s2idle_enabled)
+ 		return 0;
+ 	if (!mt6833_lpm_prepared(lpm) || !lpm->idle_blocked)
+ 		return -EAGAIN;
++	ret = mt6833_ufs_source_suspend(lpm);
++	if (ret)
++		return ret;
+ 	writel(0, lpm->mbox + MCUPM_WAKE_CPU * sizeof(u32));
+ 	/* Select the preferred wake CPU before permitting vendor idle entry. */
+ 	wmb();
+@@ -283,6 +347,8 @@ static void mt6833_s2idle_restore_early(void)
+ 	WRITE_ONCE(lpm->s2idle_active, false);
+ 	/* Restore the runtime WFI clamp before devices and userspace resume. */
+ 	cpu_latency_qos_update_request(&lpm->latency, 0);
++	/* This callback precedes dpm_resume_noirq(), including the MMC host. */
++	mt6833_ufs_source_restore(lpm);
+ }
+ 
+ static const struct platform_s2idle_ops mt6833_s2idle_ops = {
+@@ -319,7 +385,7 @@ static ssize_t s2idle_enabled_store(struct device *dev,
+ #endif
+ 	guard(mutex)(&lpm->lock);
+ 	if (enable && (!mt6833_lpm_prepared(lpm) || lpm->stage_only ||
+-		       lpm->deep_enabled))
++		       lpm->deep_enabled || lpm->ufs_source_sleep_gated))
+ 		return -EAGAIN;
+ 	lpm->s2idle_enabled = enable;
+ 	return count;
+@@ -451,7 +517,7 @@ static ssize_t boot_peripherals_gated_store(struct device *dev,
+ 		return ret;
+ 	guard(mutex)(&lpm->lock);
+ 	if (!lpm->idle_blocked || lpm->deep_enabled || lpm->stage_only ||
+-	    lpm->s2idle_enabled)
++	    lpm->s2idle_enabled || lpm->ufs_source_sleep_gated)
+ 		return -EBUSY;
+ 	if (gate == lpm->boot_peripherals_gated)
+ 		return count;
+@@ -504,7 +570,7 @@ static ssize_t boot_ufs_gated_store(struct device *dev,
+ 	if (!lpm->ufs_unused)
+ 		return -ENODEV;
+ 	if (!lpm->idle_blocked || lpm->deep_enabled || lpm->stage_only ||
+-	    lpm->s2idle_enabled)
++	    lpm->s2idle_enabled || lpm->ufs_source_sleep_gated)
+ 		return -EBUSY;
+ 	if (gate == lpm->boot_ufs_gated)
+ 		return count;
+@@ -550,6 +616,56 @@ static ssize_t boot_ufs_gated_store(struct device *dev,
+ }
+ static DEVICE_ATTR_RW(boot_ufs_gated);
+ 
++static ssize_t ufs_source_sleep_gate_show(struct device *dev,
++					struct device_attribute *attr, char *buf)
++{
++	struct mt6833_lpm *lpm = dev_get_drvdata(dev);
++
++	return sysfs_emit(buf, "%u\n", lpm->ufs_source_sleep_gate);
++}
++
++static ssize_t ufs_source_sleep_gate_store(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf, size_t count)
++{
++	struct mt6833_lpm *lpm = dev_get_drvdata(dev);
++	bool enable;
++	int ret;
++
++	ret = kstrtobool(buf, &enable);
++	if (ret)
++		return ret;
++#ifdef MODULE
++	if (enable)
++		return -EOPNOTSUPP;
++#endif
++	guard(mutex)(&lpm->lock);
++	if (!lpm->ufs_unused)
++		return -ENODEV;
++	if (!lpm->idle_blocked || lpm->deep_enabled || lpm->stage_only ||
++	    lpm->s2idle_enabled || lpm->ufs_source_sleep_gated)
++		return -EBUSY;
++	if (enable && (!lpm->boot_ufs_gated || !lpm->ufs_sources_held ||
++		       lpm->ufs_clocks_held))
++		return -EBUSY;
++	lpm->ufs_source_sleep_gate = enable;
++	return count;
++}
++static DEVICE_ATTR_RW(ufs_source_sleep_gate);
++
++static ssize_t ufs_source_sleep_status_show(struct device *dev,
++					  struct device_attribute *attr, char *buf)
++{
++	struct mt6833_lpm *lpm = dev_get_drvdata(dev);
++
++	return sysfs_emit(buf,
++		"enabled=%u\ngated=%u\nsource_held=%u\nentries=%u\nrestore_errors=%u\n",
++		lpm->ufs_source_sleep_gate, lpm->ufs_source_sleep_gated,
++		lpm->ufs_sources_held, lpm->ufs_source_sleep_entries,
++		lpm->ufs_source_restore_errors);
++}
++static DEVICE_ATTR_ADMIN_RO(ufs_source_sleep_status);
++
+ static struct device_node *mt6833_firmware_config(struct device *dev)
+ {
+ 	struct device_node *np;
+@@ -1137,6 +1253,8 @@ static struct attribute *mt6833_lpm_attrs[] = {
+ 	&dev_attr_counters.attr,
+ 	&dev_attr_boot_peripherals_gated.attr,
+ 	&dev_attr_boot_ufs_gated.attr,
++	&dev_attr_ufs_source_sleep_gate.attr,
++	&dev_attr_ufs_source_sleep_status.attr,
+ 	NULL,
+ };
+ ATTRIBUTE_GROUPS(mt6833_lpm);

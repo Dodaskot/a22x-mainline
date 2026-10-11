@@ -1,0 +1,8 @@
+#!/bin/sh
+# Ask Samsung LK for download (Odin) mode on the next boot, then reset.
+# ram_console SRAM @0x11d000, off_linux=0x140; last_reboot_reason fields:
+#   is_power_reset @+0x3f4 = SEC_POWER_RESET, power_reset_reason @+0x3f8.
+memtool 0x11d534 0x12345678 >/dev/null
+memtool 0x11d538 0x12345671 >/dev/null
+sync
+reboot -f

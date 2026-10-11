@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 6 Oct 2026 13:55:43 +0200
+Subject: [PATCH 097/131] clk: allow explicit override of bootloader
+ unused-clock retention
+
+---
+ Documentation/admin-guide/kernel-parameters.txt |  5 ++++-
+ drivers/clk/clk.c                               | 13 +++++++++++--
+ 2 files changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/admin-guide/kernel-parameters.txt b/Documentation/admin-guide/kernel-parameters.txt
+index e8ff36982..233caa47d 100644
+--- a/Documentation/admin-guide/kernel-parameters.txt
++++ b/Documentation/admin-guide/kernel-parameters.txt
+@@ -784,8 +784,11 @@ Kernel parameters
+ 	cio_ignore=	[S390]
+ 			See Documentation/arch/s390/common_io.rst for details.
+ 
+-	clk_ignore_unused
++	clk_ignore_unused[=bool]
+ 			[CLK]
++			Omitting the value is equivalent to true. A later
++			clk_ignore_unused=0 restores automatic gating when the
++			bootloader supplies this parameter. Last value wins.
+ 			Prevents the clock framework from automatically gating
+ 			clocks that have not been explicitly enabled by a Linux
+ 			device driver but are enabled in hardware at reset or
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 048adfa86..72130e7a7 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1509,9 +1509,18 @@ static void __init clk_disable_unused_subtree(struct clk_core *core)
+ }
+ 
+ static bool clk_ignore_unused __initdata;
+-static int __init clk_ignore_unused_setup(char *__unused)
++static int __init clk_ignore_unused_setup(char *str)
+ {
+-	clk_ignore_unused = true;
++	bool ignore;
++
++	if (!*str) {
++		clk_ignore_unused = true;
++	} else if (*str == '=' && !kstrtobool(str + 1, &ignore)) {
++		/* Allow a later boot argument to override bootloader policy. */
++		clk_ignore_unused = ignore;
++	} else {
++		pr_warn("clk: Invalid clk_ignore_unused value: %s\n", str);
++	}
+ 	return 1;
+ }
+ __setup("clk_ignore_unused", clk_ignore_unused_setup);

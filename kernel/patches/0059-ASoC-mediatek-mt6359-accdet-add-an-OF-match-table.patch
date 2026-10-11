@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sun, 4 Oct 2026 10:26:48 +0200
+Subject: [PATCH 059/131] ASoC: mediatek: mt6359-accdet: add an OF match table
+
+The MFD core creates the device as "mt6359-accdet" with the
+mediatek,mt6359-accdet node while the driver is named
+"pmic-codec-accdet" and had no OF table, so it never bound.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ sound/soc/codecs/mt6359-accdet.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/sound/soc/codecs/mt6359-accdet.c b/sound/soc/codecs/mt6359-accdet.c
+index ed34cc15b..f4f1a8dcf 100644
+--- a/sound/soc/codecs/mt6359-accdet.c
++++ b/sound/soc/codecs/mt6359-accdet.c
+@@ -1047,9 +1047,16 @@ static int mt6359_accdet_probe(struct platform_device *pdev)
+ 	return ret;
+ }
+ 
++static const struct of_device_id mt6359_accdet_of_match[] = {
++	{ .compatible = "mediatek,mt6359-accdet" },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, mt6359_accdet_of_match);
++
+ static struct platform_driver mt6359_accdet_driver = {
+ 	.driver = {
+ 		.name = "pmic-codec-accdet",
++		.of_match_table = mt6359_accdet_of_match,
+ 	},
+ 	.probe = mt6359_accdet_probe,
+ };

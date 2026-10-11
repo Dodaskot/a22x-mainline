@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 22:26:43 +0200
+Subject: [PATCH 047/131] a22x: MSDC1 pins need R1R0 pull arguments
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 44308b59c..aa73830bc 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -24,6 +24,7 @@
+ #include <dt-bindings/input/input.h>
+ #include <dt-bindings/interrupt-controller/irq.h>
+ #include <dt-bindings/pinctrl/mt6833-pinfunc.h>
++#include <dt-bindings/pinctrl/mt65xx.h>
+ #include "mt6833-samsung-a22x-lk-compat.dtsi"
+ 
+ / {
+@@ -222,13 +223,13 @@ pins-cmd-dat {
+ 					 <PINMUX_GPIO130__FUNC_MSDC1_DAT3>;
+ 				input-enable;
+ 				drive-strength = <8>;
+-				bias-pull-up;
++				bias-pull-up = <MTK_PUPD_SET_R1R0_01>;
+ 			};
+ 
+ 			pins-clk {
+ 				pinmux = <PINMUX_GPIO125__FUNC_MSDC1_CLK>;
+ 				drive-strength = <8>;
+-				bias-pull-down;
++				bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
+ 			};
+ 
+ 			pins-cd {

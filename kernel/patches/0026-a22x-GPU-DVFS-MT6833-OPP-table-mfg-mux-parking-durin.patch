@@ -1,0 +1,137 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 17:36:01 +0200
+Subject: [PATCH 026/131] a22x: GPU DVFS - MT6833 OPP table, mfg mux parking
+ during PLL changes
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 59 +++++++++++++++++--
+ drivers/clk/mediatek/clk-mt6833.c             | 27 +++++++++
+ 2 files changed, 82 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index b9e532ff1..5d1ff93ca 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -372,14 +372,14 @@ rtc {
+ 			/*
+ 			 * Only the GPU rails are described; every other MT6359
+ 			 * regulator stays as the bootloader configured it.
+-			 * Bring-up: fixed safe voltages, no GPU DVFS yet
+-			 * (Samsung table: 0.80 V signs off up to 1000 MHz).
++			 * vgpu is scaled by the GPU OPP table; vsram_gpu stays
++			 * at the highest SRAM voltage of the vendor table.
+ 			 */
+ 			regulators {
+ 				mt6359_vproc1_buck_reg: buck_vproc1 {
+ 					regulator-name = "vgpu";
+-					regulator-min-microvolt = <800000>;
+-					regulator-max-microvolt = <800000>;
++					regulator-min-microvolt = <625000>;
++					regulator-max-microvolt = <850000>;
+ 					regulator-enable-ramp-delay = <200>;
+ 				};
+ 
+@@ -506,5 +506,56 @@ gpu: gpu@13000000 {
+ 				<&spm MT6833_POWER_DOMAIN_MFG3>;
+ 		power-domain-names = "core0", "core1";
+ 		mali-supply = <&mt6359_vproc1_buck_reg>;
++		operating-points-v2 = <&gpu_opp_table>;
++	};
++
++	/*
++	 * Subset of the Samsung/MediaTek MT6833 GPU table; each voltage is the
++	 * highest of the three chip segments (MT6833, MT6833M, MT6833T).
++	 */
++	gpu_opp_table: opp-table-gpu {
++		compatible = "operating-points-v2";
++		opp-shared;
++
++		opp-390000000 {
++			opp-hz = /bits/ 64 <390000000>;
++			opp-microvolt = <625000>;
++		};
++		opp-467000000 {
++			opp-hz = /bits/ 64 <467000000>;
++			opp-microvolt = <631250>;
++		};
++		opp-545000000 {
++			opp-hz = /bits/ 64 <545000000>;
++			opp-microvolt = <637500>;
++		};
++		opp-622000000 {
++			opp-hz = /bits/ 64 <622000000>;
++			opp-microvolt = <643750>;
++		};
++		opp-700000000 {
++			opp-hz = /bits/ 64 <700000000>;
++			opp-microvolt = <650000>;
++		};
++		opp-790000000 {
++			opp-hz = /bits/ 64 <790000000>;
++			opp-microvolt = <700000>;
++		};
++		opp-880000000 {
++			opp-hz = /bits/ 64 <880000000>;
++			opp-microvolt = <750000>;
++		};
++		opp-955000000 {
++			opp-hz = /bits/ 64 <955000000>;
++			opp-microvolt = <781250>;
++		};
++		opp-1000000000 {
++			opp-hz = /bits/ 64 <1000000000>;
++			opp-microvolt = <800000>;
++		};
++		opp-1068000000 {
++			opp-hz = /bits/ 64 <1068000000>;
++			opp-microvolt = <850000>;
++		};
+ 	};
+ };
+diff --git a/drivers/clk/mediatek/clk-mt6833.c b/drivers/clk/mediatek/clk-mt6833.c
+index c5db38a6c..9b54c982a 100644
+--- a/drivers/clk/mediatek/clk-mt6833.c
++++ b/drivers/clk/mediatek/clk-mt6833.c
+@@ -1391,6 +1391,31 @@ static const struct mtk_gate ifrao_clks[] = {
+ 			"sflash_ck", 31),
+ };
+ 
++/*
++ * The GPU mux must not feed the GPU from mfgpll while that PLL is being
++ * reprogrammed (GPU DVFS): park it on mfg_ref_sel around the rate change.
++ */
++static int clk_mt6833_reg_mfg_mux_notifier(struct device *dev, struct clk *clk)
++{
++	struct mtk_mux_nb *mfg_mux_nb;
++	int i;
++
++	mfg_mux_nb = devm_kzalloc(dev, sizeof(*mfg_mux_nb), GFP_KERNEL);
++	if (!mfg_mux_nb)
++		return -ENOMEM;
++
++	for (i = 0; i < ARRAY_SIZE(top_mtk_muxes); i++)
++		if (top_mtk_muxes[i].id == CLK_TOP_MFG_PLL_SEL)
++			break;
++	if (i == ARRAY_SIZE(top_mtk_muxes))
++		return -EINVAL;
++
++	mfg_mux_nb->ops = top_mtk_muxes[i].ops;
++	mfg_mux_nb->bypass_index = 0; /* mfg_ref_sel */
++
++	return devm_mtk_clk_mux_notifier_register(dev, clk, mfg_mux_nb);
++}
++
+ static const struct mtk_clk_desc topck_desc = {
+ 	.fixed_clks = top_fixed_clks,
+ 	.num_fixed_clks = ARRAY_SIZE(top_fixed_clks),
+@@ -1401,6 +1426,8 @@ static const struct mtk_clk_desc topck_desc = {
+ 	.composite_clks = top_composites,
+ 	.num_composite_clks = ARRAY_SIZE(top_composites),
+ 	.clk_lock = &mt6833_clk_lock,
++	.clk_notifier_func = clk_mt6833_reg_mfg_mux_notifier,
++	.mfg_clk_idx = CLK_TOP_MFG_PLL_SEL,
+ };
+ 
+ static const struct mtk_clk_desc ifrao_desc = {

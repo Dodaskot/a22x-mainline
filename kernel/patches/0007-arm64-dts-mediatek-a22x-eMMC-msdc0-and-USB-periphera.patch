@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 00:24:05 +0200
+Subject: [PATCH 007/131] arm64: dts: mediatek: a22x: eMMC (msdc0) and USB
+ peripheral (MUSB + T-PHY)
+
+Stand-in fixed clocks with the rates the stock kernel reports until a
+MT6833 clock driver exists.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 79 +++++++++++++++++++
+ 1 file changed, 79 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 9d157c9e2..5f5a7c646 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -15,6 +15,7 @@
+  */
+ 
+ /dts-v1/;
++#include <dt-bindings/phy/phy.h>
+ #include "mt6833-samsung-a22x-lk-compat.dtsi"
+ 
+ / {
+@@ -42,6 +43,84 @@ framebuffer@7c9b0000 {
+ 		};
+ 	};
+ 
++	/*
++	 * Stand-in clocks until there is a mainline MT6833 clock driver.
++	 * Preloader/LK leave these running; rates were measured on the stock
++	 * kernel through /proc/clkdbg (dump_clks).
++	 */
++	clk_msdc50_0: clock-msdc50-0 {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <384000000>;
++		clock-output-names = "msdc50_0_ck";
++	};
++
++	clk_axi: clock-axi {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <156000000>;
++		clock-output-names = "axi_ck";
++	};
++
++	clk_usb_top: clock-usb-top {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <124800000>;
++		clock-output-names = "fusb_top_ck";
++	};
++
++	/* VEMC, left enabled by the bootloader for the boot eMMC. */
++	reg_vemc: regulator-vemc {
++		compatible = "regulator-fixed";
++		regulator-name = "vemc";
++		regulator-min-microvolt = <3000000>;
++		regulator-max-microvolt = <3000000>;
++		regulator-always-on;
++		regulator-boot-on;
++	};
++
++	mmc0: mmc@11230000 {
++		compatible = "mediatek,mt8183-mmc";
++		reg = <0 0x11230000 0 0x10000>,
++		      <0 0x11f50000 0 0x1000>;
++		interrupts = <0 99 4>;
++		clocks = <&clk_msdc50_0>, <&clk_axi>;
++		clock-names = "source", "hclk";
++		bus-width = <8>;
++		max-frequency = <200000000>;
++		cap-mmc-highspeed;
++		mmc-hs200-1_8v;
++		vmmc-supply = <&reg_vemc>;
++		non-removable;
++		no-sd;
++		no-sdio;
++	};
++
++	u2phy: t-phy@11e40000 {
++		compatible = "mediatek,mt6833-tphy", "mediatek,generic-tphy-v2";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges = <0 0 0x11e40000 0x1000>;
++
++		u2port0: usb-phy@0 {
++			reg = <0x0 0x700>;
++			clocks = <&uart_clk>;
++			clock-names = "ref";
++			#phy-cells = <1>;
++		};
++	};
++
++	usb_otg: usb@11200000 {
++		compatible = "mediatek,mt6833-musb", "mediatek,mtk-musb";
++		reg = <0 0x11200000 0 0x1000>;
++		interrupts = <0 96 4>;
++		interrupt-names = "mc";
++		phys = <&u2port0 PHY_TYPE_USB2>;
++		dr_mode = "peripheral";
++		clocks = <&clk_usb_top>, <&clk_axi>, <&clk_usb_top>;
++		clock-names = "main", "mcu", "univpll";
++	};
++
+ 	/*
+ 	 * LK leaves the TOPRGU watchdog running; let the kernel service it.
+ 	 * The stock "mediatek,toprgu" node at the same address stays disabled.

@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 00:03:54 +0200
+Subject: [PATCH 006/131] a22x: keep the LK splash framebuffer out of the
+ linear map
+
+Replaces the simpledrm memremap hack: memremap() refuses WC on RAM.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ drivers/gpu/drm/sysfb/simpledrm.c | 12 ------------
+ drivers/of/of_reserved_mem.c      | 17 ++++++++++++++---
+ 2 files changed, 14 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/gpu/drm/sysfb/simpledrm.c b/drivers/gpu/drm/sysfb/simpledrm.c
+index 27cbb8f13..fc168920f 100644
+--- a/drivers/gpu/drm/sysfb/simpledrm.c
++++ b/drivers/gpu/drm/sysfb/simpledrm.c
+@@ -1,7 +1,6 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ 
+ #include <linux/aperture.h>
+-#include <linux/memblock.h>
+ #include <linux/clk.h>
+ #include <linux/minmax.h>
+ #include <linux/of_address.h>
+@@ -692,17 +691,6 @@ static struct simpledrm_device *simpledrm_device_create(struct drm_driver *drv,
+ 	 * Memory management
+ 	 */
+ 
+-	if (!mem) {
+-		/*
+-		 * Some bootloaders (MediaTek LK) hand over a framebuffer that is
+-		 * reserved but still part of the linear map. ioremap() refuses
+-		 * RAM, so treat it like a "memory-region" framebuffer instead.
+-		 */
+-		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-		if (res && memblock_is_map_memory(res->start))
+-			mem = res;
+-	}
+-
+ 	if (mem) {
+ 		void *screen_base;
+ 
+diff --git a/drivers/of/of_reserved_mem.c b/drivers/of/of_reserved_mem.c
+index 42e3e2d8a..de761e652 100644
+--- a/drivers/of/of_reserved_mem.c
++++ b/drivers/of/of_reserved_mem.c
+@@ -118,6 +118,17 @@ static int fdt_validate_reserved_mem_node(unsigned long node,
+ static int fdt_fixup_reserved_mem_node(unsigned long node,
+ 				       phys_addr_t base, phys_addr_t size);
+ 
++/*
++ * MediaTek LK describes the boot splash framebuffer as an ordinary (mapped)
++ * reserved region and refuses a DTB that already marks it no-map. Keep it out
++ * of the linear map anyway so simple-framebuffer can ioremap_wc() it.
++ */
++static bool __init fdt_rmem_nomap(unsigned long node)
++{
++	return of_get_flat_dt_prop(node, "no-map", NULL) ||
++	       of_flat_dt_is_compatible(node, "mediatek,framebuffer");
++}
++
+ static int __init early_init_dt_reserve_memory(phys_addr_t base,
+ 					       phys_addr_t size, bool nomap)
+ {
+@@ -157,7 +168,7 @@ static int __init __reserved_mem_reserve_reg(unsigned long node,
+ 		pr_warn("Reserved memory: node '%s' has %d <base size> entries, only the first is used\n",
+ 			uname, len);
+ 
+-	nomap = of_get_flat_dt_prop(node, "no-map", NULL) != NULL;
++	nomap = fdt_rmem_nomap(node);
+ 
+ 	err = fdt_validate_reserved_mem_node(node, NULL);
+ 	if (err && err != -ENODEV)
+@@ -477,7 +488,7 @@ static int __init __reserved_mem_alloc_size(unsigned long node, const char *unam
+ 		align = dt_mem_next_cell(dt_root_addr_cells, &prop);
+ 	}
+ 
+-	nomap = of_get_flat_dt_prop(node, "no-map", NULL) != NULL;
++	nomap = fdt_rmem_nomap(node);
+ 
+ 	ret = fdt_validate_reserved_mem_node(node, &align);
+ 	if (ret && ret != -ENODEV)
+@@ -649,7 +660,7 @@ static void __init fdt_init_reserved_mem_node(unsigned long node, const char *un
+ 	rmem->base = base;
+ 	rmem->size = size;
+ 
+-	nomap = of_get_flat_dt_prop(node, "no-map", NULL) != NULL;
++	nomap = fdt_rmem_nomap(node);
+ 
+ 	err = __reserved_mem_init_node(rmem, node);
+ 	if (err != 0 && err != -ENODEV) {

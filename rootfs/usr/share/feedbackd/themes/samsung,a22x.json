@@ -1,0 +1,69 @@
+{
+  "name": "$device",
+  "parent-name": "default",
+  "profiles": [
+    {
+      "name": "quiet",
+      "feedbacks": [
+        {
+          "event-name": "button-pressed",
+          "type": "VibraRumble",
+          "duration": 45
+        },
+        {
+          "event-name": "button-released",
+          "type": "VibraRumble",
+          "duration": 40
+        },
+        {
+          "event-name": "key-pressed",
+          "type": "VibraRumble",
+          "duration": 45
+        },
+        {
+          "event-name": "key-released",
+          "type": "VibraRumble",
+          "duration": 30
+        },
+        {
+          "event-name": "window-close",
+          "type": "VibraRumble",
+          "duration": 45
+        },
+        {
+          "event-name": "bell-terminal",
+          "type": "VibraRumble",
+          "duration": 120
+        },
+        {
+          "event-name": "notification-new-generic",
+          "type": "VibraRumble",
+          "duration": 540,
+          "count": 2,
+          "pause": 150
+        },
+        {
+          "event-name": "phone-incoming-call",
+          "type": "VibraRumble",
+          "duration": 3900,
+          "count": 3,
+          "pause": 500
+        },
+        {
+          "event-name": "alarm-clock-elapsed",
+          "type": "VibraRumble",
+          "duration": 3900,
+          "count": 3,
+          "pause": 500
+        },
+        {
+          "event-name": "theme-demo",
+          "type": "VibraRumble",
+          "duration": 2400,
+          "count": 2,
+          "pause": 400
+        }
+      ]
+    }
+  ]
+}

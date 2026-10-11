@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Thu, 8 Oct 2026 00:54:52 +0200
+Subject: [PATCH 116/131] clk: mediatek: bind MT6833 MDP register access to
+ DISP power
+
+---
+ .../dts/mediatek/mt6833-samsung-a22x-native-display.dts    | 2 ++
+ drivers/clk/mediatek/clk-mt6833-mdp.c                      | 7 ++++---
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+index c691f74a4..9149e0071 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+@@ -64,6 +64,8 @@ mdp_clocks_ml: clock-controller@1f000000 {
+ 		clocks = <&topckgen CLK_TOP_MDP_SEL>;
+ 		clock-names = "bus";
+ 		mediatek,spm = <&scpsys_ml>;
++		/* MDP gate registers share DISP power and bus protection. */
++		power-domains = <&spm MT6833_POWER_DOMAIN_DISP>;
+ 	};
+ 
+ 	aliases {
+diff --git a/drivers/clk/mediatek/clk-mt6833-mdp.c b/drivers/clk/mediatek/clk-mt6833-mdp.c
+index 7a9475467..32e5badff 100644
+--- a/drivers/clk/mediatek/clk-mt6833-mdp.c
++++ b/drivers/clk/mediatek/clk-mt6833-mdp.c
+@@ -70,10 +70,11 @@ static int mt6833_mdp_runtime_resume(struct device *dev)
+ 	ret = regmap_read(data->spm, 0x170, &status2);
+ 	if (ret)
+ 		return ret;
+-	/* The boot-owned MDP island has no verified power-switch sequence yet.
+-	 * Refuse register access when it is off; do not invent a power-on path.
++	/* Samsung's MT6833 mdpsys register aperture belongs to PG_DIS, not
++	 * the otherwise unused MDP status bit. The DISP genpd dependency
++	 * releases its bus protection before this runtime-resume callback.
+ 	 */
+-	if (!(status & status2 & BIT(20)))
++	if (!(status & status2 & BIT(21)))
+ 		return -EHOSTDOWN;
+ 	if (data->bus_held)
+ 		return 0;

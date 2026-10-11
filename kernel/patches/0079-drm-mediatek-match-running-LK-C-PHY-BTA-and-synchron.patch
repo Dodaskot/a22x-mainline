@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 20:19:31 +0200
+Subject: [PATCH 079/131] drm/mediatek: match running LK C-PHY BTA and
+ synchronization timing
+
+---
+ drivers/gpu/drm/mediatek/mtk_dsi.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/mediatek/mtk_dsi.c b/drivers/gpu/drm/mediatek/mtk_dsi.c
+index 93903e068..9d7fe577d 100644
+--- a/drivers/gpu/drm/mediatek/mtk_dsi.c
++++ b/drivers/gpu/drm/mediatek/mtk_dsi.c
+@@ -260,9 +260,10 @@ static void mtk_dsi_cphy_timconfig(struct mtk_dsi *dsi)
+ 	t->da_hs_prepare = (rate / 2) * 101 / 7000 + 1;
+ 	t->da_hs_zero = dsi->cphy_timing[0];
+ 	t->da_hs_trail = dsi->cphy_timing[1];
+-	t->ta_go = 4 * (85 / cycle);
+-	t->ta_sure = 3 * (85 / cycle) / 2;
+-	t->ta_get = 5 * (85 / cycle);
++	/* BTA timings verified against LK's running MT6833 C-PHY setup. */
++	t->ta_go = 4 * t->lpx;
++	t->ta_sure = 3 * t->lpx / 2;
++	t->ta_get = 5 * t->lpx;
+ 	t->da_hs_exit = (rate / 2) * 225 / 7000 + 1;
+ 	t->clk_hs_zero = 400 / cycle;
+ 	t->clk_hs_trail = 96 / cycle + 1;
+@@ -276,7 +277,7 @@ static void mtk_dsi_cphy_timconfig(struct mtk_dsi *dsi)
+ 	writel(FIELD_PREP(TA_GO, t->ta_go) | FIELD_PREP(TA_SURE, t->ta_sure) |
+ 	       FIELD_PREP(TA_GET, t->ta_get) | FIELD_PREP(DA_HS_EXIT, t->da_hs_exit),
+ 	       dsi->regs + DSI_PHY_TIMECON1);
+-	writel(FIELD_PREP(DA_HS_SYNC, 1) | FIELD_PREP(CLK_ZERO, t->clk_hs_zero) |
++	writel(FIELD_PREP(DA_HS_SYNC, 6) | FIELD_PREP(CLK_ZERO, t->clk_hs_zero) |
+ 	       FIELD_PREP(CLK_TRAIL, t->clk_hs_trail), dsi->regs + DSI_PHY_TIMECON2);
+ 	writel(FIELD_PREP(CLK_HS_PREP, t->clk_hs_prepare) |
+ 	       FIELD_PREP(CLK_HS_POST, t->clk_hs_post) |

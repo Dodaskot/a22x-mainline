@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sun, 4 Oct 2026 10:24:23 +0200
+Subject: [PATCH 058/131] ASoC: mediatek: mt6833-mt6359: defer until the accdet
+ component exists
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ sound/soc/mediatek/mt8192/mt6833-mt6359.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/sound/soc/mediatek/mt8192/mt6833-mt6359.c b/sound/soc/mediatek/mt8192/mt6833-mt6359.c
+index ace087aec..2c2bfed23 100644
+--- a/sound/soc/mediatek/mt8192/mt6833-mt6359.c
++++ b/sound/soc/mediatek/mt8192/mt6833-mt6359.c
+@@ -438,6 +438,12 @@ static int mt6833_mt6359_soc_card_probe(struct mtk_soc_card_data *soc_card_data,
+ 	struct device_node *amp;
+ 	int ret;
+ 
++	/* the common code does not wait for the accdet component */
++	if (of_property_present(card->dev->of_node, "mediatek,accdet") &&
++	    !soc_card_data->accdet)
++		return dev_err_probe(card->dev, -EPROBE_DEFER,
++				     "waiting for the accdet component\n");
++
+ 	ret = mt8192_afe_gpio_init(card->dev);
+ 	if (ret)
+ 		return dev_err_probe(card->dev, ret, "%s init gpio error\n", __func__);

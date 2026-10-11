@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 23:34:42 +0200
+Subject: [PATCH 052/131] a22x: SPI2 MISO pull-up (IMU bring-up)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 16be82ddc..2f551659e 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -220,10 +220,15 @@ spi2_pins: spi2-pins {
+ 			pins-spi {
+ 				pinmux = <PINMUX_GPIO31__FUNC_SPI2_CLK>,
+ 					 <PINMUX_GPIO32__FUNC_SPI2_CSB>,
+-					 <PINMUX_GPIO33__FUNC_SPI2_MO>,
+-					 <PINMUX_GPIO34__FUNC_SPI2_MI>;
++					 <PINMUX_GPIO33__FUNC_SPI2_MO>;
+ 				bias-disable;
+ 			};
++
++			pins-miso {
++				pinmux = <PINMUX_GPIO34__FUNC_SPI2_MI>;
++				input-enable;
++				bias-pull-up;
++			};
+ 		};
+ 
+ 		mmc1_pins: mmc1-pins {

@@ -1,0 +1,235 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 10 Oct 2026 15:34:07 +0200
+Subject: [PATCH 125/131] a22x: reproduce verified v126 NFC source baseline
+ locally
+
+---
+ .../bindings/net/nfc/samsung,s3fwrn5.yaml     |  5 +-
+ arch/arm64/boot/dts/mediatek/Makefile         |  2 +
+ .../mt6833-samsung-a22x-nfc-experimental.dts  | 59 +++++++++++++++++++
+ drivers/nfc/s3fwrn5/core.c                    | 25 ++++++++
+ drivers/nfc/s3fwrn5/i2c.c                     | 32 ++++++++++
+ 5 files changed, 122 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-nfc-experimental.dts
+
+diff --git a/Documentation/devicetree/bindings/net/nfc/samsung,s3fwrn5.yaml b/Documentation/devicetree/bindings/net/nfc/samsung,s3fwrn5.yaml
+index 12baee457..2460f1221 100644
+--- a/Documentation/devicetree/bindings/net/nfc/samsung,s3fwrn5.yaml
++++ b/Documentation/devicetree/bindings/net/nfc/samsung,s3fwrn5.yaml
+@@ -13,6 +13,7 @@ properties:
+   compatible:
+     enum:
+       - samsung,s3fwrn5-i2c
++      - samsung,s3nrn74-i2c
+       - samsung,s3fwrn82
+ 
+   en-gpios:
+@@ -58,7 +59,9 @@ allOf:
+       properties:
+         compatible:
+           contains:
+-            const: samsung,s3fwrn5-i2c
++            enum:
++              - samsung,s3fwrn5-i2c
++              - samsung,s3nrn74-i2c
+     then:
+       required:
+         - interrupts
+diff --git a/arch/arm64/boot/dts/mediatek/Makefile b/arch/arm64/boot/dts/mediatek/Makefile
+index df830f4b4..d40f61cf4 100644
+--- a/arch/arm64/boot/dts/mediatek/Makefile
++++ b/arch/arm64/boot/dts/mediatek/Makefile
+@@ -10,6 +10,8 @@ dtb-$(CONFIG_ARCH_MEDIATEK) += mt6833-samsung-a22x.dtb
+ DTC_FLAGS_mt6833-samsung-a22x := -@
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt6833-samsung-a22x-native-display.dtb
+ DTC_FLAGS_mt6833-samsung-a22x-native-display := -@
++dtb-$(CONFIG_ARCH_MEDIATEK) += mt6833-samsung-a22x-nfc-experimental.dtb
++DTC_FLAGS_mt6833-samsung-a22x-nfc-experimental := -@
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7622-rfb1.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7622-bananapi-bpi-r64.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7981b-cudy-wr3000-v1.dtb
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-nfc-experimental.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-nfc-experimental.dts
+new file mode 100644
+index 000000000..9d051a695
+--- /dev/null
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-nfc-experimental.dts
+@@ -0,0 +1,59 @@
++// SPDX-License-Identifier: (GPL-2.0-only OR MIT)
++/* Separate retained-firmware NCI image; standard sleep image keeps NFC off. */
++#include "mt6833-samsung-a22x-native-display.dts"
++
++&pio_ml {
++	/delete-node/ nfc-firmware-hog;
++	/delete-node/ nfc-enable-hog;
++
++	nfc_i2c3_pins: nfc-i2c3-pins {
++		pins {
++			pinmux = <PINMUX_GPIO103__FUNC_SCL3>,
++				 <PINMUX_GPIO104__FUNC_SDA3>;
++			bias-pull-up;
++		};
++	};
++
++	nfc_irq_pins: nfc-irq-pins {
++		pins {
++			pinmux = <PINMUX_GPIO5__FUNC_GPIO5>;
++			input-enable;
++			bias-disable;
++		};
++	};
++};
++
++&imp_iic_wrap_e {
++	status = "okay";
++};
++
++/ {
++	/* The LK-overlay stock i2c3 node remains disabled. */
++	i2c3_nfc_ml: i2c@11cb0000 {
++		compatible = "mediatek,mt6833-i2c", "mediatek,mt8192-i2c";
++		reg = <0 0x11cb0000 0 0x1000>,
++		      <0 0x10217300 0 0x80>;
++		interrupts = <0 115 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&imp_iic_wrap_e CLK_IMPE_AP_CLOCK_RO_I2C3>,
++			 <&infracfg_ao CLK_IFRAO_AP_DMA>;
++		clock-names = "main", "dma";
++		clock-div = <1>;
++		clock-frequency = <400000>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&nfc_i2c3_pins>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		nfc@27 {
++			compatible = "samsung,s3nrn74-i2c";
++			reg = <0x27>;
++			interrupts-extended = <&pio_ml 5 IRQ_TYPE_EDGE_RISING>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&nfc_irq_pins>;
++			/* Driver raw high = OFF, raw low = ON (N5 polarity). */
++			en-gpios = <&pio_ml 7 GPIO_ACTIVE_HIGH>;
++			wake-gpios = <&pio_ml 6 GPIO_ACTIVE_HIGH>;
++			/* GPIO81 keeps its existing SRCLKENAI0 clock-request mux. */
++		};
++	};
++};
+diff --git a/drivers/nfc/s3fwrn5/core.c b/drivers/nfc/s3fwrn5/core.c
+index af0fa8bd9..d11b2a05f 100644
+--- a/drivers/nfc/s3fwrn5/core.c
++++ b/drivers/nfc/s3fwrn5/core.c
+@@ -7,6 +7,7 @@
+  */
+ 
+ #include <linux/module.h>
++#include <linux/of.h>
+ #include <net/nfc/nci_core.h>
+ 
+ #include "s3fwrn5.h"
+@@ -122,11 +123,34 @@ static int s3fwrn5_nci_send(struct nci_dev *ndev, struct sk_buff *skb)
+ 	return 0;
+ }
+ 
++static int s3fwrn5_nci_init(struct nci_dev *ndev)
++{
++	struct s3fwrn5_info *info = nci_get_drvdata(ndev);
++	u8 clk_speed = 0x12;
++
++	if (!of_device_is_compatible(info->pdev->of_node,
++				     "samsung,s3nrn74-i2c"))
++		return 0;
++
++	/* A22x RN74 vendor HAL: one-byte FW_CFG, 0x12 = 26 MHz PLL.
++	 * Configure the running controller before CORE_RESET, without entering
++	 * the downloader or changing the stored RF calibration.
++	 */
++	return nci_prop_cmd(ndev, NCI_PROP_FW_CFG, sizeof(clk_speed), &clk_speed);
++}
++
+ static int s3fwrn5_nci_post_setup(struct nci_dev *ndev)
+ {
+ 	struct s3fwrn5_info *info = nci_get_drvdata(ndev);
+ 	int ret;
+ 
++	/* Use retained S3NRN74 firmware, never the S3FWRN5 download protocol.
++	 * Initial bring-up leaves controller nonvolatile state untouched.
++	 */
++	if (of_device_is_compatible(info->pdev->of_node,
++				    "samsung,s3nrn74-i2c"))
++		return 0;
++
+ 	if (s3fwrn5_firmware_init(info)) {
+ 		//skip bootloader mode
+ 		return 0;
+@@ -152,6 +176,7 @@ static const struct nci_ops s3fwrn5_nci_ops = {
+ 	.open = s3fwrn5_nci_open,
+ 	.close = s3fwrn5_nci_close,
+ 	.send = s3fwrn5_nci_send,
++	.init = s3fwrn5_nci_init,
+ 	.post_setup = s3fwrn5_nci_post_setup,
+ 	.prop_ops = s3fwrn5_nci_prop_ops,
+ 	.n_prop_ops = ARRAY_SIZE(s3fwrn5_nci_prop_ops),
+diff --git a/drivers/nfc/s3fwrn5/i2c.c b/drivers/nfc/s3fwrn5/i2c.c
+index e9a34d27a..87bb03abc 100644
+--- a/drivers/nfc/s3fwrn5/i2c.c
++++ b/drivers/nfc/s3fwrn5/i2c.c
+@@ -11,6 +11,8 @@
+ #include <linux/gpio/consumer.h>
+ #include <linux/delay.h>
+ #include <linux/module.h>
++#include <linux/of.h>
++#include <linux/pm.h>
+ 
+ #include <net/nfc/nfc.h>
+ 
+@@ -204,6 +206,34 @@ static void s3fwrn5_i2c_remove(struct i2c_client *client)
+ 	s3fwrn5_remove(phy->common.ndev);
+ }
+ 
++static int s3fwrn5_i2c_suspend(struct device *dev)
++{
++	struct s3fwrn5_i2c_phy *phy = i2c_get_clientdata(to_i2c_client(dev));
++	int ret = 0;
++
++	if (!of_device_is_compatible(dev->of_node, "samsung,s3nrn74-i2c"))
++		return 0;
++
++	/* NFC wake/polling in system sleep is not supported on A22x yet.
++	 * Userspace must stop discovery and power the NCI device down first.
++	 * Keep the NCI state consistent: never silently reset an open device.
++	 */
++	mutex_lock(&phy->common.mutex);
++	if (phy->common.mode != S3FWRN5_MODE_COLD ||
++	    gpiod_get_value(phy->common.gpio_en) != 1 ||
++	    gpiod_get_value(phy->common.gpio_fw_wake) != 0)
++		ret = -EBUSY;
++	mutex_unlock(&phy->common.mutex);
++
++	if (ret)
++		dev_warn(dev, "NFC must be powered down before system suspend\n");
++	else
++		dev_dbg(dev, "suspend: NFC cold, VEN high and FIRM low\n");
++	return ret;
++}
++
++static DEFINE_SIMPLE_DEV_PM_OPS(s3fwrn5_i2c_pm_ops, s3fwrn5_i2c_suspend, NULL);
++
+ static const struct i2c_device_id s3fwrn5_i2c_id_table[] = {
+ 	{ .name = S3FWRN5_I2C_DRIVER_NAME },
+ 	{ }
+@@ -212,6 +242,7 @@ MODULE_DEVICE_TABLE(i2c, s3fwrn5_i2c_id_table);
+ 
+ static const struct of_device_id of_s3fwrn5_i2c_match[] __maybe_unused = {
+ 	{ .compatible = "samsung,s3fwrn5-i2c", },
++	{ .compatible = "samsung,s3nrn74-i2c", },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, of_s3fwrn5_i2c_match);
+@@ -220,6 +251,7 @@ static struct i2c_driver s3fwrn5_i2c_driver = {
+ 	.driver = {
+ 		.name = S3FWRN5_I2C_DRIVER_NAME,
+ 		.of_match_table = of_match_ptr(of_s3fwrn5_i2c_match),
++		.pm = pm_sleep_ptr(&s3fwrn5_i2c_pm_ops),
+ 	},
+ 	.probe = s3fwrn5_i2c_probe,
+ 	.remove = s3fwrn5_i2c_remove,

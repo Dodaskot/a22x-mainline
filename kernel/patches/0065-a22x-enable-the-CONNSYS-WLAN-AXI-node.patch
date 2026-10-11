@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sun, 4 Oct 2026 11:37:26 +0200
+Subject: [PATCH 065/131] a22x: enable the CONNSYS WLAN (AXI) node
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 566eb8504..9d5aba8a8 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -1658,3 +1658,8 @@ &consys {
+ 	vcn33_2_wifi-supply = <&mt6359_vcn33_2_ldo_reg>;
+ 	status = "okay";
+ };
++
++&{/wifi@18000000} {
++	memory-region = <&{/reserved-memory/wifi-reserve-memory}>;
++	status = "okay";
++};

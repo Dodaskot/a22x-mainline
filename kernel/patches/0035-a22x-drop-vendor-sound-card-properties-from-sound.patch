@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 18:34:16 +0200
+Subject: [PATCH 035/131] a22x: drop vendor sound card properties from /sound
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index bdb19be75..4ac0c85c1 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -1325,6 +1325,11 @@ afe_ml: audio-controller {
+ 	};
+ 
+ 	sound_ml: sound {
++		/* drop the vendor card description merged into this node */
++		/delete-property/ mediatek,audio-codec;
++		/delete-property/ mtk_spk_i2s_out;
++		/delete-property/ mtk_spk_i2s_in;
++		/delete-node/ mediatek,speaker-codec;
+ 		compatible = "mediatek,mt6833-mt6359-sound";
+ 		mediatek,platform = <&afe_ml>;
+ 		pinctrl-names = "aud_clk_mosi_off", "aud_clk_mosi_on", "aud_dat_mosi_off", "aud_dat_mosi_on", "aud_dat_miso_off", "aud_dat_miso_on", "aud_gpio_i2s3_off", "aud_gpio_i2s3_on", "aud_gpio_i2s0_off", "aud_gpio_i2s0_on";

@@ -1,0 +1,74 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 22:57:12 +0200
+Subject: [PATCH 048/131] a22x: flashlight (MT6360 FLED1) and vibration motor
+ (MT6359 VIBR LDO)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 34 +++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index aa73830bc..886ebba3c 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -19,6 +19,7 @@
+ #include <dt-bindings/power/mediatek,mt6833-power.h>
+ #include <dt-bindings/thermal/mediatek,lvts-thermal.h>
+ #include <dt-bindings/thermal/thermal.h>
++#include <dt-bindings/leds/common.h>
+ #include <dt-bindings/phy/phy.h>
+ #include <dt-bindings/gpio/gpio.h>
+ #include <dt-bindings/input/input.h>
+@@ -451,6 +452,23 @@ mt6360_adc: adc {
+ 			 * Only the SD card supplies are described; the other
+ 			 * MT6360 rails keep their bootloader state.
+ 			 */
++			/* rear flash: FLED1 (vendor: torch 37.5 mA, strobe 750 mA / 1.248 s) */
++			led-controller {
++				compatible = "mediatek,mt6360-led";
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				led@4 {
++					reg = <4>;
++					function = LED_FUNCTION_FLASH;
++					color = <LED_COLOR_ID_WHITE>;
++					function-enumerator = <1>;
++					led-max-microamp = <100000>;
++					flash-max-microamp = <750000>;
++					flash-max-timeout-us = <1248000>;
++				};
++			};
++
+ 			regulator {
+ 				compatible = "mediatek,mt6360-regulator";
+ 
+@@ -606,6 +624,13 @@ mt6359_vsram_proc2_ldo_reg: ldo_vsram_proc2 {
+ 					regulator-always-on;
+ 				};
+ 
++				/* vibration motor (vendor vib_vol index 11 = 3.0 V) */
++				mt6359_vibr_ldo_reg: ldo_vibr {
++					regulator-name = "vibr";
++					regulator-min-microvolt = <3000000>;
++					regulator-max-microvolt = <3000000>;
++				};
++
+ 				mt6359_vsram_md_ldo_reg: ldo_vsram_md {
+ 					regulator-name = "vsram_gpu";
+ 					regulator-min-microvolt = <850000>;
+@@ -1467,3 +1492,12 @@ sound_ml: sound {
+ 		pinctrl-9 = <&aud_gpio_i2s0_on_ml>;
+ 	};
+ };
++
++/ {
++	vibrator {
++		compatible = "regulator-haptic";
++		haptic-supply = <&mt6359_vibr_ldo_reg>;
++		min-microvolt = <3000000>;
++		max-microvolt = <3000000>;
++	};
++};

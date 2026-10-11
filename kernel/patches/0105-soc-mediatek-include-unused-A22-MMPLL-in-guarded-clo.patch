@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 6 Oct 2026 20:41:59 +0200
+Subject: [PATCH 105/131] soc: mediatek: include unused A22 MMPLL in guarded
+ clock cleanup
+
+---
+ .../mediatek/mt6833-samsung-a22x-native-display.dts    | 10 +++++++---
+ drivers/soc/mediatek/mtk-mt6833-lpm.c                  |  3 ++-
+ 2 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+index db258adf0..a36ad2b6f 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+@@ -18,7 +18,9 @@ lpm_ml: power-controller@c55fce0 {
+ 			    "rx-clear", "rx-status", "eem-mailbox";
+ 		memory-region = <&mcupm_share>;
+ 		mediatek,firmware-config = <&mtk_lpm>;
+-		/* Unused board peripherals left clocked by LK; opt-in cleanup. */
++		/* Unused board clocks left enabled by LK; opt-in CCF cleanup.
++		 * Native display uses mainpll/univpll, not the unclaimed MMPLL.
++		 */
+ 		clocks = <&infracfg_ao CLK_IFRAO_UART1>,
+ 			 <&infracfg_ao CLK_IFRAO_SPI0>,
+ 			 <&infracfg_ao CLK_IFRAO_SPI3>,
+@@ -31,11 +33,13 @@ lpm_ml: power-controller@c55fce0 {
+ 			 <&mdp_clocks_ml CLK_MDP_SMI0>,
+ 			 <&mdp_clocks_ml CLK_MDP_WROT0>,
+ 			 <&mdp_clocks_ml CLK_MDP_WROT1>,
+-			 <&mdp_clocks_ml CLK_MDP_FAKE_ENG0>;
++			 <&mdp_clocks_ml CLK_MDP_FAKE_ENG0>,
++			 <&apmixed CLK_APMIXED_MMPLL>;
+ 		clock-names = "boot-uart1", "boot-spi0", "boot-spi3", "boot-spi4",
+ 			      "boot-spi5", "boot-spi6", "boot-spi7",
+ 			      "boot-mdp-rdma0", "boot-mdp-rdma1", "boot-mdp-smi0",
+-			      "boot-mdp-wrot0", "boot-mdp-wrot1", "boot-mdp-fake0";
++			      "boot-mdp-wrot0", "boot-mdp-wrot1", "boot-mdp-fake0",
++			      "boot-mmpll";
+ 	};
+ 
+ 	mdp_clocks_ml: clock-controller@1f000000 {
+diff --git a/drivers/soc/mediatek/mtk-mt6833-lpm.c b/drivers/soc/mediatek/mtk-mt6833-lpm.c
+index 2527cb94f..8b66e1728 100644
+--- a/drivers/soc/mediatek/mtk-mt6833-lpm.c
++++ b/drivers/soc/mediatek/mtk-mt6833-lpm.c
+@@ -58,6 +58,7 @@ static const char * const boot_peripheral_clock_names[] = {
+ 	"boot-spi5", "boot-spi6", "boot-spi7",
+ 	"boot-mdp-rdma0", "boot-mdp-rdma1", "boot-mdp-smi0",
+ 	"boot-mdp-wrot0", "boot-mdp-wrot1", "boot-mdp-fake0",
++	"boot-mmpll",
+ };
+ 
+ struct mt6833_lpm {
+@@ -439,7 +440,7 @@ static ssize_t boot_peripherals_gated_store(struct device *dev,
+ 		return -EBUSY;
+ 	if (gate == lpm->boot_peripherals_gated)
+ 		return count;
+-	/* Only explicitly described board-unused UART/SPI/MDP gates are managed. Taking
++	/* Only explicitly described board-unused peripheral clocks are managed. Taking
+ 	 * and releasing a CCF reference removes inherited hardware enables;
+ 	 * any real consumer's references continue to protect its clock.
+ 	 * Do not globally clean up boot clocks until all dependencies are known.

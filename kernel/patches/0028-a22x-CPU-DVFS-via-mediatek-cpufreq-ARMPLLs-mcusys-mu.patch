@@ -1,0 +1,469 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 17:58:27 +0200
+Subject: [PATCH 028/131] a22x: CPU DVFS via mediatek-cpufreq (ARMPLLs, mcusys
+ muxes, CPU rails)
+
+- clk: mediatek: MT6833 armpll_ll/armpll_bl0/ccipll (always on) and mcusys
+  CPU muxes; only clk26m and the cluster PLL are usable mux inputs
+- cpufreq: mediatek: MT6833 platform data (vendor VSRAM limits), keep
+  cpufreq-dt off
+- dts: vgpu11/vproc2 + vsram_proc1/2 rails (always on), vendor B20G OPPs;
+  LITTLE limited to >= 950 MHz while the CCI shares Vproc2 unscaled
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 263 ++++++++++++++++++
+ drivers/clk/mediatek/Makefile                 |   3 +-
+ drivers/clk/mediatek/clk-mt6833-apmixedsys.c  |  10 +
+ drivers/clk/mediatek/clk-mt6833-mcu.c         |  64 +++++
+ drivers/cpufreq/cpufreq-dt-platdev.c          |   1 +
+ drivers/cpufreq/mediatek-cpufreq.c            |  15 +
+ include/dt-bindings/clock/mt6833-clk.h        |   6 +
+ 7 files changed, 361 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/clk/mediatek/clk-mt6833-mcu.c
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 66ef2db58..81afb2d9e 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -384,6 +384,45 @@ mt6359_vproc1_buck_reg: buck_vproc1 {
+ 					regulator-enable-ramp-delay = <200>;
+ 				};
+ 
++				/*
++				 * CPU rails (vendor kernel: big = vgpu11 +
++				 * vsram_proc1, LITTLE + CCI = vproc2 +
++				 * vsram_proc2). Never switched off; the
++				 * ranges cover the bootloader setting so
++				 * nothing changes until cpufreq asks.
++				 */
++				mt6359_vgpu11_buck_reg: buck_vgpu11 {
++					regulator-name = "vproc_big";
++					regulator-min-microvolt = <600000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-ramp-delay = <5000>;
++					regulator-always-on;
++				};
++
++				mt6359_vproc2_buck_reg: buck_vproc2 {
++					regulator-name = "vproc_little";
++					regulator-min-microvolt = <600000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-ramp-delay = <5000>;
++					regulator-always-on;
++				};
++
++				mt6359_vsram_proc1_ldo_reg: ldo_vsram_proc1 {
++					regulator-name = "vsram_big";
++					regulator-min-microvolt = <750000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-ramp-delay = <5000>;
++					regulator-always-on;
++				};
++
++				mt6359_vsram_proc2_ldo_reg: ldo_vsram_proc2 {
++					regulator-name = "vsram_little";
++					regulator-min-microvolt = <750000>;
++					regulator-max-microvolt = <1000000>;
++					regulator-ramp-delay = <5000>;
++					regulator-always-on;
++				};
++
+ 				mt6359_vsram_md_ldo_reg: ldo_vsram_md {
+ 					regulator-name = "vsram_gpu";
+ 					regulator-min-microvolt = <800000>;
+@@ -555,3 +594,227 @@ opp-955000000 {
+ 		};
+ 	};
+ };
++
++/*
++ * CPU DVFS: Linux retunes the cluster PLLs itself (mediatek-cpufreq) instead
++ * of the vendor CPUHVFS/MCUPM path. Tables are the vendor B20G level that
++ * this device is built for (MTK_5GCM_PROJECT), with the unadjusted (pre-EEM)
++ * voltages. LITTLE stops at 950 MHz / 0.725 V because the CCI (675 MHz,
++ * needs 0.725 V) shares Vproc2 and is not scaled yet.
++ */
++/ {
++	mcusys: syscon@c53a000 {
++		compatible = "mediatek,mt6833-mcusys", "syscon";
++		reg = <0 0x0c53a000 0 0x1000>;
++		#clock-cells = <1>;
++	};
++
++	cluster0_opp: opp-table-cluster0 {
++		compatible = "operating-points-v2";
++		opp-shared;
++
++		opp-950000000 {
++			opp-hz = /bits/ 64 <950000000>;
++			opp-microvolt = <725000>;
++		};
++
++		opp-1032000000 {
++			opp-hz = /bits/ 64 <1032000000>;
++			opp-microvolt = <743750>;
++		};
++
++		opp-1115000000 {
++			opp-hz = /bits/ 64 <1115000000>;
++			opp-microvolt = <762500>;
++		};
++
++		opp-1280000000 {
++			opp-hz = /bits/ 64 <1280000000>;
++			opp-microvolt = <800000>;
++		};
++
++		opp-1390000000 {
++			opp-hz = /bits/ 64 <1390000000>;
++			opp-microvolt = <825000>;
++		};
++
++		opp-1500000000 {
++			opp-hz = /bits/ 64 <1500000000>;
++			opp-microvolt = <850000>;
++		};
++
++		opp-1645000000 {
++			opp-hz = /bits/ 64 <1645000000>;
++			opp-microvolt = <893750>;
++		};
++
++		opp-1750000000 {
++			opp-hz = /bits/ 64 <1750000000>;
++			opp-microvolt = <925000>;
++		};
++
++		opp-1812000000 {
++			opp-hz = /bits/ 64 <1812000000>;
++			opp-microvolt = <943750>;
++		};
++
++		opp-1916000000 {
++			opp-hz = /bits/ 64 <1916000000>;
++			opp-microvolt = <975000>;
++		};
++
++		opp-2000000000 {
++			opp-hz = /bits/ 64 <2000000000>;
++			opp-microvolt = <1000000>;
++		};
++	};
++
++	cluster1_opp: opp-table-cluster1 {
++		compatible = "operating-points-v2";
++		opp-shared;
++
++		opp-725000000 {
++			opp-hz = /bits/ 64 <725000000>;
++			opp-microvolt = <650000>;
++		};
++
++		opp-840000000 {
++			opp-hz = /bits/ 64 <840000000>;
++			opp-microvolt = <681250>;
++		};
++
++		opp-898000000 {
++			opp-hz = /bits/ 64 <898000000>;
++			opp-microvolt = <700000>;
++		};
++
++		opp-985000000 {
++			opp-hz = /bits/ 64 <985000000>;
++			opp-microvolt = <725000>;
++		};
++
++		opp-1042000000 {
++			opp-hz = /bits/ 64 <1042000000>;
++			opp-microvolt = <737500>;
++		};
++
++		opp-1129000000 {
++			opp-hz = /bits/ 64 <1129000000>;
++			opp-microvolt = <756250>;
++		};
++
++		opp-1274000000 {
++			opp-hz = /bits/ 64 <1274000000>;
++			opp-microvolt = <800000>;
++		};
++
++		opp-1418000000 {
++			opp-hz = /bits/ 64 <1418000000>;
++			opp-microvolt = <843750>;
++		};
++
++		opp-1534000000 {
++			opp-hz = /bits/ 64 <1534000000>;
++			opp-microvolt = <875000>;
++		};
++
++		opp-1650000000 {
++			opp-hz = /bits/ 64 <1650000000>;
++			opp-microvolt = <906250>;
++		};
++
++		opp-1720000000 {
++			opp-hz = /bits/ 64 <1720000000>;
++			opp-microvolt = <925000>;
++		};
++
++		opp-1790000000 {
++			opp-hz = /bits/ 64 <1790000000>;
++			opp-microvolt = <943750>;
++		};
++
++		opp-1836000000 {
++			opp-hz = /bits/ 64 <1836000000>;
++			opp-microvolt = <950000>;
++		};
++
++		opp-1906000000 {
++			opp-hz = /bits/ 64 <1906000000>;
++			opp-microvolt = <968750>;
++		};
++
++		opp-1953000000 {
++			opp-hz = /bits/ 64 <1953000000>;
++			opp-microvolt = <981250>;
++		};
++
++		opp-2000000000 {
++			opp-hz = /bits/ 64 <2000000000>;
++			opp-microvolt = <993750>;
++		};
++	};
++};
++
++&cpu0 {
++	clocks = <&mcusys CLK_MCU_ARMPLL_LL_SEL>, <&clk26m>;
++	clock-names = "cpu", "intermediate";
++	operating-points-v2 = <&cluster0_opp>;
++	proc-supply = <&mt6359_vproc2_buck_reg>;
++	sram-supply = <&mt6359_vsram_proc2_ldo_reg>;
++};
++
++&cpu1 {
++	clocks = <&mcusys CLK_MCU_ARMPLL_LL_SEL>, <&clk26m>;
++	clock-names = "cpu", "intermediate";
++	operating-points-v2 = <&cluster0_opp>;
++	proc-supply = <&mt6359_vproc2_buck_reg>;
++	sram-supply = <&mt6359_vsram_proc2_ldo_reg>;
++};
++
++&cpu2 {
++	clocks = <&mcusys CLK_MCU_ARMPLL_LL_SEL>, <&clk26m>;
++	clock-names = "cpu", "intermediate";
++	operating-points-v2 = <&cluster0_opp>;
++	proc-supply = <&mt6359_vproc2_buck_reg>;
++	sram-supply = <&mt6359_vsram_proc2_ldo_reg>;
++};
++
++&cpu3 {
++	clocks = <&mcusys CLK_MCU_ARMPLL_LL_SEL>, <&clk26m>;
++	clock-names = "cpu", "intermediate";
++	operating-points-v2 = <&cluster0_opp>;
++	proc-supply = <&mt6359_vproc2_buck_reg>;
++	sram-supply = <&mt6359_vsram_proc2_ldo_reg>;
++};
++
++&cpu4 {
++	clocks = <&mcusys CLK_MCU_ARMPLL_LL_SEL>, <&clk26m>;
++	clock-names = "cpu", "intermediate";
++	operating-points-v2 = <&cluster0_opp>;
++	proc-supply = <&mt6359_vproc2_buck_reg>;
++	sram-supply = <&mt6359_vsram_proc2_ldo_reg>;
++};
++
++&cpu5 {
++	clocks = <&mcusys CLK_MCU_ARMPLL_LL_SEL>, <&clk26m>;
++	clock-names = "cpu", "intermediate";
++	operating-points-v2 = <&cluster0_opp>;
++	proc-supply = <&mt6359_vproc2_buck_reg>;
++	sram-supply = <&mt6359_vsram_proc2_ldo_reg>;
++};
++
++&cpu6 {
++	clocks = <&mcusys CLK_MCU_ARMPLL_BL_SEL>, <&clk26m>;
++	clock-names = "cpu", "intermediate";
++	operating-points-v2 = <&cluster1_opp>;
++	proc-supply = <&mt6359_vgpu11_buck_reg>;
++	sram-supply = <&mt6359_vsram_proc1_ldo_reg>;
++};
++
++&cpu7 {
++	clocks = <&mcusys CLK_MCU_ARMPLL_BL_SEL>, <&clk26m>;
++	clock-names = "cpu", "intermediate";
++	operating-points-v2 = <&cluster1_opp>;
++	proc-supply = <&mt6359_vgpu11_buck_reg>;
++	sram-supply = <&mt6359_vsram_proc1_ldo_reg>;
++};
+diff --git a/drivers/clk/mediatek/Makefile b/drivers/clk/mediatek/Makefile
+index 54a71667d..b6b5513b9 100644
+--- a/drivers/clk/mediatek/Makefile
++++ b/drivers/clk/mediatek/Makefile
+@@ -124,7 +124,8 @@ obj-$(CONFIG_COMMON_CLK_MT8188_VENCSYS) += clk-mt8188-venc.o
+ obj-$(CONFIG_COMMON_CLK_MT8188_VPPSYS) += clk-mt8188-vpp0.o clk-mt8188-vpp1.o
+ obj-$(CONFIG_COMMON_CLK_MT8188_WPESYS) += clk-mt8188-wpe.o
+ obj-$(CONFIG_COMMON_CLK_MT6833) += clk-mt6833-apmixedsys.o clk-mt6833.o \
+-				   clk-mt6833-imp_iic_wrap.o clk-mt6833-mfgcfg.o
++				   clk-mt6833-imp_iic_wrap.o clk-mt6833-mfgcfg.o \
++				   clk-mt6833-mcu.o
+ obj-$(CONFIG_COMMON_CLK_MT8192) += clk-mt8192-apmixedsys.o clk-mt8192.o
+ obj-$(CONFIG_COMMON_CLK_MT8192_AUDSYS) += clk-mt8192-aud.o
+ obj-$(CONFIG_COMMON_CLK_MT8192_CAMSYS) += clk-mt8192-cam.o
+diff --git a/drivers/clk/mediatek/clk-mt6833-apmixedsys.c b/drivers/clk/mediatek/clk-mt6833-apmixedsys.c
+index 7877d967d..4f74c566b 100644
+--- a/drivers/clk/mediatek/clk-mt6833-apmixedsys.c
++++ b/drivers/clk/mediatek/clk-mt6833-apmixedsys.c
+@@ -55,6 +55,16 @@
+ 			_pcw_reg, _pcw_shift, 0, 0, 0)
+ 
+ static const struct mtk_pll_data plls[] = {
++	/*
++	 * CPU PLLs: left running by the bootloader, retuned only by
++	 * mediatek-cpufreq while the CPU mux is parked on clk26m.
++	 */
++	PLL_B(CLK_APMIXED_ARMPLL_LL, "armpll_ll", 0x0208, 0x0214, 0,
++	      PLL_AO, 0, 22, 0x020c, 24, 0, 0, 0, 0x020c, 0),
++	PLL_B(CLK_APMIXED_ARMPLL_BL0, "armpll_bl0", 0x0218, 0x0224, 0,
++	      PLL_AO, 0, 22, 0x021c, 24, 0, 0, 0, 0x021c, 0),
++	PLL_B(CLK_APMIXED_CCIPLL, "ccipll", 0x0258, 0x0264, 0,
++	      PLL_AO, 0, 22, 0x025c, 24, 0, 0, 0, 0x025c, 0),
+ 	PLL_B(CLK_APMIXED_MAINPLL, "mainpll", 0x0340, 0x034c, 0xff000000,
+ 	      HAVE_RST_BAR | PLL_AO, BIT(23), 22, 0x0344, 24, 0, 0, 0, 0x0344, 0),
+ 	PLL_B(CLK_APMIXED_UNIVPLL, "univpll", 0x0308, 0x0314, 0xff000000,
+diff --git a/drivers/clk/mediatek/clk-mt6833-mcu.c b/drivers/clk/mediatek/clk-mt6833-mcu.c
+new file mode 100644
+index 000000000..609b0c9eb
+--- /dev/null
++++ b/drivers/clk/mediatek/clk-mt6833-mcu.c
+@@ -0,0 +1,64 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * MediaTek MT6833 mcusys CPU clock muxes (CPU_PLLDIV_CFG0/1, BUS_PLLDIV_CFG).
++ *
++ * Same layout as MT8186. On MT6833 only inputs 0 (clk26m) and 1 (the
++ * cluster PLL) are usable from Linux: selecting 2 or 3 runs the cores at
++ * crystal speed (measured), so those inputs are not exposed. The divider
++ * fields are left as the bootloader set them (/1).
++ */
++
++#include <dt-bindings/clock/mt6833-clk.h>
++#include <linux/clk-provider.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++
++#include "clk-mtk.h"
++
++static const char * const mcu_armpll_ll_parents[] = {
++	"clk26m",
++	"armpll_ll",
++};
++
++static const char * const mcu_armpll_bl_parents[] = {
++	"clk26m",
++	"armpll_bl0",
++};
++
++static const char * const mcu_armpll_bus_parents[] = {
++	"clk26m",
++	"ccipll",
++};
++
++static struct mtk_composite mcu_muxes[] = {
++	/* CPU_PLLDIV_CFG0 */
++	MUX(CLK_MCU_ARMPLL_LL_SEL, "mcu_armpll_ll_sel", mcu_armpll_ll_parents, 0x2a0, 9, 2),
++	/* CPU_PLLDIV_CFG1 */
++	MUX(CLK_MCU_ARMPLL_BL_SEL, "mcu_armpll_bl_sel", mcu_armpll_bl_parents, 0x2a4, 9, 2),
++	/* BUS_PLLDIV_CFG */
++	MUX(CLK_MCU_ARMPLL_BUS_SEL, "mcu_armpll_bus_sel", mcu_armpll_bus_parents, 0x2e0, 9, 2),
++};
++
++static const struct mtk_clk_desc mcu_desc = {
++	.composite_clks = mcu_muxes,
++	.num_composite_clks = ARRAY_SIZE(mcu_muxes),
++};
++
++static const struct of_device_id of_match_clk_mt6833_mcu[] = {
++	{ .compatible = "mediatek,mt6833-mcusys", .data = &mcu_desc },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, of_match_clk_mt6833_mcu);
++
++static struct platform_driver clk_mt6833_mcu_drv = {
++	.driver = {
++		.name = "clk-mt6833-mcu",
++		.of_match_table = of_match_clk_mt6833_mcu,
++	},
++	.probe = mtk_clk_simple_probe,
++	.remove = mtk_clk_simple_remove,
++};
++module_platform_driver(clk_mt6833_mcu_drv);
++
++MODULE_DESCRIPTION("MediaTek MT6833 mcusys clocks driver");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/cpufreq/cpufreq-dt-platdev.c b/drivers/cpufreq/cpufreq-dt-platdev.c
+index ff1204c66..4e1423819 100644
+--- a/drivers/cpufreq/cpufreq-dt-platdev.c
++++ b/drivers/cpufreq/cpufreq-dt-platdev.c
+@@ -132,6 +132,7 @@ static const struct of_device_id blocklist[] __initconst = {
+ 
+ 	{ .compatible = "mediatek,mt2701", },
+ 	{ .compatible = "mediatek,mt2712", },
++	{ .compatible = "mediatek,mt6833", },
+ 	{ .compatible = "mediatek,mt7622", },
+ 	{ .compatible = "mediatek,mt7623", },
+ 	{ .compatible = "mediatek,mt8167", },
+diff --git a/drivers/cpufreq/mediatek-cpufreq.c b/drivers/cpufreq/mediatek-cpufreq.c
+index 052ca7cd2..d8e6c7a7a 100644
+--- a/drivers/cpufreq/mediatek-cpufreq.c
++++ b/drivers/cpufreq/mediatek-cpufreq.c
+@@ -716,6 +716,20 @@ static const struct mtk_cpufreq_platform_data mt7988_platform_data = {
+ 	.ccifreq_supported = true,
+ };
+ 
++/*
++ * MT6833: limits from the vendor kernel (VSRAM 0.75..1.0 V, VSRAM - VPROC
++ * 0.1..0.25 V). The LL cluster shares Vproc2 with the CCI, which is not
++ * scaled yet, so its OPP table must keep Vproc2 high enough for the CCI.
++ */
++static const struct mtk_cpufreq_platform_data mt6833_platform_data = {
++	.min_volt_shift = 100000,
++	.max_volt_shift = 250000,
++	.proc_max_volt = 1000000,
++	.sram_min_volt = 750000,
++	.sram_max_volt = 1000000,
++	.ccifreq_supported = false,
++};
++
+ static const struct mtk_cpufreq_platform_data mt8183_platform_data = {
+ 	.min_volt_shift = 100000,
+ 	.max_volt_shift = 200000,
+@@ -747,6 +761,7 @@ static const struct mtk_cpufreq_platform_data mt8516_platform_data = {
+ static const struct of_device_id mtk_cpufreq_machines[] __initconst __maybe_unused = {
+ 	{ .compatible = "mediatek,mt2701", .data = &mt2701_platform_data },
+ 	{ .compatible = "mediatek,mt2712", .data = &mt2701_platform_data },
++	{ .compatible = "mediatek,mt6833", .data = &mt6833_platform_data },
+ 	{ .compatible = "mediatek,mt7622", .data = &mt7622_platform_data },
+ 	{ .compatible = "mediatek,mt7623", .data = &mt7623_platform_data },
+ 	{ .compatible = "mediatek,mt7988a", .data = &mt7988_platform_data },
+diff --git a/include/dt-bindings/clock/mt6833-clk.h b/include/dt-bindings/clock/mt6833-clk.h
+index 07fa734cc..4b280abb0 100644
+--- a/include/dt-bindings/clock/mt6833-clk.h
++++ b/include/dt-bindings/clock/mt6833-clk.h
+@@ -680,5 +680,11 @@
+ #define SCP_SYS_CAM_RAWB	15
+ #define SCP_NR_SYSS	16
+ 
++/* MCUSYS (mainline addition, not in the vendor header) */
++#define CLK_MCU_ARMPLL_LL_SEL		0
++#define CLK_MCU_ARMPLL_BL_SEL		1
++#define CLK_MCU_ARMPLL_BUS_SEL		2
++#define CLK_MCU_NR_CLK			3
++
+ #endif /* _DT_BINDINGS_CLK_MT6833_H */
+ 

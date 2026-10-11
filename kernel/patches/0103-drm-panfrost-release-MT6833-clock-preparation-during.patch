@@ -1,0 +1,133 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 6 Oct 2026 17:55:06 +0200
+Subject: [PATCH 103/131] drm/panfrost: release MT6833 clock preparation during
+ system sleep
+
+---
+ drivers/gpu/drm/panfrost/panfrost_device.c | 30 +++++++++++++++++-----
+ drivers/gpu/drm/panfrost/panfrost_device.h |  5 +++-
+ drivers/gpu/drm/panfrost/panfrost_drv.c    | 14 ++++++++++
+ 3 files changed, 42 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/gpu/drm/panfrost/panfrost_device.c b/drivers/gpu/drm/panfrost/panfrost_device.c
+index 7fed22d55..fbfca7a5d 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_device.c
++++ b/drivers/gpu/drm/panfrost/panfrost_device.c
+@@ -492,6 +492,24 @@ static int panfrost_device_runtime_suspend(struct device *dev)
+ 	return 0;
+ }
+ 
++static int panfrost_system_clk_enable(struct panfrost_device *pfdev,
++				      struct clk *clock)
++{
++	if (pfdev->comp->pm_features & BIT(GPU_PM_CLK_UNPREPARE))
++		return clk_prepare_enable(clock);
++
++	return clk_enable(clock);
++}
++
++static void panfrost_system_clk_disable(struct panfrost_device *pfdev,
++				       struct clk *clock)
++{
++	if (pfdev->comp->pm_features & BIT(GPU_PM_CLK_UNPREPARE))
++		clk_disable_unprepare(clock);
++	else
++		clk_disable(clock);
++}
++
+ static int panfrost_device_resume(struct device *dev)
+ {
+ 	struct panfrost_device *pfdev = dev_get_drvdata(dev);
+@@ -509,12 +527,12 @@ static int panfrost_device_resume(struct device *dev)
+ 	}
+ 
+ 	if (pfdev->comp->pm_features & BIT(GPU_PM_CLK_DIS)) {
+-		ret = clk_enable(pfdev->clock);
++		ret = panfrost_system_clk_enable(pfdev, pfdev->clock);
+ 		if (ret)
+ 			goto err_clk;
+ 
+ 		if (pfdev->bus_clock) {
+-			ret = clk_enable(pfdev->bus_clock);
++			ret = panfrost_system_clk_enable(pfdev, pfdev->bus_clock);
+ 			if (ret)
+ 				goto err_bus_clk;
+ 		}
+@@ -528,10 +546,10 @@ static int panfrost_device_resume(struct device *dev)
+ 
+ err_resume:
+ 	if (pfdev->comp->pm_features & BIT(GPU_PM_CLK_DIS) && pfdev->bus_clock)
+-		clk_disable(pfdev->bus_clock);
++		panfrost_system_clk_disable(pfdev, pfdev->bus_clock);
+ err_bus_clk:
+ 	if (pfdev->comp->pm_features & BIT(GPU_PM_CLK_DIS))
+-		clk_disable(pfdev->clock);
++		panfrost_system_clk_disable(pfdev, pfdev->clock);
+ err_clk:
+ 	if (pfdev->comp->pm_features & BIT(GPU_PM_VREG_OFF))
+ 		dev_pm_opp_set_opp(dev, NULL);
+@@ -549,9 +567,9 @@ static int panfrost_device_suspend(struct device *dev)
+ 
+ 	if (pfdev->comp->pm_features & BIT(GPU_PM_CLK_DIS)) {
+ 		if (pfdev->bus_clock)
+-			clk_disable(pfdev->bus_clock);
++			panfrost_system_clk_disable(pfdev, pfdev->bus_clock);
+ 
+-		clk_disable(pfdev->clock);
++		panfrost_system_clk_disable(pfdev, pfdev->clock);
+ 	}
+ 
+ 	if (pfdev->comp->pm_features & BIT(GPU_PM_VREG_OFF))
+diff --git a/drivers/gpu/drm/panfrost/panfrost_device.h b/drivers/gpu/drm/panfrost/panfrost_device.h
+index ec55c136b..9a3d86ca0 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_device.h
++++ b/drivers/gpu/drm/panfrost/panfrost_device.h
+@@ -43,11 +43,14 @@ enum panfrost_drv_comp_bits {
+  * @GPU_PM_VREG_OFF: Allow turning off regulators during system suspend
+  * @GPU_PM_RT: Allow disabling clocks and asserting the reset control during
+  *  system runtime suspend
++ * @GPU_PM_CLK_UNPREPARE: Release clock preparation during system suspend so
++ *  a runtime-managed clock provider can power down
+  */
+ enum panfrost_gpu_pm {
+ 	GPU_PM_CLK_DIS,
+ 	GPU_PM_VREG_OFF,
+-	GPU_PM_RT
++	GPU_PM_RT,
++	GPU_PM_CLK_UNPREPARE
+ };
+ 
+ /**
+diff --git a/drivers/gpu/drm/panfrost/panfrost_drv.c b/drivers/gpu/drm/panfrost/panfrost_drv.c
+index 784e36d72..f3f51fc89 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_drv.c
++++ b/drivers/gpu/drm/panfrost/panfrost_drv.c
+@@ -1152,6 +1152,19 @@ static const struct panfrost_compatible mediatek_mt8370_data = {
+ 	.gpu_quirks = BIT(GPU_QUIRK_FORCE_AARCH64_PGTABLE),
+ };
+ 
++/* MFGCFG clock preparation holds its provider's MFG1 runtime PM reference.
++ * Release it during system sleep so the parent island and PLL can turn off.
++ */
++static const struct panfrost_compatible mediatek_mt6833_data = {
++	.num_supplies = ARRAY_SIZE(default_supplies) - 1,
++	.supply_names = default_supplies,
++	.num_pm_domains = 2,
++	.pm_domain_names = mediatek_pm_domains,
++	.pm_features = BIT(GPU_PM_CLK_DIS) | BIT(GPU_PM_VREG_OFF) |
++		       BIT(GPU_PM_CLK_UNPREPARE),
++	.gpu_quirks = BIT(GPU_QUIRK_FORCE_AARCH64_PGTABLE),
++};
++
+ static const struct of_device_id dt_match[] = {
+ 	/* Set first to probe before the generic compatibles */
+ 	{ .compatible = "amlogic,meson-gxm-mali",
+@@ -1177,6 +1190,7 @@ static const struct of_device_id dt_match[] = {
+ 	{ .compatible = "mediatek,mt8188-mali", .data = &mediatek_mt8188_data },
+ 	{ .compatible = "mediatek,mt8192-mali", .data = &mediatek_mt8192_data },
+ 	{ .compatible = "mediatek,mt8370-mali", .data = &mediatek_mt8370_data },
++	{ .compatible = "mediatek,mt6833-mali", .data = &mediatek_mt6833_data },
+ 	{ .compatible = "allwinner,sun50i-h616-mali", .data = &default_pm_rt_data },
+ 	{}
+ };

@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 20:41:53 +0200
+Subject: [PATCH 083/131] drm/mediatek: take over MT6833 display state from LK
+
+Bypass DSI shadow registers as the MT6833 vendor driver does. Clear the selected mutex module mask before installing the native RDMA-only path, so LK overlay and color blocks cannot remain synchronization dependencies.
+
+Signed-off-by: Dodaskot <pessdres@gmail.com>
+---
+ drivers/gpu/drm/mediatek/mtk_dsi.c | 1 +
+ drivers/soc/mediatek/mtk-mutex.c   | 6 ++++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/drivers/gpu/drm/mediatek/mtk_dsi.c b/drivers/gpu/drm/mediatek/mtk_dsi.c
+index 1d478fc69..61ec5dada 100644
+--- a/drivers/gpu/drm/mediatek/mtk_dsi.c
++++ b/drivers/gpu/drm/mediatek/mtk_dsi.c
+@@ -1437,6 +1437,7 @@ static const struct mtk_dsi_driver_data mt6833_cphy_dsi_driver_data = {
+ 	.reg_cmdq_off = 0x200,
+ 	.reg_vm_cmd_off = 0x130,
+ 	.reg_shadow_dbg_off = 0x190,
++	.has_shadow_ctl = true,
+ 	.has_size_ctl = true,
+ 	.is_cphy = true,
+ };
+diff --git a/drivers/soc/mediatek/mtk-mutex.c b/drivers/soc/mediatek/mtk-mutex.c
+index 1a169aa19..f0c75af75 100644
+--- a/drivers/soc/mediatek/mtk-mutex.c
++++ b/drivers/soc/mediatek/mtk-mutex.c
+@@ -909,6 +909,12 @@ int mtk_mutex_prepare(struct mtk_mutex *mutex)
+ 	ret = clk_prepare_enable(mtx->clk);
+ 	if (ret && mtx->data->need_runtime_pm)
+ 		pm_runtime_put_sync(mtx->dev);
++	if (!ret && mtx->data->need_runtime_pm) {
++		/* Take over this mutex without retaining LK's full display path. */
++		writel(0, mtx->regs + DISP_REG_MUTEX_EN(mutex->id));
++		writel(0, mtx->regs + DISP_REG_MUTEX_MOD(mtx, 0, mutex->id));
++		writel(0, mtx->regs + DISP_REG_MUTEX_MOD(mtx, 32, mutex->id));
++	}
+ 
+ 	return ret;
+ }

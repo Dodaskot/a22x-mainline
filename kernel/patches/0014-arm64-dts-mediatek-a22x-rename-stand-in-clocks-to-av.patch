@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 01:50:04 +0200
+Subject: [PATCH 014/131] arm64: dts: mediatek: a22x: rename stand-in clocks to
+ avoid name clashes
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index e4d4d03ba..31e5701bb 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -120,28 +120,28 @@ clk_msdc50_0: clock-msdc50-0 {
+ 		compatible = "fixed-clock";
+ 		#clock-cells = <0>;
+ 		clock-frequency = <384000000>;
+-		clock-output-names = "msdc50_0_ck";
++		clock-output-names = "standin-msdc50_0_ck";
+ 	};
+ 
+ 	clk_axi: clock-axi {
+ 		compatible = "fixed-clock";
+ 		#clock-cells = <0>;
+ 		clock-frequency = <156000000>;
+-		clock-output-names = "axi_ck";
++		clock-output-names = "standin-axi_ck";
+ 	};
+ 
+ 	clk_usb_top: clock-usb-top {
+ 		compatible = "fixed-clock";
+ 		#clock-cells = <0>;
+ 		clock-frequency = <124800000>;
+-		clock-output-names = "fusb_top_ck";
++		clock-output-names = "standin-fusb_top_ck";
+ 	};
+ 
+ 	clk_spi_parent: clock-spi-parent {
+ 		compatible = "fixed-clock";
+ 		#clock-cells = <0>;
+ 		clock-frequency = <109200000>;
+-		clock-output-names = "mainpll_d5_d4";
++		clock-output-names = "standin-mainpll_d5_d4";
+ 	};
+ 
+ 	/* mtk-spi re-parents sel-clk onto parent-clk; make that a no-op. */
+@@ -151,7 +151,7 @@ clk_spi_sel: clock-spi-sel {
+ 		clocks = <&clk_spi_parent>;
+ 		clock-mult = <1>;
+ 		clock-div = <1>;
+-		clock-output-names = "spi_sel";
++		clock-output-names = "standin-spi_sel";
+ 	};
+ 
+ 	/* VEMC, left enabled by the bootloader for the boot eMMC. */

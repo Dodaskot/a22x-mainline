@@ -1,0 +1,177 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sun, 4 Oct 2026 10:22:10 +0200
+Subject: [PATCH 057/131] ASoC: mediatek: mt6833-mt6359: headset jack detection
+ via MT6359 accdet
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 15 +++++
+ sound/soc/mediatek/Kconfig                    |  1 +
+ sound/soc/mediatek/mt8192/mt6833-mt6359.c     | 61 +++++++++++++++++--
+ 3 files changed, 73 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 5a5291570..9add57176 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -614,6 +614,20 @@ rtc {
+ 				compatible = "mediatek,mt6358-rtc";
+ 			};
+ 
++			/* headset jack detection; values from the vendor accdet node */
++			mt6359_accdet: accdet {
++				compatible = "mediatek,mt6359-accdet";
++				mediatek,mic-vol = <8>;
++				mediatek,plugout-debounce = <1>;
++				mediatek,mic-mode = <2>;
++				mediatek,pwm-deb-setting = <0x500 0x500 0x1 0x1f0
++							    0x800 0x800 0x20 0x44
++							    0x4 0x1 0x5 0x3 0x3 0x5 0xe>;
++				mediatek,eint-use-ext-res = <0>;
++				mediatek,key-mode = <0>;
++				mediatek,three-key-thr = <0 80 220 400>;
++			};
++
+ 			mt6359codec {
+ 				mediatek,dmic-mode = <0>;	/* two-wire */
+ 				mediatek,mic-type-0 = <1>;	/* ACC */
+@@ -1530,6 +1544,7 @@ sound_ml: sound {
+ 		compatible = "mediatek,mt6833-mt6359-sound";
+ 		status = "okay";
+ 		mediatek,speaker-amplifier = <&sia8109_amp>;
++		mediatek,accdet = <&mt6359_accdet>;
+ 		mediatek,platform = <&afe_ml>;
+ 		pinctrl-names = "aud_clk_mosi_off", "aud_clk_mosi_on", "aud_dat_mosi_off", "aud_dat_mosi_on", "aud_dat_miso_off", "aud_dat_miso_on", "aud_gpio_i2s3_off", "aud_gpio_i2s3_on", "aud_gpio_i2s0_off", "aud_gpio_i2s0_on";
+ 		pinctrl-0 = <&aud_clk_mosi_off_ml>;
+diff --git a/sound/soc/mediatek/Kconfig b/sound/soc/mediatek/Kconfig
+index f2283f270..d395e34f9 100644
+--- a/sound/soc/mediatek/Kconfig
++++ b/sound/soc/mediatek/Kconfig
+@@ -302,6 +302,7 @@ config SND_SOC_MT6833_MT6359
+ 	depends on SND_SOC_MT8192 && MTK_PMIC_WRAP
+ 	select SND_SOC_MT6359
+ 	select SND_SOC_AW8738
++	select SND_SOC_MT6359_ACCDET
+ 	help
+ 	  This adds the ASoC machine driver for MediaTek MT6833 (Dimensity 700)
+ 	  phones with the MT6359 audio codec. The MT6833 AFE is driven by the
+diff --git a/sound/soc/mediatek/mt8192/mt6833-mt6359.c b/sound/soc/mediatek/mt8192/mt6833-mt6359.c
+index 390432660..ace087aec 100644
+--- a/sound/soc/mediatek/mt8192/mt6833-mt6359.c
++++ b/sound/soc/mediatek/mt8192/mt6833-mt6359.c
+@@ -14,10 +14,12 @@
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/pm_runtime.h>
++#include <sound/jack.h>
+ #include <sound/pcm_params.h>
+ #include <sound/soc.h>
+ 
+ #include "../../codecs/mt6359.h"
++#include "../../codecs/mt6359-accdet.h"
+ #include "../common/mtk-afe-platform-driver.h"
+ #include "../common/mtk-soc-card.h"
+ #include "../common/mtk-soundcard-driver.h"
+@@ -27,6 +29,47 @@
+ 
+ #define DRIVER_NAME "mt6833_mt6359"
+ 
++enum {
++	MT6833_JACK_HEADSET,
++	MT6833_JACK_MAX,
++};
++
++static struct snd_soc_jack_pin mt6833_headset_jack_pins[] = {
++	{
++		.pin	= "Headphone",
++		.mask	= SND_JACK_HEADPHONE,
++	},
++	{
++		.pin	= "Headset Mic",
++		.mask	= SND_JACK_MICROPHONE,
++	},
++};
++
++static int mt6833_mt6359_accdet_init(struct snd_soc_pcm_runtime *rtd)
++{
++	struct mtk_soc_card_data *soc_card_data = snd_soc_card_get_drvdata(rtd->card);
++	struct snd_soc_jack *jack = &soc_card_data->card_data->jacks[MT6833_JACK_HEADSET];
++	int ret;
++
++	if (!soc_card_data->accdet)
++		return 0;
++
++	ret = snd_soc_card_jack_new_pins(rtd->card, "Headset Jack",
++					 SND_JACK_HEADSET | SND_JACK_BTN_0 |
++					 SND_JACK_BTN_1 | SND_JACK_BTN_2 |
++					 SND_JACK_BTN_3,
++					 jack, mt6833_headset_jack_pins,
++					 ARRAY_SIZE(mt6833_headset_jack_pins));
++	if (ret)
++		return dev_err_probe(rtd->dev, ret, "Headset Jack create failed\n");
++
++	ret = mt6359_accdet_enable_jack_detect(soc_card_data->accdet, jack);
++	if (ret)
++		return dev_err_probe(rtd->dev, ret, "Headset Jack enable failed\n");
++
++	return 0;
++}
++
+ static int mt6833_mt6359_mtkaif_calibration(struct snd_soc_pcm_runtime *rtd)
+ {
+ 	struct snd_soc_component *cmpnt_afe =
+@@ -201,6 +244,8 @@ static int mt6833_mt6359_init(struct snd_soc_pcm_runtime *rtd)
+ 	/* mtkaif calibration */
+ 	mt6833_mt6359_mtkaif_calibration(rtd);
+ 
++	mt6833_mt6359_accdet_init(rtd);
++
+ 	return 0;
+ }
+ 
+@@ -351,16 +396,23 @@ static struct snd_soc_dai_link mt6833_mt6359_dai_links[] = {
+ 
+ static const struct snd_soc_dapm_widget mt6833_mt6359_widgets[] = {
+ 	SND_SOC_DAPM_SPK("Speaker", NULL),
++	SND_SOC_DAPM_HP("Headphone", NULL),
++	SND_SOC_DAPM_MIC("Headset Mic", NULL),
+ };
+ 
+-/* The SIA8109 input is wired to the MT6359 line output (LOL Mux) */
+-static const struct snd_soc_dapm_route mt6833_mt6359_spk_routes[] = {
++static const struct snd_soc_dapm_route mt6833_mt6359_routes[] = {
++	{ "Headphone", NULL, "Headphone L" },
++	{ "Headphone", NULL, "Headphone R" },
++	{ "AIN1", NULL, "Headset Mic" },
++	/* the SIA8109 input is wired to the MT6359 line output (LOL Mux) */
+ 	{ "Speaker Amp IN", NULL, "LINEOUT L" },
+ 	{ "Speaker", NULL, "Speaker Amp OUT" },
+ };
+ 
+ static const struct snd_kcontrol_new mt6833_mt6359_controls[] = {
+ 	SOC_DAPM_PIN_SWITCH("Speaker"),
++	SOC_DAPM_PIN_SWITCH("Headphone"),
++	SOC_DAPM_PIN_SWITCH("Headset Mic"),
+ };
+ 
+ static struct snd_soc_aux_dev mt6833_mt6359_aux_dev;
+@@ -398,8 +450,8 @@ static int mt6833_mt6359_soc_card_probe(struct mtk_soc_card_data *soc_card_data,
+ 		card->num_aux_devs = 1;
+ 		card->codec_conf = &mt6833_mt6359_codec_conf;
+ 		card->num_configs = 1;
+-		card->dapm_routes = mt6833_mt6359_spk_routes;
+-		card->num_dapm_routes = ARRAY_SIZE(mt6833_mt6359_spk_routes);
++		card->dapm_routes = mt6833_mt6359_routes;
++		card->num_dapm_routes = ARRAY_SIZE(mt6833_mt6359_routes);
+ 	}
+ 
+ 	return 0;
+@@ -440,6 +492,7 @@ static const struct mtk_soundcard_pdata mt6833_mt6359_pdata = {
+ 	.card_name = "mt6833-mt6359",
+ 	.card_data = &(struct mtk_platform_card_data) {
+ 		.card = &mt6833_mt6359_card,
++		.num_jacks = MT6833_JACK_MAX,
+ 		.pcm_constraints = mt6833_pcm_constraints,
+ 		.num_pcm_constraints = ARRAY_SIZE(mt6833_pcm_constraints),
+ 	},

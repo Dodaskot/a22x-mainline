@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Fri, 2 Oct 2026 23:57:58 +0200
+Subject: [PATCH 005/131] a22x: UART clock #clock-cells, simpledrm on LK
+ framebuffer in mapped RAM
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts |  5 +++++
+ drivers/gpu/drm/sysfb/simpledrm.c                    | 12 ++++++++++++
+ 2 files changed, 17 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 27a4eca6d..9d157c9e2 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -52,3 +52,8 @@ watchdog@10007000 {
+ 		#reset-cells = <1>;
+ 	};
+ };
++
++/* The stock fixed clock lacks #clock-cells, so the UART driver cannot use it. */
++&uart_clk {
++	#clock-cells = <0>;
++};
+diff --git a/drivers/gpu/drm/sysfb/simpledrm.c b/drivers/gpu/drm/sysfb/simpledrm.c
+index fc168920f..27cbb8f13 100644
+--- a/drivers/gpu/drm/sysfb/simpledrm.c
++++ b/drivers/gpu/drm/sysfb/simpledrm.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ 
+ #include <linux/aperture.h>
++#include <linux/memblock.h>
+ #include <linux/clk.h>
+ #include <linux/minmax.h>
+ #include <linux/of_address.h>
+@@ -691,6 +692,17 @@ static struct simpledrm_device *simpledrm_device_create(struct drm_driver *drv,
+ 	 * Memory management
+ 	 */
+ 
++	if (!mem) {
++		/*
++		 * Some bootloaders (MediaTek LK) hand over a framebuffer that is
++		 * reserved but still part of the linear map. ioremap() refuses
++		 * RAM, so treat it like a "memory-region" framebuffer instead.
++		 */
++		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++		if (res && memblock_is_map_memory(res->start))
++			mem = res;
++	}
++
+ 	if (mem) {
+ 		void *screen_base;
+ 

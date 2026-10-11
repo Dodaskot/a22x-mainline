@@ -1,0 +1,296 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 6 Oct 2026 21:48:21 +0200
+Subject: [PATCH 109/131] soc: mediatek: own A22 MD1 power with guarded runtime
+ parking
+
+---
+ .../mt6833-samsung-a22x-native-display.dts    |  12 ++
+ drivers/pmdomain/mediatek/mt6833-pm-domains.h |   2 +-
+ drivers/soc/mediatek/Kconfig                  |   7 +
+ drivers/soc/mediatek/Makefile                 |   1 +
+ drivers/soc/mediatek/mtk-mt6833-modem-power.c | 203 ++++++++++++++++++
+ 5 files changed, 224 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/soc/mediatek/mtk-mt6833-modem-power.c
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+index a36ad2b6f..a2fb2d1e0 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+@@ -4,6 +4,13 @@
+ #include "mt6833-samsung-a22x.dts"
+ 
+ / {
++	modem_power_ml: modem@10209000 {
++		compatible = "mediatek,mt6833-modem-power";
++		reg = <0 0x10209000 0 0x1000>;
++		power-domains = <&spm MT6833_POWER_DOMAIN_MD1>;
++		mediatek,spm = <&scpsys_ml>;
++		wakeup-source;
++	};
+ 	/* The stock MCUPM controller stays disabled; this driver owns only
+ 	 * the platform, LPM and disabled-EEM mailboxes of boot-loaded firmware.
+ 	 * Reuse the existing reservation: adding a new carveout breaks LK.
+@@ -185,6 +192,11 @@ novatek@0 {
+ };
+ 
+ &spm {
++	power-domain@7 {
++		reg = <MT6833_POWER_DOMAIN_MD1>;
++		mediatek,infracfg = <&infracfg_ao>;
++		#power-domain-cells = <0>;
++	};
+ 	power-domain@6 {
+ 		reg = <MT6833_POWER_DOMAIN_DISP>;
+ 		clocks = <&topckgen CLK_TOP_DISP_SEL>,
+diff --git a/drivers/pmdomain/mediatek/mt6833-pm-domains.h b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+index fbce77e1c..3bd64426f 100644
+--- a/drivers/pmdomain/mediatek/mt6833-pm-domains.h
++++ b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+@@ -38,7 +38,7 @@ static const struct scpsys_domain_data scpsys_domain_data_mt6833[] = {
+ 					0xb84, 0xb88, 0xb90),
+ 		},
+ 		.caps = MTK_SCPD_MODEM_PWRSEQ | MTK_SCPD_EXT_BUCK_ISO |
+-			MTK_SCPD_MODEM_OFF_ACK_FIRST,
++			MTK_SCPD_MODEM_OFF_ACK_FIRST | MTK_SCPD_ACTIVE_WAKEUP,
+ 	},
+ 	[MT6833_POWER_DOMAIN_MFG0] = {
+ 		.name = "mfg0",
+diff --git a/drivers/soc/mediatek/Kconfig b/drivers/soc/mediatek/Kconfig
+index 7a204f9d0..ce226c0a7 100644
+--- a/drivers/soc/mediatek/Kconfig
++++ b/drivers/soc/mediatek/Kconfig
+@@ -5,6 +5,13 @@
+ menu "MediaTek SoC drivers"
+ 	depends on ARCH_MEDIATEK || COMPILE_TEST
+ 
++config MTK_MT6833_MODEM_POWER
++	bool "MediaTek MT6833 guarded modem power ownership"
++	depends on PM && PM_GENERIC_DOMAINS && OF
++	help
++	  Own the unused A22 modem domain through genpd. Keep its boot power
++	  state until an administrator explicitly requests runtime parking.
++
+ config MTK_MT6833_LPM
+ 	bool "MediaTek MT6833 low-power firmware coordination"
+ 	depends on ARM64 && OF_RESERVED_MEM && SUSPEND && ARM_PSCI_FW && CPU_IDLE
+diff --git a/drivers/soc/mediatek/Makefile b/drivers/soc/mediatek/Makefile
+index 57c257847..b30f34bd9 100644
+--- a/drivers/soc/mediatek/Makefile
++++ b/drivers/soc/mediatek/Makefile
+@@ -1,5 +1,6 @@
+ # SPDX-License-Identifier: GPL-2.0-only
+ obj-$(CONFIG_MTK_MT6833_LPM) += mtk-mt6833-lpm.o
++obj-$(CONFIG_MTK_MT6833_MODEM_POWER) += mtk-mt6833-modem-power.o
+ obj-$(CONFIG_MTK_CMDQ) += mtk-cmdq-helper.o
+ obj-$(CONFIG_MTK_DEVAPC) += mtk-devapc.o
+ obj-$(CONFIG_MTK_DVFSRC) += mtk-dvfsrc.o
+diff --git a/drivers/soc/mediatek/mtk-mt6833-modem-power.c b/drivers/soc/mediatek/mtk-mt6833-modem-power.c
+new file mode 100644
+index 000000000..1c0bc0ba2
+--- /dev/null
++++ b/drivers/soc/mediatek/mtk-mt6833-modem-power.c
+@@ -0,0 +1,203 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/* Guarded ownership of the unused A22 modem power domain during bring-up. */
++#include <linux/mfd/syscon.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/pm_runtime.h>
++#include <linux/regmap.h>
++
++struct mt6833_modem_power {
++	struct regmap *spm;
++	struct mutex lock;
++	bool held;
++	bool system_sleep;
++};
++
++static int modem_check_power(struct mt6833_modem_power *md, bool on)
++{
++	u32 status, control, isolation;
++	int ret;
++
++	ret = regmap_read(md->spm, 0x16c, &status);
++	if (ret)
++		return ret;
++	ret = regmap_read(md->spm, 0x300, &control);
++	if (ret)
++		return ret;
++	ret = regmap_read(md->spm, 0x398, &isolation);
++	if (ret)
++		return ret;
++	if (on)
++		return (status & BIT(0)) && (control & BIT(0)) &&
++		       (control & BIT(2)) && !(isolation & GENMASK(1, 0)) ? 0 : -EIO;
++
++	return !(status & BIT(0)) && !(control & (BIT(0) | BIT(2))) &&
++	       (isolation & GENMASK(1, 0)) == GENMASK(1, 0) ? 0 : -EIO;
++}
++
++static ssize_t parked_show(struct device *dev, struct device_attribute *attr,
++			  char *buf)
++{
++	struct mt6833_modem_power *md = dev_get_drvdata(dev);
++
++	guard(mutex)(&md->lock);
++	return sysfs_emit(buf, "%u\n", !md->held);
++}
++
++static ssize_t parked_store(struct device *dev, struct device_attribute *attr,
++			   const char *buf, size_t count)
++{
++	struct mt6833_modem_power *md = dev_get_drvdata(dev);
++	bool park;
++	int ret, restore;
++
++	ret = kstrtobool(buf, &park);
++	if (ret)
++		return ret;
++	guard(mutex)(&md->lock);
++	if (md->system_sleep)
++		return -EBUSY;
++	if (park == !md->held) {
++		ret = modem_check_power(md, !park);
++		return ret ? ret : count;
++	}
++	if (!park) {
++		ret = pm_runtime_resume_and_get(dev);
++		if (ret < 0)
++			return ret;
++		md->held = true;
++		ret = modem_check_power(md, true);
++		return ret ? ret : count;
++	}
++
++	/* genpd runtime_suspend may succeed even if its power_off failed.
++	 * Check real power/reset/isolation before reporting a parked modem.
++	 */
++	ret = pm_runtime_put_sync_suspend(dev);
++	md->held = false;
++	if (ret >= 0)
++		ret = modem_check_power(md, false);
++	if (!ret)
++		return count;
++
++	restore = pm_runtime_resume_and_get(dev);
++	if (restore >= 0) {
++		md->held = true;
++		restore = modem_check_power(md, true);
++	}
++	if (restore < 0)
++		dev_err(dev, "failed to restore modem power after park error: %d\n",
++			restore);
++	return ret;
++}
++static struct device_attribute dev_attr_parked = __ATTR(parked, 0600,
++						       parked_show, parked_store);
++
++static ssize_t status_show(struct device *dev, struct device_attribute *attr,
++			  char *buf)
++{
++	struct mt6833_modem_power *md = dev_get_drvdata(dev);
++	u32 status, control, isolation, requests;
++	int ret;
++
++	guard(mutex)(&md->lock);
++	ret = regmap_read(md->spm, 0x16c, &status);
++	if (ret)
++		return ret;
++	ret = regmap_read(md->spm, 0x300, &control);
++	if (ret)
++		return ret;
++	ret = regmap_read(md->spm, 0x398, &isolation);
++	if (ret)
++		return ret;
++	ret = regmap_read(md->spm, 0x114, &requests);
++	if (ret)
++		return ret;
++	return sysfs_emit(buf, "held=%u\npowered=%u\ncontrol=0x%x\nisolation=0x%x\nrequests=0x%x\n",
++			  md->held, !!(status & BIT(0)), control, isolation, requests);
++}
++static DEVICE_ATTR_RO(status);
++
++static struct attribute *mt6833_modem_attrs[] = {
++	&dev_attr_parked.attr,
++	&dev_attr_status.attr,
++	NULL,
++};
++ATTRIBUTE_GROUPS(mt6833_modem);
++
++static int modem_prepare(struct device *dev)
++{
++	struct mt6833_modem_power *md = dev_get_drvdata(dev);
++
++	guard(mutex)(&md->lock);
++	md->system_sleep = true;
++	return 0;
++}
++
++static void modem_complete(struct device *dev)
++{
++	struct mt6833_modem_power *md = dev_get_drvdata(dev);
++
++	guard(mutex)(&md->lock);
++	md->system_sleep = false;
++}
++
++static const struct dev_pm_ops modem_pm_ops = {
++	.prepare = modem_prepare,
++	.complete = modem_complete,
++};
++
++static int mt6833_modem_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct mt6833_modem_power *md;
++	int ret;
++
++	if (!of_machine_is_compatible("samsung,a22x") || !dev->pm_domain)
++		return -ENODEV;
++	md = devm_kzalloc(dev, sizeof(*md), GFP_KERNEL);
++	if (!md)
++		return -ENOMEM;
++	md->spm = syscon_regmap_lookup_by_phandle(dev->of_node, "mediatek,spm");
++	if (IS_ERR(md->spm))
++		return dev_err_probe(dev, PTR_ERR(md->spm), "missing SPM syscon\n");
++	mutex_init(&md->lock);
++	platform_set_drvdata(pdev, md);
++	ret = modem_check_power(md, true);
++	if (ret)
++		return dev_err_probe(dev, ret, "modem boot state is inconsistent\n");
++	ret = device_init_wakeup(dev, true);
++	if (ret)
++		return ret;
++	ret = pm_runtime_set_active(dev);
++	if (ret) {
++		device_init_wakeup(dev, false);
++		return ret;
++	}
++	pm_runtime_get_noresume(dev);
++	md->held = true;
++	pm_runtime_enable(dev);
++	dev_info(dev, "MD1 owned and held on; parking requires explicit root opt-in\n");
++	return 0;
++}
++
++static const struct of_device_id modem_of_match[] = {
++	{ .compatible = "mediatek,mt6833-modem-power" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, modem_of_match);
++
++static struct platform_driver mt6833_modem_driver = {
++	.probe = mt6833_modem_probe,
++	.driver = {
++		.name = "mt6833-modem-power",
++		.of_match_table = modem_of_match,
++		.pm = &modem_pm_ops,
++		.dev_groups = mt6833_modem_groups,
++		.suppress_bind_attrs = true,
++	},
++};
++builtin_platform_driver(mt6833_modem_driver);
++MODULE_LICENSE("GPL");

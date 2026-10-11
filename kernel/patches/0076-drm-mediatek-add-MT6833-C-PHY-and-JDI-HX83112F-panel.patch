@@ -1,0 +1,1404 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 20:15:08 +0200
+Subject: [PATCH 076/131] drm/mediatek: add MT6833 C-PHY and JDI HX83112F panel
+ bring-up
+
+---
+ .../display/mediatek/mediatek,dsi.yaml        |  10 +
+ .../display/panel/jdi,hx83112f-a22x.yaml      |  69 +++
+ .../bindings/phy/mediatek,dsi-phy.yaml        |   1 +
+ drivers/clk/mediatek/Makefile                 |   2 +-
+ drivers/clk/mediatek/clk-mt6833-mm.c          |  77 ++++
+ drivers/gpu/drm/mediatek/mtk_disp_rdma.c      |  33 +-
+ drivers/gpu/drm/mediatek/mtk_drm_drv.c        |  18 +
+ drivers/gpu/drm/mediatek/mtk_dsi.c            | 137 +++++-
+ drivers/gpu/drm/panel/Kconfig                 |   8 +
+ drivers/gpu/drm/panel/Makefile                |   1 +
+ drivers/gpu/drm/panel/panel-himax-hx83112f.c  | 401 ++++++++++++++++++
+ drivers/phy/mediatek/Makefile                 |   1 +
+ .../phy/mediatek/phy-mtk-mipi-dsi-mt6833.c    | 112 +++++
+ drivers/phy/mediatek/phy-mtk-mipi-dsi.c       |   1 +
+ drivers/phy/mediatek/phy-mtk-mipi-dsi.h       |   1 +
+ drivers/pmdomain/mediatek/mt6833-pm-domains.h |  20 +
+ drivers/soc/mediatek/mt6833-mmsys.h           |  10 +
+ drivers/soc/mediatek/mtk-mmsys.c              |  15 +
+ drivers/soc/mediatek/mtk-mmsys.h              |   2 +
+ drivers/soc/mediatek/mtk-mutex.c              |  21 +
+ .../dt-bindings/power/mediatek,mt6833-power.h |   1 +
+ 21 files changed, 931 insertions(+), 10 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/display/panel/jdi,hx83112f-a22x.yaml
+ create mode 100644 drivers/clk/mediatek/clk-mt6833-mm.c
+ create mode 100644 drivers/gpu/drm/panel/panel-himax-hx83112f.c
+ create mode 100644 drivers/phy/mediatek/phy-mtk-mipi-dsi-mt6833.c
+ create mode 100644 drivers/soc/mediatek/mt6833-mmsys.h
+
+diff --git a/Documentation/devicetree/bindings/display/mediatek/mediatek,dsi.yaml b/Documentation/devicetree/bindings/display/mediatek/mediatek,dsi.yaml
+index 27ffbccc2..4f1057acb 100644
+--- a/Documentation/devicetree/bindings/display/mediatek/mediatek,dsi.yaml
++++ b/Documentation/devicetree/bindings/display/mediatek/mediatek,dsi.yaml
+@@ -30,6 +30,7 @@ properties:
+           - mediatek,mt8183-dsi
+           - mediatek,mt8186-dsi
+           - mediatek,mt8188-dsi
++          - mediatek,mt6833-dsi-cphy
+       - items:
+           - enum:
+               - mediatek,mt6795-dsi
+@@ -49,6 +50,15 @@ properties:
+   power-domains:
+     maxItems: 1
+ 
++  mediatek,cphy-timing:
++    $ref: /schemas/types.yaml#/definitions/uint32-array
++    description: C-PHY HS zero and HS trail timing in controller cycles.
++    items:
++      - minimum: 1
++        maximum: 255
++      - minimum: 1
++        maximum: 255
++
+   clocks:
+     items:
+       - description: Engine Clock
+diff --git a/Documentation/devicetree/bindings/display/panel/jdi,hx83112f-a22x.yaml b/Documentation/devicetree/bindings/display/panel/jdi,hx83112f-a22x.yaml
+new file mode 100644
+index 000000000..ddf9e45eb
+--- /dev/null
++++ b/Documentation/devicetree/bindings/display/panel/jdi,hx83112f-a22x.yaml
+@@ -0,0 +1,69 @@
++# SPDX-License-Identifier: GPL-2.0-only OR BSD-2-Clause
++%YAML 1.2
++---
++$id: http://devicetree.org/schemas/display/panel/jdi,hx83112f-a22x.yaml#
++$schema: http://devicetree.org/meta-schemas/core.yaml#
++
++title: JDI HX83112F C-PHY panel for Samsung Galaxy A22 5G
++
++maintainers:
++  - Dodaskot <pessdres@gmail.com>
++
++description: |
++  The 1080x2408 LCD uses three C-PHY trios and supports 60 and 90 Hz.
++  Panel enable and positive and negative bias rails must be sequenced.
++  The reset signal is active low. Touch has its own reset signal.
++
++allOf:
++  - $ref: panel-common.yaml#
++
++properties:
++  compatible:
++    const: jdi,hx83112f-a22x
++
++  reg:
++    maxItems: 1
++
++  vdd-supply:
++    description: Panel power enable supply
++
++  vsp-supply:
++    description: Positive LCD bias supply
++
++  vsn-supply:
++    description: Negative LCD bias supply
++
++  reset-gpios:
++    maxItems: 1
++
++required:
++  - compatible
++  - reg
++  - vdd-supply
++  - vsp-supply
++  - vsn-supply
++  - reset-gpios
++  - port
++
++unevaluatedProperties: false
++
++examples:
++  - |
++    #include <dt-bindings/gpio/gpio.h>
++    dsi {
++        #address-cells = <1>;
++        #size-cells = <0>;
++        panel@0 {
++            compatible = "jdi,hx83112f-a22x";
++            reg = <0>;
++            vdd-supply = <&panel_vdd>;
++            vsp-supply = <&panel_vsp>;
++            vsn-supply = <&panel_vsn>;
++            reset-gpios = <&pio 86 GPIO_ACTIVE_LOW>;
++            port {
++                panel_in: endpoint {
++                    remote-endpoint = <&dsi_out>;
++                };
++            };
++        };
++    };
+diff --git a/Documentation/devicetree/bindings/phy/mediatek,dsi-phy.yaml b/Documentation/devicetree/bindings/phy/mediatek,dsi-phy.yaml
+index c6d0bbdbe..8a3e9ee1c 100644
+--- a/Documentation/devicetree/bindings/phy/mediatek,dsi-phy.yaml
++++ b/Documentation/devicetree/bindings/phy/mediatek,dsi-phy.yaml
+@@ -39,6 +39,7 @@ properties:
+       - const: mediatek,mt2701-mipi-tx
+       - const: mediatek,mt8173-mipi-tx
+       - const: mediatek,mt8183-mipi-tx
++      - const: mediatek,mt6833-mipi-tx-cphy
+ 
+   reg:
+     maxItems: 1
+diff --git a/drivers/clk/mediatek/Makefile b/drivers/clk/mediatek/Makefile
+index b91ac7b8e..230e182da 100644
+--- a/drivers/clk/mediatek/Makefile
++++ b/drivers/clk/mediatek/Makefile
+@@ -125,7 +125,7 @@ obj-$(CONFIG_COMMON_CLK_MT8188_VPPSYS) += clk-mt8188-vpp0.o clk-mt8188-vpp1.o
+ obj-$(CONFIG_COMMON_CLK_MT8188_WPESYS) += clk-mt8188-wpe.o
+ obj-$(CONFIG_COMMON_CLK_MT6833) += clk-mt6833-apmixedsys.o clk-mt6833.o \
+ 				   clk-mt6833-imp_iic_wrap.o clk-mt6833-mfgcfg.o \
+-				   clk-mt6833-mcu.o clk-mt6833-audsys.o
++				   clk-mt6833-mcu.o clk-mt6833-audsys.o clk-mt6833-mm.o
+ obj-$(CONFIG_COMMON_CLK_MT8192) += clk-mt8192-apmixedsys.o clk-mt8192.o
+ obj-$(CONFIG_COMMON_CLK_MT8192_AUDSYS) += clk-mt8192-aud.o
+ obj-$(CONFIG_COMMON_CLK_MT8192_CAMSYS) += clk-mt8192-cam.o
+diff --git a/drivers/clk/mediatek/clk-mt6833-mm.c b/drivers/clk/mediatek/clk-mt6833-mm.c
+new file mode 100644
+index 000000000..67f9e3e86
+--- /dev/null
++++ b/drivers/clk/mediatek/clk-mt6833-mm.c
+@@ -0,0 +1,77 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/* MT6833 display clocks. Register map from MediaTek/Samsung GPL sources. */
++#include <linux/clk-provider.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <dt-bindings/clock/mt6833-clk.h>
++
++#include "clk-mtk.h"
++#include "clk-gate.h"
++
++static const struct mtk_gate_regs mm0_cg_regs = {
++	.set_ofs = 0x104,
++	.clr_ofs = 0x108,
++	.sta_ofs = 0x100,
++};
++
++static const struct mtk_gate_regs mm1_cg_regs = {
++	.set_ofs = 0x1a4,
++	.clr_ofs = 0x1a8,
++	.sta_ofs = 0x1a0,
++};
++
++#define GATE_MM0(id, name, shift) \
++	GATE_MTK(id, name, "disp_ck", &mm0_cg_regs, shift, &mtk_clk_gate_ops_setclr)
++#define GATE_MM1(id, name, shift) \
++	GATE_MTK(id, name, "disp_ck", &mm1_cg_regs, shift, &mtk_clk_gate_ops_setclr)
++
++static const struct mtk_gate mm_clks[] = {
++	GATE_MM0(CLK_MM_DISP_MUTEX0, "mm_disp_mutex0", 0),
++	GATE_MM0(CLK_MM_APB_BUS, "mm_apb_bus", 1),
++	GATE_MM0(CLK_MM_DISP_OVL0, "mm_disp_ovl0", 2),
++	GATE_MM0(CLK_MM_DISP_RDMA0, "mm_disp_rdma0", 3),
++	GATE_MM0(CLK_MM_DISP_OVL0_2L, "mm_disp_ovl0_2l", 4),
++	GATE_MM0(CLK_MM_DISP_WDMA0, "mm_disp_wdma0", 5),
++	GATE_MM0(CLK_MM_DISP_CCORR1, "mm_disp_ccorr1", 6),
++	GATE_MM0(CLK_MM_DISP_RSZ0, "mm_disp_rsz0", 7),
++	GATE_MM0(CLK_MM_DISP_AAL0, "mm_disp_aal0", 8),
++	GATE_MM0(CLK_MM_DISP_CCORR0, "mm_disp_ccorr0", 9),
++	GATE_MM0(CLK_MM_DISP_COLOR0, "mm_disp_color0", 10),
++	GATE_MM0(CLK_MM_SMI_INFRA, "mm_smi_infra", 11),
++	GATE_MM0(CLK_MM_DISP_DSC_WRAP, "mm_disp_dsc_wrap", 12),
++	GATE_MM0(CLK_MM_DISP_GAMMA0, "mm_disp_gamma0", 13),
++	GATE_MM0(CLK_MM_DISP_POSTMASK0, "mm_disp_postmask0", 14),
++	GATE_MM0(CLK_MM_DISP_SPR0, "mm_disp_spr0", 15),
++	GATE_MM0(CLK_MM_DISP_DITHER0, "mm_disp_dither0", 16),
++	GATE_MM0(CLK_MM_SMI_COMMON, "mm_smi_common", 17),
++	GATE_MM0(CLK_MM_DISP_CM0, "mm_disp_cm0", 18),
++	GATE_MM0(CLK_MM_DSI0, "mm_dsi0", 19),
++	GATE_MM0(CLK_MM_DISP_FAKE_ENG0, "mm_disp_fake_eng0", 20),
++	GATE_MM0(CLK_MM_DISP_FAKE_ENG1, "mm_disp_fake_eng1", 21),
++	GATE_MM0(CLK_MM_SMI_GALS, "mm_smi_gals", 22),
++	GATE_MM0(CLK_MM_SMI_IOMMU, "mm_smi_iommu", 24),
++	GATE_MM1(CLK_MM_DSI0_DSI_CK_DOMAIN, "mm_dsi0_dsi_domain", 0),
++	GATE_MM1(CLK_MM_DISP_26M, "mm_disp_26m_ck", 10),
++};
++
++static const struct mtk_clk_desc mm_desc = {
++	.clks = mm_clks,
++	.num_clks = ARRAY_SIZE(mm_clks),
++};
++
++static const struct platform_device_id clk_mt6833_mm_ids[] = {
++	{ "clk-mt6833-mm", (kernel_ulong_t)&mm_desc },
++	{ }
++};
++MODULE_DEVICE_TABLE(platform, clk_mt6833_mm_ids);
++
++static struct platform_driver clk_mt6833_mm_driver = {
++	.probe = mtk_clk_pdev_probe,
++	.remove = mtk_clk_pdev_remove,
++	.driver = { .name = "clk-mt6833-mm" },
++	.id_table = clk_mt6833_mm_ids,
++};
++module_platform_driver(clk_mt6833_mm_driver);
++
++MODULE_DESCRIPTION("MediaTek MT6833 display clock driver");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/gpu/drm/mediatek/mtk_disp_rdma.c b/drivers/gpu/drm/mediatek/mtk_disp_rdma.c
+index c9d41d75e..4d85ed95b 100644
+--- a/drivers/gpu/drm/mediatek/mtk_disp_rdma.c
++++ b/drivers/gpu/drm/mediatek/mtk_disp_rdma.c
+@@ -72,6 +72,7 @@ struct mtk_disp_rdma_data {
+ 	unsigned int fifo_size;
+ 	const u32 *formats;
+ 	size_t num_formats;
++	bool has_fabric_clks;
+ };
+ 
+ /*
+@@ -80,6 +81,7 @@ struct mtk_disp_rdma_data {
+  */
+ struct mtk_disp_rdma {
+ 	struct clk			*clk;
++	struct clk_bulk_data fabric_clks[4];
+ 	void __iomem			*regs;
+ 	struct cmdq_client_reg		cmdq_reg;
+ 	const struct mtk_disp_rdma_data	*data;
+@@ -160,7 +162,17 @@ int mtk_rdma_clk_enable(struct device *dev)
+ {
+ 	struct mtk_disp_rdma *rdma = dev_get_drvdata(dev);
+ 
+-	return clk_prepare_enable(rdma->clk);
++	int ret;
++
++	if (rdma->data->has_fabric_clks) {
++		ret = clk_bulk_prepare_enable(ARRAY_SIZE(rdma->fabric_clks), rdma->fabric_clks);
++		if (ret)
++			return ret;
++	}
++	ret = clk_prepare_enable(rdma->clk);
++	if (ret && rdma->data->has_fabric_clks)
++		clk_bulk_disable_unprepare(ARRAY_SIZE(rdma->fabric_clks), rdma->fabric_clks);
++	return ret;
+ }
+ 
+ void mtk_rdma_clk_disable(struct device *dev)
+@@ -168,6 +180,8 @@ void mtk_rdma_clk_disable(struct device *dev)
+ 	struct mtk_disp_rdma *rdma = dev_get_drvdata(dev);
+ 
+ 	clk_disable_unprepare(rdma->clk);
++	if (rdma->data->has_fabric_clks)
++		clk_bulk_disable_unprepare(ARRAY_SIZE(rdma->fabric_clks), rdma->fabric_clks);
+ }
+ 
+ void mtk_rdma_start(struct device *dev)
+@@ -355,6 +369,15 @@ static int mtk_disp_rdma_probe(struct platform_device *pdev)
+ 		return dev_err_probe(dev, ret, "Failed to request irq %d\n", irq);
+ 
+ 	priv->data = of_device_get_match_data(dev);
++	if (priv->data->has_fabric_clks) {
++		priv->fabric_clks[0].id = "smi-infra";
++		priv->fabric_clks[1].id = "smi-common";
++		priv->fabric_clks[2].id = "smi-gals";
++		priv->fabric_clks[3].id = "smi-iommu";
++		ret = devm_clk_bulk_get(dev, ARRAY_SIZE(priv->fabric_clks), priv->fabric_clks);
++		if (ret)
++			return dev_err_probe(dev, ret, "Failed to get SMI fabric clocks\n");
++	}
+ 
+ 	platform_set_drvdata(pdev, priv);
+ 
+@@ -388,6 +411,13 @@ static const struct mtk_disp_rdma_data mt8173_rdma_driver_data = {
+ 	.num_formats = ARRAY_SIZE(mt8173_formats),
+ };
+ 
++static const struct mtk_disp_rdma_data mt6833_rdma_driver_data = {
++	.fifo_size = 35 * SZ_1K,
++	.formats = mt8173_formats,
++	.num_formats = ARRAY_SIZE(mt8173_formats),
++	.has_fabric_clks = true,
++};
++
+ static const struct mtk_disp_rdma_data mt8183_rdma_driver_data = {
+ 	.fifo_size = 5 * SZ_1K,
+ 	.formats = mt8173_formats,
+@@ -401,6 +431,7 @@ static const struct mtk_disp_rdma_data mt8195_rdma_driver_data = {
+ };
+ 
+ static const struct of_device_id mtk_disp_rdma_driver_dt_match[] = {
++	{ .compatible = "mediatek,mt6833-disp-rdma", .data = &mt6833_rdma_driver_data },
+ 	{ .compatible = "mediatek,mt2701-disp-rdma",
+ 	  .data = &mt2701_rdma_driver_data},
+ 	{ .compatible = "mediatek,mt8173-disp-rdma",
+diff --git a/drivers/gpu/drm/mediatek/mtk_drm_drv.c b/drivers/gpu/drm/mediatek/mtk_drm_drv.c
+index c86a3f54f..eb25f89b2 100644
+--- a/drivers/gpu/drm/mediatek/mtk_drm_drv.c
++++ b/drivers/gpu/drm/mediatek/mtk_drm_drv.c
+@@ -141,6 +141,11 @@ static const unsigned int mt8173_mtk_ddp_ext[] = {
+ 	DDP_COMPONENT_DPI0,
+ };
+ 
++static const unsigned int mt6833_mtk_ddp_main[] = {
++	DDP_COMPONENT_RDMA0,
++	DDP_COMPONENT_DSI0,
++};
++
+ static const unsigned int mt8183_mtk_ddp_main[] = {
+ 	DDP_COMPONENT_OVL0,
+ 	DDP_COMPONENT_OVL_2L0,
+@@ -273,6 +278,12 @@ static const struct mtk_mmsys_driver_data mt8173_mmsys_driver_data = {
+ 	.mmsys_dev_num = 1,
+ };
+ 
++static const struct mtk_mmsys_driver_data mt6833_mmsys_driver_data = {
++	.main_path = mt6833_mtk_ddp_main,
++	.main_len = ARRAY_SIZE(mt6833_mtk_ddp_main),
++	.mmsys_dev_num = 1,
++};
++
+ static const struct mtk_mmsys_driver_data mt8183_mmsys_driver_data = {
+ 	.main_path = mt8183_mtk_ddp_main,
+ 	.main_len = ARRAY_SIZE(mt8183_mtk_ddp_main),
+@@ -332,6 +343,7 @@ static const struct mtk_mmsys_driver_data mt8365_mmsys_driver_data = {
+ };
+ 
+ static const struct of_device_id mtk_drm_of_ids[] = {
++	{ .compatible = "mediatek,mt6833-display", .data = &mt6833_mmsys_driver_data },
+ 	{ .compatible = "mediatek,mt2701-mmsys",
+ 	  .data = &mt2701_mmsys_driver_data},
+ 	{ .compatible = "mediatek,mt7623-mmsys",
+@@ -746,6 +758,8 @@ static const struct of_device_id mtk_ddp_comp_dt_ids[] = {
+ 	  .data = (void *)MTK_DISP_MUTEX },
+ 	{ .compatible = "mediatek,mt8173-disp-mutex",
+ 	  .data = (void *)MTK_DISP_MUTEX },
++	{ .compatible = "mediatek,mt6833-disp-mutex",
++	  .data = (void *)MTK_DISP_MUTEX },
+ 	{ .compatible = "mediatek,mt8183-disp-mutex",
+ 	  .data = (void *)MTK_DISP_MUTEX },
+ 	{ .compatible = "mediatek,mt8186-disp-mutex",
+@@ -790,6 +804,8 @@ static const struct of_device_id mtk_ddp_comp_dt_ids[] = {
+ 	  .data = (void *)MTK_DISP_RDMA },
+ 	{ .compatible = "mediatek,mt8173-disp-rdma",
+ 	  .data = (void *)MTK_DISP_RDMA },
++	{ .compatible = "mediatek,mt6833-disp-rdma",
++	  .data = (void *)MTK_DISP_RDMA },
+ 	{ .compatible = "mediatek,mt8183-disp-rdma",
+ 	  .data = (void *)MTK_DISP_RDMA },
+ 	{ .compatible = "mediatek,mt8195-disp-rdma",
+@@ -820,6 +836,8 @@ static const struct of_device_id mtk_ddp_comp_dt_ids[] = {
+ 	  .data = (void *)MTK_DSI },
+ 	{ .compatible = "mediatek,mt8173-dsi",
+ 	  .data = (void *)MTK_DSI },
++	{ .compatible = "mediatek,mt6833-dsi-cphy",
++	  .data = (void *)MTK_DSI },
+ 	{ .compatible = "mediatek,mt8183-dsi",
+ 	  .data = (void *)MTK_DSI },
+ 	{ .compatible = "mediatek,mt8186-dsi",
+diff --git a/drivers/gpu/drm/mediatek/mtk_dsi.c b/drivers/gpu/drm/mediatek/mtk_dsi.c
+index 49dfc0f82..93903e068 100644
+--- a/drivers/gpu/drm/mediatek/mtk_dsi.c
++++ b/drivers/gpu/drm/mediatek/mtk_dsi.c
+@@ -134,6 +134,8 @@
+ #define CLK_ZERO			GENMASK(23, 16)
+ #define CLK_TRAIL			GENMASK(31, 24)
+ 
++#define DSI_CPHY_CON0		0x120
++
+ #define DSI_PHY_TIMECON3	0x11c
+ #define CLK_HS_PREP			GENMASK(7, 0)
+ #define CLK_HS_POST			GENMASK(15, 8)
+@@ -194,6 +196,7 @@ struct mtk_dsi_driver_data {
+ 	bool has_size_ctl;
+ 	bool cmdq_long_packet_ctl;
+ 	bool support_per_frame_lp;
++	bool is_cphy;
+ };
+ 
+ struct mtk_dsi {
+@@ -212,6 +215,8 @@ struct mtk_dsi {
+ 	struct clk *hs_clk;
+ 
+ 	u32 data_rate;
++	unsigned long hs_rate;
++	u32 cphy_timing[2];
+ 
+ 	unsigned long mode_flags;
+ 	enum mipi_dsi_pixel_format format;
+@@ -243,6 +248,42 @@ static void mtk_dsi_mask(struct mtk_dsi *dsi, u32 offset, u32 mask, u32 data)
+ 	writel((temp & ~mask) | (data & mask), dsi->regs + offset);
+ }
+ 
++/* C-PHY timings use seven symbol periods, not eight D-PHY bit periods. */
++static void mtk_dsi_cphy_timconfig(struct mtk_dsi *dsi)
++{
++	struct mtk_phy_timing *t = &dsi->phy_timing;
++	u32 rate = DIV_ROUND_UP(dsi->data_rate, HZ_PER_MHZ);
++	u32 cycle = 8000 / rate + 1;
++	u32 ui = 1000 / rate + 1;
++
++	t->lpx = rate * 75 / 7000 + 1;
++	t->da_hs_prepare = (rate / 2) * 101 / 7000 + 1;
++	t->da_hs_zero = dsi->cphy_timing[0];
++	t->da_hs_trail = dsi->cphy_timing[1];
++	t->ta_go = 4 * (85 / cycle);
++	t->ta_sure = 3 * (85 / cycle) / 2;
++	t->ta_get = 5 * (85 / cycle);
++	t->da_hs_exit = (rate / 2) * 225 / 7000 + 1;
++	t->clk_hs_zero = 400 / cycle;
++	t->clk_hs_trail = 96 / cycle + 1;
++	t->clk_hs_prepare = 64 / cycle;
++	t->clk_hs_exit = 2 * t->lpx;
++	t->clk_hs_post = (96 + 52 * ui) / cycle;
++
++	writel(FIELD_PREP(LPX, t->lpx) | FIELD_PREP(HS_PREP, t->da_hs_prepare) |
++	       FIELD_PREP(HS_ZERO, t->da_hs_zero) | FIELD_PREP(HS_TRAIL, t->da_hs_trail),
++	       dsi->regs + DSI_PHY_TIMECON0);
++	writel(FIELD_PREP(TA_GO, t->ta_go) | FIELD_PREP(TA_SURE, t->ta_sure) |
++	       FIELD_PREP(TA_GET, t->ta_get) | FIELD_PREP(DA_HS_EXIT, t->da_hs_exit),
++	       dsi->regs + DSI_PHY_TIMECON1);
++	writel(FIELD_PREP(DA_HS_SYNC, 1) | FIELD_PREP(CLK_ZERO, t->clk_hs_zero) |
++	       FIELD_PREP(CLK_TRAIL, t->clk_hs_trail), dsi->regs + DSI_PHY_TIMECON2);
++	writel(FIELD_PREP(CLK_HS_PREP, t->clk_hs_prepare) |
++	       FIELD_PREP(CLK_HS_POST, t->clk_hs_post) |
++	       FIELD_PREP(CLK_HS_EXIT, t->clk_hs_exit), dsi->regs + DSI_PHY_TIMECON3);
++	writel(0x012c0003, dsi->regs + DSI_CPHY_CON0);
++}
++
+ static void mtk_dsi_phy_timconfig(struct mtk_dsi *dsi)
+ {
+ 	u32 timcon0, timcon1, timcon2, timcon3;
+@@ -565,6 +606,32 @@ static void mtk_dsi_config_vdo_timing_per_line_lp(struct mtk_dsi *dsi)
+ 	writel(horizontal_frontporch_byte, dsi->regs + DSI_HFP_WC);
+ }
+ 
++static void mtk_dsi_config_cphy_vdo_timing(struct mtk_dsi *dsi)
++{
++	struct mtk_phy_timing *t = &dsi->phy_timing;
++	struct videomode *vm = &dsi->vm;
++	u32 bpp = dsi->format == MIPI_DSI_FMT_RGB565 ? 2 : 3;
++	u32 cycles = t->lpx + t->da_hs_prepare + t->da_hs_zero + t->da_hs_exit + 4;
++	u32 hsa = vm->hsync_len * bpp;
++	u32 hbp = vm->hback_porch * bpp;
++	u32 hfp = vm->hfront_porch * bpp;
++	u32 hfp_overhead = 10 * dsi->lanes + 24 + 2 * cycles * dsi->lanes;
++	u32 trail_bytes = 2 * (t->da_hs_trail + 1) * dsi->lanes - 6 * dsi->lanes - 14;
++
++	hsa = hsa < 10 * dsi->lanes + 31 ? 4 : ALIGN(hsa - 10 * dsi->lanes - 26, 2);
++	hbp = hbp < 12 * dsi->lanes + 31 ? 4 : ALIGN(hbp - 12 * dsi->lanes - 26, 2);
++	if (hfp < hfp_overhead + 9)
++		hfp = 8;
++	else if (hfp < hfp_overhead + trail_bytes)
++		hfp = trail_bytes;
++	else
++		hfp -= hfp_overhead;
++
++	writel(hsa, dsi->regs + DSI_HSA_WC);
++	writel(hbp, dsi->regs + DSI_HBP_WC);
++	writel(hfp, dsi->regs + DSI_HFP_WC);
++}
++
+ static void mtk_dsi_config_vdo_timing(struct mtk_dsi *dsi)
+ {
+ 	struct videomode *vm = &dsi->vm;
+@@ -579,7 +646,9 @@ static void mtk_dsi_config_vdo_timing(struct mtk_dsi *dsi)
+ 			FIELD_PREP(DSI_WIDTH, vm->hactive),
+ 			dsi->regs + DSI_SIZE_CON);
+ 
+-	if (dsi->driver_data->support_per_frame_lp)
++	if (dsi->driver_data->is_cphy)
++		mtk_dsi_config_cphy_vdo_timing(dsi);
++	else if (dsi->driver_data->support_per_frame_lp)
+ 		mtk_dsi_config_vdo_timing_per_frame_lp(dsi);
+ 	else
+ 		mtk_dsi_config_vdo_timing_per_line_lp(dsi);
+@@ -703,12 +772,24 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
+ 	ret = mipi_dsi_pixel_format_to_bpp(dsi->format);
+ 	if (ret < 0) {
+ 		dev_err(dev, "Unknown MIPI DSI format %d\n", dsi->format);
+-		return ret;
++		goto err_refcount;
+ 	}
+ 	bit_per_pixel = ret;
+ 
+-	dsi->data_rate = DIV_ROUND_UP_ULL(dsi->vm.pixelclock * bit_per_pixel,
+-					  dsi->lanes);
++	if (dsi->driver_data->is_cphy) {
++		dsi->data_rate = DIV_ROUND_UP_ULL((u64)dsi->vm.pixelclock * bit_per_pixel * 7,
++						  dsi->lanes * 16);
++		if (dsi->hs_rate) {
++			if (dsi->data_rate > dsi->hs_rate) {
++				ret = -EINVAL;
++				goto err_refcount;
++			}
++			dsi->data_rate = dsi->hs_rate;
++		}
++	} else {
++		dsi->data_rate = DIV_ROUND_UP_ULL(dsi->vm.pixelclock * bit_per_pixel,
++						  dsi->lanes);
++	}
+ 
+ 	ret = clk_set_rate(dsi->hs_clk, dsi->data_rate);
+ 	if (ret < 0) {
+@@ -716,7 +797,9 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
+ 		goto err_refcount;
+ 	}
+ 
+-	phy_power_on(dsi->phy);
++	ret = phy_power_on(dsi->phy);
++	if (ret)
++		goto err_refcount;
+ 
+ 	ret = clk_prepare_enable(dsi->engine_clk);
+ 	if (ret < 0) {
+@@ -737,7 +820,10 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
+ 		       dsi->regs + dsi->driver_data->reg_shadow_dbg_off);
+ 
+ 	mtk_dsi_reset_engine(dsi);
+-	mtk_dsi_phy_timconfig(dsi);
++	if (dsi->driver_data->is_cphy)
++		mtk_dsi_cphy_timconfig(dsi);
++	else
++		mtk_dsi_phy_timconfig(dsi);
+ 
+ 	mtk_dsi_ps_control(dsi, true);
+ 	mtk_dsi_set_vm_cmd(dsi);
+@@ -854,8 +940,10 @@ static void mtk_dsi_bridge_atomic_pre_enable(struct drm_bridge *bridge,
+ 	int ret;
+ 
+ 	ret = mtk_dsi_poweron(dsi);
+-	if (ret < 0)
++	if (ret < 0) {
+ 		drm_err(drm, "failed to power on dsi\n");
++		return;
++	}
+ 
+ 	mtk_dsi_lane_ready(dsi);
+ 	mtk_dsi_clk_hs_mode(dsi, 1);
+@@ -881,8 +969,15 @@ mtk_dsi_bridge_mode_valid(struct drm_bridge *bridge,
+ 	if (bpp < 0)
+ 		return MODE_ERROR;
+ 
+-	if (mode->clock * bpp / dsi->lanes > 1500000)
++	if (dsi->driver_data->is_cphy) {
++		u64 rate = DIV_ROUND_UP_ULL((u64)mode->clock * 1000 * bpp * 7,
++					  dsi->lanes * 16);
++
++		if (rate > (dsi->hs_rate ?: 1500000000))
++			return MODE_CLOCK_HIGH;
++	} else if (mode->clock * bpp / dsi->lanes > 1500000) {
+ 		return MODE_CLOCK_HIGH;
++	}
+ 
+ 	return MODE_OK;
+ }
+@@ -992,6 +1087,9 @@ static int mtk_dsi_host_attach(struct mipi_dsi_host *host,
+ 	struct drm_device *drm = dsi->bridge.dev;
+ 	int ret;
+ 
++	if (!device->lanes || device->lanes > (dsi->driver_data->is_cphy ? 3 : 4))
++		return -EINVAL;
++	dsi->hs_rate = device->hs_rate;
+ 	dsi->lanes = device->lanes;
+ 	dsi->format = device->format;
+ 	dsi->mode_flags = device->mode_flags;
+@@ -1212,6 +1310,19 @@ static int mtk_dsi_probe(struct platform_device *pdev)
+ 		return PTR_ERR(dsi);
+ 
+ 	dsi->driver_data = of_device_get_match_data(dev);
++	if (dsi->driver_data->is_cphy) {
++		dsi->cphy_timing[0] = 48;
++		dsi->cphy_timing[1] = 32;
++		if (of_property_present(dev->of_node, "mediatek,cphy-timing")) {
++			ret = of_property_read_u32_array(dev->of_node, "mediatek,cphy-timing",
++							 dsi->cphy_timing, 2);
++			if (ret)
++				return dev_err_probe(dev, ret, "Invalid C-PHY timing\n");
++		}
++		if (!dsi->cphy_timing[0] || dsi->cphy_timing[0] > 255 ||
++		    !dsi->cphy_timing[1] || dsi->cphy_timing[1] > 255)
++			return -EINVAL;
++	}
+ 
+ 	dsi->engine_clk = devm_clk_get(dev, "engine");
+ 	if (IS_ERR(dsi->engine_clk))
+@@ -1284,6 +1395,15 @@ static const struct mtk_dsi_driver_data mt2701_dsi_driver_data = {
+ 	.reg_shadow_dbg_off = 0x190
+ };
+ 
++/* C-PHY-only bring-up variant; stock LK nodes cannot bind this compatible. */
++static const struct mtk_dsi_driver_data mt6833_cphy_dsi_driver_data = {
++	.reg_cmdq_off = 0x200,
++	.reg_vm_cmd_off = 0x130,
++	.reg_shadow_dbg_off = 0x190,
++	.has_size_ctl = true,
++	.is_cphy = true,
++};
++
+ static const struct mtk_dsi_driver_data mt8183_dsi_driver_data = {
+ 	.reg_cmdq_off = 0x200,
+ 	.reg_vm_cmd_off = 0x130,
+@@ -1311,6 +1431,7 @@ static const struct mtk_dsi_driver_data mt8188_dsi_driver_data = {
+ };
+ 
+ static const struct of_device_id mtk_dsi_of_match[] = {
++	{ .compatible = "mediatek,mt6833-dsi-cphy", .data = &mt6833_cphy_dsi_driver_data },
+ 	{ .compatible = "mediatek,mt2701-dsi", .data = &mt2701_dsi_driver_data },
+ 	{ .compatible = "mediatek,mt8167-dsi", .data = &mt2701_dsi_driver_data },
+ 	{ .compatible = "mediatek,mt8173-dsi", .data = &mt8173_dsi_driver_data },
+diff --git a/drivers/gpu/drm/panel/Kconfig b/drivers/gpu/drm/panel/Kconfig
+index 3eac4d0f8..3bd96e3c0 100644
+--- a/drivers/gpu/drm/panel/Kconfig
++++ b/drivers/gpu/drm/panel/Kconfig
+@@ -217,6 +217,14 @@ config DRM_PANEL_HIMAX_HX83112A
+ 	  Say Y here if you want to enable support for Himax HX83112A-based
+ 	  display panels, such as the one found in the Fairphone 4 smartphone.
+ 
++config DRM_PANEL_HIMAX_HX83112F
++	tristate "JDI HX83112F C-PHY panel for Galaxy A22 5G"
++	depends on OF && DRM_MIPI_DSI && BACKLIGHT_CLASS_DEVICE
++	select REGULATOR
++	help
++	  Enable the 1080x2408 JDI HX83112F panel on Samsung Galaxy A22 5G.
++	  The panel uses three C-PHY trios and supports 60 and 90 Hz modes.
++
+ config DRM_PANEL_HIMAX_HX83112B
+ 	tristate "Himax HX83112B-based DSI panel"
+ 	depends on OF
+diff --git a/drivers/gpu/drm/panel/Makefile b/drivers/gpu/drm/panel/Makefile
+index c2c5cf817..76c1adc87 100644
+--- a/drivers/gpu/drm/panel/Makefile
++++ b/drivers/gpu/drm/panel/Makefile
+@@ -23,6 +23,7 @@ obj-$(CONFIG_DRM_PANEL_HIMAX_HX8279) += panel-himax-hx8279.o
+ obj-$(CONFIG_DRM_PANEL_HIMAX_HX83102) += panel-himax-hx83102.o
+ obj-$(CONFIG_DRM_PANEL_HIMAX_HX83112A) += panel-himax-hx83112a.o
+ obj-$(CONFIG_DRM_PANEL_HIMAX_HX83112B) += panel-himax-hx83112b.o
++obj-$(CONFIG_DRM_PANEL_HIMAX_HX83112F) += panel-himax-hx83112f.o
+ obj-$(CONFIG_DRM_PANEL_HIMAX_HX83121A) += panel-himax-hx83121a.o
+ obj-$(CONFIG_DRM_PANEL_HIMAX_HX8394) += panel-himax-hx8394.o
+ obj-$(CONFIG_DRM_PANEL_HYDIS_HV101HD1) += panel-hydis-hv101hd1.o
+diff --git a/drivers/gpu/drm/panel/panel-himax-hx83112f.c b/drivers/gpu/drm/panel/panel-himax-hx83112f.c
+new file mode 100644
+index 000000000..4dcfa8551
+--- /dev/null
++++ b/drivers/gpu/drm/panel/panel-himax-hx83112f.c
+@@ -0,0 +1,401 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * JDI HX83112F C-PHY panel used by Samsung Galaxy A22 5G.
++ * Initialization and power sequencing from Samsung SM-A226B GPL sources:
++ * panel-wt-jdi-hx83112f-cphy-vdo-90hz.c, Copyright (c) 2015 MediaTek Inc.
++ */
++
++#include <linux/backlight.h>
++#include <linux/delay.h>
++#include <linux/gpio/consumer.h>
++#include <linux/module.h>
++#include <linux/regulator/consumer.h>
++
++#include <drm/drm_mipi_dsi.h>
++#include <drm/drm_modes.h>
++#include <drm/drm_panel.h>
++#include <drm/drm_probe_helper.h>
++
++struct hx83112f {
++	struct drm_panel panel;
++	struct mipi_dsi_device *dsi;
++	struct regulator_bulk_data *supplies;
++	struct gpio_desc *reset;
++	bool enabled;
++};
++
++enum hx83112f_supply { HX83112F_VDD, HX83112F_VSP, HX83112F_VSN };
++
++static const struct regulator_bulk_data hx83112f_supplies[] = {
++	{ .supply = "vdd" },
++	{ .supply = "vsp" },
++	{ .supply = "vsn" },
++};
++
++static inline struct hx83112f *to_hx83112f(struct drm_panel *panel)
++{
++	return container_of(panel, struct hx83112f, panel);
++}
++
++static int hx83112f_init(struct hx83112f *ctx)
++{
++	struct mipi_dsi_multi_context dsi_ctx = { .dsi = ctx->dsi };
++
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xb9, 0x83, 0x11, 0x2f);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xce, 0x00, 0x50, 0x00, 0x01);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xb1,
++				0x40, 0x27, 0x27, 0x80, 0x80, 0xaa, 0xa6, 0x2a,
++				0x26, 0x06, 0x06);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x01);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xb1, 0x9b, 0x00, 0x81);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x02);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xb1, 0x2d, 0x2d);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x00);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xb2,
++				0x00, 0x02, 0x08, 0x90, 0x68, 0x00, 0x1c, 0x4c,
++				0x10, 0x08, 0x00, 0x6e, 0x11, 0x01, 0x00);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xb4,
++				0x00, 0x7c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x72,
++				0x00, 0x78, 0x00, 0x00, 0x00, 0x72, 0x00, 0x00,
++				0x01, 0x02, 0x00, 0x1a, 0x00, 0x0c, 0x00, 0x0d);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xe0,
++				0x00, 0x10, 0x2a, 0x2c, 0x34, 0x6c, 0x7c, 0x81,
++				0x84, 0x84, 0x84, 0x81, 0x7e, 0x7d, 0x7c, 0x7c,
++				0x7d, 0x7f, 0x82, 0x9b, 0xae, 0x48, 0x67, 0x00,
++				0x10, 0x2a, 0x2c, 0x34, 0x6c, 0x7c, 0x81, 0x84,
++				0x84, 0x84, 0x81, 0x7e, 0x7d, 0x7c, 0x7c, 0x7d,
++				0x7f, 0x82, 0x9b, 0xae, 0x48, 0x67);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xe9, 0xc5);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xba, 0x11);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xe9, 0x3f);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x01);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbf, 0x0b);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x00);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x01);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xc0,
++				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++				0x00, 0x33, 0x33, 0x33, 0x00, 0x33, 0x33, 0x33);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x00);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xc7, 0xf0, 0x20);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x01);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xc7, 0x44);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x00);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xcb, 0x5f, 0x19, 0x06, 0xe6);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xcc, 0x0a);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xd3,
++				0x81, 0x04, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00,
++				0x03, 0x37, 0x1c, 0x1c, 0x1e, 0x1a, 0x00, 0x00,
++				0x32, 0x20, 0x32, 0x10, 0x1c, 0x00, 0x1c, 0x32,
++				0x10, 0x00, 0x00, 0x00, 0x32, 0x10, 0x08, 0x00,
++				0x00, 0x00, 0x00, 0x1c, 0x09, 0x86);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xd5,
++				0x18, 0x18, 0x19, 0x18, 0x18, 0x18, 0x18, 0x20,
++				0x18, 0x18, 0x10, 0x10, 0x18, 0x18, 0x18, 0x18,
++				0x01, 0x01, 0x00, 0x00, 0x03, 0x03, 0x02, 0x02,
++				0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18,
++				0x18, 0x18, 0x31, 0x31, 0x2f, 0x2f, 0x30, 0x30,
++				0x18, 0x18, 0x35, 0x35, 0x36, 0x36, 0x37, 0x37);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xd6,
++				0x18, 0x18, 0x19, 0x18, 0x18, 0x18, 0x19, 0x20,
++				0x18, 0x18, 0x10, 0x10, 0x18, 0x18, 0x18, 0x18,
++				0x02, 0x02, 0x03, 0x03, 0x00, 0x00, 0x01, 0x01,
++				0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18,
++				0x18, 0x18, 0x31, 0x31, 0x2f, 0x2f, 0x30, 0x30,
++				0x18, 0x18, 0x35, 0x35, 0x36, 0x36, 0x37, 0x37);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xd8,
++				0xaa, 0xaa, 0xff, 0xaa, 0xbf, 0xaa, 0xaa, 0xaa,
++				0xff, 0xaa, 0xbf, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
++				0xbf, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xbf, 0xaa);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x01);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xd8,
++				0xaa, 0xaa, 0xff, 0xaa, 0xbf, 0xaa, 0xaa, 0xaa,
++				0xff, 0xaa, 0xbf, 0xaa, 0xaa, 0xaa, 0xff, 0xaa,
++				0xbf, 0xaa, 0xaa, 0xaa, 0xff, 0xaa, 0xbf, 0xaa);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x02);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xd8,
++				0xaa, 0xaa, 0xff, 0xaa, 0xbf, 0xaa, 0xaa, 0xaa,
++				0xff, 0xaa, 0xbf, 0xaa);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x03);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xd8,
++				0xba, 0xaa, 0xaa, 0xaa, 0xbf, 0xaa, 0xaa, 0xaa,
++				0xaa, 0xaa, 0xbf, 0xaa, 0xaa, 0xaa, 0xff, 0xaa,
++				0xbf, 0xaa, 0xaa, 0xaa, 0xff, 0xaa, 0xbf, 0xaa);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x00);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xe7,
++				0x50, 0x32, 0x10, 0x10, 0x28, 0x81, 0x37, 0x81,
++				0x3c, 0x81, 0x04, 0x02, 0x00, 0x00, 0x02, 0x02,
++				0x12, 0x05, 0xff, 0xff, 0x37, 0x81, 0x3c, 0x81,
++				0x08, 0x00, 0x00, 0x48, 0x17, 0x03, 0x69, 0x00,
++				0x00, 0x00, 0x4c, 0x4c, 0x1e, 0x00, 0x40, 0x01,
++				0x00, 0x0c, 0x0a, 0x04);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x01);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xe7,
++				0x02, 0x50, 0xd0, 0x01, 0x3c, 0x07, 0x38, 0x10,
++				0x00, 0x00, 0x00, 0x02);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x02);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xe7,
++				0x02, 0x02, 0x02, 0x00, 0x72, 0x01, 0x03, 0x01,
++				0x03, 0x01, 0x03, 0x22, 0x20, 0x28, 0x40, 0x01,
++				0x00);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x00);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xe1,
++				0x11, 0x00, 0x00, 0x89, 0x30, 0x80, 0x09, 0x68,
++				0x04, 0x38, 0x00, 0x08, 0x02, 0x1c, 0x02, 0x1c,
++				0x02, 0x00, 0x02, 0x0e, 0x00, 0x20, 0x00, 0xbb,
++				0x00, 0x07, 0x00, 0x0c, 0x0d, 0xb7, 0x0c, 0xb7,
++				0x18, 0x00, 0x10, 0xf0, 0x03, 0x0c, 0x20, 0x00,
++				0x06, 0x0b, 0x0b, 0x33, 0x0e, 0x1c, 0x2a, 0x38,
++				0x46, 0x54, 0x62, 0x69, 0x70, 0x77, 0x79, 0x7b,
++				0x7d, 0x7e, 0x01, 0x02, 0x01, 0x00, 0x09);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x01);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xe1,
++				0x40, 0x09, 0xbe, 0x19, 0xfc, 0x19, 0xfa, 0x19,
++				0xf8, 0x1a, 0x38, 0x1a, 0x78, 0x1a, 0xb6, 0x2a,
++				0xf6, 0x2b, 0x34, 0x2b, 0x74, 0x3b, 0x74, 0x63,
++				0xf4);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x00);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x03);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xe7, 0x01, 0x01);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xe1, 0x00);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xba, 0x00, 0x00, 0x20, 0xc0);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xbd, 0x00);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xb9, 0x00, 0x00, 0x00);
++	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x53, 0x2c);
++
++	mipi_dsi_dcs_exit_sleep_mode_multi(&dsi_ctx);
++	mipi_dsi_msleep(&dsi_ctx, 86);
++
++	return dsi_ctx.accum_err;
++}
++
++static void hx83112f_power_off(struct hx83112f *ctx)
++{
++	/* The negative rail must fall before the positive rail. */
++	regulator_disable(ctx->supplies[HX83112F_VSN].consumer);
++	usleep_range(2000, 3000);
++	regulator_disable(ctx->supplies[HX83112F_VSP].consumer);
++	usleep_range(2000, 3000);
++	regulator_disable(ctx->supplies[HX83112F_VDD].consumer);
++}
++
++static int hx83112f_prepare(struct drm_panel *panel)
++{
++	struct hx83112f *ctx = to_hx83112f(panel);
++	int ret;
++
++	/* reset-gpios is active low; one asserts reset. */
++	gpiod_set_value_cansleep(ctx->reset, 1);
++	usleep_range(1000, 2000);
++
++	ret = regulator_enable(ctx->supplies[HX83112F_VDD].consumer);
++	if (ret)
++		return ret;
++	usleep_range(5000, 6000);
++	ret = regulator_enable(ctx->supplies[HX83112F_VSP].consumer);
++	if (ret)
++		goto disable_vdd;
++	usleep_range(2000, 3000);
++	ret = regulator_enable(ctx->supplies[HX83112F_VSN].consumer);
++	if (ret)
++		goto disable_vsp;
++	usleep_range(2000, 3000);
++
++	gpiod_set_value_cansleep(ctx->reset, 0);
++	usleep_range(10000, 11000);
++	gpiod_set_value_cansleep(ctx->reset, 1);
++	usleep_range(10000, 11000);
++	gpiod_set_value_cansleep(ctx->reset, 0);
++	usleep_range(10000, 11000);
++
++	ret = hx83112f_init(ctx);
++	if (ret) {
++		gpiod_set_value_cansleep(ctx->reset, 1);
++		hx83112f_power_off(ctx);
++	}
++	return ret;
++
++disable_vsp:
++	regulator_disable(ctx->supplies[HX83112F_VSP].consumer);
++	usleep_range(2000, 3000);
++disable_vdd:
++	regulator_disable(ctx->supplies[HX83112F_VDD].consumer);
++	return ret;
++}
++
++static int hx83112f_enable(struct drm_panel *panel)
++{
++	struct hx83112f *ctx = to_hx83112f(panel);
++	struct mipi_dsi_multi_context dsi_ctx = { .dsi = ctx->dsi };
++
++	mipi_dsi_dcs_set_display_on_multi(&dsi_ctx);
++	mipi_dsi_msleep(&dsi_ctx, 5);
++	mipi_dsi_dcs_set_tear_on_multi(&dsi_ctx, MIPI_DSI_DCS_TEAR_MODE_VBLANK);
++	if (!dsi_ctx.accum_err)
++		ctx->enabled = true;
++	return dsi_ctx.accum_err;
++}
++
++static int hx83112f_disable(struct drm_panel *panel)
++{
++	struct hx83112f *ctx = to_hx83112f(panel);
++	int ret;
++
++	ctx->enabled = false;
++	ret = mipi_dsi_dcs_set_display_off(ctx->dsi);
++	msleep(50);
++	return ret;
++}
++
++static int hx83112f_unprepare(struct drm_panel *panel)
++{
++	struct hx83112f *ctx = to_hx83112f(panel);
++	struct mipi_dsi_multi_context dsi_ctx = { .dsi = ctx->dsi };
++
++	mipi_dsi_dcs_enter_sleep_mode_multi(&dsi_ctx);
++	/* Still wait if the command failed before removing panel power. */
++	msleep(110);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xb9, 0x83, 0x11, 0x2f);
++	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xb1, 0x01);
++	gpiod_set_value_cansleep(ctx->reset, 1);
++	hx83112f_power_off(ctx);
++
++	return dsi_ctx.accum_err;
++}
++
++#define HX83112F_MODE(vfp, fps) { \
++	.clock = 1296 * (2408 + (vfp) + 15 + 15) * (fps) / 1000, \
++	.hdisplay = 1080, \
++	.hsync_start = 1080 + 174, \
++	.hsync_end = 1080 + 174 + 20, \
++	.htotal = 1296, \
++	.vdisplay = 2408, \
++	.vsync_start = 2408 + (vfp), \
++	.vsync_end = 2408 + (vfp) + 15, \
++	.vtotal = 2408 + (vfp) + 15 + 15, \
++	.width_mm = 68, \
++	.height_mm = 152, \
++	.type = DRM_MODE_TYPE_DRIVER, \
++}
++
++/* DRM derives refresh from clock/totals; vendor .vrefresh is not a DRM field. */
++static const struct drm_display_mode hx83112f_modes[] = {
++	HX83112F_MODE(1350, 60),
++	HX83112F_MODE(78, 90),
++};
++
++static int hx83112f_get_modes(struct drm_panel *panel,
++			     struct drm_connector *connector)
++{
++	struct drm_display_mode *mode;
++	unsigned int i;
++
++	for (i = 0; i < ARRAY_SIZE(hx83112f_modes); i++) {
++		mode = drm_mode_duplicate(connector->dev, &hx83112f_modes[i]);
++		if (!mode)
++			return -ENOMEM;
++		if (!i)
++			mode->type |= DRM_MODE_TYPE_PREFERRED;
++		drm_mode_set_name(mode);
++		drm_mode_probed_add(connector, mode);
++	}
++	connector->display_info.width_mm = 68;
++	connector->display_info.height_mm = 152;
++	return ARRAY_SIZE(hx83112f_modes);
++}
++
++static const struct drm_panel_funcs hx83112f_funcs = {
++	.prepare = hx83112f_prepare,
++	.enable = hx83112f_enable,
++	.disable = hx83112f_disable,
++	.unprepare = hx83112f_unprepare,
++	.get_modes = hx83112f_get_modes,
++};
++
++static int hx83112f_bl_update(struct backlight_device *bl)
++{
++	struct hx83112f *ctx = bl_get_data(bl);
++	u8 brightness = backlight_get_brightness(bl);
++	int ret;
++
++	if (!ctx->enabled)
++		return 0;
++	/* This panel uses an eight-bit DCS brightness value. */
++	ret = mipi_dsi_dcs_write(ctx->dsi, 0x51, &brightness, sizeof(brightness));
++	return ret < 0 ? ret : 0;
++}
++
++static const struct backlight_ops hx83112f_bl_ops = {
++	.update_status = hx83112f_bl_update,
++};
++
++static int hx83112f_probe(struct mipi_dsi_device *dsi)
++{
++	const struct backlight_properties props = {
++		.type = BACKLIGHT_RAW,
++		.max_brightness = 255,
++		.brightness = 200,
++	};
++	struct device *dev = &dsi->dev;
++	struct hx83112f *ctx;
++	int ret;
++
++	ctx = devm_drm_panel_alloc(dev, struct hx83112f, panel,
++				   &hx83112f_funcs, DRM_MODE_CONNECTOR_DSI);
++	if (IS_ERR(ctx))
++		return PTR_ERR(ctx);
++	ctx->dsi = dsi;
++	mipi_dsi_set_drvdata(dsi, ctx);
++
++	ret = devm_regulator_bulk_get_const(dev, ARRAY_SIZE(hx83112f_supplies),
++					    hx83112f_supplies, &ctx->supplies);
++	if (ret)
++		return dev_err_probe(dev, ret, "Failed to get supplies\n");
++	ctx->reset = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
++	if (IS_ERR(ctx->reset))
++		return dev_err_probe(dev, PTR_ERR(ctx->reset), "Failed to get reset\n");
++
++	dsi->lanes = 3;
++	dsi->format = MIPI_DSI_FMT_RGB888;
++	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_SYNC_PULSE |
++			  MIPI_DSI_MODE_LPM | MIPI_DSI_CLOCK_NON_CONTINUOUS;
++	dsi->hs_rate = 1060000000;
++
++	ctx->panel.backlight = devm_backlight_device_register(dev, dev_name(dev), dev,
++							    ctx, &hx83112f_bl_ops, &props);
++	if (IS_ERR(ctx->panel.backlight))
++		return dev_err_probe(dev, PTR_ERR(ctx->panel.backlight),
++				     "Failed to register backlight\n");
++
++	drm_panel_add(&ctx->panel);
++	ret = devm_mipi_dsi_attach(dev, dsi);
++	if (ret)
++		drm_panel_remove(&ctx->panel);
++	return ret;
++}
++
++static void hx83112f_remove(struct mipi_dsi_device *dsi)
++{
++	struct hx83112f *ctx = mipi_dsi_get_drvdata(dsi);
++
++	drm_panel_remove(&ctx->panel);
++}
++
++static const struct of_device_id hx83112f_of_match[] = {
++	{ .compatible = "jdi,hx83112f-a22x" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, hx83112f_of_match);
++
++static struct mipi_dsi_driver hx83112f_driver = {
++	.probe = hx83112f_probe,
++	.remove = hx83112f_remove,
++	.driver = {
++		.name = "panel-jdi-hx83112f",
++		.of_match_table = hx83112f_of_match,
++	},
++};
++module_mipi_dsi_driver(hx83112f_driver);
++
++MODULE_DESCRIPTION("JDI HX83112F C-PHY panel driver for Galaxy A22 5G");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/phy/mediatek/Makefile b/drivers/phy/mediatek/Makefile
+index 1b8088df7..534a185ed 100644
+--- a/drivers/phy/mediatek/Makefile
++++ b/drivers/phy/mediatek/Makefile
+@@ -21,4 +21,5 @@ obj-$(CONFIG_PHY_MTK_MIPI_CSI_0_5)	+= phy-mtk-mipi-csi-0-5.o
+ phy-mtk-mipi-dsi-drv-y			:= phy-mtk-mipi-dsi.o
+ phy-mtk-mipi-dsi-drv-y			+= phy-mtk-mipi-dsi-mt8173.o
+ phy-mtk-mipi-dsi-drv-y			+= phy-mtk-mipi-dsi-mt8183.o
++phy-mtk-mipi-dsi-drv-y			+= phy-mtk-mipi-dsi-mt6833.o
+ obj-$(CONFIG_PHY_MTK_MIPI_DSI)		+= phy-mtk-mipi-dsi-drv.o
+diff --git a/drivers/phy/mediatek/phy-mtk-mipi-dsi-mt6833.c b/drivers/phy/mediatek/phy-mtk-mipi-dsi-mt6833.c
+new file mode 100644
+index 000000000..0b0d93e83
+--- /dev/null
++++ b/drivers/phy/mediatek/phy-mtk-mipi-dsi-mt6833.c
+@@ -0,0 +1,112 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * MT6833 C-PHY transmitter. Based on the MT6833 C-PHY entry in Samsung's
++ * SM-A226B kernel mtk_mipi_tx.c (Copyright MediaTek Inc.). That entry uses
++ * the MT6873 C-PHY PLL sequence, not the MT6833 D-PHY sequence.
++ */
++#include "phy-mtk-io.h"
++#include "phy-mtk-mipi-dsi.h"
++
++#define MIPITX_LANE_CON		0x000c
++#define MIPITX_VOLTAGE_SEL	0x0010
++#define MIPITX_PRESERVED		0x0014
++#define MIPITX_PLL_PWR		0x0028
++#define PLL_PWR_ON		BIT(0)
++#define PLL_ISO_EN		BIT(1)
++#define MIPITX_PLL_CON0		0x002c
++#define MIPITX_PLL_CON1		0x0030
++#define PLL_EN			BIT(4)
++#define PLL_POSDIV		GENMASK(10, 8)
++#define MIPITX_PLL_CON4		0x003c
++#define MIPITX_PHY_SEL0		0x0040
++#define MIPITX_PHY_SEL1		0x0044
++#define MIPITX_PHY_SEL2		0x0048
++#define MIPITX_PHY_SEL3		0x004c
++
++static int mt6833_cphy_pll_prepare(struct clk_hw *hw)
++{
++	struct mtk_mipi_tx *tx = mtk_mipi_tx_from_clk_hw(hw);
++	void __iomem *base = tx->regs;
++	unsigned long ref_rate = clk_hw_get_rate(clk_hw_get_parent(hw));
++	u32 posdiv;
++	u64 pcw;
++
++	if (!ref_rate || tx->data_rate < 125000000 || tx->data_rate > 2500000000U)
++		return -EINVAL;
++	if (tx->data_rate >= 2000000000U)
++		posdiv = 0;
++	else if (tx->data_rate >= 1000000000)
++		posdiv = 1;
++	else if (tx->data_rate >= 500000000)
++		posdiv = 2;
++	else if (tx->data_rate > 250000000)
++		posdiv = 3;
++	else
++		posdiv = 4;
++
++	/* C-PHY analogue voltage and bandgap defaults from the stock driver. */
++	writel(0x4444236a, base + MIPITX_VOLTAGE_SEL);
++	writel(0, base + MIPITX_PRESERVED);
++	writel(0x00ff12e0, base + MIPITX_PLL_CON4);
++	writel(0x3fff0088, base + MIPITX_LANE_CON);
++	writel(0x3fff00c8, base + MIPITX_LANE_CON);
++	mtk_phy_clear_bits(base + MIPITX_PLL_CON1, PLL_EN);
++	mtk_phy_set_bits(base + MIPITX_PLL_PWR, PLL_PWR_ON);
++	usleep_range(30, 100);
++	mtk_phy_clear_bits(base + MIPITX_PLL_PWR, PLL_ISO_EN);
++
++	pcw = div_u64((u64)tx->data_rate << (24 + posdiv), ref_rate);
++	writel(pcw, base + MIPITX_PLL_CON0);
++	mtk_phy_update_field(base + MIPITX_PLL_CON1, PLL_POSDIV, posdiv);
++	mtk_phy_set_bits(base + MIPITX_PLL_CON1, PLL_EN);
++	usleep_range(50, 100);
++	return 0;
++}
++
++static void mt6833_cphy_pll_unprepare(struct clk_hw *hw)
++{
++	struct mtk_mipi_tx *tx = mtk_mipi_tx_from_clk_hw(hw);
++	void __iomem *base = tx->regs;
++
++	mtk_phy_clear_bits(base + MIPITX_PLL_CON1, PLL_EN);
++	mtk_phy_set_bits(base + MIPITX_PLL_PWR, PLL_ISO_EN);
++	mtk_phy_clear_bits(base + MIPITX_PLL_PWR, PLL_PWR_ON);
++	writel(0x3fff0080, base + MIPITX_LANE_CON);
++	writel(0x3fff0000, base + MIPITX_LANE_CON);
++}
++
++static int mt6833_cphy_determine_rate(struct clk_hw *hw, struct clk_rate_request *req)
++{
++	req->rate = clamp_val(req->rate, 125000000, 2500000000UL);
++	return 0;
++}
++
++static const struct clk_ops mt6833_cphy_clk_ops = {
++	.prepare = mt6833_cphy_pll_prepare,
++	.unprepare = mt6833_cphy_pll_unprepare,
++	.determine_rate = mt6833_cphy_determine_rate,
++	.set_rate = mtk_mipi_tx_pll_set_rate,
++	.recalc_rate = mtk_mipi_tx_pll_recalc_rate,
++};
++
++static void mt6833_cphy_enable_signal(struct phy *phy)
++{
++	struct mtk_mipi_tx *tx = phy_get_drvdata(phy);
++
++	/* Three trios, default pad mapping with no board lane swap. */
++	writel(0x65432101, tx->regs + MIPITX_PHY_SEL0);
++	writel(0x24210987, tx->regs + MIPITX_PHY_SEL1);
++	writel(0x68543102, tx->regs + MIPITX_PHY_SEL2);
++	writel(0x00000007, tx->regs + MIPITX_PHY_SEL3);
++}
++
++static void mt6833_cphy_disable_signal(struct phy *phy)
++{
++	/* The C-PHY PLL unprepare sequence also disables the pad drivers. */
++}
++
++const struct mtk_mipitx_data mt6833_cphy_mipitx_data = {
++	.mipi_tx_clk_ops = &mt6833_cphy_clk_ops,
++	.mipi_tx_enable_signal = mt6833_cphy_enable_signal,
++	.mipi_tx_disable_signal = mt6833_cphy_disable_signal,
++};
+diff --git a/drivers/phy/mediatek/phy-mtk-mipi-dsi.c b/drivers/phy/mediatek/phy-mtk-mipi-dsi.c
+index 065ea6260..c7e9da522 100644
+--- a/drivers/phy/mediatek/phy-mtk-mipi-dsi.c
++++ b/drivers/phy/mediatek/phy-mtk-mipi-dsi.c
+@@ -183,6 +183,7 @@ static const struct of_device_id mtk_mipi_tx_match[] = {
+ 	{ .compatible = "mediatek,mt2701-mipi-tx", .data = &mt2701_mipitx_data },
+ 	{ .compatible = "mediatek,mt8173-mipi-tx", .data = &mt8173_mipitx_data },
+ 	{ .compatible = "mediatek,mt8183-mipi-tx", .data = &mt8183_mipitx_data },
++	{ .compatible = "mediatek,mt6833-mipi-tx-cphy", .data = &mt6833_cphy_mipitx_data },
+ 	{ /* sentinel */ }
+ };
+ MODULE_DEVICE_TABLE(of, mtk_mipi_tx_match);
+diff --git a/drivers/phy/mediatek/phy-mtk-mipi-dsi.h b/drivers/phy/mediatek/phy-mtk-mipi-dsi.h
+index 5d4876f1d..8512673a3 100644
+--- a/drivers/phy/mediatek/phy-mtk-mipi-dsi.h
++++ b/drivers/phy/mediatek/phy-mtk-mipi-dsi.h
+@@ -42,5 +42,6 @@ unsigned long mtk_mipi_tx_pll_recalc_rate(struct clk_hw *hw,
+ extern const struct mtk_mipitx_data mt2701_mipitx_data;
+ extern const struct mtk_mipitx_data mt8173_mipitx_data;
+ extern const struct mtk_mipitx_data mt8183_mipitx_data;
++extern const struct mtk_mipitx_data mt6833_cphy_mipitx_data;
+ 
+ #endif
+diff --git a/drivers/pmdomain/mediatek/mt6833-pm-domains.h b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+index 9a78105c7..86474bbb0 100644
+--- a/drivers/pmdomain/mediatek/mt6833-pm-domains.h
++++ b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+@@ -108,6 +108,26 @@ static const struct scpsys_domain_data scpsys_domain_data_mt6833[] = {
+ 				    MT8192_TOP_AXI_PROT_EN_2_STA1),
+ 		},
+ 	},
++	[MT6833_POWER_DOMAIN_DISP] = {
++		.name = "disp",
++		.sta_mask = BIT(20),
++		.ctl_offs = 0x0354,
++		.pwr_sta_offs = 0x016c,
++		.pwr_sta2nd_offs = 0x0170,
++		.sram_pdn_bits = BIT(8),
++		.sram_pdn_ack_bits = BIT(12),
++		.bp_cfg = {
++			BUS_PROT_WR_IGN(INFRA,
++				BIT(0) | BIT(2) | BIT(10) | BIT(12) | BIT(16) | BIT(24) | BIT(26),
++				0x2d4, 0x2d8, 0x2ec),
++			BUS_PROT_WR_IGN(INFRA, BIT(8), 0xdcc, 0xdd0, 0xdd8),
++			BUS_PROT_WR_IGN(INFRA, BIT(6) | BIT(23), 0x2a0, 0x2a4, 0x228),
++			BUS_PROT_WR_IGN(INFRA,
++				BIT(1) | BIT(3) | BIT(17) | BIT(25) | BIT(27),
++				0x2d4, 0x2d8, 0x2ec),
++			BUS_PROT_WR_IGN(INFRA, BIT(9), 0xdcc, 0xdd0, 0xdd8),
++		},
++	},
+ 	/* same SPM/bus-protection layout as MT8192 (vendor clk-mt6833-pg.c SYS_CONN) */
+ 	[MT6833_POWER_DOMAIN_CONN] = {
+ 		.name = "conn",
+diff --git a/drivers/soc/mediatek/mt6833-mmsys.h b/drivers/soc/mediatek/mt6833-mmsys.h
+new file mode 100644
+index 000000000..40380a8bd
+--- /dev/null
++++ b/drivers/soc/mediatek/mt6833-mmsys.h
+@@ -0,0 +1,10 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++#ifndef __SOC_MEDIATEK_MT6833_MMSYS_H
++#define __SOC_MEDIATEK_MT6833_MMSYS_H
++
++static const struct mtk_mmsys_routes mt6833_mmsys_routes[] = {
++	MMSYS_ROUTE(RDMA0, DSI0, 0x0f0c, GENMASK(1, 0), 0),
++	MMSYS_ROUTE(RDMA0, DSI0, 0x0f30, GENMASK(1, 0), 0),
++};
++
++#endif
+diff --git a/drivers/soc/mediatek/mtk-mmsys.c b/drivers/soc/mediatek/mtk-mmsys.c
+index 2f3e0778b..7a5b8b4b8 100644
+--- a/drivers/soc/mediatek/mtk-mmsys.c
++++ b/drivers/soc/mediatek/mtk-mmsys.c
+@@ -10,10 +10,12 @@
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
++#include <linux/pm_runtime.h>
+ #include <linux/reset-controller.h>
+ #include <linux/soc/mediatek/mtk-mmsys.h>
+ 
+ #include "mtk-mmsys.h"
++#include "mt6833-mmsys.h"
+ #include "mt8167-mmsys.h"
+ #include "mt8173-mmsys.h"
+ #include "mt8183-mmsys.h"
+@@ -41,6 +43,13 @@ static const struct mtk_mmsys_driver_data mt6779_mmsys_driver_data = {
+ 	.clk_driver = "clk-mt6779-mm",
+ };
+ 
++static const struct mtk_mmsys_driver_data mt6833_mmsys_driver_data = {
++	.clk_driver = "clk-mt6833-mm",
++	.need_runtime_pm = true,
++	.routes = mt6833_mmsys_routes,
++	.num_routes = ARRAY_SIZE(mt6833_mmsys_routes),
++};
++
+ static const struct mtk_mmsys_driver_data mt6795_mmsys_driver_data = {
+ 	.clk_driver = "clk-mt6795-mm",
+ 	.routes = mt8173_mmsys_routing_table,
+@@ -427,6 +436,11 @@ static int mtk_mmsys_probe(struct platform_device *pdev)
+ 		dev_dbg(dev, "No mediatek,gce-client-reg!\n");
+ 
+ 	platform_set_drvdata(pdev, mmsys);
++	if (mmsys->data->need_runtime_pm) {
++		ret = devm_pm_runtime_enable(dev);
++		if (ret)
++			return ret;
++	}
+ 
+ 	clks = platform_device_register_data(&pdev->dev, mmsys->data->clk_driver,
+ 					     PLATFORM_DEVID_AUTO, NULL, 0);
+@@ -458,6 +472,7 @@ static void mtk_mmsys_remove(struct platform_device *pdev)
+ }
+ 
+ static const struct of_device_id of_match_mtk_mmsys[] = {
++	{ .compatible = "mediatek,mt6833-display", .data = &mt6833_mmsys_driver_data },
+ 	{ .compatible = "mediatek,mt2701-mmsys", .data = &mt2701_mmsys_driver_data },
+ 	{ .compatible = "mediatek,mt2712-mmsys", .data = &mt2712_mmsys_driver_data },
+ 	{ .compatible = "mediatek,mt6779-mmsys", .data = &mt6779_mmsys_driver_data },
+diff --git a/drivers/soc/mediatek/mtk-mmsys.h b/drivers/soc/mediatek/mtk-mmsys.h
+index fe628d5f5..44e37e55e 100644
+--- a/drivers/soc/mediatek/mtk-mmsys.h
++++ b/drivers/soc/mediatek/mtk-mmsys.h
+@@ -111,6 +111,7 @@ struct mtk_mmsys_routes {
+  * @num_routes: Array size of the routes.
+  * @sw0_rst_offset: Register offset for the reset control.
+  * @num_resets: Number of reset bits that are defined
++ * @need_runtime_pm: Whether to enable runtime PM for the MMSYS parent.
+  * @is_vppsys: Whether the mmsys is VPPSYS (Video Processing Pipe)
+  *             or VDOSYS (Video). Only VDOSYS needs to be added to drm driver.
+  * @vsync_len: VSYNC length of the MIXER.
+@@ -138,6 +139,7 @@ struct mtk_mmsys_driver_data {
+ 	const u8 *rst_tb;
+ 	const u32 num_resets;
+ 	const bool is_vppsys;
++	const bool need_runtime_pm;
+ 	const u8 vsync_len;
+ };
+ 
+diff --git a/drivers/soc/mediatek/mtk-mutex.c b/drivers/soc/mediatek/mtk-mutex.c
+index eb5d381ff..b6f3c90f7 100644
+--- a/drivers/soc/mediatek/mtk-mutex.c
++++ b/drivers/soc/mediatek/mtk-mutex.c
+@@ -771,6 +771,26 @@ static const struct mtk_mutex_data mt8173_mutex_driver_data = {
+ 	.mutex_sof_reg = MT2701_MUTEX0_SOF0,
+ };
+ 
++static const u8 mt6833_mutex_mod[DDP_COMPONENT_ID_MAX] = {
++	[DDP_COMPONENT_OVL0] = 0,
++	[DDP_COMPONENT_OVL_2L0] = 1,
++	[DDP_COMPONENT_RDMA0] = 2,
++	[DDP_COMPONENT_COLOR0] = 4,
++	[DDP_COMPONENT_CCORR] = 5,
++	[DDP_COMPONENT_AAL0] = 7,
++	[DDP_COMPONENT_GAMMA] = 8,
++	[DDP_COMPONENT_DITHER0] = 10,
++	[DDP_COMPONENT_WDMA0] = 15,
++};
++
++static const struct mtk_mutex_data mt6833_mutex_driver_data = {
++	.mutex_mod = mt6833_mutex_mod,
++	.mutex_sof = mt8186_mutex_sof,
++	.mutex_mod_reg = 0x30,
++	.mutex_mod1_reg = 0x34,
++	.mutex_sof_reg = 0x2c,
++};
++
+ static const struct mtk_mutex_data mt8183_mutex_driver_data = {
+ 	.mutex_mod = mt8183_mutex_mod,
+ 	.mutex_sof = mt8183_mutex_sof,
+@@ -1131,6 +1151,7 @@ static int mtk_mutex_probe(struct platform_device *pdev)
+ }
+ 
+ static const struct of_device_id mutex_driver_dt_match[] = {
++	{ .compatible = "mediatek,mt6833-disp-mutex", .data = &mt6833_mutex_driver_data },
+ 	{ .compatible = "mediatek,mt2701-disp-mutex", .data = &mt2701_mutex_driver_data },
+ 	{ .compatible = "mediatek,mt2712-disp-mutex", .data = &mt2712_mutex_driver_data },
+ 	{ .compatible = "mediatek,mt6795-disp-mutex", .data = &mt6795_mutex_driver_data },
+diff --git a/include/dt-bindings/power/mediatek,mt6833-power.h b/include/dt-bindings/power/mediatek,mt6833-power.h
+index ef5e019c4..548f7d4a9 100644
+--- a/include/dt-bindings/power/mediatek,mt6833-power.h
++++ b/include/dt-bindings/power/mediatek,mt6833-power.h
+@@ -8,5 +8,6 @@
+ #define MT6833_POWER_DOMAIN_MFG3	3
+ #define MT6833_POWER_DOMAIN_AUDIO	4
+ #define MT6833_POWER_DOMAIN_CONN	5
++#define MT6833_POWER_DOMAIN_DISP	6
+ 
+ #endif /* _DT_BINDINGS_POWER_MT6833_POWER_H */

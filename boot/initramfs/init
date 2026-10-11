@@ -1,0 +1,88 @@
+#!/bin/busybox sh
+/bin/busybox --install -s /bin
+export PATH=/bin
+mount -t devtmpfs dev /dev 2>/dev/null
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+mount -t pstore pstore /sys/fs/pstore 2>/dev/null
+mount -t configfs configfs /sys/kernel/config
+mkdir -p /dev/pts && mount -t devpts devpts /dev/pts
+
+msg() { echo "a22x-init: $*" > /dev/kmsg; echo "a22x-init: $*"; }
+msg "mainline userspace reached on $(uname -r)"
+msg "cpus online: $(cat /sys/devices/system/cpu/online)"
+msg "mem: $(grep MemTotal /proc/meminfo)"
+
+# eMMC: report what the mainline mmc driver sees (read-only, nothing mounted).
+for i in 1 2 3 4 5; do [ -e /dev/mmcblk0 ] && break; sleep 1; done
+if [ -e /dev/mmcblk0 ]; then
+	msg "eMMC: $(cat /sys/block/mmcblk0/device/name 2>/dev/null) $(($(cat /sys/block/mmcblk0/size) / 2048)) MiB, $(ls /sys/block/mmcblk0 | grep -c mmcblk0p) partitions"
+else
+	msg "eMMC: no mmcblk0"
+fi
+
+# USB networking gadget (NCM), same addressing as postmarketOS/Nura.
+udc=$(ls /sys/class/udc 2>/dev/null | head -1)
+if [ -n "$udc" ]; then
+	g=/sys/kernel/config/usb_gadget/g1
+	mkdir -p $g/strings/0x409 $g/configs/c.1/strings/0x409 $g/functions/ncm.usb0
+	echo 0x18d1 > $g/idVendor
+	echo 0xd001 > $g/idProduct
+	echo "Samsung" > $g/strings/0x409/manufacturer
+	echo "SM-A226B mainline" > $g/strings/0x409/product
+	echo "a22x-mainline" > $g/strings/0x409/serialnumber
+	echo "NCM" > $g/configs/c.1/strings/0x409/configuration
+	ln -s $g/functions/ncm.usb0 $g/configs/c.1/
+	echo "$udc" > $g/UDC
+	sleep 1
+	ifconfig usb0 172.16.42.1 netmask 255.255.255.0 up
+	printf 'start 172.16.42.2\nend 172.16.42.2\ninterface usb0\noption subnet 255.255.255.0\nlease_file /tmp/udhcpd.leases\n' > /tmp/udhcpd.conf
+	touch /tmp/udhcpd.leases
+	udhcpd /tmp/udhcpd.conf
+	telnetd -l /bin/sh
+	msg "USB NCM up on $udc: telnet 172.16.42.1"
+else
+	msg "USB: no UDC"
+fi
+
+# Root filesystem: the partition whose GPT name is given by a22x.root=<name>
+# (eMMC or SD card), default "userdata" (Nura, ext4 labelled pmOS_root).
+# a22x.noswitch on the kernel command line keeps the initramfs shell.
+want=userdata
+for a in $(cat /proc/cmdline); do
+	case "$a" in a22x.root=*) want=${a#a22x.root=} ;; esac
+done
+root=
+i=0
+while [ -z "$root" ] && [ $i -lt 50 ]; do	# the SD card may show up late
+	for p in /sys/block/mmcblk*/mmcblk*p*; do
+		grep -q "^PARTNAME=$want\$" $p/uevent 2>/dev/null && root=/dev/${p##*/}
+	done
+	[ -n "$root" ] || { sleep 0.2; i=$((i + 1)); }
+done
+msg "root partition '$want': ${root:-not found}"
+if [ -n "$root" ] && ! grep -q a22x.noswitch /proc/cmdline; then
+	mkdir -p /newroot
+	if mount -t ext4 -o rw "$root" /newroot 2>/dev/null; then
+		if [ -x /newroot/sbin/init ] || [ -L /newroot/sbin/init ]; then
+			msg "switching to $want on $root"
+			killall telnetd udhcpd 2>/dev/null
+			umount /sys/kernel/config /sys/fs/pstore /dev/pts 2>/dev/null
+			for m in dev proc sys; do mount --move /$m /newroot/$m; done
+			exec switch_root /newroot /sbin/init
+		fi
+		msg "no init on $root, staying in initramfs"
+		umount /newroot
+	else
+		msg "could not mount $root as ext4"
+	fi
+fi
+
+# Interactive shell on the UART (/dev/console may be tty0 on the panel).
+tty=/dev/ttyS0
+[ -c $tty ] || tty=/dev/console
+msg "starting shell on $tty"
+while true; do
+	setsid sh -c "exec sh -l <$tty >$tty 2>&1"
+	sleep 1
+done

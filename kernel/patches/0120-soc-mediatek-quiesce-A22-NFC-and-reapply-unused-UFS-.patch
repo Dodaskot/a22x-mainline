@@ -1,0 +1,398 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Thu, 8 Oct 2026 16:07:55 +0200
+Subject: [PATCH 120/131] soc: mediatek: quiesce A22 NFC and reapply unused UFS
+ request cleanup
+
+---
+ .../mt6833-samsung-a22x-native-display.dts    |  22 ++
+ drivers/soc/mediatek/Kconfig                  |   1 +
+ drivers/soc/mediatek/mtk-mt6833-lpm.c         | 252 +++++++++++++++++-
+ 3 files changed, 261 insertions(+), 14 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+index 9149e0071..f8be6e421 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+@@ -55,6 +55,7 @@ lpm_ml: power-controller@c55fce0 {
+ 			      "boot-ufs-source";
+ 		/* This eMMC board has no active UFS controller. Gating is opt-in. */
+ 		mediatek,unused-ufs = <&ufshci>;
++		mediatek,spm = <&scpsys_ml>;
+ 	};
+ 
+ 	mdp_clocks_ml: clock-controller@1f000000 {
+@@ -222,3 +223,24 @@ power-domain@6 {
+ 		#power-domain-cells = <0>;
+ 	};
+ };
++
++/* N5 NFC VEN is active-low (unlike N3). LK leaves it enabled, keeping
++ * GPIO81/SRCLKENAI0 asserted and preventing 26 MHz/INFRA power-off.
++ * Hold NFC off until a native NFC driver takes ownership of both GPIOs.
++ * Do not mask or remux its clock-request input.
++ */
++&pio_ml {
++	nfc-firmware-hog {
++		gpio-hog;
++		gpios = <6 GPIO_ACTIVE_HIGH>;
++		output-low;
++		line-name = "nfc-firmware";
++	};
++
++	nfc-enable-hog {
++		gpio-hog;
++		gpios = <7 GPIO_ACTIVE_LOW>;
++		output-low;
++		line-name = "nfc-enable";
++	};
++};
+diff --git a/drivers/soc/mediatek/Kconfig b/drivers/soc/mediatek/Kconfig
+index ce226c0a7..fec4300db 100644
+--- a/drivers/soc/mediatek/Kconfig
++++ b/drivers/soc/mediatek/Kconfig
+@@ -15,6 +15,7 @@ config MTK_MT6833_MODEM_POWER
+ config MTK_MT6833_LPM
+ 	bool "MediaTek MT6833 low-power firmware coordination"
+ 	depends on ARM64 && OF_RESERVED_MEM && SUSPEND && ARM_PSCI_FW && CPU_IDLE
++	select MFD_SYSCON
+ 	help
+ 	  Coordinate the boot-loaded MCUPM firmware and provide a guarded
+ 	  vendor CPU_SUSPEND backend on MT6833. Firmware initialization and
+diff --git a/drivers/soc/mediatek/mtk-mt6833-lpm.c b/drivers/soc/mediatek/mtk-mt6833-lpm.c
+index bc333b2b9..f477e01b7 100644
+--- a/drivers/soc/mediatek/mtk-mt6833-lpm.c
++++ b/drivers/soc/mediatek/mtk-mt6833-lpm.c
+@@ -8,14 +8,17 @@
+ #include <linux/io.h>
+ #include <linux/iopoll.h>
+ #include <linux/irq.h>
++#include <linux/mfd/syscon.h>
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/of.h>
++#include <linux/of_address.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_reserved_mem.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_qos.h>
+ #include <linux/psci.h>
++#include <linux/regmap.h>
+ #include <linux/sizes.h>
+ #include <linux/soc/mediatek/mt6833-lpm.h>
+ #include <linux/suspend.h>
+@@ -54,6 +57,12 @@
+ #define MCUPM_EEM_ENABLE_OFFSET	0x4fe
+ #define MCUPM_SN_ENABLE_OFFSET	0x4ff
+ 
++#define UFS_HCE			0x34
++#define UFS_XOUFS_ST		0x144
++#define SPM_SRC_REQ_STA0		0x118
++#define SPM_UFS_REQ_MASK		GENMASK(14, 10)
++#define SPM_UFS_REQ_BOOT		0x2c00
++
+ static const char * const boot_peripheral_clock_names[] = {
+ 	"boot-uart1", "boot-spi0", "boot-spi3", "boot-spi4",
+ 	"boot-spi5", "boot-spi6", "boot-spi7",
+@@ -98,6 +107,16 @@ struct mt6833_lpm {
+ 	bool ufs_source_sleep_gated;
+ 	u32 ufs_source_sleep_entries;
+ 	u32 ufs_source_restore_errors;
++	void __iomem *ufs_regs;
++	struct regmap *spm;
++	bool ufs_request_cleanup;
++	bool ufs_request_fault;
++	u32 ufs_request_saved_xo;
++	u32 ufs_request_last_xo;
++	u32 ufs_request_last_spm;
++	u32 ufs_request_clears;
++	int ufs_request_result;
++	int ufs_request_recovery;
+ 	bool idle_blocked;
+ 	bool platform_initialized;
+ 	bool ready;
+@@ -152,6 +171,101 @@ static bool mt6833_lpm_prepared(struct mt6833_lpm *lpm)
+ 		mt6833_mbox_read(lpm, MCUPM_TASK_STATE) == 3;
+ }
+ 
++/* Only use the disabled controller with its source and all leaf clocks held.
++ * Samsung's eMMC boot path releases this unused controller's XO request.
++ * INFRA context loss can reset XOUFS_ST when leaf clocks are restored, so
++ * cleanup must run on both sides of the leaf gate transition.
++ */
++static int mt6833_ufs_clocks_hold(struct mt6833_lpm *lpm)
++{
++	int ret;
++
++	if (!lpm->ufs_sources_held) {
++		ret = clk_bulk_prepare_enable(ARRAY_SIZE(lpm->ufs_sources),
++					      lpm->ufs_sources);
++		if (ret)
++			return ret;
++		lpm->ufs_sources_held = true;
++	}
++	if (!lpm->ufs_clocks_held) {
++		ret = clk_bulk_prepare_enable(ARRAY_SIZE(lpm->ufs_clocks),
++					      lpm->ufs_clocks);
++		if (ret)
++			return ret;
++		lpm->ufs_clocks_held = true;
++	}
++	lpm->boot_ufs_gated = false;
++	return 0;
++}
++
++static int mt6833_ufs_request_read(struct mt6833_lpm *lpm)
++{
++	unsigned int i;
++	int ret;
++
++	if (!lpm->ufs_regs || !lpm->ufs_sources_held || !lpm->ufs_clocks_held)
++		return -EBUSY;
++	for (i = 0; i < ARRAY_SIZE(lpm->ufs_sources); i++)
++		if (!__clk_is_enabled(lpm->ufs_sources[i].clk))
++			return -EBUSY;
++	for (i = 0; i < ARRAY_SIZE(lpm->ufs_clocks); i++)
++		if (!__clk_is_enabled(lpm->ufs_clocks[i].clk))
++			return -EBUSY;
++	if (readl(lpm->ufs_regs + UFS_HCE))
++		return -EBUSY;
++	lpm->ufs_request_last_xo = readl(lpm->ufs_regs + UFS_XOUFS_ST);
++	if (lpm->ufs_request_last_xo != 0 && lpm->ufs_request_last_xo != 3)
++		return -EPROTO;
++	ret = regmap_read(lpm->spm, SPM_SRC_REQ_STA0, &lpm->ufs_request_last_spm);
++	if (ret)
++		return ret;
++	if ((lpm->ufs_request_last_spm & SPM_UFS_REQ_MASK) !=
++	    (lpm->ufs_request_last_xo ? SPM_UFS_REQ_BOOT : 0))
++		return -EPROTO;
++	return 0;
++}
++
++static int mt6833_ufs_request_write(struct mt6833_lpm *lpm, u32 xo)
++{
++	int ret;
++
++	writel(xo ? 1 : 0, lpm->ufs_regs + UFS_XOUFS_ST);
++	ret = readl_poll_timeout(lpm->ufs_regs + UFS_XOUFS_ST,
++				lpm->ufs_request_last_xo,
++				lpm->ufs_request_last_xo == xo, 50, 2400);
++	if (ret)
++		return ret;
++	return regmap_read_poll_timeout(lpm->spm, SPM_SRC_REQ_STA0,
++			lpm->ufs_request_last_spm,
++			(lpm->ufs_request_last_spm & SPM_UFS_REQ_MASK) ==
++			(xo ? SPM_UFS_REQ_BOOT : 0), 50, 2400);
++}
++
++static int mt6833_ufs_request_change(struct mt6833_lpm *lpm, u32 xo)
++{
++	u32 before;
++	int ret;
++
++	lpm->ufs_request_recovery = 0;
++	ret = mt6833_ufs_request_read(lpm);
++	if (ret)
++		goto out;
++	before = lpm->ufs_request_last_xo;
++	ret = mt6833_ufs_request_write(lpm, xo);
++	if (ret)
++		lpm->ufs_request_recovery = mt6833_ufs_request_write(lpm, before);
++	else if (!xo)
++		lpm->ufs_request_clears++;
++out:
++	lpm->ufs_request_result = ret;
++	lpm->ufs_request_fault = !!ret;
++	/* On failure retain clock references and reject source-off suspend. */
++	if (ret)
++		dev_err(lpm->dev, "UFS request change failed: %d, recovery: %d\n",
++			ret, lpm->ufs_request_recovery);
++	return ret;
++}
++
+ /* CPU_SUSPEND is intentionally not exported for modules. The real backend
+  * is built in and its device cannot be unbound, so the PM ops stay valid.
+  * External discovery modules still support transport bring-up without ops.
+@@ -185,6 +299,15 @@ static int mt6833_ufs_source_suspend(struct mt6833_lpm *lpm)
+ 
+ 	if (!lpm->ufs_source_sleep_gate)
+ 		return 0;
++	if (lpm->ufs_request_fault)
++		return -EIO;
++	if (lpm->ufs_request_cleanup) {
++		/* Always-on status only: never access HCI with leaf clocks off. */
++		ret = regmap_read(lpm->spm, SPM_SRC_REQ_STA0,
++				  &lpm->ufs_request_last_spm);
++		if (ret || (lpm->ufs_request_last_spm & SPM_UFS_REQ_MASK))
++			return ret ?: -EBUSY;
++	}
+ 	if (!lpm->ufs_unused || !lpm->boot_ufs_gated ||
+ 	    lpm->ufs_clocks_held || !lpm->ufs_sources_held ||
+ 	    lpm->ufs_source_sleep_gated)
+@@ -570,7 +693,8 @@ static ssize_t boot_ufs_gated_store(struct device *dev,
+ 	if (!lpm->ufs_unused)
+ 		return -ENODEV;
+ 	if (!lpm->idle_blocked || lpm->deep_enabled || lpm->stage_only ||
+-	    lpm->s2idle_enabled || lpm->ufs_source_sleep_gated)
++	    lpm->s2idle_enabled || lpm->ufs_source_sleep_gated ||
++	    pm_suspend_target_state != PM_SUSPEND_ON)
+ 		return -EBUSY;
+ 	if (gate == lpm->boot_ufs_gated)
+ 		return count;
+@@ -579,19 +703,13 @@ static ssize_t boot_ufs_gated_store(struct device *dev,
+ 	 * other peripherals. Only three board-unused UFS leaf gates change.
+ 	 * The source references remain owned until a clean reboot.
+ 	 */
+-	if (!lpm->ufs_sources_held) {
+-		ret = clk_bulk_prepare_enable(ARRAY_SIZE(lpm->ufs_sources),
+-					      lpm->ufs_sources);
+-		if (ret)
+-			return ret;
+-		lpm->ufs_sources_held = true;
+-	}
+-	if (!lpm->ufs_clocks_held) {
+-		ret = clk_bulk_prepare_enable(ARRAY_SIZE(lpm->ufs_clocks),
+-					      lpm->ufs_clocks);
++	ret = mt6833_ufs_clocks_hold(lpm);
++	if (ret)
++		return ret;
++	if (lpm->ufs_request_cleanup) {
++		ret = mt6833_ufs_request_change(lpm, 0);
+ 		if (ret)
+ 			return ret;
+-		lpm->ufs_clocks_held = true;
+ 	}
+ 	if (gate) {
+ 		clk_bulk_disable_unprepare(ARRAY_SIZE(lpm->ufs_clocks),
+@@ -616,6 +734,85 @@ static ssize_t boot_ufs_gated_store(struct device *dev,
+ }
+ static DEVICE_ATTR_RW(boot_ufs_gated);
+ 
++static ssize_t ufs_request_cleanup_show(struct device *dev,
++					struct device_attribute *attr, char *buf)
++{
++	struct mt6833_lpm *lpm = dev_get_drvdata(dev);
++
++	guard(mutex)(&lpm->lock);
++	return sysfs_emit(buf, "%u\n", lpm->ufs_request_cleanup);
++}
++
++static ssize_t ufs_request_cleanup_store(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf, size_t count)
++{
++	struct mt6833_lpm *lpm = dev_get_drvdata(dev);
++	bool enable;
++	int ret;
++
++	ret = kstrtobool(buf, &enable);
++	if (ret)
++		return ret;
++	guard(mutex)(&lpm->lock);
++	if (!lpm->ufs_regs)
++		return -ENODEV;
++	if (!lpm->idle_blocked || lpm->deep_enabled || lpm->stage_only ||
++	    lpm->s2idle_enabled || lpm->ufs_source_sleep_gate ||
++	    lpm->ufs_source_sleep_gated || lpm->boot_ufs_gated ||
++	    pm_suspend_target_state != PM_SUSPEND_ON)
++		return -EBUSY;
++	if (enable == lpm->ufs_request_cleanup && !lpm->ufs_request_fault)
++		return count;
++	ret = mt6833_ufs_clocks_hold(lpm);
++	if (ret)
++		return ret;
++	if (enable && !lpm->ufs_request_cleanup) {
++		ret = mt6833_ufs_request_read(lpm);
++		if (ret) {
++			lpm->ufs_request_result = ret;
++			lpm->ufs_request_fault = true;
++			return ret;
++		}
++		lpm->ufs_request_saved_xo = lpm->ufs_request_last_xo;
++	}
++	ret = mt6833_ufs_request_change(lpm,
++				       enable ? 0 : lpm->ufs_request_saved_xo);
++	if (ret)
++		return ret;
++	lpm->ufs_request_cleanup = enable;
++	return count;
++}
++static DEVICE_ATTR_RW(ufs_request_cleanup);
++
++static ssize_t ufs_request_status_show(struct device *dev,
++				      struct device_attribute *attr, char *buf)
++{
++	struct mt6833_lpm *lpm = dev_get_drvdata(dev);
++	u32 request;
++	int ret;
++
++	guard(mutex)(&lpm->lock);
++	if (!lpm->ufs_regs)
++		return -ENODEV;
++	ret = regmap_read(lpm->spm, SPM_SRC_REQ_STA0, &request);
++	if (ret)
++		return ret;
++	/* Cached HCI value: reading status must not enable clocks or read a
++	 * gated HCI block. The always-on SPM request above is current.
++	 */
++	return sysfs_emit(buf,
++		"enabled=%u\nfault=%u\nsaved_xo=0x%x\nlast_xo=0x%x\n"
++		"spm_request=0x%x\nufs_request=0x%x\nclears=%u\n"
++		"result=%d\nrecovery=%d\nleaf_held=%u\nsource_held=%u\n",
++		lpm->ufs_request_cleanup, lpm->ufs_request_fault,
++		lpm->ufs_request_saved_xo, lpm->ufs_request_last_xo,
++		request, request & SPM_UFS_REQ_MASK, lpm->ufs_request_clears,
++		lpm->ufs_request_result, lpm->ufs_request_recovery,
++		lpm->ufs_clocks_held, lpm->ufs_sources_held);
++}
++static DEVICE_ATTR_ADMIN_RO(ufs_request_status);
++
+ static ssize_t ufs_source_sleep_gate_show(struct device *dev,
+ 					struct device_attribute *attr, char *buf)
+ {
+@@ -1253,6 +1450,8 @@ static struct attribute *mt6833_lpm_attrs[] = {
+ 	&dev_attr_counters.attr,
+ 	&dev_attr_boot_peripherals_gated.attr,
+ 	&dev_attr_boot_ufs_gated.attr,
++	&dev_attr_ufs_request_cleanup.attr,
++	&dev_attr_ufs_request_status.attr,
+ 	&dev_attr_ufs_source_sleep_gate.attr,
+ 	&dev_attr_ufs_source_sleep_status.attr,
+ 	NULL,
+@@ -1292,9 +1491,34 @@ static int mt6833_lpm_probe(struct platform_device *pdev)
+ 		if (ufs) {
+ 			lpm->ufs_unused = !of_device_is_available(ufs) &&
+ 				of_device_is_compatible(ufs, "mediatek,ufshci");
+-			of_node_put(ufs);
+-			if (!lpm->ufs_unused)
++			if (!lpm->ufs_unused) {
++				of_node_put(ufs);
+ 				return dev_err_probe(dev, -EINVAL, "UFS is not board-unused\n");
++			}
++			if (of_property_present(dev->of_node, "mediatek,spm")) {
++				struct resource ufs_res;
++
++				ret = of_address_to_resource(ufs, 0, &ufs_res);
++				if (ret || ufs_res.start != 0x11270000 ||
++				    resource_size(&ufs_res) != 0x2300) {
++					of_node_put(ufs);
++					return dev_err_probe(dev, ret ?: -EINVAL,
++							     "unexpected unused UFS region\n");
++				}
++				lpm->ufs_regs = devm_ioremap_resource(dev, &ufs_res);
++				if (IS_ERR(lpm->ufs_regs)) {
++					of_node_put(ufs);
++					return PTR_ERR(lpm->ufs_regs);
++				}
++				lpm->spm = syscon_regmap_lookup_by_phandle(dev->of_node,
++									 "mediatek,spm");
++				if (IS_ERR(lpm->spm)) {
++					of_node_put(ufs);
++					return dev_err_probe(dev, PTR_ERR(lpm->spm),
++							     "missing SPM request status\n");
++				}
++			}
++			of_node_put(ufs);
+ 			for (i = 0; i < ARRAY_SIZE(lpm->ufs_clocks); i++)
+ 				lpm->ufs_clocks[i].id = boot_ufs_clock_names[i];
+ 			ret = devm_clk_bulk_get(dev, ARRAY_SIZE(lpm->ufs_clocks),

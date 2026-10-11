@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Fri, 9 Oct 2026 03:16:49 +0200
+Subject: [PATCH 122/131] drm/panel: hx83112f: optionally keep reset deasserted
+ in deep standby
+
+The unprepare path puts the panel into deep standby and then asserts
+reset. A low RESX releases deep standby while IOVCC stays powered for
+the whole system sleep. The vendor JDI driver leaves reset high after
+deep standby; prepare() already asserts reset before powering up.
+
+Add a runtime parameter, default off (unchanged behaviour), so both
+variants can be compared on the same boot.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ drivers/gpu/drm/panel/panel-himax-hx83112f.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/panel/panel-himax-hx83112f.c b/drivers/gpu/drm/panel/panel-himax-hx83112f.c
+index 1655d6b82..09977fd9a 100644
+--- a/drivers/gpu/drm/panel/panel-himax-hx83112f.c
++++ b/drivers/gpu/drm/panel/panel-himax-hx83112f.c
+@@ -249,6 +249,11 @@ static int hx83112f_disable(struct drm_panel *panel)
+ 	return 0;
+ }
+ 
++static bool keep_reset_in_standby;
++module_param(keep_reset_in_standby, bool, 0644);
++MODULE_PARM_DESC(keep_reset_in_standby,
++		 "Leave reset deasserted after deep standby, as the vendor driver does");
++
+ static int hx83112f_unprepare(struct drm_panel *panel)
+ {
+ 	struct hx83112f *ctx = to_hx83112f(panel);
+@@ -259,7 +264,13 @@ static int hx83112f_unprepare(struct drm_panel *panel)
+ 	msleep(110);
+ 	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xb9, 0x83, 0x11, 0x2f);
+ 	mipi_dsi_generic_write_seq_multi(&dsi_ctx, 0xb1, 0x01);
+-	gpiod_set_value_cansleep(ctx->reset, 1);
++	/*
++	 * A low RESX releases deep standby while IOVCC stays powered. The
++	 * vendor driver leaves reset high here; prepare() asserts it again
++	 * before the rails come back.
++	 */
++	if (!keep_reset_in_standby)
++		gpiod_set_value_cansleep(ctx->reset, 1);
+ 	hx83112f_power_off(ctx);
+ 
+ 	if (dsi_ctx.accum_err)

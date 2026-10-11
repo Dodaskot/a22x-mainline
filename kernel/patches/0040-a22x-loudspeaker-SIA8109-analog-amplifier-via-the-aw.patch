@@ -1,0 +1,152 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 18:48:49 +0200
+Subject: [PATCH 040/131] a22x: loudspeaker - SIA8109 analog amplifier via the
+ aw8738 driver
+
+The SIA8109 one-wire mode interface matches the AW8738 pulse protocol.
+The amplifier is fed from the MT6359 headphone 'Ext Spk Amp' outputs;
+the mt6833-mt6359 card adds it as an auxiliary device with a Speaker pin.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 22 ++++++++++
+ sound/soc/mediatek/Kconfig                    |  1 +
+ sound/soc/mediatek/mt8192/mt6833-mt6359.c     | 41 ++++++++++++++++++-
+ 3 files changed, 62 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index db0f470dd..b839ae876 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -176,6 +176,13 @@ pins-on {
+ 			};
+ 		};
+ 
++		spk_amp_pins: spk-amp-pins {
++			pins-owi {
++				pinmux = <PINMUX_GPIO169__FUNC_GPIO169>;
++				bias-disable;
++			};
++		};
++
+ 		i2c5_pins: i2c5-pins {
+ 			pins-bus {
+ 				pinmux = <PINMUX_GPIO107__FUNC_SCL5>,
+@@ -1328,6 +1335,20 @@ afe_ml: audio-controller {
+ 		};
+ 	};
+ 
++	/*
++	 * SIA8109 analog class-D/K speaker amplifier. Its one-wire mode
++	 * interface (N rising edges after >1 ms low, then held high; vendor
++	 * mode 6) is the same as the AW8738 pulse protocol.
++	 */
++	sia8109_amp: audio-amplifier {
++		compatible = "awinic,aw8738";
++		mode-gpios = <&pio_ml 169 GPIO_ACTIVE_HIGH>;
++		awinic,mode = <6>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&spk_amp_pins>;
++		sound-name-prefix = "Speaker Amp";
++	};
++
+ 	sound_ml: sound {
+ 		/* drop the vendor card description merged into this node */
+ 		/delete-property/ mediatek,audio-codec;
+@@ -1338,6 +1359,7 @@ sound_ml: sound {
+ 		/delete-property/ si,sia81xx-aux-devs-prefix;
+ 		compatible = "mediatek,mt6833-mt6359-sound";
+ 		status = "okay";
++		mediatek,speaker-amplifier = <&sia8109_amp>;
+ 		mediatek,platform = <&afe_ml>;
+ 		pinctrl-names = "aud_dat_mosi_off", "aud_dat_mosi_on", "aud_dat_miso_off", "aud_dat_miso_on", "aud_gpio_i2s3_off", "aud_gpio_i2s3_on", "aud_gpio_i2s0_off", "aud_gpio_i2s0_on";
+ 		pinctrl-0 = <&aud_dat_mosi_off_ml>;
+diff --git a/sound/soc/mediatek/Kconfig b/sound/soc/mediatek/Kconfig
+index 662f10df7..f2283f270 100644
+--- a/sound/soc/mediatek/Kconfig
++++ b/sound/soc/mediatek/Kconfig
+@@ -301,6 +301,7 @@ config SND_SOC_MT6833_MT6359
+ 	tristate "ASoC Audio driver for MT6833 with MT6359 codec"
+ 	depends on SND_SOC_MT8192 && MTK_PMIC_WRAP
+ 	select SND_SOC_MT6359
++	select SND_SOC_AW8738
+ 	help
+ 	  This adds the ASoC machine driver for MediaTek MT6833 (Dimensity 700)
+ 	  phones with the MT6359 audio codec. The MT6833 AFE is driven by the
+diff --git a/sound/soc/mediatek/mt8192/mt6833-mt6359.c b/sound/soc/mediatek/mt8192/mt6833-mt6359.c
+index c9e8894ee..315f1094b 100644
+--- a/sound/soc/mediatek/mt8192/mt6833-mt6359.c
++++ b/sound/soc/mediatek/mt8192/mt6833-mt6359.c
+@@ -4,8 +4,9 @@
+  *
+  * The MT6833 AFE is register compatible with MT8192 and is driven by the
+  * MT8192 AFE driver. This card is a reduced MT8192/MT6359 card: earpiece,
+- * headset and microphones through MT6359 (ADDA), the loudspeaker amplifier
+- * on I2S3 (with I/V sense on I2S0).
++ * headset and microphones through MT6359 (ADDA). The loudspeaker amplifier
++ * (an analog SIA8109 on the SM-A226B) hangs off the MT6359 headphone
++ * "Ext Spk Amp" outputs and is described in DT as an auxiliary device.
+  *
+  * MTKAIF calibration from mt8192-mt6359-rt1015-rt5682.c.
+  */
+@@ -348,23 +349,59 @@ static struct snd_soc_dai_link mt6833_mt6359_dai_links[] = {
+ 	},
+ };
+ 
++static const struct snd_soc_dapm_widget mt6833_mt6359_widgets[] = {
++	SND_SOC_DAPM_SPK("Speaker", NULL),
++};
++
++static const struct snd_soc_dapm_route mt6833_mt6359_spk_routes[] = {
++	{ "Speaker Amp IN", NULL, "Headphone L Ext Spk Amp" },
++	{ "Speaker Amp IN", NULL, "Headphone R Ext Spk Amp" },
++	{ "Speaker", NULL, "Speaker Amp OUT" },
++};
++
++static const struct snd_kcontrol_new mt6833_mt6359_controls[] = {
++	SOC_DAPM_PIN_SWITCH("Speaker"),
++};
++
++static struct snd_soc_aux_dev mt6833_mt6359_aux_dev;
++static struct snd_soc_codec_conf mt6833_mt6359_codec_conf = {
++	.name_prefix = "Speaker Amp",
++};
++
+ static struct snd_soc_card mt6833_mt6359_card = {
+ 	.driver_name = DRIVER_NAME,
+ 	.owner = THIS_MODULE,
+ 	.dai_link = mt6833_mt6359_dai_links,
+ 	.num_links = ARRAY_SIZE(mt6833_mt6359_dai_links),
++	.dapm_widgets = mt6833_mt6359_widgets,
++	.num_dapm_widgets = ARRAY_SIZE(mt6833_mt6359_widgets),
++	.controls = mt6833_mt6359_controls,
++	.num_controls = ARRAY_SIZE(mt6833_mt6359_controls),
+ };
+ 
+ static int mt6833_mt6359_soc_card_probe(struct mtk_soc_card_data *soc_card_data,
+ 					bool legacy)
+ {
+ 	struct snd_soc_card *card = soc_card_data->card_data->card;
++	struct device_node *amp;
+ 	int ret;
+ 
+ 	ret = mt8192_afe_gpio_init(card->dev);
+ 	if (ret)
+ 		return dev_err_probe(card->dev, ret, "%s init gpio error\n", __func__);
+ 
++	amp = of_parse_phandle(card->dev->of_node, "mediatek,speaker-amplifier", 0);
++	if (amp) {
++		mt6833_mt6359_aux_dev.dlc.of_node = amp;
++		mt6833_mt6359_codec_conf.dlc.of_node = amp;
++		card->aux_dev = &mt6833_mt6359_aux_dev;
++		card->num_aux_devs = 1;
++		card->codec_conf = &mt6833_mt6359_codec_conf;
++		card->num_configs = 1;
++		card->dapm_routes = mt6833_mt6359_spk_routes;
++		card->num_dapm_routes = ARRAY_SIZE(mt6833_mt6359_spk_routes);
++	}
++
+ 	return 0;
+ }
+ 

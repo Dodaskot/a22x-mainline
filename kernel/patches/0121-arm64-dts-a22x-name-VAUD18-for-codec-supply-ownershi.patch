@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Thu, 8 Oct 2026 20:09:51 +0200
+Subject: [PATCH 121/131] arm64: dts: a22x: name VAUD18 for codec supply
+ ownership
+
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts     | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 554ffe06b..54927e450 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -694,13 +694,16 @@ mt6359codec {
+ 				mediatek,mic-type-2 = <3>;
+ 			};
+ 
+-			/*
+-			 * Only the GPU rails are described; every other MT6359
+-			 * regulator stays as the bootloader configured it.
+-			 * vgpu follows the GPU OPP table (fixed 0.78125 V for now,
+-			 * see gpu_opp_table); vsram_gpu stays at 0.85 V.
+-			 */
++			/* Explicit constraints for the rails managed by Linux. */
+ 			regulators {
++				/* Match the MT6359 codec's DAPM supply name. */
++				ldo_vaud18 {
++					regulator-name = "vaud18";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <1800000>;
++					regulator-enable-ramp-delay = <240>;
++				};
++
+ 				mt6359_vproc1_buck_reg: buck_vproc1 {
+ 					regulator-name = "vgpu";
+ 					regulator-min-microvolt = <625000>;

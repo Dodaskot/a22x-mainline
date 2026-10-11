@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Fri, 2 Oct 2026 23:29:38 +0200
+Subject: [PATCH 003/131] arm64: dts: mediatek: a22x: drop reserved-memory
+ nodes that clash with LK mblocks
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 21 +++++--------------
+ 1 file changed, 5 insertions(+), 16 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 792836df4..328351e7a 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -7,6 +7,11 @@
+  * The base is therefore the stock DTB with everything mainline does not use
+  * disabled (see mt6833-samsung-a22x-lk-compat.dtsi); real hardware support
+  * is enabled here node by node.
++ *
++ * No reserved-memory nodes are added here: LK inserts its own mblock
++ * reservations (framebuffer, pstore, ...) and hangs in
++ * reserved_memory_conflict_check if the DTB already describes them
++ * differently. ramoops is configured by LK through ramoops.* cmdline params.
+  */
+ 
+ /dts-v1/;
+@@ -36,20 +41,4 @@ framebuffer@7c9b0000 {
+ 			format = "a8r8g8b8";
+ 		};
+ 	};
+-
+-	reserved-memory {
+-		framebuffer@7c9b0000 {
+-			reg = <0 0x7c9b0000 0 0x1e50000>;
+-			no-map;
+-		};
+-
+-		ramoops@48090000 {
+-			compatible = "ramoops";
+-			reg = <0 0x48090000 0 0xe0000>;
+-			console-size = <0x40000>;
+-			pmsg-size = <0x10000>;
+-			record-size = <0x8000>;
+-			no-map;
+-		};
+-	};
+ };

@@ -1,0 +1,9 @@
+# wmt_chrdev_wifi: /dev/wmtWifi power control and helpers for gen4m (soc2_1x1)
+MODULE_NAME := wmt_chrdev_wifi
+obj-m += $(MODULE_NAME).o
+ccflags-y += -DWMT_IDC_SUPPORT=0 -DCFG_ANDORID_CONNINFRA_SUPPORT=0
+ccflags-y += -DCFG_ANDORID_CONNINFRA_COREDUMP_SUPPORT=0 -DCFG_TC10_FEATURE=0
+ccflags-y += -DCREATE_NODE_DYNAMIC=1
+ccflags-y += -DCONFIG_MTK_CONNSYS_DEDICATED_LOG_PATH -I$(src)/include
+ccflags-y += -I$(src)/../../common/debug_utility
+$(MODULE_NAME)-objs += wmt_cdev_wifi.o fw_log_wifi.o fw_log_ics.o wlan_ring.o

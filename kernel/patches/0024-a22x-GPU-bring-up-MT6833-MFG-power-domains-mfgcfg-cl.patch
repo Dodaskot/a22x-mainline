@@ -1,0 +1,359 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 12:50:13 +0200
+Subject: [PATCH 024/131] a22x: GPU bring-up - MT6833 MFG power domains, mfgcfg
+ clock, Mali-G57 node
+
+- pmdomain: mediatek: MT6833 MFG0-3 (MT8192 layout + INFRA_NAO way-enable
+  for MFG1)
+- clk: mediatek: MT6833 mfgcfg (BG3D) with runtime PM
+- dts: MT6359 vproc1/vsram_md GPU rails at fixed safe voltages, SPM power
+  controller, Mali-G57 MC2 (mt8370 configuration)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts |  96 +++++++++++++++++
+ drivers/clk/mediatek/Makefile                 |   2 +-
+ drivers/clk/mediatek/clk-mt6833-mfgcfg.c      |  50 +++++++++
+ drivers/pmdomain/mediatek/mt6833-pm-domains.h | 102 ++++++++++++++++++
+ drivers/pmdomain/mediatek/mtk-pm-domains.c    |   5 +
+ .../dt-bindings/power/mediatek,mt6833-power.h |  10 ++
+ 6 files changed, 264 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/clk/mediatek/clk-mt6833-mfgcfg.c
+ create mode 100644 drivers/pmdomain/mediatek/mt6833-pm-domains.h
+ create mode 100644 include/dt-bindings/power/mediatek,mt6833-power.h
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index c6d358afb..374980c88 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -16,6 +16,7 @@
+ 
+ /dts-v1/;
+ #include <dt-bindings/clock/mt6833-clk.h>
++#include <dt-bindings/power/mediatek,mt6833-power.h>
+ #include <dt-bindings/phy/phy.h>
+ #include <dt-bindings/gpio/gpio.h>
+ #include <dt-bindings/input/input.h>
+@@ -368,6 +369,28 @@ rtc {
+ 				compatible = "mediatek,mt6358-rtc";
+ 			};
+ 
++			/*
++			 * Only the GPU rails are described; every other MT6359
++			 * regulator stays as the bootloader configured it.
++			 * Bring-up: fixed safe voltages, no GPU DVFS yet
++			 * (Samsung table: 0.80 V signs off up to 1000 MHz).
++			 */
++			regulators {
++				mt6359_vproc1_buck_reg: buck_vproc1 {
++					regulator-name = "vgpu";
++					regulator-min-microvolt = <800000>;
++					regulator-max-microvolt = <800000>;
++					regulator-enable-ramp-delay = <200>;
++				};
++
++				mt6359_vsram_md_ldo_reg: ldo_vsram_md {
++					regulator-name = "vsram_gpu";
++					regulator-min-microvolt = <850000>;
++					regulator-max-microvolt = <850000>;
++					regulator-enable-ramp-delay = <240>;
++				};
++			};
++
+ 			keys {
+ 				compatible = "mediatek,mt6359-keys";
+ 
+@@ -411,3 +434,76 @@ keypad@10010000 {
+ 		wakeup-source;
+ 	};
+ };
++
++/ {
++	infracfg_nao: syscon@1020e000 {
++		compatible = "mediatek,mt6833-infracfg-nao", "syscon";
++		reg = <0 0x1020e000 0 0x1000>;
++	};
++
++	scpsys_ml: syscon@10006000 {
++		compatible = "mediatek,mt6833-scpsys", "syscon", "simple-mfd";
++		reg = <0 0x10006000 0 0x1000>;
++
++		/* GPU (MFG) domains only; the others are left to the bootloader. */
++		spm: power-controller {
++			compatible = "mediatek,mt6833-power-controller";
++			#address-cells = <1>;
++			#size-cells = <0>;
++			#power-domain-cells = <1>;
++
++			mfg0: power-domain@MT6833_POWER_DOMAIN_MFG0 {
++				reg = <MT6833_POWER_DOMAIN_MFG0>;
++				domain-supply = <&mt6359_vproc1_buck_reg>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++				#power-domain-cells = <1>;
++
++				mfg1: power-domain@MT6833_POWER_DOMAIN_MFG1 {
++					reg = <MT6833_POWER_DOMAIN_MFG1>;
++					clocks = <&topckgen CLK_TOP_MFG_PLL_SEL>,
++						 <&topckgen CLK_TOP_MFG_REF_SEL>;
++					clock-names = "mfg", "alt";
++					domain-supply = <&mt6359_vsram_md_ldo_reg>;
++					mediatek,infracfg = <&infracfg_ao>;
++					mediatek,infracfg-nao = <&infracfg_nao>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++					#power-domain-cells = <1>;
++
++					power-domain@MT6833_POWER_DOMAIN_MFG2 {
++						reg = <MT6833_POWER_DOMAIN_MFG2>;
++						#power-domain-cells = <0>;
++					};
++
++					power-domain@MT6833_POWER_DOMAIN_MFG3 {
++						reg = <MT6833_POWER_DOMAIN_MFG3>;
++						#power-domain-cells = <0>;
++					};
++				};
++			};
++		};
++	};
++
++	mfgcfg_ml: clock-controller@13fbf000 {
++		compatible = "mediatek,mt6833-mfgcfg";
++		reg = <0 0x13fbf000 0 0x1000>;
++		/* registers only respond with the GPU top domain powered */
++		power-domains = <&spm MT6833_POWER_DOMAIN_MFG1>;
++		#clock-cells = <1>;
++	};
++
++	/* Mali-G57 MC2, same GPU configuration as MT8370 */
++	gpu: gpu@13000000 {
++		compatible = "mediatek,mt6833-mali", "mediatek,mt8370-mali",
++			     "arm,mali-valhall-jm";
++		reg = <0 0x13000000 0 0x4000>;
++		interrupts = <0 366 4>, <0 365 4>, <0 364 4>;
++		interrupt-names = "job", "mmu", "gpu";
++		clocks = <&mfgcfg_ml CLK_MFGCFG_BG3D>;
++		power-domains = <&spm MT6833_POWER_DOMAIN_MFG2>,
++				<&spm MT6833_POWER_DOMAIN_MFG3>;
++		power-domain-names = "core0", "core1";
++		mali-supply = <&mt6359_vproc1_buck_reg>;
++	};
++};
+diff --git a/drivers/clk/mediatek/Makefile b/drivers/clk/mediatek/Makefile
+index 40a8469c6..54a71667d 100644
+--- a/drivers/clk/mediatek/Makefile
++++ b/drivers/clk/mediatek/Makefile
+@@ -124,7 +124,7 @@ obj-$(CONFIG_COMMON_CLK_MT8188_VENCSYS) += clk-mt8188-venc.o
+ obj-$(CONFIG_COMMON_CLK_MT8188_VPPSYS) += clk-mt8188-vpp0.o clk-mt8188-vpp1.o
+ obj-$(CONFIG_COMMON_CLK_MT8188_WPESYS) += clk-mt8188-wpe.o
+ obj-$(CONFIG_COMMON_CLK_MT6833) += clk-mt6833-apmixedsys.o clk-mt6833.o \
+-				   clk-mt6833-imp_iic_wrap.o
++				   clk-mt6833-imp_iic_wrap.o clk-mt6833-mfgcfg.o
+ obj-$(CONFIG_COMMON_CLK_MT8192) += clk-mt8192-apmixedsys.o clk-mt8192.o
+ obj-$(CONFIG_COMMON_CLK_MT8192_AUDSYS) += clk-mt8192-aud.o
+ obj-$(CONFIG_COMMON_CLK_MT8192_CAMSYS) += clk-mt8192-cam.o
+diff --git a/drivers/clk/mediatek/clk-mt6833-mfgcfg.c b/drivers/clk/mediatek/clk-mt6833-mfgcfg.c
+new file mode 100644
+index 000000000..a5b55286d
+--- /dev/null
++++ b/drivers/clk/mediatek/clk-mt6833-mfgcfg.c
+@@ -0,0 +1,50 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * MediaTek MT6833 MFGCFG (GPU) clock gate.
++ * From the Samsung SM-A226B (MT6833) kernel source.
++ */
++#include <dt-bindings/clock/mt6833-clk.h>
++#include <linux/clk-provider.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include "clk-gate.h"
++#include "clk-mtk.h"
++
++static const struct mtk_gate_regs mfg_cg_regs = {
++	.set_ofs = 0x4,
++	.clr_ofs = 0x8,
++	.sta_ofs = 0x0,
++};
++
++#define GATE_MFG(_id, _name, _parent, _shift)			\
++	GATE_MTK_FLAGS(_id, _name, _parent, &mfg_cg_regs, _shift,	\
++		       &mtk_clk_gate_ops_setclr, CLK_SET_RATE_PARENT)
++
++static const struct mtk_gate mfg_clks[] = {
++	GATE_MFG(CLK_MFGCFG_BG3D, "mfgcfg_bg3d", "mfg_pll_sel", 0),
++};
++
++static const struct mtk_clk_desc mfg_desc = {
++	.clks = mfg_clks,
++	.num_clks = ARRAY_SIZE(mfg_clks),
++	.need_runtime_pm = true,
++};
++
++static const struct of_device_id of_match_clk_mt6833_mfg[] = {
++	{ .compatible = "mediatek,mt6833-mfgcfg", .data = &mfg_desc },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, of_match_clk_mt6833_mfg);
++
++static struct platform_driver clk_mt6833_mfg_drv = {
++	.probe = mtk_clk_simple_probe,
++	.remove = mtk_clk_simple_remove,
++	.driver = {
++		.name = "clk-mt6833-mfg",
++		.of_match_table = of_match_clk_mt6833_mfg,
++	},
++};
++module_platform_driver(clk_mt6833_mfg_drv);
++
++MODULE_DESCRIPTION("MediaTek MT6833 GPU clock driver");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/pmdomain/mediatek/mt6833-pm-domains.h b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+new file mode 100644
+index 000000000..5799b4aaf
+--- /dev/null
++++ b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+@@ -0,0 +1,102 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++/*
++ * MediaTek MT6833 (Dimensity 700) power domains - GPU (MFG) only for now.
++ *
++ * The SPM MFG control/status layout and the MFG1 bus protection masks are
++ * the same as MT8192; MT6833 additionally gates the MFG1 AXI "way" in
++ * INFRA_NAO (0x1020e000 + 0x4c, bit 11), as done by the Samsung SM-A226B
++ * kernel (clk-mt6833-pg.c).
++ */
++#ifndef __SOC_MEDIATEK_MT6833_PM_DOMAINS_H
++#define __SOC_MEDIATEK_MT6833_PM_DOMAINS_H
++
++#include <linux/soc/mediatek/infracfg.h>
++#include <dt-bindings/power/mediatek,mt6833-power.h>
++#include "mtk-pm-domains.h"
++
++#define MT6833_INFRA_NAO_MFG1_WAY_EN		0x04c
++#define MT6833_INFRA_NAO_MFG1_WAY_EN_MASK	BIT(11)
++
++static enum scpsys_bus_prot_block scpsys_bus_prot_blocks_mt6833[] = {
++	BUS_PROT_BLOCK_INFRA, BUS_PROT_BLOCK_INFRA_NAO,
++};
++
++static const struct scpsys_domain_data scpsys_domain_data_mt6833[] = {
++	[MT6833_POWER_DOMAIN_MFG0] = {
++		.name = "mfg0",
++		.sta_mask = BIT(2),
++		.ctl_offs = 0x0308,
++		.pwr_sta_offs = 0x016c,
++		.pwr_sta2nd_offs = 0x0170,
++		.sram_pdn_bits = GENMASK(8, 8),
++		.sram_pdn_ack_bits = GENMASK(12, 12),
++		.caps = MTK_SCPD_DOMAIN_SUPPLY,
++	},
++	[MT6833_POWER_DOMAIN_MFG1] = {
++		.name = "mfg1",
++		.sta_mask = BIT(3),
++		.ctl_offs = 0x030c,
++		.pwr_sta_offs = 0x016c,
++		.pwr_sta2nd_offs = 0x0170,
++		.sram_pdn_bits = GENMASK(8, 8),
++		.sram_pdn_ack_bits = GENMASK(12, 12),
++		.bp_cfg = {
++			/* Closed first on power-down, opened last on power-up. */
++			_BUS_PROT_STA(INFRA_NAO, INFRA_NAO,
++				      MT6833_INFRA_NAO_MFG1_WAY_EN_MASK,
++				      MT6833_INFRA_NAO_MFG1_WAY_EN,
++				      MT6833_INFRA_NAO_MFG1_WAY_EN,
++				      MT6833_INFRA_NAO_MFG1_WAY_EN_MASK,
++				      MT6833_INFRA_NAO_MFG1_WAY_EN,
++				      BUS_PROT_INVERTED | BUS_PROT_REG_UPDATE),
++			BUS_PROT_WR(INFRA,
++				    MT8192_TOP_AXI_PROT_EN_1_MFG1,
++				    MT8192_TOP_AXI_PROT_EN_1_SET,
++				    MT8192_TOP_AXI_PROT_EN_1_CLR,
++				    MT8192_TOP_AXI_PROT_EN_1_STA1),
++			BUS_PROT_WR(INFRA,
++				    MT8192_TOP_AXI_PROT_EN_2_MFG1,
++				    MT8192_TOP_AXI_PROT_EN_2_SET,
++				    MT8192_TOP_AXI_PROT_EN_2_CLR,
++				    MT8192_TOP_AXI_PROT_EN_2_STA1),
++			BUS_PROT_WR(INFRA,
++				    MT8192_TOP_AXI_PROT_EN_MFG1,
++				    MT8192_TOP_AXI_PROT_EN_SET,
++				    MT8192_TOP_AXI_PROT_EN_CLR,
++				    MT8192_TOP_AXI_PROT_EN_STA1),
++			BUS_PROT_WR(INFRA,
++				    MT8192_TOP_AXI_PROT_EN_2_MFG1_2ND,
++				    MT8192_TOP_AXI_PROT_EN_2_SET,
++				    MT8192_TOP_AXI_PROT_EN_2_CLR,
++				    MT8192_TOP_AXI_PROT_EN_2_STA1),
++		},
++		.caps = MTK_SCPD_DOMAIN_SUPPLY | MTK_SCPD_HAS_INFRA_NAO,
++	},
++	[MT6833_POWER_DOMAIN_MFG2] = {
++		.name = "mfg2",
++		.sta_mask = BIT(4),
++		.ctl_offs = 0x0310,
++		.pwr_sta_offs = 0x016c,
++		.pwr_sta2nd_offs = 0x0170,
++		.sram_pdn_bits = GENMASK(8, 8),
++		.sram_pdn_ack_bits = GENMASK(12, 12),
++	},
++	[MT6833_POWER_DOMAIN_MFG3] = {
++		.name = "mfg3",
++		.sta_mask = BIT(5),
++		.ctl_offs = 0x0314,
++		.pwr_sta_offs = 0x016c,
++		.pwr_sta2nd_offs = 0x0170,
++		.sram_pdn_bits = GENMASK(8, 8),
++		.sram_pdn_ack_bits = GENMASK(12, 12),
++	},
++};
++
++static const struct scpsys_soc_data mt6833_scpsys_data = {
++	.domains_data = scpsys_domain_data_mt6833,
++	.num_domains = ARRAY_SIZE(scpsys_domain_data_mt6833),
++	.bus_prot_blocks = scpsys_bus_prot_blocks_mt6833,
++	.num_bus_prot_blocks = ARRAY_SIZE(scpsys_bus_prot_blocks_mt6833),
++};
++
++#endif /* __SOC_MEDIATEK_MT6833_PM_DOMAINS_H */
+diff --git a/drivers/pmdomain/mediatek/mtk-pm-domains.c b/drivers/pmdomain/mediatek/mtk-pm-domains.c
+index 6089c8cf5..93be11039 100644
+--- a/drivers/pmdomain/mediatek/mtk-pm-domains.c
++++ b/drivers/pmdomain/mediatek/mtk-pm-domains.c
+@@ -27,6 +27,7 @@
+ #include "mt8186-pm-domains.h"
+ #include "mt8188-pm-domains.h"
+ #include "mt8189-pm-domains.h"
++#include "mt6833-pm-domains.h"
+ #include "mt8192-pm-domains.h"
+ #include "mt8195-pm-domains.h"
+ #include "mt8196-pm-domains.h"
+@@ -1206,6 +1207,10 @@ static const struct of_device_id scpsys_of_match[] = {
+ 		.compatible = "mediatek,mt8189-power-controller",
+ 		.data = &mt8189_scpsys_data,
+ 	},
++	{
++		.compatible = "mediatek,mt6833-power-controller",
++		.data = &mt6833_scpsys_data,
++	},
+ 	{
+ 		.compatible = "mediatek,mt8192-power-controller",
+ 		.data = &mt8192_scpsys_data,
+diff --git a/include/dt-bindings/power/mediatek,mt6833-power.h b/include/dt-bindings/power/mediatek,mt6833-power.h
+new file mode 100644
+index 000000000..2a3f51ab4
+--- /dev/null
++++ b/include/dt-bindings/power/mediatek,mt6833-power.h
+@@ -0,0 +1,10 @@
++/* SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause) */
++#ifndef _DT_BINDINGS_POWER_MT6833_POWER_H
++#define _DT_BINDINGS_POWER_MT6833_POWER_H
++
++#define MT6833_POWER_DOMAIN_MFG0	0
++#define MT6833_POWER_DOMAIN_MFG1	1
++#define MT6833_POWER_DOMAIN_MFG2	2
++#define MT6833_POWER_DOMAIN_MFG3	3
++
++#endif /* _DT_BINDINGS_POWER_MT6833_POWER_H */

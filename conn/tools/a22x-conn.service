@@ -1,0 +1,12 @@
+[Unit]
+Description=a22x connectivity (CONSYS + Wi-Fi)
+Before=NetworkManager.service
+After=systemd-modules-load.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/a22x-conn/conn-start.sh
+
+[Install]
+WantedBy=multi-user.target

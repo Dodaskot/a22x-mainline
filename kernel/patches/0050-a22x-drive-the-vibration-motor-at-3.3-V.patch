@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 23:11:20 +0200
+Subject: [PATCH 050/131] a22x: drive the vibration motor at 3.3 V
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index e44fdfff2..5d882a2eb 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -623,11 +623,11 @@ mt6359_vsram_proc2_ldo_reg: ldo_vsram_proc2 {
+ 					regulator-always-on;
+ 				};
+ 
+-				/* vibration motor (vendor vib_vol index 11 = 3.0 V) */
++				/* vibration motor (vendor 3.0 V; 3.3 V for a stronger buzz) */
+ 				mt6359_vibr_ldo_reg: ldo_vibr {
+ 					regulator-name = "vibr";
+-					regulator-min-microvolt = <3000000>;
+-					regulator-max-microvolt = <3000000>;
++					regulator-min-microvolt = <3300000>;
++					regulator-max-microvolt = <3300000>;
+ 				};
+ 
+ 				mt6359_vsram_md_ldo_reg: ldo_vsram_md {
+@@ -1496,7 +1496,7 @@ / {
+ 	vibrator {
+ 		compatible = "regulator-haptic";
+ 		haptic-supply = <&mt6359_vibr_ldo_reg>;
+-		min-microvolt = <3000000>;
+-		max-microvolt = <3000000>;
++		min-microvolt = <3300000>;
++		max-microvolt = <3300000>;
+ 	};
+ };

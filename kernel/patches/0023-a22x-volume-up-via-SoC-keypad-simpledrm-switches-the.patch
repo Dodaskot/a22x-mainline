@@ -1,0 +1,135 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 11:22:54 +0200
+Subject: [PATCH 023/131] a22x: volume-up via SoC keypad; simpledrm switches
+ the panel backlight
+
+- dts: mt6779-compatible keypad (single key, KPCOL0/1)
+- drm/sysfb: simpledrm: optional 'backlight' phandle, disabled with the
+  CRTC so DPMS-off turns the panel dark
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 26 +++++++++++++
+ drivers/gpu/drm/sysfb/simpledrm.c             | 37 +++++++++++++++++++
+ 2 files changed, 63 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 695a16b86..c6d358afb 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -45,6 +45,7 @@ framebuffer@7c9b0000 {
+ 			height = <2408>;
+ 			stride = <(1088 * 4)>;
+ 			format = "a8r8g8b8";
++			backlight = <&backlight>;
+ 		};
+ 	};
+ 
+@@ -102,6 +103,13 @@ pins-bus {
+ 			};
+ 		};
+ 
++		keypad_pins: keypad-pins {
++			pins-cols {
++				pinmux = <PINMUX_GPIO79__FUNC_KPCOL0>,
++					 <PINMUX_GPIO80__FUNC_KPCOL1>;
++			};
++		};
++
+ 		mmc0_pins: mmc0-pins {
+ 			pins-bus {
+ 				pinmux = <PINMUX_GPIO65__FUNC_MSDC0_DSL>,
+@@ -385,3 +393,21 @@ backlight: backlight@14013000 {
+ 		default-brightness-level = <200>;
+ 	};
+ };
++
++/ {
++	/* SoC keypad: only volume-up (stock hw map index 1 = row 0, col 1). */
++	keypad@10010000 {
++		compatible = "mediatek,mt6833-keypad", "mediatek,mt6779-keypad";
++		reg = <0 0x10010000 0 0x1000>;
++		interrupts = <0 74 IRQ_TYPE_EDGE_RISING>;
++		clocks = <&uart_clk>;
++		clock-names = "kpd";
++		pinctrl-names = "default";
++		pinctrl-0 = <&keypad_pins>;
++		linux,keymap = <MATRIX_KEY(0x00, 0x01, KEY_VOLUMEUP)>;
++		keypad,num-rows = <1>;
++		keypad,num-columns = <2>;
++		debounce-delay-ms = <32>;
++		wakeup-source;
++	};
++};
+diff --git a/drivers/gpu/drm/sysfb/simpledrm.c b/drivers/gpu/drm/sysfb/simpledrm.c
+index fc168920f..1d40956ce 100644
+--- a/drivers/gpu/drm/sysfb/simpledrm.c
++++ b/drivers/gpu/drm/sysfb/simpledrm.c
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: GPL-2.0-only
+ 
+ #include <linux/aperture.h>
++#include <linux/backlight.h>
+ #include <linux/clk.h>
+ #include <linux/minmax.h>
+ #include <linux/of_address.h>
+@@ -207,6 +208,9 @@ simplefb_get_memory_of(struct drm_device *dev, struct device_node *of_node)
+ struct simpledrm_device {
+ 	struct drm_sysfb_device sysfb;
+ 
++	/* optional panel backlight, switched with the CRTC (DPMS) */
++	struct backlight_device *backlight;
++
+ 	/* clocks */
+ #if defined CONFIG_OF && defined CONFIG_COMMON_CLK
+ 	unsigned int clk_count;
+@@ -562,8 +566,33 @@ static const struct drm_plane_funcs simpledrm_primary_plane_funcs = {
+ 	.destroy = drm_plane_cleanup,
+ };
+ 
++static struct simpledrm_device *simpledrm_device_of_dev(struct drm_device *dev)
++{
++	return container_of(dev, struct simpledrm_device, sysfb.dev);
++}
++
++static void simpledrm_crtc_helper_atomic_enable(struct drm_crtc *crtc,
++						struct drm_atomic_commit *state)
++{
++	struct simpledrm_device *sdev = simpledrm_device_of_dev(crtc->dev);
++
++	if (sdev->backlight)
++		backlight_enable(sdev->backlight);
++}
++
++static void simpledrm_crtc_helper_atomic_disable(struct drm_crtc *crtc,
++						 struct drm_atomic_commit *state)
++{
++	struct simpledrm_device *sdev = simpledrm_device_of_dev(crtc->dev);
++
++	if (sdev->backlight)
++		backlight_disable(sdev->backlight);
++}
++
+ static const struct drm_crtc_helper_funcs simpledrm_crtc_helper_funcs = {
+ 	DRM_SYSFB_CRTC_HELPER_FUNCS,
++	.atomic_enable = simpledrm_crtc_helper_atomic_enable,
++	.atomic_disable = simpledrm_crtc_helper_atomic_disable,
+ };
+ 
+ static const struct drm_crtc_funcs simpledrm_crtc_funcs = {
+@@ -633,6 +662,14 @@ static struct simpledrm_device *simpledrm_device_create(struct drm_driver *drv,
+ 	ret = simpledrm_device_attach_genpd(sdev);
+ 	if (ret)
+ 		return ERR_PTR(ret);
++	if (IS_REACHABLE(CONFIG_BACKLIGHT_CLASS_DEVICE) && of_node) {
++		sdev->backlight = devm_of_find_backlight(&pdev->dev);
++		if (IS_ERR(sdev->backlight)) {
++			if (PTR_ERR(sdev->backlight) == -EPROBE_DEFER)
++				return ERR_CAST(sdev->backlight);
++			sdev->backlight = NULL;
++		}
++	}
+ 
+ 	if (pd) {
+ 		width = simplefb_get_width_pd(dev, pd);

@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 21:06:50 +0200
+Subject: [PATCH 087/131] drm/mediatek: wait for the display mutex driver
+ before binding
+
+---
+ drivers/gpu/drm/mediatek/mtk_drm_drv.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/mediatek/mtk_drm_drv.c b/drivers/gpu/drm/mediatek/mtk_drm_drv.c
+index 026eb4f72..976a9378f 100644
+--- a/drivers/gpu/drm/mediatek/mtk_drm_drv.c
++++ b/drivers/gpu/drm/mediatek/mtk_drm_drv.c
+@@ -648,7 +648,10 @@ static int mtk_drm_bind(struct device *dev)
+ 	if (!pdev) {
+ 		dev_err(dev, "Waiting for disp-mutex device %pOF\n",
+ 			private->mutex_node);
+-		of_node_put(private->mutex_node);
++		return -EPROBE_DEFER;
++	}
++	if (!dev_get_drvdata(&pdev->dev)) {
++		put_device(&pdev->dev);
+ 		return -EPROBE_DEFER;
+ 	}
+ 

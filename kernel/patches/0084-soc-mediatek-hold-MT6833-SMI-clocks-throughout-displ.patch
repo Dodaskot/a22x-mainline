@@ -1,0 +1,211 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 20:50:46 +0200
+Subject: [PATCH 084/131] soc: mediatek: hold MT6833 SMI clocks throughout
+ display power transitions
+
+Expose display clocks independently of the powered MMSYS device so SCPSYS can acquire subsystem clocks without a probe cycle. Keep the SMI fabric and APB clocks until bus protection has completed. Restore bus access when protection fails, since genpd retains the powered domain after an error.
+
+Signed-off-by: Dodaskot <pessdres@gmail.com>
+---
+ .../mt6833-samsung-a22x-native-display.dts    | 34 +++++++++++++------
+ drivers/clk/mediatek/clk-mt6833-mm.c          | 29 ++++++++++++++--
+ drivers/pmdomain/mediatek/mtk-pm-domains.c    | 12 +++++--
+ drivers/soc/mediatek/mtk-mmsys.c              | 15 ++++----
+ 4 files changed, 67 insertions(+), 23 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+index 58ef01e1b..fac374d49 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+@@ -47,17 +47,23 @@ display-ml {
+ 		#size-cells = <2>;
+ 		ranges;
+ 
++		/* No power-domain dependency: SCPSYS needs these before registration. */
++		mm_clk_ml: clock-controller-ml@14000000 {
++			compatible = "mediatek,mt6833-display-clocks";
++			reg = <0 0x14000000 0 0x1000>;
++			#clock-cells = <1>;
++		};
++
+ 		mmsys_ml: syscon@14000000 {
+ 			compatible = "mediatek,mt6833-display", "syscon";
+ 			reg = <0 0x14000000 0 0x1000>;
+-			#clock-cells = <1>;
+ 			power-domains = <&spm MT6833_POWER_DOMAIN_DISP>;
+ 		};
+ 
+ 		disp_mutex_ml: mutex@14001000 {
+ 			compatible = "mediatek,mt6833-disp-mutex";
+ 			reg = <0 0x14001000 0 0x1000>;
+-			clocks = <&mmsys_ml CLK_MM_DISP_MUTEX0>;
++			clocks = <&mm_clk_ml CLK_MM_DISP_MUTEX0>;
+ 			power-domains = <&spm MT6833_POWER_DOMAIN_DISP>;
+ 		};
+ 
+@@ -65,11 +71,11 @@ disp_rdma0_ml: rdma@14007000 {
+ 			compatible = "mediatek,mt6833-disp-rdma";
+ 			reg = <0 0x14007000 0 0x1000>;
+ 			interrupts = <GIC_SPI 257 IRQ_TYPE_LEVEL_HIGH>;
+-			clocks = <&mmsys_ml CLK_MM_DISP_RDMA0>,
+-				 <&mmsys_ml CLK_MM_SMI_INFRA>,
+-				 <&mmsys_ml CLK_MM_SMI_COMMON>,
+-				 <&mmsys_ml CLK_MM_SMI_GALS>,
+-				 <&mmsys_ml CLK_MM_SMI_IOMMU>;
++			clocks = <&mm_clk_ml CLK_MM_DISP_RDMA0>,
++				 <&mm_clk_ml CLK_MM_SMI_INFRA>,
++				 <&mm_clk_ml CLK_MM_SMI_COMMON>,
++				 <&mm_clk_ml CLK_MM_SMI_GALS>,
++				 <&mm_clk_ml CLK_MM_SMI_IOMMU>;
+ 			clock-names = "rdma", "smi-infra", "smi-common", "smi-gals", "smi-iommu";
+ 			power-domains = <&spm MT6833_POWER_DOMAIN_DISP>;
+ 		};
+@@ -87,8 +93,8 @@ dsi0_ml: dsi-ml@14013000 {
+ 			compatible = "mediatek,mt6833-dsi-cphy";
+ 			reg = <0 0x14013000 0 0x1000>;
+ 			interrupts = <GIC_SPI 269 IRQ_TYPE_LEVEL_HIGH>;
+-			clocks = <&mmsys_ml CLK_MM_DSI0>,
+-				 <&mmsys_ml CLK_MM_DSI0_DSI_CK_DOMAIN>, <&mipi_tx0_ml>;
++			clocks = <&mm_clk_ml CLK_MM_DSI0>,
++				 <&mm_clk_ml CLK_MM_DSI0_DSI_CK_DOMAIN>, <&mipi_tx0_ml>;
+ 			clock-names = "engine", "digital", "hs";
+ 			power-domains = <&spm MT6833_POWER_DOMAIN_DISP>;
+ 			phys = <&mipi_tx0_ml>;
+@@ -133,8 +139,14 @@ novatek@0 {
+ &spm {
+ 	power-domain@6 {
+ 		reg = <MT6833_POWER_DOMAIN_DISP>;
+-		clocks = <&topckgen CLK_TOP_DISP_SEL>;
+-		clock-names = "disp";
++		clocks = <&topckgen CLK_TOP_DISP_SEL>,
++			 <&mm_clk_ml CLK_MM_SMI_INFRA>,
++			 <&mm_clk_ml CLK_MM_SMI_COMMON>,
++			 <&mm_clk_ml CLK_MM_SMI_GALS>,
++			 <&mm_clk_ml CLK_MM_SMI_IOMMU>,
++			 <&mm_clk_ml CLK_MM_APB_BUS>;
++		clock-names = "disp", "smi-infra", "smi-common", "smi-gals",
++			      "smi-iommu", "mm-apb";
+ 		mediatek,infracfg = <&infracfg_ao>;
+ 		#power-domain-cells = <0>;
+ 	};
+diff --git a/drivers/clk/mediatek/clk-mt6833-mm.c b/drivers/clk/mediatek/clk-mt6833-mm.c
+index 67f9e3e86..76c3f0ff2 100644
+--- a/drivers/clk/mediatek/clk-mt6833-mm.c
++++ b/drivers/clk/mediatek/clk-mt6833-mm.c
+@@ -2,6 +2,7 @@
+ /* MT6833 display clocks. Register map from MediaTek/Samsung GPL sources. */
+ #include <linux/clk-provider.h>
+ #include <linux/module.h>
++#include <linux/of.h>
+ #include <linux/platform_device.h>
+ #include <dt-bindings/clock/mt6833-clk.h>
+ 
+@@ -65,10 +66,32 @@ static const struct platform_device_id clk_mt6833_mm_ids[] = {
+ };
+ MODULE_DEVICE_TABLE(platform, clk_mt6833_mm_ids);
+ 
++static const struct of_device_id clk_mt6833_mm_match[] = {
++	{ .compatible = "mediatek,mt6833-display-clocks", .data = &mm_desc },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, clk_mt6833_mm_match);
++
++static int clk_mt6833_mm_probe(struct platform_device *pdev)
++{
++	return pdev->dev.of_node ? mtk_clk_simple_probe(pdev) : mtk_clk_pdev_probe(pdev);
++}
++
++static void clk_mt6833_mm_remove(struct platform_device *pdev)
++{
++	if (pdev->dev.of_node)
++		mtk_clk_simple_remove(pdev);
++	else
++		mtk_clk_pdev_remove(pdev);
++}
++
+ static struct platform_driver clk_mt6833_mm_driver = {
+-	.probe = mtk_clk_pdev_probe,
+-	.remove = mtk_clk_pdev_remove,
+-	.driver = { .name = "clk-mt6833-mm" },
++	.probe = clk_mt6833_mm_probe,
++	.remove = clk_mt6833_mm_remove,
++	.driver = {
++		.name = "clk-mt6833-mm",
++		.of_match_table = clk_mt6833_mm_match,
++	},
+ 	.id_table = clk_mt6833_mm_ids,
+ };
+ module_platform_driver(clk_mt6833_mm_driver);
+diff --git a/drivers/pmdomain/mediatek/mtk-pm-domains.c b/drivers/pmdomain/mediatek/mtk-pm-domains.c
+index 93be11039..4ca2aab8c 100644
+--- a/drivers/pmdomain/mediatek/mtk-pm-domains.c
++++ b/drivers/pmdomain/mediatek/mtk-pm-domains.c
+@@ -269,8 +269,13 @@ static int scpsys_bus_protect_enable(struct scpsys_domain *pd, u8 flags)
+ 			ret = scpsys_bus_protect_clear(pd, bpd);
+ 		else
+ 			ret = scpsys_bus_protect_set(pd, bpd);
+-		if (ret)
++		if (ret) {
++			dev_err_ratelimited(pd->scpsys->dev,
++				"%s bus protection step %d (reg %#x mask %#x) failed: %d\n",
++				pd->data->name, i, bpd->bus_prot_sta,
++				bpd->bus_prot_sta_mask, ret);
+ 			return ret;
++		}
+ 	}
+ 
+ 	return 0;
+@@ -700,8 +705,11 @@ static int scpsys_power_off_internal(struct scpsys_domain *pd)
+ 	int ret;
+ 
+ 	ret = scpsys_bus_protect_enable(pd, 0);
+-	if (ret < 0)
++	if (ret < 0) {
++		/* genpd keeps the domain on after failure; restore usable buses. */
++		scpsys_bus_protect_disable(pd, 0);
+ 		return ret;
++	}
+ 
+ 	ret = scpsys_sram_disable(pd);
+ 	if (ret < 0)
+diff --git a/drivers/soc/mediatek/mtk-mmsys.c b/drivers/soc/mediatek/mtk-mmsys.c
+index 7a5b8b4b8..28d0f8b04 100644
+--- a/drivers/soc/mediatek/mtk-mmsys.c
++++ b/drivers/soc/mediatek/mtk-mmsys.c
+@@ -44,7 +44,6 @@ static const struct mtk_mmsys_driver_data mt6779_mmsys_driver_data = {
+ };
+ 
+ static const struct mtk_mmsys_driver_data mt6833_mmsys_driver_data = {
+-	.clk_driver = "clk-mt6833-mm",
+ 	.need_runtime_pm = true,
+ 	.routes = mt6833_mmsys_routes,
+ 	.num_routes = ARRAY_SIZE(mt6833_mmsys_routes),
+@@ -398,7 +397,7 @@ static const struct reset_control_ops mtk_mmsys_reset_ops = {
+ static int mtk_mmsys_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+-	struct platform_device *clks;
++	struct platform_device *clks = NULL;
+ 	struct platform_device *drm;
+ 	struct mtk_mmsys *mmsys;
+ 	int ret;
+@@ -442,11 +441,13 @@ static int mtk_mmsys_probe(struct platform_device *pdev)
+ 			return ret;
+ 	}
+ 
+-	clks = platform_device_register_data(&pdev->dev, mmsys->data->clk_driver,
+-					     PLATFORM_DEVID_AUTO, NULL, 0);
+-	if (IS_ERR(clks))
+-		return PTR_ERR(clks);
+-	mmsys->clks_pdev = clks;
++	if (mmsys->data->clk_driver) {
++		clks = platform_device_register_data(&pdev->dev, mmsys->data->clk_driver,
++						     PLATFORM_DEVID_AUTO, NULL, 0);
++		if (IS_ERR(clks))
++			return PTR_ERR(clks);
++		mmsys->clks_pdev = clks;
++	}
+ 
+ 	if (mmsys->data->is_vppsys)
+ 		goto out_probe_done;

@@ -1,0 +1,83 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 10 Oct 2026 16:00:00 +0200
+Subject: [PATCH 128/131] arm64: dts: mediatek: describe A22x CPU capacities
+ for 2 GHz OPP tables
+
+Give the Cortex-A55 cluster capacity-dmips-mhz 383 relative to the
+Cortex-A76 cluster so the scheduler no longer treats all eight CPUs as
+equal.
+
+Signed-off-by: Dodaskot <pessdres@gmail.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index f5d32fd5e..45390a2af 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -1290,6 +1290,7 @@ opp-2000000000 {
+ };
+ 
+ &cpu0 {
++	capacity-dmips-mhz = <383>;
+ 	clocks = <&mcusys CLK_MCU_ARMPLL_LL_SEL>, <&clk26m>;
+ 	clock-names = "cpu", "intermediate";
+ 	operating-points-v2 = <&cluster0_opp>;
+@@ -1300,6 +1301,7 @@ &cpu0 {
+ };
+ 
+ &cpu1 {
++	capacity-dmips-mhz = <383>;
+ 	clocks = <&mcusys CLK_MCU_ARMPLL_LL_SEL>, <&clk26m>;
+ 	clock-names = "cpu", "intermediate";
+ 	operating-points-v2 = <&cluster0_opp>;
+@@ -1310,6 +1312,7 @@ &cpu1 {
+ };
+ 
+ &cpu2 {
++	capacity-dmips-mhz = <383>;
+ 	clocks = <&mcusys CLK_MCU_ARMPLL_LL_SEL>, <&clk26m>;
+ 	clock-names = "cpu", "intermediate";
+ 	operating-points-v2 = <&cluster0_opp>;
+@@ -1320,6 +1323,7 @@ &cpu2 {
+ };
+ 
+ &cpu3 {
++	capacity-dmips-mhz = <383>;
+ 	clocks = <&mcusys CLK_MCU_ARMPLL_LL_SEL>, <&clk26m>;
+ 	clock-names = "cpu", "intermediate";
+ 	operating-points-v2 = <&cluster0_opp>;
+@@ -1330,6 +1334,7 @@ &cpu3 {
+ };
+ 
+ &cpu4 {
++	capacity-dmips-mhz = <383>;
+ 	clocks = <&mcusys CLK_MCU_ARMPLL_LL_SEL>, <&clk26m>;
+ 	clock-names = "cpu", "intermediate";
+ 	operating-points-v2 = <&cluster0_opp>;
+@@ -1340,6 +1345,7 @@ &cpu4 {
+ };
+ 
+ &cpu5 {
++	capacity-dmips-mhz = <383>;
+ 	clocks = <&mcusys CLK_MCU_ARMPLL_LL_SEL>, <&clk26m>;
+ 	clock-names = "cpu", "intermediate";
+ 	operating-points-v2 = <&cluster0_opp>;
+@@ -1350,6 +1356,7 @@ &cpu5 {
+ };
+ 
+ &cpu6 {
++	capacity-dmips-mhz = <1024>;
+ 	clocks = <&mcusys CLK_MCU_ARMPLL_BL_SEL>, <&clk26m>;
+ 	clock-names = "cpu", "intermediate";
+ 	operating-points-v2 = <&cluster1_opp>;
+@@ -1360,6 +1367,7 @@ &cpu6 {
+ };
+ 
+ &cpu7 {
++	capacity-dmips-mhz = <1024>;
+ 	clocks = <&mcusys CLK_MCU_ARMPLL_BL_SEL>, <&clk26m>;
+ 	clock-names = "cpu", "intermediate";
+ 	operating-points-v2 = <&cluster1_opp>;

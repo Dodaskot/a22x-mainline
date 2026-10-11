@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sun, 4 Oct 2026 23:36:14 +0200
+Subject: [PATCH 074/131] arm64: dts: a22x: CPU idle states and the SoC system
+ timer
+
+The stock idle states are "mediatek,idle-state", which the PSCI cpuidle
+driver ignores, so the CPUs only executed WFI. Mark the CPU-off and
+cluster-off states "arm,idle-state" and list only those per CPU
+(mcusys-off and the s2idle state need SPM/MCUPM support). Add the system
+timer at 0x10017000 (as on MT8192) for broadcast wakeups while a CPU's
+arch timer is stopped.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 44 +++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 67cd9e03e..554ffe06b 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -1686,3 +1686,47 @@ &consys {
+ 	memory-region = <&{/reserved-memory/wifi-reserve-memory}>;
+ 	status = "okay";
+ };
++
++/*
++ * CPU idle. The stock idle states are "mediatek,idle-state", which the PSCI
++ * cpuidle driver ignores, so the CPUs only ever did WFI. Enable the CPU-off
++ * and cluster-off states (handled by ATF alone, as on MT8192); mcusys-off
++ * and the s2idle state need the SPM/MCUPM side and stay unused for now.
++ */
++&cpuoff_l {
++	compatible = "arm,idle-state";
++};
++
++&cpuoff_b {
++	compatible = "arm,idle-state";
++};
++
++&clusteroff_l {
++	compatible = "arm,idle-state";
++};
++
++&clusteroff_b {
++	compatible = "arm,idle-state";
++};
++
++&{/cpus/cpu@000} { cpu-idle-states = <&cpuoff_l &clusteroff_l>; };
++&{/cpus/cpu@001} { cpu-idle-states = <&cpuoff_l &clusteroff_l>; };
++&{/cpus/cpu@002} { cpu-idle-states = <&cpuoff_l &clusteroff_l>; };
++&{/cpus/cpu@003} { cpu-idle-states = <&cpuoff_l &clusteroff_l>; };
++&{/cpus/cpu@004} { cpu-idle-states = <&cpuoff_l &clusteroff_l>; };
++&{/cpus/cpu@005} { cpu-idle-states = <&cpuoff_l &clusteroff_l>; };
++&{/cpus/cpu@100} { cpu-idle-states = <&cpuoff_b &clusteroff_b>; };
++&{/cpus/cpu@101} { cpu-idle-states = <&cpuoff_b &clusteroff_b>; };
++
++/ {
++	/*
++	 * SoC system timer: keeps running while a CPU's arch timer is off in
++	 * an idle state (broadcast wakeups; else only bc_hrtimer is there).
++	 */
++	timer@10017000 {
++		compatible = "mediatek,mt6833-timer", "mediatek,mt6765-timer";
++		reg = <0 0x10017000 0 0x1000>;
++		interrupts = <0 233 4>;
++		clocks = <&clk13m>;
++	};
++};

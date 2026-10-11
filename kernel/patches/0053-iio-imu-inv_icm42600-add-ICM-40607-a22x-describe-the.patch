@@ -1,0 +1,152 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sun, 4 Oct 2026 10:06:07 +0200
+Subject: [PATCH 053/131] iio: imu: inv_icm42600: add ICM-40607; a22x: describe
+ the IMU on SPI2
+
+ICM-40607 (WHO_AM_I 0x38) shares the ICM-42605 register map and ranges.
+On SM-A226B it sits on SPI2 (the vendor reaches it from the SCP over
+SCP_SPI2) with INT1 on GPIO3.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../bindings/iio/imu/invensense,icm42600.yaml |  1 +
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 20 ++++++++++++++++---
+ drivers/iio/imu/inv_icm42600/inv_icm42600.h   |  2 ++
+ .../iio/imu/inv_icm42600/inv_icm42600_core.c  |  5 +++++
+ .../iio/imu/inv_icm42600/inv_icm42600_i2c.c   |  4 ++++
+ .../iio/imu/inv_icm42600/inv_icm42600_spi.c   |  4 ++++
+ 6 files changed, 33 insertions(+), 3 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/iio/imu/invensense,icm42600.yaml b/Documentation/devicetree/bindings/iio/imu/invensense,icm42600.yaml
+index 119e28a83..788aee364 100644
+--- a/Documentation/devicetree/bindings/iio/imu/invensense,icm42600.yaml
++++ b/Documentation/devicetree/bindings/iio/imu/invensense,icm42600.yaml
+@@ -27,6 +27,7 @@ description: |
+ properties:
+   compatible:
+     enum:
++      - invensense,icm40607
+       - invensense,icm42600
+       - invensense,icm42602
+       - invensense,icm42605
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 2f551659e..3ae8ef71f 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -216,6 +216,14 @@ pins-cols {
+ 
+ 		/* SD card slot (MSDC1); vendor drive strength 8 mA */
+ 		/* IMU on SPI2 (the vendor drives it from the SCP via SCP_SPI2) */
++		imu_int_pins: imu-int-pins {
++			pins-int {
++				pinmux = <PINMUX_GPIO3__FUNC_GPIO3>;
++				input-enable;
++				bias-disable;
++			};
++		};
++
+ 		spi2_pins: spi2-pins {
+ 			pins-spi {
+ 				pinmux = <PINMUX_GPIO31__FUNC_SPI2_CLK>,
+@@ -399,11 +407,17 @@ &spi2 {
+ 	pinctrl-0 = <&spi2_pins>;
+ 	status = "okay";
+ 
+-	/* bring-up: raw access to identify the IMU */
++	/* TDK ICM-40607 accelerometer/gyroscope (WHO_AM_I 0x38), INT1 on GPIO3 */
+ 	imu@0 {
+-		compatible = "rohm,dh2228fv";
++		compatible = "invensense,icm40607";
+ 		reg = <0>;
+-		spi-max-frequency = <1000000>;
++		spi-max-frequency = <10000000>;
++		spi-cpha;
++		spi-cpol;
++		interrupts-extended = <&pio_ml 3 IRQ_TYPE_EDGE_FALLING>;
++		interrupt-names = "INT1";
++		pinctrl-names = "default";
++		pinctrl-0 = <&imu_int_pins>;
+ 	};
+ };
+ 
+diff --git a/drivers/iio/imu/inv_icm42600/inv_icm42600.h b/drivers/iio/imu/inv_icm42600/inv_icm42600.h
+index c8b48a5c5..adb484b00 100644
+--- a/drivers/iio/imu/inv_icm42600/inv_icm42600.h
++++ b/drivers/iio/imu/inv_icm42600/inv_icm42600.h
+@@ -26,6 +26,7 @@ enum inv_icm42600_chip {
+ 	INV_CHIP_ICM42622,
+ 	INV_CHIP_ICM42688,
+ 	INV_CHIP_ICM42631,
++	INV_CHIP_ICM40607,
+ 	INV_CHIP_NB,
+ };
+ 
+@@ -382,6 +383,7 @@ struct inv_icm42600_sensor_state {
+ #define INV_ICM42600_WHOAMI_ICM42622			0x46
+ #define INV_ICM42600_WHOAMI_ICM42688			0x47
+ #define INV_ICM42600_WHOAMI_ICM42631			0x5C
++#define INV_ICM42600_WHOAMI_ICM40607			0x38
+ 
+ /* User bank 1 (MSB 0x10) */
+ #define INV_ICM42600_REG_SENSOR_CONFIG0			0x1003
+diff --git a/drivers/iio/imu/inv_icm42600/inv_icm42600_core.c b/drivers/iio/imu/inv_icm42600/inv_icm42600_core.c
+index 76eb22488..6085fd3db 100644
+--- a/drivers/iio/imu/inv_icm42600/inv_icm42600_core.c
++++ b/drivers/iio/imu/inv_icm42600/inv_icm42600_core.c
+@@ -177,6 +177,11 @@ static const struct inv_icm42600_hw inv_icm42600_hw[INV_CHIP_NB] = {
+ 		.name = "icm42631",
+ 		.conf = &inv_icm42600_default_conf,
+ 	},
++	[INV_CHIP_ICM40607] = {
++		.whoami = INV_ICM42600_WHOAMI_ICM40607,
++		.name = "icm40607",
++		.conf = &inv_icm42600_default_conf,
++	},
+ };
+ 
+ const struct iio_mount_matrix *
+diff --git a/drivers/iio/imu/inv_icm42600/inv_icm42600_i2c.c b/drivers/iio/imu/inv_icm42600/inv_icm42600_i2c.c
+index 1013aff4f..ee1ed2ac5 100644
+--- a/drivers/iio/imu/inv_icm42600/inv_icm42600_i2c.c
++++ b/drivers/iio/imu/inv_icm42600/inv_icm42600_i2c.c
+@@ -81,6 +81,7 @@ static const struct i2c_device_id inv_icm42600_id[] = {
+ 	{ .name = "icm42622", .driver_data = INV_CHIP_ICM42622 },
+ 	{ .name = "icm42688", .driver_data = INV_CHIP_ICM42688 },
+ 	{ .name = "icm42631", .driver_data = INV_CHIP_ICM42631 },
++	{ .name = "icm40607", .driver_data = INV_CHIP_ICM40607 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, inv_icm42600_id);
+@@ -107,6 +108,9 @@ static const struct of_device_id inv_icm42600_of_matches[] = {
+ 	}, {
+ 		.compatible = "invensense,icm42631",
+ 		.data = (void *)INV_CHIP_ICM42631,
++	}, {
++		.compatible = "invensense,icm40607",
++		.data = (void *)INV_CHIP_ICM40607,
+ 	},
+ 	{ }
+ };
+diff --git a/drivers/iio/imu/inv_icm42600/inv_icm42600_spi.c b/drivers/iio/imu/inv_icm42600/inv_icm42600_spi.c
+index 57e3c448d..c79744f04 100644
+--- a/drivers/iio/imu/inv_icm42600/inv_icm42600_spi.c
++++ b/drivers/iio/imu/inv_icm42600/inv_icm42600_spi.c
+@@ -78,6 +78,7 @@ static const struct spi_device_id inv_icm42600_id[] = {
+ 	{ "icm42622", INV_CHIP_ICM42622 },
+ 	{ "icm42688", INV_CHIP_ICM42688 },
+ 	{ "icm42631", INV_CHIP_ICM42631 },
++	{ "icm40607", INV_CHIP_ICM40607 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(spi, inv_icm42600_id);
+@@ -104,6 +105,9 @@ static const struct of_device_id inv_icm42600_of_matches[] = {
+ 	}, {
+ 		.compatible = "invensense,icm42631",
+ 		.data = (void *)INV_CHIP_ICM42631,
++	}, {
++		.compatible = "invensense,icm40607",
++		.data = (void *)INV_CHIP_ICM40607,
+ 	},
+ 	{ }
+ };

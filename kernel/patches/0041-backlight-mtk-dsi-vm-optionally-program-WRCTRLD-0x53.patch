@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 20:00:40 +0200
+Subject: [PATCH 041/131] backlight: mtk-dsi-vm: optionally program WRCTRLD
+ (0x53); a22x: BCTRL on
+
+Without BCTRL the Himax TDDI only scales pixel data on 0x51 and the LED
+backlight stays at full power.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts |  2 ++
+ drivers/video/backlight/mtk_dsi_vm_bl.c             | 13 +++++++++++++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index b839ae876..08c8e753d 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -548,6 +548,8 @@ / {
+ 	backlight: backlight@14013000 {
+ 		compatible = "mediatek,dsi-vm-backlight";
+ 		reg = <0 0x14013000 0 0x1000>;
++		/* BCTRL | DD | BL, as the vendor panel driver sets it */
++		mediatek,wrctrld = <0x2c>;
+ 		default-brightness-level = <200>;
+ 	};
+ };
+diff --git a/drivers/video/backlight/mtk_dsi_vm_bl.c b/drivers/video/backlight/mtk_dsi_vm_bl.c
+index 5e6c06747..96d441928 100644
+--- a/drivers/video/backlight/mtk_dsi_vm_bl.c
++++ b/drivers/video/backlight/mtk_dsi_vm_bl.c
+@@ -31,6 +31,7 @@
+ 
+ #define MIPI_DCS_SHORT_WRITE_PARAM	0x15
+ #define DCS_SET_DISPLAY_BRIGHTNESS	0x51
++#define DCS_WRITE_CONTROL_DISPLAY	0x53
+ 
+ struct mtk_dsi_vm_bl {
+ 	void __iomem *regs;
+@@ -107,6 +108,18 @@ static int mtk_dsi_vm_bl_probe(struct platform_device *pdev)
+ 	if (!of_property_read_u32(dev->of_node, "max-brightness", &val))
+ 		props.max_brightness = val;
+ 
++	/*
++	 * Some panels (e.g. the SM-A226B Himax TDDI) only drive their LED PWM
++	 * output when BCTRL is set in WRCTRLD; otherwise 0x51 just scales the
++	 * pixel data and the LEDs stay at full power.
++	 */
++	if (!of_property_read_u32(dev->of_node, "mediatek,wrctrld", &val)) {
++		int ret = mtk_dsi_vm_bl_send(bl, DCS_WRITE_CONTROL_DISPLAY, val);
++
++		if (ret)
++			dev_warn(dev, "WRCTRLD write failed: %d\n", ret);
++	}
++
+ 	bd = devm_backlight_device_register(dev, dev_name(dev), dev, bl,
+ 					    &mtk_dsi_vm_bl_ops, &props);
+ 	if (IS_ERR(bd))

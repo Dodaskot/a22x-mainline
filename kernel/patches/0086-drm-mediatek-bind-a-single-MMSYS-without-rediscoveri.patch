@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 21:02:37 +0200
+Subject: [PATCH 086/131] drm/mediatek: bind a single MMSYS without
+ rediscovering its child
+
+---
+ drivers/gpu/drm/mediatek/mtk_drm_drv.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/mediatek/mtk_drm_drv.c b/drivers/gpu/drm/mediatek/mtk_drm_drv.c
+index eb25f89b2..026eb4f72 100644
+--- a/drivers/gpu/drm/mediatek/mtk_drm_drv.c
++++ b/drivers/gpu/drm/mediatek/mtk_drm_drv.c
+@@ -395,6 +395,12 @@ static bool mtk_drm_get_all_drm_priv(struct device *dev)
+ 	unsigned int cnt = 0;
+ 	int i, j;
+ 
++	/* The child may bind synchronously before device_add links it to MMSYS. */
++	if (drm_priv->data->mmsys_dev_num == 1) {
++		drm_priv->all_drm_private[0] = drm_priv;
++		return true;
++	}
++
+ 	for_each_child_of_node(phandle->parent, node) {
+ 		struct platform_device *pdev;
+ 
+@@ -1245,7 +1251,8 @@ static void mtk_drm_shutdown(struct platform_device *pdev)
+ {
+ 	struct mtk_drm_private *private = platform_get_drvdata(pdev);
+ 
+-	drm_atomic_helper_shutdown(private->drm);
++	if (private->drm_master)
++		drm_atomic_helper_shutdown(private->drm);
+ }
+ 
+ static int mtk_drm_sys_prepare(struct device *dev)

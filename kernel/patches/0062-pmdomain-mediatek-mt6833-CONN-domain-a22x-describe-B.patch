@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sun, 4 Oct 2026 11:19:23 +0200
+Subject: [PATCH 062/131] pmdomain: mediatek: mt6833: CONN domain; a22x:
+ describe BTIF and CONSYS
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 31 +++++++++++++++++++
+ drivers/pmdomain/mediatek/mt6833-pm-domains.h | 28 +++++++++++++++++
+ .../dt-bindings/power/mediatek,mt6833-power.h |  1 +
+ 3 files changed, 60 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 9f3ad9164..56c33f2b8 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -805,6 +805,14 @@ spm: power-controller {
+ 			#size-cells = <0>;
+ 			#power-domain-cells = <1>;
+ 
++			power-domain@MT6833_POWER_DOMAIN_CONN {
++				reg = <MT6833_POWER_DOMAIN_CONN>;
++				clocks = <&infracfg_ao CLK_IFRAO_PMIC_CONN>;
++				clock-names = "conn";
++				mediatek,infracfg = <&infracfg_ao>;
++				#power-domain-cells = <0>;
++			};
++
+ 			power-domain@MT6833_POWER_DOMAIN_AUDIO {
+ 				reg = <MT6833_POWER_DOMAIN_AUDIO>;
+ 				clocks = <&topckgen CLK_TOP_AUD_INTBUS_SEL>,
+@@ -1604,3 +1612,26 @@ vibrator {
+ 		max-microvolt = <3300000>;
+ 	};
+ };
++
++/*
++ * Connectivity (CONSYS + MT6631 A-die), driven by the vendor wmt_drv/btif/
++ * wlan modules built out of tree (~/nura-a22x/conn).
++ */
++&{/btif@1100c000} {
++	clocks = <&infracfg_ao CLK_IFRAO_BTIF>, <&infracfg_ao CLK_IFRAO_AP_DMA>;
++	clock-names = "btifc", "apdmac";
++	status = "okay";
++};
++
++&consys {
++	clocks = <&infracfg_ao CLK_IFRAO_CCIF4_AP>;
++	clock-names = "ccif";
++	power-domains = <&spm MT6833_POWER_DOMAIN_CONN>;
++	memory-region = <&{/reserved-memory/consys-reserve-memory}>;
++	vcn18-supply = <&mt6359_vcn18_ldo_reg>;
++	vcn13-supply = <&mt6359_vcn13_ldo_reg>;
++	vcn33_1_bt-supply = <&mt6359_vcn33_1_ldo_reg>;
++	vcn33_1_wifi-supply = <&mt6359_vcn33_1_ldo_reg>;
++	vcn33_2_wifi-supply = <&mt6359_vcn33_2_ldo_reg>;
++	status = "okay";
++};
+diff --git a/drivers/pmdomain/mediatek/mt6833-pm-domains.h b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+index e42d6a469..9a78105c7 100644
+--- a/drivers/pmdomain/mediatek/mt6833-pm-domains.h
++++ b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+@@ -108,6 +108,34 @@ static const struct scpsys_domain_data scpsys_domain_data_mt6833[] = {
+ 				    MT8192_TOP_AXI_PROT_EN_2_STA1),
+ 		},
+ 	},
++	/* same SPM/bus-protection layout as MT8192 (vendor clk-mt6833-pg.c SYS_CONN) */
++	[MT6833_POWER_DOMAIN_CONN] = {
++		.name = "conn",
++		.sta_mask = BIT(1),
++		.ctl_offs = 0x0304,
++		.pwr_sta_offs = 0x016c,
++		.pwr_sta2nd_offs = 0x0170,
++		.sram_pdn_bits = 0,
++		.sram_pdn_ack_bits = 0,
++		.bp_cfg = {
++			BUS_PROT_WR(INFRA,
++				    MT8192_TOP_AXI_PROT_EN_CONN,
++				    MT8192_TOP_AXI_PROT_EN_SET,
++				    MT8192_TOP_AXI_PROT_EN_CLR,
++				    MT8192_TOP_AXI_PROT_EN_STA1),
++			BUS_PROT_WR(INFRA,
++				    MT8192_TOP_AXI_PROT_EN_CONN_2ND,
++				    MT8192_TOP_AXI_PROT_EN_SET,
++				    MT8192_TOP_AXI_PROT_EN_CLR,
++				    MT8192_TOP_AXI_PROT_EN_STA1),
++			BUS_PROT_WR(INFRA,
++				    MT8192_TOP_AXI_PROT_EN_1_CONN,
++				    MT8192_TOP_AXI_PROT_EN_1_SET,
++				    MT8192_TOP_AXI_PROT_EN_1_CLR,
++				    MT8192_TOP_AXI_PROT_EN_1_STA1),
++		},
++		.caps = MTK_SCPD_KEEP_DEFAULT_OFF,
++	},
+ };
+ 
+ static const struct scpsys_soc_data mt6833_scpsys_data = {
+diff --git a/include/dt-bindings/power/mediatek,mt6833-power.h b/include/dt-bindings/power/mediatek,mt6833-power.h
+index 5a0c1bd75..ef5e019c4 100644
+--- a/include/dt-bindings/power/mediatek,mt6833-power.h
++++ b/include/dt-bindings/power/mediatek,mt6833-power.h
+@@ -7,5 +7,6 @@
+ #define MT6833_POWER_DOMAIN_MFG2	2
+ #define MT6833_POWER_DOMAIN_MFG3	3
+ #define MT6833_POWER_DOMAIN_AUDIO	4
++#define MT6833_POWER_DOMAIN_CONN	5
+ 
+ #endif /* _DT_BINDINGS_POWER_MT6833_POWER_H */

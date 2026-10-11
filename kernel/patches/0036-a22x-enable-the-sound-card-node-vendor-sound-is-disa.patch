@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 18:34:40 +0200
+Subject: [PATCH 036/131] a22x: enable the sound card node (vendor /sound is
+ disabled)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 4ac0c85c1..91c27f08e 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -1329,8 +1329,11 @@ sound_ml: sound {
+ 		/delete-property/ mediatek,audio-codec;
+ 		/delete-property/ mtk_spk_i2s_out;
+ 		/delete-property/ mtk_spk_i2s_in;
+-		/delete-node/ mediatek,speaker-codec;
++		/delete-property/ si,sia81xx-max-num;
++		/delete-property/ si,sia81xx-aux-devs;
++		/delete-property/ si,sia81xx-aux-devs-prefix;
+ 		compatible = "mediatek,mt6833-mt6359-sound";
++		status = "okay";
+ 		mediatek,platform = <&afe_ml>;
+ 		pinctrl-names = "aud_clk_mosi_off", "aud_clk_mosi_on", "aud_dat_mosi_off", "aud_dat_mosi_on", "aud_dat_miso_off", "aud_dat_miso_on", "aud_gpio_i2s3_off", "aud_gpio_i2s3_on", "aud_gpio_i2s0_off", "aud_gpio_i2s0_on";
+ 			pinctrl-0 = <&aud_clk_mosi_off_ml>;

@@ -1,0 +1,149 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 6 Oct 2026 21:42:35 +0200
+Subject: [PATCH 107/131] pmdomain: mediatek: wait for MT6833 MD1 power-off
+ before isolation
+
+Describe the MD1 bus protection and external buck isolation registers. MT6833 requires primary power-off acknowledgement before buck isolation and reset; retain the existing sequence on other platforms. Bound the wait and restore power before releasing bus protection after a failed transition. The new domain is not instantiated by the board DT yet.
+---
+ drivers/pmdomain/mediatek/mt6833-pm-domains.h | 17 +++++
+ drivers/pmdomain/mediatek/mtk-pm-domains.c    | 68 ++++++++++++++++++-
+ drivers/pmdomain/mediatek/mtk-pm-domains.h    |  2 +
+ 3 files changed, 84 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pmdomain/mediatek/mt6833-pm-domains.h b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+index 46de4bda7..fbce77e1c 100644
+--- a/drivers/pmdomain/mediatek/mt6833-pm-domains.h
++++ b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+@@ -23,6 +23,23 @@ static enum scpsys_bus_prot_block scpsys_bus_prot_blocks_mt6833[] = {
+ };
+ 
+ static const struct scpsys_domain_data scpsys_domain_data_mt6833[] = {
++	[MT6833_POWER_DOMAIN_MD1] = {
++		.name = "md1",
++		.sta_mask = BIT(0),
++		.ctl_offs = 0x0300,
++		.pwr_sta_offs = 0x016c,
++		/* Vendor MD1 polls only the primary status register. */
++		.pwr_sta2nd_offs = 0x016c,
++		.ext_buck_iso_offs = 0x0398,
++		.ext_buck_iso_mask = BIT(0) | BIT(1),
++		.bp_cfg = {
++			BUS_PROT_WR_IGN(INFRA, BIT(7), 0x2a0, 0x2a4, 0x228),
++			BUS_PROT_WR_IGN(INFRA, BIT(0) | BIT(10) | BIT(16),
++					0xb84, 0xb88, 0xb90),
++		},
++		.caps = MTK_SCPD_MODEM_PWRSEQ | MTK_SCPD_EXT_BUCK_ISO |
++			MTK_SCPD_MODEM_OFF_ACK_FIRST,
++	},
+ 	[MT6833_POWER_DOMAIN_MFG0] = {
+ 		.name = "mfg0",
+ 		.sta_mask = BIT(2),
+diff --git a/drivers/pmdomain/mediatek/mtk-pm-domains.c b/drivers/pmdomain/mediatek/mtk-pm-domains.c
+index 83e444ede..87cd7bcde 100644
+--- a/drivers/pmdomain/mediatek/mtk-pm-domains.c
++++ b/drivers/pmdomain/mediatek/mtk-pm-domains.c
+@@ -619,6 +619,62 @@ static void scpsys_modem_pwrseq_off(struct scpsys_domain *pd)
+ 		regmap_clear_bits(scpsys->base, pd->data->ctl_offs, PWR_RST_B_BIT);
+ }
+ 
++static int scpsys_modem_off_ack_first(struct scpsys_domain *pd)
++{
++	struct scpsys *scpsys = pd->scpsys;
++	u32 status;
++	int ret, restore_ret;
++
++	/* MT6833 MD1 uses the primary power ACK, without PWR_ON_2ND. */
++	ret = regmap_clear_bits(scpsys->base, pd->data->ctl_offs, PWR_ON_BIT);
++	if (ret)
++		goto restore_power;
++
++	ret = regmap_read_poll_timeout(scpsys->base, pd->data->pwr_sta_offs,
++				       status, !(status & pd->data->sta_mask),
++				       MTK_POLL_DELAY_US, MTK_POLL_TIMEOUT);
++	if (ret)
++		goto restore_power;
++
++	/*
++	 * Samsung's MD1 sequence isolates the buck only after power ACK falls,
++	 * then asserts reset. The generic modem ordering is different.
++	 */
++	ret = regmap_set_bits(scpsys->base, pd->data->ext_buck_iso_offs,
++			      pd->data->ext_buck_iso_mask);
++	if (ret)
++		goto restore_power;
++
++	ret = regmap_clear_bits(scpsys->base, pd->data->ctl_offs, PWR_RST_B_BIT);
++	if (!ret)
++		return 0;
++
++restore_power:
++	/*
++	 * genpd retains the ON state on failure. Follow the modem power-on
++	 * order and wait for ACK before releasing its bus protection.
++	 */
++	restore_ret = regmap_clear_bits(scpsys->base, pd->data->ext_buck_iso_offs,
++					pd->data->ext_buck_iso_mask);
++	if (!restore_ret)
++		restore_ret = regmap_set_bits(scpsys->base, pd->data->ctl_offs,
++					     PWR_RST_B_BIT);
++	if (!restore_ret)
++		restore_ret = regmap_set_bits(scpsys->base, pd->data->ctl_offs,
++					     PWR_ON_BIT);
++	if (!restore_ret)
++		restore_ret = regmap_read_poll_timeout(scpsys->base,
++			pd->data->pwr_sta_offs, status,
++			(status & pd->data->sta_mask) == pd->data->sta_mask,
++			MTK_POLL_DELAY_US, MTK_POLL_TIMEOUT);
++	if (!restore_ret)
++		restore_ret = scpsys_bus_protect_disable(pd, 0);
++	if (restore_ret)
++		dev_err(scpsys->dev, "%s: failed to restore modem power: %d\n",
++			pd->genpd.name, restore_ret);
++	return ret;
++}
++
+ static int scpsys_power_on(struct generic_pm_domain *genpd)
+ {
+ 	struct scpsys_domain *pd = container_of(genpd, struct scpsys_domain, genpd);
+@@ -715,7 +771,8 @@ static int scpsys_power_off_internal(struct scpsys_domain *pd)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	if (pd->data->ext_buck_iso_offs && MTK_SCPD_CAPS(pd, MTK_SCPD_EXT_BUCK_ISO))
++	if (pd->data->ext_buck_iso_offs && MTK_SCPD_CAPS(pd, MTK_SCPD_EXT_BUCK_ISO) &&
++	    !MTK_SCPD_CAPS(pd, MTK_SCPD_MODEM_OFF_ACK_FIRST))
+ 		regmap_set_bits(scpsys->base, pd->data->ext_buck_iso_offs,
+ 				pd->data->ext_buck_iso_mask);
+ 
+@@ -725,10 +782,15 @@ static int scpsys_power_off_internal(struct scpsys_domain *pd)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	if (MTK_SCPD_CAPS(pd, MTK_SCPD_MODEM_PWRSEQ))
++	if (MTK_SCPD_CAPS(pd, MTK_SCPD_MODEM_OFF_ACK_FIRST)) {
++		ret = scpsys_modem_off_ack_first(pd);
++		if (ret)
++			return ret;
++	} else if (MTK_SCPD_CAPS(pd, MTK_SCPD_MODEM_PWRSEQ)) {
+ 		scpsys_modem_pwrseq_off(pd);
+-	else
++	} else {
+ 		scpsys_ctl_pwrseq_off(pd);
++	}
+ 
+ 	/* wait until PWR_ACK = 0 */
+ 	ret = readx_poll_timeout(scpsys_domain_is_on, pd, tmp, !tmp, MTK_POLL_DELAY_US,
+diff --git a/drivers/pmdomain/mediatek/mtk-pm-domains.h b/drivers/pmdomain/mediatek/mtk-pm-domains.h
+index a5dca24cb..46ff022d6 100644
+--- a/drivers/pmdomain/mediatek/mtk-pm-domains.h
++++ b/drivers/pmdomain/mediatek/mtk-pm-domains.h
+@@ -17,6 +17,8 @@
+ #define MTK_SCPD_MODEM_PWRSEQ		BIT(10)
+ #define MTK_SCPD_SKIP_RESET_B		BIT(11)
+ #define MTK_SCPD_INFRA_PWR_CTL		BIT(12)
++/* MD1 needs power-off ACK before external buck isolation and reset. */
++#define MTK_SCPD_MODEM_OFF_ACK_FIRST	BIT(13)
+ #define MTK_SCPD_CAPS(_scpd, _x)	((_scpd)->data ?		\
+ 					 (_scpd)->data->caps & (_x) :	\
+ 					 (_scpd)->hwv_data->caps & (_x))

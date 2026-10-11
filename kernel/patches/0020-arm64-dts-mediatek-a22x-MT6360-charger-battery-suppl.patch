@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 10:46:58 +0200
+Subject: [PATCH 020/131] arm64: dts: mediatek: a22x: MT6360 charger, battery
+ supplied by it
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 140602447..a1cdd0cc0 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -281,6 +281,12 @@ mt6360_adc: adc {
+ 				compatible = "mediatek,mt6360-adc";
+ 				#io-channel-cells = <1>;
+ 			};
++
++			/* Leaves ICHG/AICR/CV as set by the bootloader (stock: 2 A / 0.5 A / 4.4 V). */
++			mt6360_chg: charger {
++				compatible = "mediatek,mt6360-chg";
++				richtek,vinovp-microvolt = <6500000>;
++			};
+ 		};
+ 	};
+ };
+@@ -324,5 +330,6 @@ adc-battery {
+ 		io-channels = <&mt6360_adc 4>, <&mt6360_adc 6>;
+ 		io-channel-names = "voltage", "current";
+ 		monitored-battery = <&battery>;
++		power-supplies = <&mt6360_chg>;
+ 	};
+ };

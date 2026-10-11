@@ -1,0 +1,106 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 10 Oct 2026 16:00:00 +0200
+Subject: [PATCH 127/131] soc: mediatek: skip unused dynamic Android ZMC pool
+ on A22x
+
+LK adds a size-only 848 MiB "zone-movable-cma-memory" pool. The vendor
+kernel converts it back to CMA/movable pages; mainline would strand it.
+Reject exactly that size-only, no-reg, no-map node before dynamic
+allocation. Fixed firmware reservations and the display CMA are kept.
+
+Verified on the handset: MemTotal 2743160 -> 3611576 KiB; 512 MiB of
+mlocked random data held through three s2idle cycles.
+
+Signed-off-by: Dodaskot <pessdres@gmail.com>
+---
+ drivers/soc/mediatek/Kconfig                  |  9 ++++
+ drivers/soc/mediatek/Makefile                 |  1 +
+ .../soc/mediatek/mtk-a22x-reserved-memory.c   | 48 +++++++++++++++++++
+ 3 files changed, 58 insertions(+)
+ create mode 100644 drivers/soc/mediatek/mtk-a22x-reserved-memory.c
+
+diff --git a/drivers/soc/mediatek/Kconfig b/drivers/soc/mediatek/Kconfig
+index fec4300db..9364c36e6 100644
+--- a/drivers/soc/mediatek/Kconfig
++++ b/drivers/soc/mediatek/Kconfig
+@@ -5,6 +5,15 @@
+ menu "MediaTek SoC drivers"
+ 	depends on ARCH_MEDIATEK || COMPILE_TEST
+ 
++config MTK_A22X_RESERVED_MEMORY
++	bool "Samsung A22 5G reserved memory quirks"
++	depends on ARM64 && OF_RESERVED_MEM
++	help
++	  Ignore the unused size-only Android ZMC pool on the Samsung A22 5G.
++	  Fixed firmware reservations and the Linux display CMA are retained.
++	  This runs before dynamic allocation and never edits bootloader data.
++	  Other boards and firmware-placed regions keep their reservations.
++
+ config MTK_MT6833_MODEM_POWER
+ 	bool "MediaTek MT6833 guarded modem power ownership"
+ 	depends on PM && PM_GENERIC_DOMAINS && OF
+diff --git a/drivers/soc/mediatek/Makefile b/drivers/soc/mediatek/Makefile
+index b30f34bd9..41e8b76a7 100644
+--- a/drivers/soc/mediatek/Makefile
++++ b/drivers/soc/mediatek/Makefile
+@@ -1,4 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0-only
++obj-$(CONFIG_MTK_A22X_RESERVED_MEMORY) += mtk-a22x-reserved-memory.o
+ obj-$(CONFIG_MTK_MT6833_LPM) += mtk-mt6833-lpm.o
+ obj-$(CONFIG_MTK_MT6833_MODEM_POWER) += mtk-mt6833-modem-power.o
+ obj-$(CONFIG_MTK_CMDQ) += mtk-cmdq-helper.o
+diff --git a/drivers/soc/mediatek/mtk-a22x-reserved-memory.c b/drivers/soc/mediatek/mtk-a22x-reserved-memory.c
+new file mode 100644
+index 000000000..3d61ced81
+--- /dev/null
++++ b/drivers/soc/mediatek/mtk-a22x-reserved-memory.c
+@@ -0,0 +1,48 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/* Samsung A22 5G: discard an unused Android dynamic memory pool. */
++#include <linux/errno.h>
++#include <linux/init.h>
++#include <linux/of_fdt.h>
++#include <linux/of_reserved_mem.h>
++#include <linux/printk.h>
++#include <linux/sizes.h>
++
++static int __init a22x_zmc_validate(unsigned long node, phys_addr_t *align)
++{
++	const __be32 *size;
++	int len;
++
++	if (!of_flat_dt_is_compatible(of_get_flat_dt_root(), "samsung,a22x"))
++		return 0;
++
++	/* Never discard a firmware-placed or protected reservation. */
++	if (of_get_flat_dt_prop(node, "reg", NULL) ||
++	    of_get_flat_dt_prop(node, "no-map", NULL))
++		return 0;
++
++	size = of_get_flat_dt_prop(node, "size", &len);
++	if (!size || len != 2 * sizeof(*size) ||
++	    of_read_number(size, 2) != 848 * SZ_1M)
++		return 0;
++
++	/*
++	 * LK adds this size-only Android ZMC pool. The vendor driver turns
++	 * it into movable/CMA memory, but mainline has no ZMC clients and
++	 * otherwise strands all 848 MiB. Reject it before memblock allocates
++	 * anything. Keep the separate display CMA and firmware regions.
++	 */
++	pr_info("A22x: skipping unused Android ZMC pool (848 MiB)\n");
++	return -EOPNOTSUPP;
++}
++
++static int __init a22x_zmc_init(unsigned long node, struct reserved_mem *rmem)
++{
++	/* Preserve the normal reservation for every case not rejected above. */
++	return -ENODEV;
++}
++
++static const struct reserved_mem_ops a22x_zmc_ops = {
++	.node_validate = a22x_zmc_validate,
++	.node_init = a22x_zmc_init,
++};
++RESERVEDMEM_OF_DECLARE(a22x_zmc, "mediatek,zone_movable_cma", &a22x_zmc_ops);

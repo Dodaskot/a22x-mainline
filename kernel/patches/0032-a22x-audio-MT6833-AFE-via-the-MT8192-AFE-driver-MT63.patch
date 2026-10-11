@@ -1,0 +1,936 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 18:33:03 +0200
+Subject: [PATCH 032/131] a22x: audio - MT6833 AFE via the MT8192 AFE driver,
+ MT6359 codec card
+
+- pmdomain: mediatek: MT6833 audio domain
+- clk: mediatek: MT6833 audsys gates (vendor table), AFE as child
+- ASoC: mediatek: mt8192 AFE accepts mediatek,mt6833-audio (register
+  compatible), audiosys reset optional; new reduced mt6833-mt6359 card
+- dts: audsys/AFE, MT6359 codec, MTKAIF and I2S0/I2S3 pin states
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 207 +++++++++
+ drivers/clk/mediatek/Makefile                 |   2 +-
+ drivers/clk/mediatek/clk-mt6833-audsys.c      | 125 +++++
+ drivers/pmdomain/mediatek/mt6833-pm-domains.h |  18 +-
+ .../dt-bindings/power/mediatek,mt6833-power.h |   1 +
+ sound/soc/mediatek/Kconfig                    |   9 +
+ sound/soc/mediatek/mt8192/Makefile            |   1 +
+ sound/soc/mediatek/mt8192/mt6833-mt6359.c     | 434 ++++++++++++++++++
+ sound/soc/mediatek/mt8192/mt8192-afe-pcm.c    |   3 +-
+ 9 files changed, 797 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/clk/mediatek/clk-mt6833-audsys.c
+ create mode 100644 sound/soc/mediatek/mt8192/mt6833-mt6359.c
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 051e07de6..569ae30d0 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -99,6 +99,97 @@ pins-reset {
+ 			};
+ 		};
+ 
++		/* AFE <-> MT6359 (MTKAIF) and speaker amplifier I2S, vendor states */
++		aud_clk_mosi_off: aud-clk-mosi-off {
++			pins-off {
++				pinmux = <PINMUX_GPIO152__FUNC_GPIO152>,
++					 <PINMUX_GPIO153__FUNC_GPIO153>;
++				input-enable;
++				bias-pull-down;
++			};
++		};
++
++		aud_clk_mosi_on: aud-clk-mosi-on {
++			pins-on {
++				pinmux = <PINMUX_GPIO152__FUNC_AUD_CLK_MOSI>,
++					 <PINMUX_GPIO153__FUNC_AUD_SYNC_MOSI>;
++				input-schmitt-enable;
++				bias-disable;
++			};
++		};
++
++		aud_dat_mosi_off: aud-dat-mosi-off {
++			pins-off {
++				pinmux = <PINMUX_GPIO154__FUNC_GPIO154>,
++					 <PINMUX_GPIO155__FUNC_GPIO155>;
++				input-enable;
++				bias-pull-down;
++			};
++		};
++
++		aud_dat_mosi_on: aud-dat-mosi-on {
++			pins-on {
++				pinmux = <PINMUX_GPIO154__FUNC_AUD_DAT_MOSI0>,
++					 <PINMUX_GPIO155__FUNC_AUD_DAT_MOSI1>;
++				input-schmitt-enable;
++				bias-disable;
++			};
++		};
++
++		aud_dat_miso_off: aud-dat-miso-off {
++			pins-off {
++				pinmux = <PINMUX_GPIO159__FUNC_GPIO159>,
++					 <PINMUX_GPIO160__FUNC_GPIO160>;
++				input-enable;
++				bias-pull-down;
++			};
++		};
++
++		aud_dat_miso_on: aud-dat-miso-on {
++			pins-on {
++				pinmux = <PINMUX_GPIO159__FUNC_AUD_DAT_MISO0>,
++					 <PINMUX_GPIO160__FUNC_AUD_DAT_MISO1>;
++				input-schmitt-enable;
++				bias-disable;
++			};
++		};
++
++		aud_gpio_i2s3_off: aud-gpio-i2s3-off {
++			pins-off {
++				pinmux = <PINMUX_GPIO40__FUNC_GPIO40>,
++					 <PINMUX_GPIO41__FUNC_GPIO41>,
++					 <PINMUX_GPIO43__FUNC_GPIO43>;
++				input-enable;
++				bias-pull-down;
++			};
++		};
++
++		aud_gpio_i2s3_on: aud-gpio-i2s3-on {
++			pins-on {
++				pinmux = <PINMUX_GPIO40__FUNC_I2S3_BCK>,
++					 <PINMUX_GPIO41__FUNC_I2S3_LRCK>,
++					 <PINMUX_GPIO43__FUNC_I2S3_DO>;
++				input-schmitt-enable;
++				bias-disable;
++			};
++		};
++
++		aud_gpio_i2s0_off: aud-gpio-i2s0-off {
++			pins-off {
++				pinmux = <PINMUX_GPIO42__FUNC_GPIO42>;
++				input-enable;
++				bias-pull-down;
++			};
++		};
++
++		aud_gpio_i2s0_on: aud-gpio-i2s0-on {
++			pins-on {
++				pinmux = <PINMUX_GPIO42__FUNC_I2S0_DI>;
++				input-schmitt-enable;
++				bias-disable;
++			};
++		};
++
+ 		i2c5_pins: i2c5-pins {
+ 			pins-bus {
+ 				pinmux = <PINMUX_GPIO107__FUNC_SCL5>,
+@@ -371,6 +462,13 @@ rtc {
+ 				compatible = "mediatek,mt6358-rtc";
+ 			};
+ 
++			mt6359codec: mt6359codec {
++				mediatek,dmic-mode = <0>;	/* two-wire */
++				mediatek,mic-type-0 = <1>;	/* ACC */
++				mediatek,mic-type-1 = <1>;
++				mediatek,mic-type-2 = <1>;
++			};
++
+ 			/*
+ 			 * Only the GPU rails are described; every other MT6359
+ 			 * regulator stays as the bootloader configured it.
+@@ -1133,3 +1231,112 @@ soc_crit: trip-crit {
+ 		};
+ 	};
+ };
++
++/* Audio: MT8192-compatible AFE + MT6359 codec (speaker amplifier pending) */
++/ {
++	audsys: syscon@11210000 {
++		compatible = "mediatek,mt6833-audsys", "syscon";
++		reg = <0 0x11210000 0 0x2000>;
++		#clock-cells = <1>;
++
++		afe: audio-controller {
++			compatible = "mediatek,mt6833-audio";
++			interrupts = <0 202 4>;
++			mediatek,apmixedsys = <&apmixed>;
++			mediatek,infracfg = <&infracfg_ao>;
++			mediatek,topckgen = <&topckgen>;
++			power-domains = <&spm MT6833_POWER_DOMAIN_AUDIO>;
++			clocks = <&audsys CLK_AUDSYS_AFE>,
++				 <&audsys CLK_AUDSYS_DAC>,
++				 <&audsys CLK_AUDSYS_DAC_PREDIS>,
++				 <&audsys CLK_AUDSYS_ADC>,
++				 <&audsys CLK_AUDSYS_ADDA6_ADC>,
++				 <&audsys CLK_AUDSYS_22M>,
++				 <&audsys CLK_AUDSYS_24M>,
++				 <&audsys CLK_AUDSYS_APLL_TUNER>,
++				 <&audsys CLK_AUDSYS_APLL2_TUNER>,
++				 <&audsys CLK_AUDSYS_TDM>,
++				 <&audsys CLK_AUDSYS_TML>,
++				 <&audsys CLK_AUDSYS_NLE>,
++				 <&audsys CLK_AUDSYS_DAC_HIRES>,
++				 <&audsys CLK_AUDSYS_ADC_HIRES>,
++				 <&audsys CLK_AUDSYS_ADC_HIRES_TML>,
++				 <&audsys CLK_AUDSYS_ADDA6_ADC_HIRES>,
++				 <&infracfg_ao CLK_IFRAO_AUDIO>,
++				 <&infracfg_ao CLK_IFRAO_AUDIO_26M_BCLK>,
++				 <&topckgen CLK_TOP_AUDIO_SEL>,
++				 <&topckgen CLK_TOP_AUD_INTBUS_SEL>,
++				 <&topckgen CLK_TOP_MAINPLL_D4_D4>,
++				 <&topckgen CLK_TOP_AUD_1_SEL>,
++				 <&topckgen CLK_TOP_APLL1>,
++				 <&topckgen CLK_TOP_AUD_2_SEL>,
++				 <&topckgen CLK_TOP_APLL2>,
++				 <&topckgen CLK_TOP_AUD_ENGEN1_SEL>,
++				 <&topckgen CLK_TOP_APLL1_D4>,
++				 <&topckgen CLK_TOP_AUD_ENGEN2_SEL>,
++				 <&topckgen CLK_TOP_APLL2_D4>,
++				 <&topckgen CLK_TOP_APLL_I2S0_MCK_SEL>,
++				 <&topckgen CLK_TOP_APLL_I2S1_MCK_SEL>,
++				 <&topckgen CLK_TOP_APLL_I2S2_MCK_SEL>,
++				 <&topckgen CLK_TOP_APLL_I2S3_MCK_SEL>,
++				 <&topckgen CLK_TOP_APLL_I2S4_MCK_SEL>,
++				 <&topckgen CLK_TOP_APLL_I2S5_MCK_SEL>,
++				 <&topckgen CLK_TOP_APLL_I2S6_MCK_SEL>,
++				 <&topckgen CLK_TOP_APLL_I2S7_MCK_SEL>,
++				 <&topckgen CLK_TOP_APLL_I2S8_MCK_SEL>,
++				 <&topckgen CLK_TOP_APLL_I2S9_MCK_SEL>,
++				 <&topckgen CLK_TOP_APLL12_CK_DIV0>,
++				 <&topckgen CLK_TOP_APLL12_CK_DIV1>,
++				 <&topckgen CLK_TOP_APLL12_CK_DIV2>,
++				 <&topckgen CLK_TOP_APLL12_CK_DIV3>,
++				 <&topckgen CLK_TOP_APLL12_CK_DIV4>,
++				 <&topckgen CLK_TOP_APLL12_CK_DIVB>,
++				 <&topckgen CLK_TOP_APLL12_CK_DIV5>,
++				 <&topckgen CLK_TOP_APLL12_CK_DIV6>,
++				 <&topckgen CLK_TOP_APLL12_CK_DIV7>,
++				 <&topckgen CLK_TOP_AUDIO_H_SEL>,
++				 <&clk26m>;
++			clock-names = "aud_afe_clk", "aud_dac_clk",
++				      "aud_dac_predis_clk", "aud_adc_clk",
++				      "aud_adda6_adc_clk", "aud_apll22m_clk",
++				      "aud_apll24m_clk", "aud_apll1_tuner_clk",
++				      "aud_apll2_tuner_clk", "aud_tdm_clk",
++				      "aud_tml_clk", "aud_nle",
++				      "aud_dac_hires_clk", "aud_adc_hires_clk",
++				      "aud_adc_hires_tml", "aud_adda6_adc_hires_clk",
++				      "aud_infra_clk", "aud_infra_26m_clk",
++				      "top_mux_audio", "top_mux_audio_int",
++				      "top_mainpll_d4_d4", "top_mux_aud_1",
++				      "top_apll1_ck", "top_mux_aud_2",
++				      "top_apll2_ck", "top_mux_aud_eng1",
++				      "top_apll1_d4", "top_mux_aud_eng2",
++				      "top_apll2_d4", "top_i2s0_m_sel",
++				      "top_i2s1_m_sel", "top_i2s2_m_sel",
++				      "top_i2s3_m_sel", "top_i2s4_m_sel",
++				      "top_i2s5_m_sel", "top_i2s6_m_sel",
++				      "top_i2s7_m_sel", "top_i2s8_m_sel",
++				      "top_i2s9_m_sel", "top_apll12_div0",
++				      "top_apll12_div1", "top_apll12_div2",
++				      "top_apll12_div3", "top_apll12_div4",
++				      "top_apll12_divb", "top_apll12_div5",
++				      "top_apll12_div6", "top_apll12_div7",
++				      "top_mux_audio_h", "top_clk26m_clk";
++		};
++	};
++
++	sound: sound {
++		compatible = "mediatek,mt6833-mt6359-sound";
++		mediatek,platform = <&afe>;
++		pinctrl-names = "aud_clk_mosi_off", "aud_clk_mosi_on", "aud_dat_mosi_off", "aud_dat_mosi_on", "aud_dat_miso_off", "aud_dat_miso_on", "aud_gpio_i2s3_off", "aud_gpio_i2s3_on", "aud_gpio_i2s0_off", "aud_gpio_i2s0_on";
++			pinctrl-0 = <&aud_clk_mosi_off>;
++			pinctrl-1 = <&aud_clk_mosi_on>;
++			pinctrl-2 = <&aud_dat_mosi_off>;
++			pinctrl-3 = <&aud_dat_mosi_on>;
++			pinctrl-4 = <&aud_dat_miso_off>;
++			pinctrl-5 = <&aud_dat_miso_on>;
++			pinctrl-6 = <&aud_gpio_i2s3_off>;
++			pinctrl-7 = <&aud_gpio_i2s3_on>;
++			pinctrl-8 = <&aud_gpio_i2s0_off>;
++			pinctrl-9 = <&aud_gpio_i2s0_on>;
++	};
++};
+diff --git a/drivers/clk/mediatek/Makefile b/drivers/clk/mediatek/Makefile
+index b6b5513b9..b91ac7b8e 100644
+--- a/drivers/clk/mediatek/Makefile
++++ b/drivers/clk/mediatek/Makefile
+@@ -125,7 +125,7 @@ obj-$(CONFIG_COMMON_CLK_MT8188_VPPSYS) += clk-mt8188-vpp0.o clk-mt8188-vpp1.o
+ obj-$(CONFIG_COMMON_CLK_MT8188_WPESYS) += clk-mt8188-wpe.o
+ obj-$(CONFIG_COMMON_CLK_MT6833) += clk-mt6833-apmixedsys.o clk-mt6833.o \
+ 				   clk-mt6833-imp_iic_wrap.o clk-mt6833-mfgcfg.o \
+-				   clk-mt6833-mcu.o
++				   clk-mt6833-mcu.o clk-mt6833-audsys.o
+ obj-$(CONFIG_COMMON_CLK_MT8192) += clk-mt8192-apmixedsys.o clk-mt8192.o
+ obj-$(CONFIG_COMMON_CLK_MT8192_AUDSYS) += clk-mt8192-aud.o
+ obj-$(CONFIG_COMMON_CLK_MT8192_CAMSYS) += clk-mt8192-cam.o
+diff --git a/drivers/clk/mediatek/clk-mt6833-audsys.c b/drivers/clk/mediatek/clk-mt6833-audsys.c
+new file mode 100644
+index 000000000..c9548ff44
+--- /dev/null
++++ b/drivers/clk/mediatek/clk-mt6833-audsys.c
+@@ -0,0 +1,125 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * MediaTek MT6833 audio subsystem clock gates.
++ * Gate table from the Samsung SM-A226B (MT6833) kernel source; the AFE
++ * (mediatek,mt6833-audio) is populated as a child, as on MT8192.
++ */
++
++#include <dt-bindings/clock/mt6833-clk.h>
++#include <linux/clk-provider.h>
++#include <linux/module.h>
++#include <linux/of_platform.h>
++#include <linux/platform_device.h>
++
++#include "clk-gate.h"
++#include "clk-mtk.h"
++
++static const struct mtk_gate_regs aud0_cg_regs = {
++	.set_ofs = 0x0,
++	.clr_ofs = 0x0,
++	.sta_ofs = 0x0,
++};
++
++static const struct mtk_gate_regs aud1_cg_regs = {
++	.set_ofs = 0x4,
++	.clr_ofs = 0x4,
++	.sta_ofs = 0x4,
++};
++
++static const struct mtk_gate_regs aud2_cg_regs = {
++	.set_ofs = 0x8,
++	.clr_ofs = 0x8,
++	.sta_ofs = 0x8,
++};
++
++#define GATE_AUD0(_id, _name, _parent, _shift)	\
++	GATE_MTK(_id, _name, _parent, &aud0_cg_regs, _shift, &mtk_clk_gate_ops_no_setclr)
++
++#define GATE_AUD1(_id, _name, _parent, _shift)	\
++	GATE_MTK(_id, _name, _parent, &aud1_cg_regs, _shift, &mtk_clk_gate_ops_no_setclr)
++
++#define GATE_AUD2(_id, _name, _parent, _shift)	\
++	GATE_MTK(_id, _name, _parent, &aud2_cg_regs, _shift, &mtk_clk_gate_ops_no_setclr)
++
++static const struct mtk_gate aud_clks[] = {
++	/* AUDSYS0 */
++	GATE_AUD0(CLK_AUDSYS_AFE, "aud_afe", "audio_sel", 2),
++	GATE_AUD0(CLK_AUDSYS_22M, "aud_22m", "aud_engen1_sel", 8),
++	GATE_AUD0(CLK_AUDSYS_24M, "aud_24m", "aud_engen2_sel", 9),
++	GATE_AUD0(CLK_AUDSYS_APLL2_TUNER, "aud_apll2_tuner", "aud_engen2_sel", 18),
++	GATE_AUD0(CLK_AUDSYS_APLL_TUNER, "aud_apll_tuner", "aud_engen1_sel", 19),
++	GATE_AUD0(CLK_AUDSYS_TDM, "aud_tdm_ck", "aud_1_sel", 20),
++	GATE_AUD0(CLK_AUDSYS_ADC, "aud_adc", "audio_sel", 24),
++	GATE_AUD0(CLK_AUDSYS_DAC, "aud_dac", "audio_sel", 25),
++	GATE_AUD0(CLK_AUDSYS_DAC_PREDIS, "aud_dac_predis", "audio_sel", 26),
++	GATE_AUD0(CLK_AUDSYS_TML, "aud_tml", "audio_sel", 27),
++	GATE_AUD0(CLK_AUDSYS_NLE, "aud_nle", "audio_sel", 28),
++	/* AUDSYS1 */
++	GATE_AUD1(CLK_AUDSYS_I2S1_BCLK, "aud_i2s1_bclk", "audio_sel", 4),
++	GATE_AUD1(CLK_AUDSYS_I2S2_BCLK, "aud_i2s2_bclk", "audio_sel", 5),
++	GATE_AUD1(CLK_AUDSYS_I2S3_BCLK, "aud_i2s3_bclk", "audio_sel", 6),
++	GATE_AUD1(CLK_AUDSYS_I2S4_BCLK, "aud_i2s4_bclk", "audio_sel", 7),
++	GATE_AUD1(CLK_AUDSYS_CONNSYS_I2S_ASRC, "aud_connsys_i2s_asrc", "audio_sel", 12),
++	GATE_AUD1(CLK_AUDSYS_GENERAL1_ASRC, "aud_general1_asrc", "audio_sel", 13),
++	GATE_AUD1(CLK_AUDSYS_GENERAL2_ASRC, "aud_general2_asrc", "audio_sel", 14),
++	GATE_AUD1(CLK_AUDSYS_DAC_HIRES, "aud_dac_hires", "audio_h_sel", 15),
++	GATE_AUD1(CLK_AUDSYS_ADC_HIRES, "aud_adc_hires", "audio_h_sel", 16),
++	GATE_AUD1(CLK_AUDSYS_ADC_HIRES_TML, "aud_adc_hires_tml", "audio_h_sel", 17),
++	GATE_AUD1(CLK_AUDSYS_ADDA6_ADC, "aud_adda6_adc", "audio_sel", 20),
++	GATE_AUD1(CLK_AUDSYS_ADDA6_ADC_HIRES, "aud_adda6_adc_hires", "audio_h_sel", 21),
++	GATE_AUD1(CLK_AUDSYS_3RD_DAC, "aud_3rd_dac", "audio_sel", 28),
++	GATE_AUD1(CLK_AUDSYS_3RD_DAC_PREDIS, "aud_3rd_dac_predis", "audio_sel", 29),
++	GATE_AUD1(CLK_AUDSYS_3RD_DAC_TML, "aud_3rd_dac_tml", "audio_sel", 30),
++	GATE_AUD1(CLK_AUDSYS_3RD_DAC_HIRES, "aud_3rd_dac_hires", "audio_h_sel", 31),
++	/* AUDSYS2 */
++	GATE_AUD2(CLK_AUDSYS_I2S5_BCLK, "aud_i2s5_bclk", "audio_sel", 0),
++	GATE_AUD2(CLK_AUDSYS_I2S6_BCLK, "aud_i2s6_bclk", "audio_sel", 1),
++	GATE_AUD2(CLK_AUDSYS_I2S7_BCLK, "aud_i2s7_bclk", "audio_sel", 2),
++	GATE_AUD2(CLK_AUDSYS_I2S8_BCLK, "aud_i2s8_bclk", "audio_sel", 3),
++	GATE_AUD2(CLK_AUDSYS_I2S9_BCLK, "aud_i2s9_bclk", "audio_sel", 4),
++};
++
++static const struct mtk_clk_desc aud_desc = {
++	.clks = aud_clks,
++	.num_clks = ARRAY_SIZE(aud_clks),
++};
++
++static int clk_mt6833_aud_probe(struct platform_device *pdev)
++{
++	int r;
++
++	r = mtk_clk_simple_probe(pdev);
++	if (r)
++		return r;
++
++	r = devm_of_platform_populate(&pdev->dev);
++	if (r)
++		mtk_clk_simple_remove(pdev);
++
++	return r;
++}
++
++static void clk_mt6833_aud_remove(struct platform_device *pdev)
++{
++	of_platform_depopulate(&pdev->dev);
++	mtk_clk_simple_remove(pdev);
++}
++
++static const struct of_device_id of_match_clk_mt6833_aud[] = {
++	{ .compatible = "mediatek,mt6833-audsys", .data = &aud_desc },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, of_match_clk_mt6833_aud);
++
++static struct platform_driver clk_mt6833_aud_drv = {
++	.probe = clk_mt6833_aud_probe,
++	.remove = clk_mt6833_aud_remove,
++	.driver = {
++		.name = "clk-mt6833-aud",
++		.of_match_table = of_match_clk_mt6833_aud,
++	},
++};
++module_platform_driver(clk_mt6833_aud_drv);
++
++MODULE_DESCRIPTION("MediaTek MT6833 audio subsystem clocks driver");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/pmdomain/mediatek/mt6833-pm-domains.h b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+index 923ab267f..e42d6a469 100644
+--- a/drivers/pmdomain/mediatek/mt6833-pm-domains.h
++++ b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+@@ -1,6 +1,6 @@
+ /* SPDX-License-Identifier: GPL-2.0-only */
+ /*
+- * MediaTek MT6833 (Dimensity 700) power domains - GPU (MFG) only for now.
++ * MediaTek MT6833 (Dimensity 700) power domains: GPU (MFG) and audio.
+  *
+  * The SPM MFG control/status layout and the MFG1 bus protection masks are
+  * the same as MT8192; MT6833 additionally gates the MFG1 AXI "way" in
+@@ -92,6 +92,22 @@ static const struct scpsys_domain_data scpsys_domain_data_mt6833[] = {
+ 		.sram_pdn_bits = GENMASK(8, 8),
+ 		.sram_pdn_ack_bits = GENMASK(12, 12),
+ 	},
++	[MT6833_POWER_DOMAIN_AUDIO] = {
++		.name = "audio",
++		.sta_mask = BIT(22),
++		.ctl_offs = 0x0358,
++		.pwr_sta_offs = 0x016c,
++		.pwr_sta2nd_offs = 0x0170,
++		.sram_pdn_bits = GENMASK(8, 8),
++		.sram_pdn_ack_bits = GENMASK(12, 12),
++		.bp_cfg = {
++			BUS_PROT_WR(INFRA,
++				    MT8192_TOP_AXI_PROT_EN_2_AUDIO,
++				    MT8192_TOP_AXI_PROT_EN_2_SET,
++				    MT8192_TOP_AXI_PROT_EN_2_CLR,
++				    MT8192_TOP_AXI_PROT_EN_2_STA1),
++		},
++	},
+ };
+ 
+ static const struct scpsys_soc_data mt6833_scpsys_data = {
+diff --git a/include/dt-bindings/power/mediatek,mt6833-power.h b/include/dt-bindings/power/mediatek,mt6833-power.h
+index 2a3f51ab4..5a0c1bd75 100644
+--- a/include/dt-bindings/power/mediatek,mt6833-power.h
++++ b/include/dt-bindings/power/mediatek,mt6833-power.h
+@@ -6,5 +6,6 @@
+ #define MT6833_POWER_DOMAIN_MFG1	1
+ #define MT6833_POWER_DOMAIN_MFG2	2
+ #define MT6833_POWER_DOMAIN_MFG3	3
++#define MT6833_POWER_DOMAIN_AUDIO	4
+ 
+ #endif /* _DT_BINDINGS_POWER_MT6833_POWER_H */
+diff --git a/sound/soc/mediatek/Kconfig b/sound/soc/mediatek/Kconfig
+index 4af7bbb58..662f10df7 100644
+--- a/sound/soc/mediatek/Kconfig
++++ b/sound/soc/mediatek/Kconfig
+@@ -297,6 +297,15 @@ config SND_SOC_MT8192
+ 	  Select Y if you have such device.
+ 	  If unsure select "N".
+ 
++config SND_SOC_MT6833_MT6359
++	tristate "ASoC Audio driver for MT6833 with MT6359 codec"
++	depends on SND_SOC_MT8192 && MTK_PMIC_WRAP
++	select SND_SOC_MT6359
++	help
++	  This adds the ASoC machine driver for MediaTek MT6833 (Dimensity 700)
++	  phones with the MT6359 audio codec. The MT6833 AFE is driven by the
++	  MT8192 AFE driver.
++
+ config SND_SOC_MT8192_MT6359_RT1015_RT5682
+ 	tristate "ASoC Audio driver for MT8192 with MT6359 RT1015 RT5682 codec"
+ 	depends on I2C && GPIOLIB
+diff --git a/sound/soc/mediatek/mt8192/Makefile b/sound/soc/mediatek/mt8192/Makefile
+index d60c36bcd..f5fe1de61 100644
+--- a/sound/soc/mediatek/mt8192/Makefile
++++ b/sound/soc/mediatek/mt8192/Makefile
+@@ -14,3 +14,4 @@ snd-soc-mt8192-afe-y := \
+ obj-$(CONFIG_SND_SOC_MT8192) += snd-soc-mt8192-afe.o
+ obj-$(CONFIG_SND_SOC_MT8192_MT6359_RT1015_RT5682) += \
+ 	mt8192-mt6359-rt1015-rt5682.o
++obj-$(CONFIG_SND_SOC_MT6833_MT6359) += mt6833-mt6359.o
+diff --git a/sound/soc/mediatek/mt8192/mt6833-mt6359.c b/sound/soc/mediatek/mt8192/mt6833-mt6359.c
+new file mode 100644
+index 000000000..c9e8894ee
+--- /dev/null
++++ b/sound/soc/mediatek/mt8192/mt6833-mt6359.c
+@@ -0,0 +1,434 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * MT6833 (Dimensity 700) + MT6359 ALSA SoC machine driver.
++ *
++ * The MT6833 AFE is register compatible with MT8192 and is driven by the
++ * MT8192 AFE driver. This card is a reduced MT8192/MT6359 card: earpiece,
++ * headset and microphones through MT6359 (ADDA), the loudspeaker amplifier
++ * on I2S3 (with I/V sense on I2S0).
++ *
++ * MTKAIF calibration from mt8192-mt6359-rt1015-rt5682.c.
++ */
++
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/pm_runtime.h>
++#include <sound/pcm_params.h>
++#include <sound/soc.h>
++
++#include "../../codecs/mt6359.h"
++#include "../common/mtk-afe-platform-driver.h"
++#include "../common/mtk-soc-card.h"
++#include "../common/mtk-soundcard-driver.h"
++#include "mt8192-afe-common.h"
++#include "mt8192-afe-clk.h"
++#include "mt8192-afe-gpio.h"
++
++#define DRIVER_NAME "mt6833_mt6359"
++
++static int mt6833_mt6359_mtkaif_calibration(struct snd_soc_pcm_runtime *rtd)
++{
++	struct snd_soc_component *cmpnt_afe =
++		snd_soc_rtdcom_lookup(rtd, AFE_PCM_NAME);
++	struct snd_soc_component *cmpnt_codec =
++		snd_soc_rtd_to_codec(rtd, 0)->component;
++	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt_afe);
++	struct mt8192_afe_private *afe_priv = afe->platform_priv;
++	int phase;
++	unsigned int monitor;
++	int test_done_1, test_done_2, test_done_3;
++	int cycle_1, cycle_2, cycle_3;
++	int prev_cycle_1, prev_cycle_2, prev_cycle_3;
++	int chosen_phase_1, chosen_phase_2, chosen_phase_3;
++	int counter;
++	int mtkaif_calib_ok;
++
++	pm_runtime_get_sync(afe->dev);
++	mt8192_afe_gpio_request(afe->dev, true, MT8192_DAI_ADDA, 1);
++	mt8192_afe_gpio_request(afe->dev, true, MT8192_DAI_ADDA, 0);
++	mt8192_afe_gpio_request(afe->dev, true, MT8192_DAI_ADDA_CH34, 1);
++	mt8192_afe_gpio_request(afe->dev, true, MT8192_DAI_ADDA_CH34, 0);
++
++	mt6359_mtkaif_calibration_enable(cmpnt_codec);
++
++	/* set clock protocol 2 */
++	regmap_update_bits(afe->regmap, AFE_AUD_PAD_TOP, 0xff, 0x38);
++	regmap_update_bits(afe->regmap, AFE_AUD_PAD_TOP, 0xff, 0x39);
++
++	/* set test type to synchronizer pulse */
++	regmap_update_bits(afe_priv->topckgen,
++			   CKSYS_AUD_TOP_CFG, 0xffff, 0x4);
++
++	mtkaif_calib_ok = true;
++	afe_priv->mtkaif_calibration_num_phase = 42;	/* mt6359: 0 ~ 42 */
++	afe_priv->mtkaif_chosen_phase[0] = -1;
++	afe_priv->mtkaif_chosen_phase[1] = -1;
++	afe_priv->mtkaif_chosen_phase[2] = -1;
++
++	for (phase = 0;
++	     phase <= afe_priv->mtkaif_calibration_num_phase &&
++	     mtkaif_calib_ok;
++	     phase++) {
++		mt6359_set_mtkaif_calibration_phase(cmpnt_codec,
++						    phase, phase, phase);
++
++		regmap_update_bits(afe_priv->topckgen,
++				   CKSYS_AUD_TOP_CFG, 0x1, 0x1);
++
++		test_done_1 = 0;
++		test_done_2 = 0;
++		test_done_3 = 0;
++		cycle_1 = -1;
++		cycle_2 = -1;
++		cycle_3 = -1;
++		counter = 0;
++		while (test_done_1 == 0 ||
++		       test_done_2 == 0 ||
++		       test_done_3 == 0) {
++			regmap_read(afe_priv->topckgen,
++				    CKSYS_AUD_TOP_MON, &monitor);
++
++			test_done_1 = (monitor >> 28) & 0x1;
++			test_done_2 = (monitor >> 29) & 0x1;
++			test_done_3 = (monitor >> 30) & 0x1;
++			if (test_done_1 == 1)
++				cycle_1 = monitor & 0xf;
++
++			if (test_done_2 == 1)
++				cycle_2 = (monitor >> 4) & 0xf;
++
++			if (test_done_3 == 1)
++				cycle_3 = (monitor >> 8) & 0xf;
++
++			/* handle if never test done */
++			if (++counter > 10000) {
++				dev_err(afe->dev, "%s(), test fail, cycle_1 %d, cycle_2 %d, cycle_3 %d, monitor 0x%x\n",
++					__func__,
++					cycle_1, cycle_2, cycle_3, monitor);
++				mtkaif_calib_ok = false;
++				break;
++			}
++		}
++
++		if (phase == 0) {
++			prev_cycle_1 = cycle_1;
++			prev_cycle_2 = cycle_2;
++			prev_cycle_3 = cycle_3;
++		}
++
++		if (cycle_1 != prev_cycle_1 &&
++		    afe_priv->mtkaif_chosen_phase[0] < 0) {
++			afe_priv->mtkaif_chosen_phase[0] = phase - 1;
++			afe_priv->mtkaif_phase_cycle[0] = prev_cycle_1;
++		}
++
++		if (cycle_2 != prev_cycle_2 &&
++		    afe_priv->mtkaif_chosen_phase[1] < 0) {
++			afe_priv->mtkaif_chosen_phase[1] = phase - 1;
++			afe_priv->mtkaif_phase_cycle[1] = prev_cycle_2;
++		}
++
++		if (cycle_3 != prev_cycle_3 &&
++		    afe_priv->mtkaif_chosen_phase[2] < 0) {
++			afe_priv->mtkaif_chosen_phase[2] = phase - 1;
++			afe_priv->mtkaif_phase_cycle[2] = prev_cycle_3;
++		}
++
++		regmap_update_bits(afe_priv->topckgen,
++				   CKSYS_AUD_TOP_CFG, 0x1, 0x0);
++
++		if (afe_priv->mtkaif_chosen_phase[0] >= 0 &&
++		    afe_priv->mtkaif_chosen_phase[1] >= 0 &&
++		    afe_priv->mtkaif_chosen_phase[2] >= 0)
++			break;
++	}
++
++	if (afe_priv->mtkaif_chosen_phase[0] < 0)
++		chosen_phase_1 = 0;
++	else
++		chosen_phase_1 = afe_priv->mtkaif_chosen_phase[0];
++
++	if (afe_priv->mtkaif_chosen_phase[1] < 0)
++		chosen_phase_2 = 0;
++	else
++		chosen_phase_2 = afe_priv->mtkaif_chosen_phase[1];
++
++	if (afe_priv->mtkaif_chosen_phase[2] < 0)
++		chosen_phase_3 = 0;
++	else
++		chosen_phase_3 = afe_priv->mtkaif_chosen_phase[2];
++
++	mt6359_set_mtkaif_calibration_phase(cmpnt_codec,
++					    chosen_phase_1,
++					    chosen_phase_2,
++					    chosen_phase_3);
++
++	/* disable rx fifo */
++	regmap_update_bits(afe->regmap, AFE_AUD_PAD_TOP, 0xff, 0x38);
++
++	mt6359_mtkaif_calibration_disable(cmpnt_codec);
++
++	mt8192_afe_gpio_request(afe->dev, false, MT8192_DAI_ADDA, 1);
++	mt8192_afe_gpio_request(afe->dev, false, MT8192_DAI_ADDA, 0);
++	mt8192_afe_gpio_request(afe->dev, false, MT8192_DAI_ADDA_CH34, 1);
++	mt8192_afe_gpio_request(afe->dev, false, MT8192_DAI_ADDA_CH34, 0);
++	pm_runtime_put(afe->dev);
++
++	dev_dbg(afe->dev, "%s(), mtkaif_chosen_phase[0/1/2]:%d/%d/%d\n",
++		__func__,
++		afe_priv->mtkaif_chosen_phase[0],
++		afe_priv->mtkaif_chosen_phase[1],
++		afe_priv->mtkaif_chosen_phase[2]);
++
++	return 0;
++}
++
++static int mt6833_mt6359_init(struct snd_soc_pcm_runtime *rtd)
++{
++	struct snd_soc_component *cmpnt_afe =
++		snd_soc_rtdcom_lookup(rtd, AFE_PCM_NAME);
++	struct snd_soc_component *cmpnt_codec =
++		snd_soc_rtd_to_codec(rtd, 0)->component;
++	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt_afe);
++	struct mt8192_afe_private *afe_priv = afe->platform_priv;
++
++	/* set mtkaif protocol */
++	mt6359_set_mtkaif_protocol(cmpnt_codec,
++				   MT6359_MTKAIF_PROTOCOL_2_CLK_P2);
++	afe_priv->mtkaif_protocol = MTKAIF_PROTOCOL_2_CLK_P2;
++
++	/* mtkaif calibration */
++	mt6833_mt6359_mtkaif_calibration(rtd);
++
++	return 0;
++}
++
++static int mt6833_i2s_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
++				      struct snd_pcm_hw_params *params)
++{
++	/* fix BE i2s format to S24_LE, clean param mask first */
++	snd_mask_reset_range(hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT),
++			     0, (__force unsigned int)SNDRV_PCM_FORMAT_LAST);
++
++	params_set_format(params, SNDRV_PCM_FORMAT_S24_LE);
++
++	return 0;
++}
++
++/* FE */
++SND_SOC_DAILINK_DEFS(playback1,
++		     DAILINK_COMP_ARRAY(COMP_CPU("DL1")),
++		     DAILINK_COMP_ARRAY(COMP_DUMMY()),
++		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
++
++SND_SOC_DAILINK_DEFS(playback2,
++		     DAILINK_COMP_ARRAY(COMP_CPU("DL2")),
++		     DAILINK_COMP_ARRAY(COMP_DUMMY()),
++		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
++
++SND_SOC_DAILINK_DEFS(playback3,
++		     DAILINK_COMP_ARRAY(COMP_CPU("DL3")),
++		     DAILINK_COMP_ARRAY(COMP_DUMMY()),
++		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
++
++SND_SOC_DAILINK_DEFS(capture1,
++		     DAILINK_COMP_ARRAY(COMP_CPU("UL1")),
++		     DAILINK_COMP_ARRAY(COMP_DUMMY()),
++		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
++
++SND_SOC_DAILINK_DEFS(capture2,
++		     DAILINK_COMP_ARRAY(COMP_CPU("UL2")),
++		     DAILINK_COMP_ARRAY(COMP_DUMMY()),
++		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
++
++SND_SOC_DAILINK_DEFS(primary_codec,
++		     DAILINK_COMP_ARRAY(COMP_CPU("ADDA")),
++		     DAILINK_COMP_ARRAY(COMP_CODEC("mt6359-sound",
++						   "mt6359-snd-codec-aif1")),
++		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
++
++SND_SOC_DAILINK_DEFS(primary_codec_ch34,
++		     DAILINK_COMP_ARRAY(COMP_CPU("ADDA_CH34")),
++		     DAILINK_COMP_ARRAY(COMP_CODEC("mt6359-sound",
++						   "mt6359-snd-codec-aif2")),
++		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
++
++/* Speaker amplifier (RT5509) and its I/V sense: dummy until it is ported */
++SND_SOC_DAILINK_DEFS(i2s3,
++		     DAILINK_COMP_ARRAY(COMP_CPU("I2S3")),
++		     DAILINK_COMP_ARRAY(COMP_DUMMY()),
++		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
++
++SND_SOC_DAILINK_DEFS(i2s0,
++		     DAILINK_COMP_ARRAY(COMP_CPU("I2S0")),
++		     DAILINK_COMP_ARRAY(COMP_DUMMY()),
++		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
++
++static struct snd_soc_dai_link mt6833_mt6359_dai_links[] = {
++	/* Front End DAI links */
++	{
++		.name = "Playback_1",
++		.stream_name = "Playback_1",
++		.trigger = {SND_SOC_DPCM_TRIGGER_PRE,
++			    SND_SOC_DPCM_TRIGGER_PRE},
++		.dynamic = 1,
++		.playback_only = 1,
++		.ops = &mtk_soundcard_common_playback_ops,
++		SND_SOC_DAILINK_REG(playback1),
++	},
++	{
++		.name = "Playback_2",
++		.stream_name = "Playback_2",
++		.trigger = {SND_SOC_DPCM_TRIGGER_PRE,
++			    SND_SOC_DPCM_TRIGGER_PRE},
++		.dynamic = 1,
++		.playback_only = 1,
++		.ops = &mtk_soundcard_common_playback_ops,
++		SND_SOC_DAILINK_REG(playback2),
++	},
++	{
++		.name = "Playback_3",
++		.stream_name = "Playback_3",
++		.trigger = {SND_SOC_DPCM_TRIGGER_PRE,
++			    SND_SOC_DPCM_TRIGGER_PRE},
++		.dynamic = 1,
++		.playback_only = 1,
++		.ops = &mtk_soundcard_common_playback_ops,
++		SND_SOC_DAILINK_REG(playback3),
++	},
++	{
++		.name = "Capture_1",
++		.stream_name = "Capture_1",
++		.trigger = {SND_SOC_DPCM_TRIGGER_PRE,
++			    SND_SOC_DPCM_TRIGGER_PRE},
++		.dynamic = 1,
++		.capture_only = 1,
++		.ops = &mtk_soundcard_common_capture_ops,
++		SND_SOC_DAILINK_REG(capture1),
++	},
++	{
++		.name = "Capture_2",
++		.stream_name = "Capture_2",
++		.trigger = {SND_SOC_DPCM_TRIGGER_PRE,
++			    SND_SOC_DPCM_TRIGGER_PRE},
++		.dynamic = 1,
++		.capture_only = 1,
++		.ops = &mtk_soundcard_common_capture_ops,
++		SND_SOC_DAILINK_REG(capture2),
++	},
++	/* Back End DAI links */
++	{
++		.name = "Primary Codec",
++		.no_pcm = 1,
++		.ignore_suspend = 1,
++		.init = mt6833_mt6359_init,
++		SND_SOC_DAILINK_REG(primary_codec),
++	},
++	{
++		.name = "Primary Codec CH34",
++		.no_pcm = 1,
++		.ignore_suspend = 1,
++		SND_SOC_DAILINK_REG(primary_codec_ch34),
++	},
++	{
++		.name = "I2S3",
++		.no_pcm = 1,
++		.playback_only = 1,
++		.ignore_suspend = 1,
++		.be_hw_params_fixup = mt6833_i2s_hw_params_fixup,
++		SND_SOC_DAILINK_REG(i2s3),
++	},
++	{
++		.name = "I2S0",
++		.no_pcm = 1,
++		.capture_only = 1,
++		.ignore_suspend = 1,
++		.be_hw_params_fixup = mt6833_i2s_hw_params_fixup,
++		SND_SOC_DAILINK_REG(i2s0),
++	},
++};
++
++static struct snd_soc_card mt6833_mt6359_card = {
++	.driver_name = DRIVER_NAME,
++	.owner = THIS_MODULE,
++	.dai_link = mt6833_mt6359_dai_links,
++	.num_links = ARRAY_SIZE(mt6833_mt6359_dai_links),
++};
++
++static int mt6833_mt6359_soc_card_probe(struct mtk_soc_card_data *soc_card_data,
++					bool legacy)
++{
++	struct snd_soc_card *card = soc_card_data->card_data->card;
++	int ret;
++
++	ret = mt8192_afe_gpio_init(card->dev);
++	if (ret)
++		return dev_err_probe(card->dev, ret, "%s init gpio error\n", __func__);
++
++	return 0;
++}
++
++static const unsigned int mt6833_pcm_playback_channels[] = { 1, 2 };
++static const unsigned int mt6833_pcm_playback_rates[] = { 48000 };
++
++static const unsigned int mt6833_pcm_capture_channels[] = { 1, 2, 4 };
++static const unsigned int mt6833_pcm_capture_rates[] = {
++	8000, 16000, 32000, 48000, 96000, 192000
++};
++
++static const struct mtk_pcm_constraints_data mt6833_pcm_constraints[MTK_CONSTRAINT_CAPTURE + 1] = {
++	[MTK_CONSTRAINT_PLAYBACK] = {
++		.channels =  &(const struct snd_pcm_hw_constraint_list) {
++			.list = mt6833_pcm_playback_channels,
++			.count = ARRAY_SIZE(mt6833_pcm_playback_channels)
++		},
++		.rates =  &(const struct snd_pcm_hw_constraint_list) {
++			.list = mt6833_pcm_playback_rates,
++			.count = ARRAY_SIZE(mt6833_pcm_playback_rates)
++		}
++	},
++	[MTK_CONSTRAINT_CAPTURE] = {
++		.channels =  &(const struct snd_pcm_hw_constraint_list) {
++			.list = mt6833_pcm_capture_channels,
++			.count = ARRAY_SIZE(mt6833_pcm_capture_channels)
++		},
++		.rates =  &(const struct snd_pcm_hw_constraint_list) {
++			.list = mt6833_pcm_capture_rates,
++			.count = ARRAY_SIZE(mt6833_pcm_capture_rates)
++		}
++	}
++};
++
++static const struct mtk_soundcard_pdata mt6833_mt6359_pdata = {
++	.card_name = "mt6833-mt6359",
++	.card_data = &(struct mtk_platform_card_data) {
++		.card = &mt6833_mt6359_card,
++		.pcm_constraints = mt6833_pcm_constraints,
++		.num_pcm_constraints = ARRAY_SIZE(mt6833_pcm_constraints),
++	},
++	.soc_probe = mt6833_mt6359_soc_card_probe,
++};
++
++static const struct of_device_id mt6833_mt6359_dt_match[] = {
++	{ .compatible = "mediatek,mt6833-mt6359-sound", .data = &mt6833_mt6359_pdata },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, mt6833_mt6359_dt_match);
++
++static const struct dev_pm_ops mt6833_mt6359_pm_ops = {
++	.poweroff = snd_soc_poweroff,
++	.restore = snd_soc_resume,
++};
++
++static struct platform_driver mt6833_mt6359_driver = {
++	.driver = {
++		.name = DRIVER_NAME,
++		.of_match_table = mt6833_mt6359_dt_match,
++		.pm = &mt6833_mt6359_pm_ops,
++	},
++	.probe = mtk_soundcard_common_probe,
++};
++module_platform_driver(mt6833_mt6359_driver);
++
++MODULE_DESCRIPTION("MT6833-MT6359 ALSA SoC machine driver");
++MODULE_LICENSE("GPL");
+diff --git a/sound/soc/mediatek/mt8192/mt8192-afe-pcm.c b/sound/soc/mediatek/mt8192/mt8192-afe-pcm.c
+index db0ae44a8..2424c0401 100644
+--- a/sound/soc/mediatek/mt8192/mt8192-afe-pcm.c
++++ b/sound/soc/mediatek/mt8192/mt8192-afe-pcm.c
+@@ -2203,7 +2203,7 @@ static int mt8192_afe_pcm_dev_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* reset controller to reset audio regs before regmap cache */
+-	rstc = devm_reset_control_get_exclusive(dev, "audiosys");
++	rstc = devm_reset_control_get_optional_exclusive(dev, "audiosys");
+ 	if (IS_ERR(rstc))
+ 		return dev_err_probe(dev, PTR_ERR(rstc), "could not get audiosys reset\n");
+ 
+@@ -2327,6 +2327,7 @@ static void mt8192_afe_pcm_dev_remove(struct platform_device *pdev)
+ }
+ 
+ static const struct of_device_id mt8192_afe_pcm_dt_match[] = {
++	{ .compatible = "mediatek,mt6833-audio", },
+ 	{ .compatible = "mediatek,mt8192-audio", },
+ 	{},
+ };

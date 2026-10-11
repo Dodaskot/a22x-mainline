@@ -1,0 +1,19 @@
+#!/bin/sh
+# /usr/lib/systemd/system-sleep/a22x: recover USB attachment after s2idle.
+# v88/#64 handles the boot-enabled watchdog during suspend; CPU-off and
+# cluster-off can remain enabled. Keep mem_sleep on s2idle: SYSTEM_SUSPEND
+# deep still causes a cold reboot on this firmware.
+case "$1" in
+post)
+	G=/sys/kernel/config/usb_gadget/g1
+	if [ -e "$G/UDC" ] && [ -n "$(cat $G/UDC)" ]; then
+		udc=$(cat $G/UDC)
+		sleep 1
+		if [ "$(cat /sys/class/udc/$udc/state 2>/dev/null)" = "not attached" ] &&
+		   [ "$(cat /sys/class/power_supply/mt6360-chg.5.auto/online 2>/dev/null)" = 1 ]; then
+			echo > $G/UDC; sleep 1; echo "$udc" > $G/UDC
+		fi
+	fi
+	;;
+esac
+exit 0

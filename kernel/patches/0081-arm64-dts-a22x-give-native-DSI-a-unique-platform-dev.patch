@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 20:26:40 +0200
+Subject: [PATCH 081/131] arm64: dts: a22x: give native DSI a unique platform
+ device name
+
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts    | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+index 64f654e9d..58ef01e1b 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x-native-display.dts
+@@ -83,7 +83,7 @@ mipi_tx0_ml: phy@11e50000 {
+ 			clock-output-names = "mipi_tx0_ml_pll";
+ 		};
+ 
+-		dsi0_ml: dsi@14013000 {
++		dsi0_ml: dsi-ml@14013000 {
+ 			compatible = "mediatek,mt6833-dsi-cphy";
+ 			reg = <0 0x14013000 0 0x1000>;
+ 			interrupts = <GIC_SPI 269 IRQ_TYPE_LEVEL_HIGH>;

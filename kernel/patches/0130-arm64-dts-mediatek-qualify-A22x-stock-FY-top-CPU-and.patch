@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 10 Oct 2026 16:00:00 +0200
+Subject: [PATCH 130/131] arm64: dts: mediatek: qualify A22x stock FY top CPU
+ and CCI frequencies
+
+Extend the qualified voltage ceiling to the two stock FY OPPs (big
+cluster 2.203 GHz) with nominal CCI dependencies (1.131 GHz). GPU and
+RAM limits are unchanged.
+
+Signed-off-by: Dodaskot <pessdres@gmail.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 25 +++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 3c2fd10fe..d81fecc22 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -1084,6 +1084,18 @@ cci_opp_975: opp-975000000 {
+ 			opp-hz = /bits/ 64 <975000000>;
+ 			opp-microvolt = <825000>;
+ 		};
++
++		cci_opp_1050: opp-1050000000 {
++			phandle = <0xf132>;
++			opp-hz = /bits/ 64 <1050000000>;
++			opp-microvolt = <850000>;
++		};
++
++		cci_opp_1131: opp-1131000000 {
++			phandle = <0xf133>;
++			opp-hz = /bits/ 64 <1131000000>;
++			opp-microvolt = <875000>;
++		};
+ 	};
+ 
+ 	cluster0_opp: opp-table-cluster0 {
+@@ -1286,6 +1298,19 @@ opp-2000000000 {
+ 			opp-microvolt = <900000>;
+ 			required-opps = <&cci_opp_975>;
+ 		};
++
++		/* This handset only: qualify against captured FY EEM data. */
++		opp-2087000000 {
++			opp-hz = /bits/ 64 <2087000000>;
++			opp-microvolt = <900000>;
++			required-opps = <&cci_opp_1050>;
++		};
++
++		opp-2203000000 {
++			opp-hz = /bits/ 64 <2203000000>;
++			opp-microvolt = <900000>;
++			required-opps = <&cci_opp_1131>;
++		};
+ 	};
+ };
+ 

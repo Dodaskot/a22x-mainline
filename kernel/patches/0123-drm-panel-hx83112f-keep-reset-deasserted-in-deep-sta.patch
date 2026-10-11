@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Fri, 9 Oct 2026 14:28:32 +0200
+Subject: [PATCH 123/131] drm/panel: hx83112f: keep reset deasserted in deep
+ standby by default
+
+Driving RESX low after entering deep standby takes the controller out of
+deep standby while IOVCC stays powered. The vendor driver leaves reset
+high here. Nine same-boot 120 s suspend measurements on the A22 5G showed
+lower suspend current with reset kept high in every comparison (mean
+13.06 vs 14.04 mA, pair differences 0.17-1.60 mA). prepare() still
+asserts reset before the rails come back.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ drivers/gpu/drm/panel/panel-himax-hx83112f.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/panel/panel-himax-hx83112f.c b/drivers/gpu/drm/panel/panel-himax-hx83112f.c
+index 09977fd9a..0bf1d9f79 100644
+--- a/drivers/gpu/drm/panel/panel-himax-hx83112f.c
++++ b/drivers/gpu/drm/panel/panel-himax-hx83112f.c
+@@ -249,7 +249,7 @@ static int hx83112f_disable(struct drm_panel *panel)
+ 	return 0;
+ }
+ 
+-static bool keep_reset_in_standby;
++static bool keep_reset_in_standby = true;
+ module_param(keep_reset_in_standby, bool, 0644);
+ MODULE_PARM_DESC(keep_reset_in_standby,
+ 		 "Leave reset deasserted after deep standby, as the vendor driver does");

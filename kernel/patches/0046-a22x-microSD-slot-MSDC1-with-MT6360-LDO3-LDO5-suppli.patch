@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 22:24:43 +0200
+Subject: [PATCH 046/131] a22x: microSD slot (MSDC1) with MT6360 LDO3/LDO5
+ supplies
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 73 +++++++++++++++++++
+ 1 file changed, 73 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 108c57843..44308b59c 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -212,6 +212,32 @@ pins-cols {
+ 			};
+ 		};
+ 
++		/* SD card slot (MSDC1); vendor drive strength 8 mA */
++		mmc1_pins: mmc1-pins {
++			pins-cmd-dat {
++				pinmux = <PINMUX_GPIO126__FUNC_MSDC1_CMD>,
++					 <PINMUX_GPIO128__FUNC_MSDC1_DAT0>,
++					 <PINMUX_GPIO127__FUNC_MSDC1_DAT1>,
++					 <PINMUX_GPIO129__FUNC_MSDC1_DAT2>,
++					 <PINMUX_GPIO130__FUNC_MSDC1_DAT3>;
++				input-enable;
++				drive-strength = <8>;
++				bias-pull-up;
++			};
++
++			pins-clk {
++				pinmux = <PINMUX_GPIO125__FUNC_MSDC1_CLK>;
++				drive-strength = <8>;
++				bias-pull-down;
++			};
++
++			pins-cd {
++				pinmux = <PINMUX_GPIO4__FUNC_GPIO4>;
++				input-enable;
++				bias-pull-up;
++			};
++		};
++
+ 		mmc0_pins: mmc0-pins {
+ 			pins-bus {
+ 				pinmux = <PINMUX_GPIO65__FUNC_MSDC0_DSL>,
+@@ -262,6 +288,33 @@ mmc0: mmc@11230000 {
+ 		no-sdio;
+ 	};
+ 
++	/* microSD slot: VMC (I/O, MT6360 LDO3) and VMCH (card, MT6360 LDO5) */
++	mmc1: mmc@11240000 {
++		compatible = "mediatek,mt8183-mmc";
++		reg = <0 0x11240000 0 0x1000>,
++		      <0 0x11c70000 0 0x1000>;
++		interrupts = <0 103 4>;
++		clocks = <&topckgen CLK_TOP_MSDC30_1_SEL>,
++			 <&infracfg_ao CLK_IFRAO_MSDC1>,
++			 <&infracfg_ao CLK_IFRAO_MSDC1_SRC>;
++		clock-names = "source", "hclk", "source_cg";
++		pinctrl-names = "default", "state_uhs";
++		pinctrl-0 = <&mmc1_pins>;
++		pinctrl-1 = <&mmc1_pins>;
++		bus-width = <4>;
++		max-frequency = <200000000>;
++		cap-sd-highspeed;
++		sd-uhs-sdr12;
++		sd-uhs-sdr25;
++		sd-uhs-sdr50;
++		sd-uhs-sdr104;
++		cd-gpios = <&pio_ml 4 GPIO_ACTIVE_HIGH>;
++		vmmc-supply = <&mt6360_ldo5>;
++		vqmmc-supply = <&mt6360_ldo3>;
++		no-sdio;
++		no-mmc;
++	};
++
+ 	u2phy: t-phy@11e40000 {
+ 		compatible = "mediatek,mt6833-tphy", "mediatek,generic-tphy-v2";
+ 		#address-cells = <1>;
+@@ -393,6 +446,26 @@ mt6360_adc: adc {
+ 				#io-channel-cells = <1>;
+ 			};
+ 
++			/*
++			 * Only the SD card supplies are described; the other
++			 * MT6360 rails keep their bootloader state.
++			 */
++			regulator {
++				compatible = "mediatek,mt6360-regulator";
++
++				mt6360_ldo3: ldo3 {
++					regulator-name = "vmc";
++					regulator-min-microvolt = <1800000>;
++					regulator-max-microvolt = <3300000>;
++				};
++
++				mt6360_ldo5: ldo5 {
++					regulator-name = "vmch";
++					regulator-min-microvolt = <3300000>;
++					regulator-max-microvolt = <3300000>;
++				};
++			};
++
+ 			/* Leaves ICHG/AICR/CV as set by the bootloader (stock: 2 A / 0.5 A / 4.4 V). */
+ 			mt6360_chg: charger {
+ 				compatible = "mediatek,mt6360-chg";

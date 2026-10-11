@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sun, 4 Oct 2026 22:17:37 +0200
+Subject: [PATCH 070/131] arm64: dts: a22x: physical panel size for simpledrm
+
+Without it simpledrm reports 285x637 mm (96 dpi) and size-aware clients
+such as the Phosh on-screen keyboard draw far too small. Values from the
+stock panel driver (68.43 x 152.57 mm).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 0c2280c5a..bfc098cbf 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -51,9 +51,19 @@ framebuffer@7c9b0000 {
+ 			stride = <(1088 * 4)>;
+ 			format = "a8r8g8b8";
+ 			backlight = <&backlight>;
++			panel = <&fb_panel>;
+ 		};
+ 	};
+ 
++	/*
++	 * Physical size for simpledrm (else it assumes 96 dpi and the on-screen
++	 * keyboard gets far too thin): 68.43 x 152.57 mm in the stock panel driver.
++	 */
++	fb_panel: simplefb-panel {
++		width-mm = <68>;
++		height-mm = <152>;
++	};
++
+ 	pio_ml: pinctrl@10005000 {
+ 		compatible = "mediatek,mt6833-pinctrl";
+ 		reg = <0 0x10005000 0 0x1000>,

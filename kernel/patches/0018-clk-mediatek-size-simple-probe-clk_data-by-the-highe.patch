@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Sat, 3 Oct 2026 10:38:21 +0200
+Subject: [PATCH 018/131] clk: mediatek: size simple-probe clk_data by the
+ highest binding ID
+
+Bindings with sparse IDs (MT6833 infracfg_ao: 79 gates, IDs up to 115)
+left high-numbered clocks unreachable through the onecell provider.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ drivers/clk/mediatek/clk-mtk.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/drivers/clk/mediatek/clk-mtk.c b/drivers/clk/mediatek/clk-mtk.c
+index 3dfdd3a42..fa2158267 100644
+--- a/drivers/clk/mediatek/clk-mtk.c
++++ b/drivers/clk/mediatek/clk-mtk.c
+@@ -464,6 +464,26 @@ void mtk_clk_unregister_dividers(const struct mtk_clk_divider *mcds, int num,
+ }
+ EXPORT_SYMBOL_GPL(mtk_clk_unregister_dividers);
+ 
++#define MTK_DESC_MAX_ID(_arr, _num, _max)				\
++	do {								\
++		size_t _i;						\
++		for (_i = 0; _arr && _i < (_num); _i++)			\
++			_max = max_t(int, _max, (_arr)[_i].id);		\
++	} while (0)
++
++static int mtk_clk_desc_max_id(const struct mtk_clk_desc *mcd)
++{
++	int max_id = -1;
++
++	MTK_DESC_MAX_ID(mcd->clks, mcd->num_clks, max_id);
++	MTK_DESC_MAX_ID(mcd->composite_clks, mcd->num_composite_clks, max_id);
++	MTK_DESC_MAX_ID(mcd->divider_clks, mcd->num_divider_clks, max_id);
++	MTK_DESC_MAX_ID(mcd->fixed_clks, mcd->num_fixed_clks, max_id);
++	MTK_DESC_MAX_ID(mcd->factor_clks, mcd->num_factor_clks, max_id);
++	MTK_DESC_MAX_ID(mcd->mux_clks, mcd->num_mux_clks, max_id);
++	return max_id;
++}
++
+ static int __mtk_clk_simple_probe(struct platform_device *pdev,
+ 				  struct device_node *node)
+ {
+@@ -513,6 +533,8 @@ static int __mtk_clk_simple_probe(struct platform_device *pdev,
+ 	num_clks = mcd->num_clks + mcd->num_composite_clks;
+ 	num_clks += mcd->num_fixed_clks + mcd->num_factor_clks;
+ 	num_clks += mcd->num_mux_clks + mcd->num_divider_clks;
++	/* Binding IDs may be sparse: make room for the highest one. */
++	num_clks = max(num_clks, mtk_clk_desc_max_id(mcd) + 1);
+ 
+ 	clk_data = mtk_alloc_clk_data(num_clks);
+ 	if (!clk_data) {

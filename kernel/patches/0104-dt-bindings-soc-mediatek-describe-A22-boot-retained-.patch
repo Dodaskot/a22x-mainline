@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 6 Oct 2026 20:41:59 +0200
+Subject: [PATCH 104/131] dt-bindings: soc: mediatek: describe A22
+ boot-retained MMPLL
+
+---
+ .../bindings/soc/mediatek/mediatek,mt6833-lpm.yaml           | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt6833-lpm.yaml b/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt6833-lpm.yaml
+index 0105a822e..6d9b0dc70 100644
+--- a/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt6833-lpm.yaml
++++ b/Documentation/devicetree/bindings/soc/mediatek/mediatek,mt6833-lpm.yaml
+@@ -46,8 +46,8 @@ properties:
+     description: Existing reserved MCUPM shared DRAM, at least 0x110568 bytes
+ 
+   clocks:
+-    description: Unused board peripheral clocks retained by the bootloader
+-    maxItems: 13
++    description: Unused board clocks retained by the bootloader
++    maxItems: 14
+ 
+   clock-names:
+     items:
+@@ -64,6 +64,7 @@ properties:
+       - const: boot-mdp-wrot0
+       - const: boot-mdp-wrot1
+       - const: boot-mdp-fake0
++      - const: boot-mmpll
+ 
+   mediatek,firmware-config:
+     $ref: /schemas/types.yaml#/definitions/phandle

@@ -1,0 +1,652 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Fri, 2 Oct 2026 23:04:15 +0200
+Subject: [PATCH 001/131] arm64: dts: mediatek: add minimal MT6833 and Samsung
+ Galaxy A22 5G (a22x)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/boot/dts/mediatek/Makefile         |   2 +
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 315 ++++++++++++++++++
+ arch/arm64/boot/dts/mediatek/mt6833.dtsi      | 297 +++++++++++++++++
+ 3 files changed, 614 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+ create mode 100644 arch/arm64/boot/dts/mediatek/mt6833.dtsi
+
+diff --git a/arch/arm64/boot/dts/mediatek/Makefile b/arch/arm64/boot/dts/mediatek/Makefile
+index a86fb313b..0cfb46619 100644
+--- a/arch/arm64/boot/dts/mediatek/Makefile
++++ b/arch/arm64/boot/dts/mediatek/Makefile
+@@ -6,6 +6,8 @@ dtb-$(CONFIG_ARCH_MEDIATEK) += mt6795-evb.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt6795-sony-xperia-m5.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt6797-evb.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt6797-x20-dev.dtb
++dtb-$(CONFIG_ARCH_MEDIATEK) += mt6833-samsung-a22x.dtb
++DTC_FLAGS_mt6833-samsung-a22x := -@
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7622-rfb1.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7622-bananapi-bpi-r64.dtb
+ dtb-$(CONFIG_ARCH_MEDIATEK) += mt7981b-cudy-wr3000-v1.dtb
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+new file mode 100644
+index 000000000..ab04e9c05
+--- /dev/null
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -0,0 +1,315 @@
++// SPDX-License-Identifier: (GPL-2.0-only OR MIT)
++/*
++ * Samsung Galaxy A22 5G (SM-A226B, "a22x") - minimal mainline bring-up.
++ *
++ * The bootloader (LK) loads this DTB from the boot image and then applies
++ * the stock dtbo.img overlay on top of it. That overlay references the
++ * labels below, so they exist as empty stubs under a node without a
++ * "compatible" property; nothing under it is ever instantiated.
++ */
++
++/dts-v1/;
++#include "mt6833.dtsi"
++
++/ {
++	model = "Samsung Galaxy A22 5G (SM-A226B)";
++	compatible = "samsung,a22x", "mediatek,mt6833";
++
++	aliases {
++		serial0 = &uart0;
++	};
++
++	chosen: chosen {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
++		stdout-path = "serial0:921600n8";
++		/* LK asserts (bootargs.c: fdt_bootargs) if these are missing. */
++		bootargs = "console=ttyS0,921600n8";
++		kaslr-seed = <0 0>;
++
++		framebuffer0: framebuffer@7c9b0000 {
++			compatible = "simple-framebuffer";
++			reg = <0 0x7c9b0000 0 (1088 * 2408 * 4)>;
++			width = <1080>;
++			height = <2408>;
++			stride = <(1088 * 4)>;
++			format = "a8r8g8b8";
++			memory-region = <&framebuffer_mem>;
++		};
++	};
++
++	memory@40000000 {
++		device_type = "memory";
++		/* Fixed up by LK with the real mblock layout. */
++		reg = <0 0x40000000 0x1 0x00000000>;
++	};
++
++	reserved-memory {
++		framebuffer_mem: framebuffer@7c9b0000 {
++			reg = <0 0x7c9b0000 0 0x1e50000>;
++			no-map;
++		};
++	};
++
++	lk-dtbo-stubs {
++		accdet: accdet {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		auxadc: auxadc {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		bat_gm30: bat-gm30 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		camera_af_hw_node: camera-af-hw-node {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		charger: charger {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		dispsys_config: dispsys-config {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		dsi0: dsi0 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		dsi_te: dsi-te {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		finger_fp: finger-fp {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		gpio: gpio {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		gpio_usage_mapping: gpio-usage-mapping {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		gps: gps {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c0: i2c0 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c1: i2c1 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c2: i2c2 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c3: i2c3 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c4: i2c4 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c5: i2c5 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c6: i2c6 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c7: i2c7 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c8: i2c8 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c9: i2c9 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		kd_camera_hw1: kd-camera-hw1 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		keypad: keypad {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		lk_charger: lk-charger {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		md1_sim1_hot_plug_eint: md1-sim1-hot-plug-eint {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		md_auxadc: md-auxadc {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		mrdump_ext_rst: mrdump-ext-rst {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		msdc1_ins: msdc1-ins {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		mt6360_ldo: mt6360-ldo {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		mt6360_pmic: mt6360-pmic {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		mt6360_pmu: mt6360-pmu {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		mt6360_typec: mt6360-typec {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		mtkfb: mtkfb {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		mt_pmic_vcamio_ldo_reg: mt-pmic-vcamio-ldo-reg {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		mt_pmic_vfp_ldo_reg: mt-pmic-vfp-ldo-reg {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		mt_pmic_vio28_ldo_reg: mt-pmic-vio28-ldo-reg {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		mt_pmic_vtp_ldo_reg: mt-pmic-vtp-ldo-reg {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		odm: odm {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		pio: pio {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		pmic_clock_buffer_ctrl: pmic-clock-buffer-ctrl {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		sound: sound {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		spi1: spi1 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		spi5: spi5 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		subpmic_pmu_eint: subpmic-pmu-eint {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		swtp: swtp {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		swtp_1: swtp-1 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		swtp_2: swtp-2 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		swtp_3: swtp-3 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		swtp_4: swtp-4 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		touch: touch {
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++	};
++};
++
++&uart0 {
++	status = "okay";
++};
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833.dtsi b/arch/arm64/boot/dts/mediatek/mt6833.dtsi
+new file mode 100644
+index 000000000..488604494
+--- /dev/null
++++ b/arch/arm64/boot/dts/mediatek/mt6833.dtsi
+@@ -0,0 +1,297 @@
++// SPDX-License-Identifier: (GPL-2.0-only OR MIT)
++/*
++ * MediaTek MT6833 (Dimensity 700) - minimal bring-up SoC description.
++ * Register map and interrupts taken from the stock A226BXXSBDZC3 device tree.
++ */
++
++#include <dt-bindings/interrupt-controller/arm-gic.h>
++#include <dt-bindings/interrupt-controller/irq.h>
++
++/ {
++	compatible = "mediatek,mt6833";
++	interrupt-parent = <&gic>;
++	#address-cells = <2>;
++	#size-cells = <2>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu0: cpu@0 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a55";
++			reg = <0x000>;
++			enable-method = "psci";
++		};
++
++		cpu1: cpu@100 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a55";
++			reg = <0x100>;
++			enable-method = "psci";
++		};
++
++		cpu2: cpu@200 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a55";
++			reg = <0x200>;
++			enable-method = "psci";
++		};
++
++		cpu3: cpu@300 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a55";
++			reg = <0x300>;
++			enable-method = "psci";
++		};
++
++		cpu4: cpu@400 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a55";
++			reg = <0x400>;
++			enable-method = "psci";
++		};
++
++		cpu5: cpu@500 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a55";
++			reg = <0x500>;
++			enable-method = "psci";
++		};
++
++		cpu6: cpu@600 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a76";
++			reg = <0x600>;
++			enable-method = "psci";
++		};
++
++		cpu7: cpu@700 {
++			device_type = "cpu";
++			compatible = "arm,cortex-a76";
++			reg = <0x700>;
++			enable-method = "psci";
++		};
++
++		cpu-map {
++			cluster0 {
++				core0 { cpu = <&cpu0>; };
++				core1 { cpu = <&cpu1>; };
++				core2 { cpu = <&cpu2>; };
++				core3 { cpu = <&cpu3>; };
++				core4 { cpu = <&cpu4>; };
++				core5 { cpu = <&cpu5>; };
++				core6 { cpu = <&cpu6>; };
++				core7 { cpu = <&cpu7>; };
++			};
++		};
++	};
++
++	clk26m: oscillator-26m {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <26000000>;
++		clock-output-names = "clk26m";
++	};
++
++	psci {
++		compatible = "arm,psci-1.0";
++		method = "smc";
++	};
++
++	timer {
++		compatible = "arm,armv8-timer";
++		interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH 0>,
++			     <GIC_PPI 14 IRQ_TYPE_LEVEL_HIGH 0>,
++			     <GIC_PPI 11 IRQ_TYPE_LEVEL_HIGH 0>,
++			     <GIC_PPI 10 IRQ_TYPE_LEVEL_HIGH 0>;
++		clock-frequency = <13000000>;
++	};
++
++	reserved-memory {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
++
++		ram-console@48080000 {
++			reg = <0 0x48080000 0 0x10000>;
++			no-map;
++		};
++
++		ramoops@48090000 {
++			compatible = "ramoops";
++			reg = <0 0x48090000 0 0xe0000>;
++			console-size = <0x40000>;
++			pmsg-size = <0x10000>;
++			record-size = <0x8000>;
++			no-map;
++		};
++
++		minirdump@48170000 {
++			reg = <0 0x48170000 0 0x10000>;
++			no-map;
++		};
++
++		lk-addr-mrdump@48200000 {
++			reg = <0 0x48200000 0 0x400000>;
++			no-map;
++		};
++
++		atf-reserved@48c00000 {
++			reg = <0 0x48c00000 0 0x200000>;
++			no-map;
++		};
++
++		spm-reserved@769f0000 {
++			reg = <0 0x769f0000 0 0x10000>;
++			no-map;
++		};
++
++		tee-reserved@76a00000 {
++			reg = <0 0x76a00000 0 0x4000000>;
++			no-map;
++		};
++
++		tee-secmem@7aa00000 {
++			reg = <0 0x7aa00000 0 0x600000>;
++			no-map;
++		};
++
++		gz-log@7e800000 {
++			reg = <0 0x7e800000 0 0x41000>;
++			no-map;
++		};
++
++		mcupm-reserved@7e900000 {
++			reg = <0 0x7e900000 0 0x100000>;
++			no-map;
++		};
++
++		gz@7ea00000 {
++			reg = <0 0x7ea00000 0 0x1400000>;
++			no-map;
++		};
++
++		sspm-reserved@7feb0000 {
++			reg = <0 0x7feb0000 0 0x100000>;
++			no-map;
++		};
++
++		emi-mbist-buf@7ffff000 {
++			reg = <0 0x7ffff000 0 0x1000>;
++			no-map;
++		};
++
++		ap-md-c-smem@8a000000 {
++			reg = <0 0x8a000000 0 0x2960000>;
++			no-map;
++		};
++
++		ap-md-nc-smem@8e000000 {
++			reg = <0 0x8e000000 0 0x1c0000>;
++			no-map;
++		};
++
++		scp-reserved@b9600000 {
++			reg = <0 0xb9600000 0 0x300000>;
++			no-map;
++		};
++
++		picachu@bfd00000 {
++			reg = <0 0xbfd00000 0 0x80000>;
++			no-map;
++		};
++
++		atf-log-reserved@bfe00000 {
++			reg = <0 0xbfe00000 0 0x40000>;
++			no-map;
++		};
++
++		ccci-tag-mem@bff60000 {
++			reg = <0 0xbff60000 0 0x10000>;
++			no-map;
++		};
++
++		atf-ramdump-reserved@bff70000 {
++			reg = <0 0xbff70000 0 0x80000>;
++			no-map;
++		};
++
++		dramc-rk0@bffff000 {
++			reg = <0 0xbffff000 0 0x1000>;
++			no-map;
++		};
++
++		md-mem-usage@e0000000 {
++			reg = <0 0xe0000000 0 0x2010000>;
++			no-map;
++		};
++
++		md-mem-usage@e25b0000 {
++			reg = <0 0xe25b0000 0 0x10000>;
++			no-map;
++		};
++
++		md-mem-usage@e3000000 {
++			reg = <0 0xe3000000 0 0x120000>;
++			no-map;
++		};
++
++		md-mem-usage@e4000000 {
++			reg = <0 0xe4000000 0 0x6b90000>;
++			no-map;
++		};
++
++		md-mem-usage@fafa0000 {
++			reg = <0 0xfafa0000 0 0x2360000>;
++			no-map;
++		};
++
++		dpm-reserved@ffe60000 {
++			reg = <0 0xffe60000 0 0x190000>;
++			no-map;
++		};
++
++	};
++
++	soc {
++		compatible = "simple-bus";
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
++
++		watchdog: watchdog@10007000 {
++			compatible = "mediatek,mt6833-wdt", "mediatek,mt6589-wdt";
++			reg = <0 0x10007000 0 0x1000>;
++		};
++
++		gic: interrupt-controller@c000000 {
++			compatible = "arm,gic-v3";
++			#interrupt-cells = <4>;
++			#redistributor-regions = <1>;
++			interrupt-parent = <&gic>;
++			interrupt-controller;
++			reg = <0 0x0c000000 0 0x40000>,
++			      <0 0x0c040000 0 0x200000>;
++			interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH 0>;
++		};
++
++		uart0: serial@11002000 {
++			compatible = "mediatek,mt6833-uart", "mediatek,mt6577-uart";
++			reg = <0 0x11002000 0 0x1000>;
++			interrupts = <GIC_SPI 109 IRQ_TYPE_LEVEL_HIGH 0>;
++			clocks = <&clk26m>, <&clk26m>;
++			clock-names = "baud", "bus";
++			status = "disabled";
++		};
++
++		uart1: serial@11003000 {
++			compatible = "mediatek,mt6833-uart", "mediatek,mt6577-uart";
++			reg = <0 0x11003000 0 0x1000>;
++			interrupts = <GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH 0>;
++			clocks = <&clk26m>, <&clk26m>;
++			clock-names = "baud", "bus";
++			status = "disabled";
++		};
++	};
++};

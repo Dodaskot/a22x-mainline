@@ -1,0 +1,200 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 20:34:04 +0200
+Subject: [PATCH 082/131] drm/mediatek: release MT6833 display domain when the
+ panel is off
+
+---
+ drivers/gpu/drm/mediatek/mtk_dsi.c | 42 +++++++++++++++++++++++-------
+ drivers/soc/mediatek/mtk-mutex.c   | 22 +++++++++++++++-
+ 2 files changed, 54 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/gpu/drm/mediatek/mtk_dsi.c b/drivers/gpu/drm/mediatek/mtk_dsi.c
+index b6b246902..1d478fc69 100644
+--- a/drivers/gpu/drm/mediatek/mtk_dsi.c
++++ b/drivers/gpu/drm/mediatek/mtk_dsi.c
+@@ -12,6 +12,7 @@
+ #include <linux/of_platform.h>
+ #include <linux/phy/phy.h>
+ #include <linux/platform_device.h>
++#include <linux/pm_runtime.h>
+ #include <linux/reset.h>
+ #include <linux/units.h>
+ 
+@@ -224,6 +225,7 @@ struct mtk_dsi {
+ 	struct videomode vm;
+ 	struct mtk_phy_timing phy_timing;
+ 	int refcount;
++	int irq;
+ 	bool enabled;
+ 	bool lanes_ready;
+ 	u32 irq_data;
+@@ -804,9 +806,15 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
+ 		goto err_refcount;
+ 	}
+ 
++	if (dsi->driver_data->is_cphy) {
++		ret = pm_runtime_resume_and_get(dev);
++		if (ret < 0)
++			goto err_refcount;
++	}
++
+ 	ret = phy_power_on(dsi->phy);
+ 	if (ret)
+-		goto err_refcount;
++		goto err_runtime_pm;
+ 
+ 	ret = clk_prepare_enable(dsi->engine_clk);
+ 	if (ret < 0) {
+@@ -827,10 +835,14 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
+ 		       dsi->regs + dsi->driver_data->reg_shadow_dbg_off);
+ 
+ 	mtk_dsi_reset_engine(dsi);
+-	if (dsi->driver_data->is_cphy)
++	if (dsi->driver_data->is_cphy) {
++		/* LK may leave video mode set while the reset engine is stopped. */
++		mtk_dsi_stop(dsi);
++		mtk_dsi_set_cmd_mode(dsi);
+ 		mtk_dsi_cphy_timconfig(dsi);
+-	else
++	} else {
+ 		mtk_dsi_phy_timconfig(dsi);
++	}
+ 
+ 	mtk_dsi_ps_control(dsi, true);
+ 	mtk_dsi_set_vm_cmd(dsi);
+@@ -842,6 +854,9 @@ static int mtk_dsi_poweron(struct mtk_dsi *dsi)
+ 	clk_disable_unprepare(dsi->engine_clk);
+ err_phy_power_off:
+ 	phy_power_off(dsi->phy);
++err_runtime_pm:
++	if (dsi->driver_data->is_cphy)
++		pm_runtime_put_sync(dev);
+ err_refcount:
+ 	dsi->refcount--;
+ 	return ret;
+@@ -877,6 +892,7 @@ static void mtk_dsi_poweroff(struct mtk_dsi *dsi)
+ 	if (dsi->driver_data->is_cphy) {
+ 		writel(0, dsi->regs + DSI_INTEN);
+ 		writel(0, dsi->regs + DSI_INTSTA);
++		synchronize_irq(dsi->irq);
+ 	}
+ 
+ 	clk_disable_unprepare(dsi->engine_clk);
+@@ -885,6 +901,8 @@ static void mtk_dsi_poweroff(struct mtk_dsi *dsi)
+ 	phy_power_off(dsi->phy);
+ 
+ 	dsi->lanes_ready = false;
++	if (dsi->driver_data->is_cphy)
++		pm_runtime_put_sync(dsi->host.dev);
+ }
+ 
+ static void mtk_output_dsi_enable(struct mtk_dsi *dsi)
+@@ -1371,20 +1389,26 @@ static int mtk_dsi_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, dsi);
+ 
+-	ret = mipi_dsi_host_register(&dsi->host);
+-	if (ret < 0)
+-		return dev_err_probe(dev, ret, "Failed to register DSI host\n");
+-
++	dsi->irq = irq_num;
+ 	ret = devm_request_irq(&pdev->dev, irq_num, mtk_dsi_irq,
+ 			       IRQF_TRIGGER_NONE, dev_name(&pdev->dev), dsi);
+-	if (ret) {
+-		mipi_dsi_host_unregister(&dsi->host);
++	if (ret)
+ 		return dev_err_probe(&pdev->dev, ret, "Failed to request DSI irq\n");
++
++	if (dsi->driver_data->is_cphy) {
++		ret = devm_pm_runtime_enable(dev);
++		if (ret)
++			return ret;
+ 	}
+ 
+ 	dsi->bridge.of_node = dev->of_node;
+ 	dsi->bridge.type = DRM_MODE_CONNECTOR_DSI;
+ 
++	/* Panel attachment can immediately trigger a DRM modeset. */
++	ret = mipi_dsi_host_register(&dsi->host);
++	if (ret < 0)
++		return dev_err_probe(dev, ret, "Failed to register DSI host\n");
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/soc/mediatek/mtk-mutex.c b/drivers/soc/mediatek/mtk-mutex.c
+index b6f3c90f7..1a169aa19 100644
+--- a/drivers/soc/mediatek/mtk-mutex.c
++++ b/drivers/soc/mediatek/mtk-mutex.c
+@@ -8,6 +8,7 @@
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
++#include <linux/pm_runtime.h>
+ #include <linux/regmap.h>
+ #include <linux/soc/mediatek/mtk-mmsys.h>
+ #include <linux/soc/mediatek/mtk-mutex.h>
+@@ -356,6 +357,7 @@ struct mtk_mutex_data {
+ 	const u16 mutex_mod1_reg;
+ 	const u16 mutex_sof_reg;
+ 	const bool no_clk;
++	bool need_runtime_pm;
+ };
+ 
+ struct mtk_mutex_ctx {
+@@ -789,6 +791,7 @@ static const struct mtk_mutex_data mt6833_mutex_driver_data = {
+ 	.mutex_mod_reg = 0x30,
+ 	.mutex_mod1_reg = 0x34,
+ 	.mutex_sof_reg = 0x2c,
++	.need_runtime_pm = true,
+ };
+ 
+ static const struct mtk_mutex_data mt8183_mutex_driver_data = {
+@@ -895,7 +898,19 @@ int mtk_mutex_prepare(struct mtk_mutex *mutex)
+ {
+ 	struct mtk_mutex_ctx *mtx = container_of(mutex, struct mtk_mutex_ctx,
+ 						 mutex[mutex->id]);
+-	return clk_prepare_enable(mtx->clk);
++	int ret;
++
++	if (mtx->data->need_runtime_pm) {
++		ret = pm_runtime_resume_and_get(mtx->dev);
++		if (ret < 0)
++			return ret;
++	}
++
++	ret = clk_prepare_enable(mtx->clk);
++	if (ret && mtx->data->need_runtime_pm)
++		pm_runtime_put_sync(mtx->dev);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(mtk_mutex_prepare);
+ 
+@@ -904,6 +919,8 @@ void mtk_mutex_unprepare(struct mtk_mutex *mutex)
+ 	struct mtk_mutex_ctx *mtx = container_of(mutex, struct mtk_mutex_ctx,
+ 						 mutex[mutex->id]);
+ 	clk_disable_unprepare(mtx->clk);
++	if (mtx->data->need_runtime_pm)
++		pm_runtime_put_sync(mtx->dev);
+ }
+ EXPORT_SYMBOL_GPL(mtk_mutex_unprepare);
+ 
+@@ -1121,6 +1138,7 @@ static int mtk_mutex_probe(struct platform_device *pdev)
+ 	mtx = devm_kzalloc(dev, sizeof(*mtx), GFP_KERNEL);
+ 	if (!mtx)
+ 		return -ENOMEM;
++	mtx->dev = dev;
+ 
+ 	for (i = 0; i < MTK_MUTEX_MAX_HANDLES; i++)
+ 		mtx->mutex[i].id = i;
+@@ -1146,6 +1164,8 @@ static int mtk_mutex_probe(struct platform_device *pdev)
+ 		dev_dbg(dev, "No mediatek,gce-client-reg!\n");
+ 
+ 	platform_set_drvdata(pdev, mtx);
++	if (mtx->data->need_runtime_pm)
++		return devm_pm_runtime_enable(dev);
+ 
+ 	return 0;
+ }

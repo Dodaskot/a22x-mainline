@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Mon, 5 Oct 2026 21:10:32 +0200
+Subject: [PATCH 088/131] pmdomain: mediatek: use the DISP rather than MDP
+ status bit on MT6833
+
+---
+ drivers/pmdomain/mediatek/mt6833-pm-domains.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pmdomain/mediatek/mt6833-pm-domains.h b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+index 9f359551c..46de4bda7 100644
+--- a/drivers/pmdomain/mediatek/mt6833-pm-domains.h
++++ b/drivers/pmdomain/mediatek/mt6833-pm-domains.h
+@@ -112,7 +112,7 @@ static const struct scpsys_domain_data scpsys_domain_data_mt6833[] = {
+ 		.name = "disp",
+ 		/* MM gate registers must only be accessed after bus release. */
+ 		.caps = MTK_SCPD_STRICT_BUS_PROTECTION,
+-		.sta_mask = BIT(20),
++		.sta_mask = BIT(21),
+ 		.ctl_offs = 0x0354,
+ 		.pwr_sta_offs = 0x016c,
+ 		.pwr_sta2nd_offs = 0x0170,
