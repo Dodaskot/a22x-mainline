@@ -46,8 +46,10 @@ Details: [docs/HARDWARE.md](docs/HARDWARE.md).
 
 ```
 kernel/patches/   131 patches on top of Linux v7.2 (git am), with series file
+                  (as a git tree: github.com/Dodaskot/linux-a22x, branch a22x)
 kernel/config/    full accepted .config (a22x-v135.config) + config fragments
 kernel/build.sh   clone v7.2, apply the series, build Image.gz/DTBs/modules
+kernel/update-patches.sh  regenerate kernel/patches from the kernel tree
 conn/             MediaTek connectivity drivers (WMT, BTIF, gen4m Wi-Fi, BT HCI)
                   ported out-of-tree from the Samsung GPL release, + systemd units
 boot/             mkboot.sh (boot.img for stock LK), initramfs init, flash.sh

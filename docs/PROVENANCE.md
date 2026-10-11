@@ -12,6 +12,8 @@ Baseline: **accepted v135 boot image, kernel build #95, conn95** (2026-10-10).
 - Resulting source tree: `18506838c317511d077c911278dc33fe13721d6b`
   (`git rev-parse HEAD^{tree}` after `git am`).
 - `kernel/config/a22x-v135.config`: the `.config` of build #95.
+- Git tree: https://github.com/Dodaskot/linux-a22x, tag `a22x-v135`
+  (commit `d8e9901c4064dd491e7643cf001d5b32ac75a227`, same tree).
 
 Verification: `mt6833-samsung-a22x-nfc-experimental.dtb` built from this
 tree is byte-identical to the DTB inside the flashed v135 image
