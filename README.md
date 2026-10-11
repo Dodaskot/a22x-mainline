@@ -50,6 +50,7 @@ boot/             mkboot.sh (boot.img for stock LK), initramfs init, flash.sh
 rootfs/           ALSA UCM profile, feedbackd theme
 tools/            bring-up helpers (memtool, clock/DT generators, smoke test)
 docs/             building/flashing guide, hardware notes, provenance
+releases/v135/    prebuilt boot.img + matching conn modules (Git LFS)
 ```
 
 ## Quick start
@@ -61,6 +62,9 @@ BUSYBOX=... HIMAX_FW=... boot/build-initramfs.sh
 OUT=$PWD/kernel/out boot/mkboot.sh v135      # -> boot/images/boot-mainline-v135.img
 boot/flash.sh boot/images/boot-mainline-v135.img   # phone in Download mode
 ```
+
+A prebuilt v135 `boot.img` and matching Wi-Fi/BT modules are in
+[releases/v135](releases/v135/README.md).
 
 Full instructions, the root filesystem layout and rollback:
 [docs/BUILDING.md](docs/BUILDING.md).
