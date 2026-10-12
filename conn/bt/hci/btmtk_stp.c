@@ -176,7 +176,15 @@ static int btmtk_stp_flush(struct hci_dev *hdev)
  * HCI_Read_Synchronization_Train_Parameters with "unknown command", which
  * aborts controller init. Answer it locally with the spec defaults.
  */
-static bool btmtk_stp_fake_cmd(struct hci_dev *hdev, struct sk_buff *skb)
+static bool btmtk_stp_is_fake_cmd(struct sk_buff *skb)
+{
+	return hci_skb_pkt_type(skb) == HCI_COMMAND_PKT &&
+	       skb->len >= HCI_COMMAND_HDR_SIZE &&
+	       get_unaligned_le16(skb->data) == HCI_OP_READ_SYNC_TRAIN_PARAMS;
+}
+
+/* Consumes @skb only on success; on error hci_send_frame() frees it. */
+static int btmtk_stp_fake_cmd(struct hci_dev *hdev, struct sk_buff *skb)
 {
 	struct {
 		struct hci_event_hdr hdr;
@@ -190,10 +198,6 @@ static bool btmtk_stp_fake_cmd(struct hci_dev *hdev, struct sk_buff *skb)
 	} __packed ev;
 	struct sk_buff *evskb;
 
-	if (hci_skb_pkt_type(skb) != HCI_COMMAND_PKT || skb->len < HCI_COMMAND_HDR_SIZE ||
-	    get_unaligned_le16(skb->data) != HCI_OP_READ_SYNC_TRAIN_PARAMS)
-		return false;
-
 	ev.hdr.evt = HCI_EV_CMD_COMPLETE;
 	ev.hdr.plen = sizeof(ev) - sizeof(ev.hdr);
 	ev.cc.ncmd = 1;
@@ -204,27 +208,29 @@ static bool btmtk_stp_fake_cmd(struct hci_dev *hdev, struct sk_buff *skb)
 	ev.rp.service_data = 0;
 
 	evskb = bt_skb_alloc(sizeof(ev), GFP_KERNEL);
-	if (evskb) {
-		hci_skb_pkt_type(evskb) = HCI_EVENT_PKT;
-		skb_put_data(evskb, &ev, sizeof(ev));
-		hci_recv_frame(hdev, evskb);
-	}
+	if (!evskb)
+		return -ENOMEM;	/* fails the command now instead of timing out */
+	hci_skb_pkt_type(evskb) = HCI_EVENT_PKT;
+	skb_put_data(evskb, &ev, sizeof(ev));
+	hci_recv_frame(hdev, evskb);
 	kfree_skb(skb);
-	return true;
+	return 0;
 }
 
+/*
+ * Ownership of @skb: freed here on success only. On a negative return
+ * hci_send_frame() frees it, so error paths must leave it alone.
+ */
 static int btmtk_stp_send(struct hci_dev *hdev, struct sk_buff *skb)
 {
 	struct btmtk_stp *bt = hci_get_drvdata(hdev);
 	int len = skb->len + 1, ret;
 
-	if (btmtk_stp_fake_cmd(hdev, skb))
-		return 0;
+	if (btmtk_stp_is_fake_cmd(skb))
+		return btmtk_stp_fake_cmd(hdev, skb);
 
-	if (len > sizeof(bt->tx_buf)) {
-		kfree_skb(skb);
+	if (len > sizeof(bt->tx_buf))
 		return -EMSGSIZE;
-	}
 	bt->tx_buf[0] = hci_skb_pkt_type(skb);
 	skb_copy_bits(skb, 0, bt->tx_buf + 1, skb->len);
 
@@ -235,7 +241,6 @@ static int btmtk_stp_send(struct hci_dev *hdev, struct sk_buff *skb)
 	if (ret != len) {
 		bt_dev_err(hdev, "STP send failed (%d of %d)", ret, len);
 		hdev->stat.err_tx++;
-		kfree_skb(skb);
 		return -EIO;
 	}
 	hdev->stat.byte_tx += skb->len;
