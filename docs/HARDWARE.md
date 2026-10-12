@@ -23,7 +23,7 @@ runs are not the same as long daily-use reliability.
 | Light / proximity | basic | own MN78911 driver, power-on configuration, lux scale is an estimate |
 | Torch / vibration | OK | MT6360 FLED1 (`white:flash`), VIBR LDO at 3.3 V |
 | Keys / RTC | OK | power, volume keys, MT6359 RTC |
-| Sleep | guarded | s2idle with CPU/cluster off, 26 MHz off >99 % of the sleep, display/radio recovery verified in instrumented cycles. Not yet an automatic everyday power policy. `deep` (SYSTEM_SUSPEND) reboots. |
+| Sleep | works in tests, not automatic yet | s2idle with CPU/cluster off, 26 MHz off >99 % of the sleep, display/radio recovery verified in instrumented cycles. Measured sleep current about 11.3 mA (build #89, USB unplugged, series of 120 s RTC-timed sleeps, phone fuel gauge charge counter); stock Android about 7.3–7.9 mA. The development setup still keeps a sleep inhibitor and test gates: automatic suspend with safe quiesce/recovery of all devices is not enabled yet. `deep` (SYSTEM_SUSPEND) reboots. |
 | NFC | reader/writer works | Samsung S3NRN82 on I2C3 (`-nfc-experimental` DTB, the default). Reading and writing ISO-DEP Type 4 tags verified; a PolygoCard transit card was read with its data. No card emulation, so no contactless payments or banking apps. Not yet integrated with sleep: NFC is powered down during suspend, so holding a card to the phone does not wake it. |
 | Modem / SIM | not working | MD1 power domain is owned and parked; CCCI bring-up in progress outside this baseline |
 | Camera | not working | |

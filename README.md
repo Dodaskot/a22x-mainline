@@ -40,7 +40,7 @@ verified against the image that runs on the test handset.
 | Battery | MT6359 fuel gauge (coulomb counter), MT6360 charger |
 | Sensors | ICM-40607 IMU (auto-rotate), MMC5603 magnetometer, MN78911 light/proximity (uncalibrated) |
 | Misc | torch, vibration, volume/power keys, RTC |
-| Sleep | s2idle with CPU-off/cluster-off and 26 MHz-off in guarded, instrumented cycles; automatic everyday power policy is not finished |
+| Sleep | deep s2idle (CPU/cluster off, 26 MHz off) works in instrumented test cycles at about 11.3 mA (stock Android: about 7.3–7.9 mA); not yet enabled automatically for everyday use |
 | NFC | Samsung S3NRN82: reading and writing tags/cards works (e.g. a PolygoCard transit card); no contactless payments; a tag cannot wake the phone from sleep yet |
 
 Not working / not done: **cellular modem and SIM** (in progress, not part of
