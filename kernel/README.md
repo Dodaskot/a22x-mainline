@@ -21,6 +21,13 @@ https://github.com/Dodaskot/linux-a22x (fork of `torvalds/linux`)
 git clone -b a22x https://github.com/Dodaskot/linux-a22x
 ```
 
+Before building, `build.sh` checks the source tree: no unfinished
+`git am`/rebase/merge, no uncommitted or untracked changes, and exactly the
+diffs of `patches/` in order on top of `v7.2`. Otherwise it stops; it never
+resets or deletes anything. To build a tree with other changes on purpose,
+run `A22X_DEV_TREE=1 ./build.sh <tree>`; the output is then labelled as a
+developer tree, not the published baseline.
+
 ## Updating
 
 1. Commit the change on branch `a22x` of the kernel tree (one logical change
@@ -34,5 +41,6 @@ git clone -b a22x https://github.com/Dodaskot/linux-a22x
    - kernel: `git push origin a22x` (and a tag `a22x-vNNN` for accepted builds)
    - this repository: GitLab `origin` and GitHub `github`.
 
-Rebasing onto a newer Linux release changes the base: update `BASE`, the
-`v7.2` references in `build.sh` and in this file.
+Rebasing onto a newer Linux release changes the base: update `BASE` and
+`BASE_COMMIT` in `build.sh`, `BASE` in `update-patches.sh`, and the `v7.2`
+references in this file.
