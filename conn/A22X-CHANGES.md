@@ -33,3 +33,4 @@ Base: Samsung SM-A226B GPL release A226BXXSBDYA1 (kernel 4.14). Oldest first.
 - a22x: couple software CONN LP entry to hardware voter policy
 - wifi: axi: keep the HIF IRQ as a PM wake source during the suspend_fw_own handshake (`suspend_hif_wake`, default on)
 - Bluetooth: btmtk_stp: leave the skb to hci_send_frame() on send errors (double free); fail the faked Read Sync Train Params on allocation failure (after v135, not in conn95)
+- conn-start: fail on any failed step; report a partial bring-up instead of exiting 0 (after v135)
