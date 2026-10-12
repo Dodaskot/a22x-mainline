@@ -43,10 +43,15 @@ verified against the image that runs on the test handset.
 | Sleep | deep s2idle (CPU/cluster off, 26 MHz off) works in instrumented test cycles at about 11.3 mA (stock Android: about 7.3–7.9 mA); not yet enabled automatically for everyday use |
 | NFC | Samsung S3NRN82: reading and writing tags/cards works (e.g. a PolygoCard transit card); no contactless payments; a tag cannot wake the phone from sleep yet |
 
-Not working / not done: **cellular modem and SIM** — in progress, not part of
-this baseline: the modem is powered and started, passes the first handshake
-(HS1) and its early service requests are being answered, but it does not
-finish booting (HS2) yet, so no SIM, calls or data; camera, USB host, GPS and fingerprint (deferred).
+Not working / not done:
+
+- **Cellular modem and SIM** — in progress, not part of this baseline. The
+  modem is powered and started, passes the first handshake (HS1) and its
+  early service requests are being answered, but it does not finish booting
+  (HS2) yet, so there is no SIM, calls or mobile data.
+- Camera, USB host/OTG.
+- GPS and fingerprint (deferred).
+
 Details: [docs/HARDWARE.md](docs/HARDWARE.md).
 
 ## Repository layout
