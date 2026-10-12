@@ -1,6 +1,8 @@
 # Kernel
 
 The a22x kernel is Linux `v7.2` plus the commits in `patches/`.
+The patches were developed with heavy use of AI coding assistants (Claude
+and Codex) and tested on the real phone.
 
 The same commits are published as a git tree:
 https://github.com/Dodaskot/linux-a22x (fork of `torvalds/linux`)
