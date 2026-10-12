@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Check a kernel .config against pmaports kconfigcheck.toml (alias 'community').
-usage: kconfigcheck.py kconfigcheck.toml .config KVER ARCH [alias]"""
+usage: kconfigcheck.py kconfigcheck.toml .config KVER ARCH [alias]
+Exit status: 0 all options match, 1 mismatches found, 2 usage error."""
 import re, sys, tomllib
 
+if len(sys.argv) not in (5, 6):
+    print(__doc__, file=sys.stderr)
+    sys.exit(2)
 toml_path, cfg_path, kver, arch = sys.argv[1:5]
 alias = sys.argv[5] if len(sys.argv) > 5 else "community"
 t = tomllib.load(open(toml_path, "rb"))
@@ -48,3 +52,4 @@ for cat in t["aliases"][alias]:
 for cat, opt, want, have in missing:
     print(f"{cat:28} CONFIG_{opt}: want {want!r}, have {have!r}")
 print(f"{len(missing)} mismatches", file=sys.stderr)
+sys.exit(1 if missing else 0)

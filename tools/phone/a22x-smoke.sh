@@ -3,10 +3,15 @@
 # Run as root:  sudo a22x-smoke.sh
 # Prints one OK/FAIL line per subsystem + up to 10 dmesg error lines
 # and saves the report to /var/log/a22x-smoke/smoke-<release>-b<build>-<time>.txt
-LOGDIR=/var/log/a22x-smoke
-mkdir -p "$LOGDIR"
+# Exit status: 0 all OK, 1 at least one FAIL, 2 report could not be written.
+# Data that cannot be read (dmesg, systemctl, sensors) counts as FAIL.
+LOGDIR=${A22X_SMOKE_LOGDIR:-/var/log/a22x-smoke}
 build=$(uname -v | sed -n 's/^#\([0-9]*\).*/\1/p')
 out="$LOGDIR/smoke-$(uname -r)-b${build:-x}-$(date +%Y%m%d-%H%M%S).txt"
+if ! mkdir -p "$LOGDIR" || ! : > "$out"; then
+	echo "cannot write $out (run as root)" >&2
+	exit 2
+fi
 n_fail=0
 
 line() {	# line OK|FAIL subsystem detail
@@ -17,11 +22,17 @@ line() {	# line OK|FAIL subsystem detail
 report() {
 echo "a22x smoke $(uname -r) $(uname -v | cut -c1-40) up=$(cut -d' ' -f1 /proc/uptime)s"
 
+# kernel log of this boot; without it fault/oops counts would read as 0
+if dm=$(dmesg 2>/dev/null); then dm_ok=1; else dm_ok=0; fi
+dmcount() {	# dmcount ERE -> matching line count, or "?" without dmesg
+	if [ "$dm_ok" -eq 1 ]; then printf '%s\n' "$dm" | grep -c -E "$1"; else echo '?'; fi
+}
+
 # GPU: panfrost bound, devfreq alive, no MMU/job faults this boot
 gpu=$(for c in /sys/class/drm/card*; do basename "$(readlink -f "$c/device/driver" 2>/dev/null)"; done | grep -c '^panfrost$')
 gfreq=$(cat /sys/class/devfreq/13000000.gpu/cur_freq 2>/dev/null)
-gfault=$(dmesg | grep -c -E 'panfrost.*(fault|timeout|job)')
-if [ "$gpu" -ge 1 ] && [ -n "$gfreq" ] && [ "$gfault" -eq 0 ]; then
+gfault=$(dmcount 'panfrost.*(fault|timeout|job)')
+if [ "$gpu" -ge 1 ] && [ -n "$gfreq" ] && [ "$gfault" = 0 ]; then
 	line OK GPU "panfrost freq=$((gfreq / 1000000))MHz faults=0"
 else
 	line FAIL GPU "panfrost=$gpu freq=${gfreq:-none} faults=$gfault"
@@ -71,14 +82,20 @@ done
 if [ -z "$miss" ]; then line OK SENSORS "$names"; else line FAIL SENSORS "missing:$miss"; fi
 
 # Thermal: 4 LVTS zones, all below 85 C
-tz=""; hot=0; nz=0
+tz=""; hot=0; nz=0; bad=""
 for z in /sys/class/thermal/thermal_zone*; do
 	[ -e "$z/temp" ] || continue
-	t=$(($(cat "$z/temp") / 1000)); nz=$((nz + 1))
+	t=$(cat "$z/temp" 2>/dev/null)
+	case ${t#-} in ''|*[!0-9]*) bad="$bad ${z##*/}"; continue ;; esac
+	t=$((t / 1000)); nz=$((nz + 1))
 	tz="$tz $(cat "$z/type" | sed 's/-thermal//')=${t}C"
 	[ "$t" -ge 85 ] && hot=1
 done
-if [ "$nz" -ge 4 ] && [ "$hot" -eq 0 ]; then line OK THERMAL "$tz"; else line FAIL THERMAL "zones=$nz$tz"; fi
+if [ "$nz" -ge 4 ] && [ "$hot" -eq 0 ] && [ -z "$bad" ]; then
+	line OK THERMAL "$tz"
+else
+	line FAIL THERMAL "zones=$nz$tz${bad:+ unreadable:$bad}"
+fi
 
 # Memory: MemAvailable, Shmem, swap/zram
 ma=$(awk '/^MemAvailable:/{print int($2/1024)}' /proc/meminfo)
@@ -86,22 +103,29 @@ sh=$(awk '/^Shmem:/{print int($2/1024)}' /proc/meminfo)
 st=$(awk '/^SwapTotal:/{print int($2/1024)}' /proc/meminfo)
 sf=$(awk '/^SwapFree:/{print int($2/1024)}' /proc/meminfo)
 zr=$(swapon --show=NAME --noheadings 2>/dev/null | grep -c zram)
-oom=$(dmesg | grep -c 'Out of memory')
+oom=$(dmcount 'Out of memory')
 detail="avail=${ma}M shmem=${sh}M swap=$((st - sf))/${st}M zram=$zr oom=$oom"
-if [ "$ma" -ge 300 ] && [ "$oom" -eq 0 ] && [ "$zr" -ge 1 ]; then line OK MEMORY "$detail"; else line FAIL MEMORY "$detail"; fi
+if [ "$ma" -ge 300 ] && [ "$oom" = 0 ] && [ "$zr" -ge 1 ]; then line OK MEMORY "$detail"; else line FAIL MEMORY "$detail"; fi
 
 # Failed systemd units
-fu=$(systemctl --failed --no-legend --plain 2>/dev/null | awk '{print $1}' | tr '\n' ' ')
-if [ -z "$fu" ]; then line OK UNITS "no failed units"; else line FAIL UNITS "$fu"; fi
+if fu=$(systemctl --failed --no-legend --plain 2>/dev/null); then
+	fu=$(printf '%s' "$fu" | awk '{print $1}' | tr '\n' ' ')
+	if [ -z "$fu" ]; then line OK UNITS "no failed units"; else line FAIL UNITS "$fu"; fi
+else
+	line FAIL UNITS "systemctl --failed did not run"
+fi
 
 # Kernel oops / warnings this boot
-ow=$(dmesg | grep -c -E 'Oops|BUG:|WARNING:|Call trace')
-if [ "$ow" -eq 0 ]; then line OK KERNEL "no oops/warnings"; else line FAIL KERNEL "oops/warn/trace lines=$ow"; fi
+ow=$(dmcount 'Oops|BUG:|WARNING:|Call trace')
+if [ "$ow" = 0 ]; then line OK KERNEL "no oops/warnings"; else line FAIL KERNEL "oops/warn/trace lines=$ow"; fi
 
 echo "summary: $n_fail FAIL"
 echo "--- dmesg err (last 10) ---"
 dmesg --level=emerg,alert,crit,err 2>/dev/null | grep -vE 'wlan\]|connlog' | tail -10 | cut -c1-160
 }
 
-report | tee "$out"
+# not "report | tee": the pipeline would run report in a subshell and lose n_fail
+report > "$out"
+cat "$out"
 echo "saved: $out"
+[ "$n_fail" -eq 0 ]
