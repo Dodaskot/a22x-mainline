@@ -82,17 +82,24 @@ boot/flash.sh boot/images/boot-mainline-v135.img   # phone in Download mode
 ```
 
 A prebuilt v135 `boot.img` and matching Wi-Fi/BT modules are in
-[releases/v135](releases/v135/README.md).
+[releases/v135](releases/v135/README.md). They are kept exactly as built for
+v135 and do not contain source fixes made after it
+([docs/PROVENANCE.md](docs/PROVENANCE.md#fixes-after-v135)).
 
 Full instructions, the root filesystem layout and rollback:
 [docs/BUILDING.md](docs/BUILDING.md).
 
-## Proprietary files not included
+## Proprietary firmware
 
-This repository contains no Samsung/MediaTek firmware. Copy these from the
-stock firmware (`/vendor/firmware` of the same device) yourself:
+The source tree contains no Samsung/MediaTek firmware. The prebuilt
+`releases/v135/boot-a22x-v135.img` is the exception: its initramfs contains
+the stock touch firmware `Himax_firmware_fw_jdi.bin` (Samsung/Himax,
+proprietary), see [releases/v135](releases/v135/README.md).
 
-- touch: `Himax_firmware_fw_jdi.bin`
+For your own builds copy these from the stock firmware (`/vendor/firmware`
+of the same device):
+
+- touch: `Himax_firmware_fw_jdi.bin` (built into the initramfs)
 - connectivity: `soc2_2_ram_mcu_1_1_hdr.bin`, `soc2_2_ram_bt_1_1_hdr.bin`,
   `soc2_2_ram_wifi_1_1_hdr.bin`, `WIFI_RAM_CODE_soc2_2_1_1.bin`,
   `WMT_SOC.cfg`, `wifi.cfg`

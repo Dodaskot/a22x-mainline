@@ -36,5 +36,30 @@ not compared byte for byte.
 
 ## Not included
 
-Samsung/MediaTek firmware blobs, busybox binaries, build outputs, test logs
-and device-specific data (serial numbers, calibration, Bluetooth address).
+The source tree has no Samsung/MediaTek firmware blobs, busybox binaries,
+build outputs, test logs or device-specific data (serial numbers,
+calibration, Bluetooth address).
+
+Exception: the prebuilt `releases/v135/boot-a22x-v135.img` is the image
+that ran on the test handset, and its initramfs contains a static busybox
+and the proprietary stock touch firmware `Himax_firmware_fw_jdi.bin`
+(listed in `releases/v135/README.md`).
+
+## Fixes after v135
+
+`releases/v135/` stays byte-for-byte as built for v135 (kernel #95, conn95).
+These later source fixes are not in its `boot.img` or in
+`conn-modules-a22x-v135.tar.gz`:
+
+- `conn/bt/hci/btmtk_stp.c`: on a failed send the driver freed the skb that
+  `hci_send_frame()` frees again (double free); a failed allocation of the
+  locally answered Read Sync Train Params reply now fails the command
+  instead of letting it time out. The prebuilt `btmtk_stp.ko` still has the
+  old code; the fix needs conn modules rebuilt for the running kernel.
+
+Scripts that come from the source tree rather than from the image were
+also corrected after v135 and now report failures through their exit
+status: on the phone `conn/tools/conn-start.sh` and
+`tools/phone/a22x-smoke.sh`, on the build host `kernel/build.sh` and
+`tools/kconfigcheck.py`. `conn-start.sh` works
+with the v135 modules.
