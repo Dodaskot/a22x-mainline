@@ -54,7 +54,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest bounded cycle, D397, consumed **28 RPC and 132 filesystem
+The latest verified bounded cycle, D404, consumed **28 RPC and 134 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -64,19 +64,28 @@ FS126–129 answered absent OPOTA configuration-file time queries in the T and S
 namespaces. Only independently qualified transport-padding bytes may vary.
 FS130 and FS131 each read 48 bytes at offset 64 from a 160-byte NVRAM file and
 closed at cursor 112. FS132 opened that file read-only with its cursor at zero,
-retaining the earlier private RAM ledgers. The original DZC3 daemon's behavior
-was checked offline; 272 host test PASS lines, including full-prefix observer
-and sanitizer checks, preceded the run. The next captured request is FS133,
-a 64-byte READ request, still unhandled.
+retaining the earlier private RAM ledgers. FS133 read 64 bytes and advanced the
+active cursor to 64; FS134 closed it, preserving immutable OPEN and READ records.
+The original DZC3 daemon's behavior
+was checked offline; 276 host test PASS lines, including full-prefix observer
+and sanitizer checks, preceded the run. The next captured request is FS135,
+an OPEN request with flags `0x20010400`, still unhandled.
 
-**HS2 has not been reached.** The run stopped at the unhandled request. Its
-automatic reboot returned to charging mode (mode 8), so the initial recovery
-check failed. A separate qualified recovery using two volatile SRAM words and
-an ordinary normal reboot restored NORMAL0; all eight CPUs, held/powered modem
-domain, Phosh/Phoc and USB networking then passed checks. The original failure
-is preserved: D397 remains classified as
-`FAIL_RECOVERY_AFTER_132_REPLIES_CONSUMED`, rather than a clean automatic-recovery
-pass. SIM, calls and mobile data remain unavailable. The harness does not write
+**HS2 has not been reached.** D401 and D404 stopped at their unhandled next
+requests and automatically rebooted to NORMAL0. All eight CPUs, held/powered
+modem domain, Phosh/Phoc and USB networking passed recovery checks. Wi-Fi profile
+restoration failed because the hotspot could not be found; USB access remained
+available.
+
+The earlier D397 automatic reboot returned to charging mode (mode 8), so its
+initial recovery check failed. A separate qualified recovery using two volatile
+SRAM words and an ordinary normal reboot restored NORMAL0 with all recovery
+checks passing. Its original failure is preserved as
+`FAIL_RECOVERY_AFTER_132_REPLIES_CONSUMED`. Before D401, comparison of all 20 LK
+tags proved identical names, structure and payloads; 838 unused bytes differed.
+The new cycle was bound to the exact qualified hash without relaxing the check.
+
+SIM, calls and mobile data remain unavailable. The harness does not write
 persistent NVRAM. This repository does not include the device-specific evidence
 or the experimental CCCI harness.
 
