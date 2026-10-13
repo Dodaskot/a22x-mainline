@@ -54,7 +54,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest verified bounded cycle, D464, consumed **28 RPC and 154 filesystem
+The latest verified bounded cycle, D473, consumed **28 RPC and 157 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -74,13 +74,13 @@ last 48 bytes. FS139 closed it while retaining the immutable OPEN/SEEK/GETSIZE/
 WRITE records and full RAM copy. FS140 answered a readonly compound request
 for another file: 800 bytes read at offset 64 from an 864-byte file, closed at
 cursor 864, with previous RAM ledgers preserved.
-The original DZC3 daemon's behavior was checked offline; 316 host test PASS lines, including full-prefix observer
+The original DZC3 daemon's behavior was checked offline; 322 host test PASS lines, including full-prefix observer
 and sanitizer checks, preceded the run. FS141 read 9048 bytes from a 9112-byte file and returned them as three packets.
 FS142 (MD144/AP145) read 496 bytes at offset 64 from a 1056-byte file and closed
 at cursor 560. FS143 (MD145/AP146) opened it read-only at cursor zero; FS144
 (MD146/AP147) read 64 bytes; FS145 (MD147/AP148) closed the active handle at cursor
 64, preserving the immutable OPEN and READ snapshots. The next captured request
-is FS155 (MD157), another OPEN for the last-read file, still unhandled in the
+is FS158 (MD160), a WRITE of 40 bytes at offset 64, still unhandled in the
 live harness. FS146 (MD148/AP149) opened a fresh private RAM copy of 1056 bytes
 with flags `0x20010400` and cursor zero. FS147 (MD149/AP150) sought offset 64;
 FS148 (MD150/AP151) returned size 1056 without changing that cursor. FS149
@@ -92,9 +92,12 @@ compound request for another 144-byte file: 40 bytes read at offset 64, closed
 at cursor 104, with the previous modified RAM copy retained. FS152 (MD154/AP155)
 opened that 144-byte file read-only at cursor zero; FS153 (MD155/AP156) read
 64 bytes; FS154 (MD156/AP157) closed it at cursor 64 while preserving immutable
-OPEN and READ records. No persistent NVRAM writes occurred.
+OPEN and READ records. FS155 (MD157/AP158) opened a fresh private RAM copy of
+that 144-byte file with flags `0x20010400` and cursor zero. FS156 (MD158/AP159)
+sought offset 64; FS157 (MD159/AP160) returned size 144 without changing that
+cursor. No persistent NVRAM writes occurred.
 
-**HS2 has not been reached.** D458, D461 and D464 automatically recovered to NORMAL0,
+**HS2 has not been reached.** D467, D470 and D473 automatically recovered to NORMAL0,
 with all eight CPUs, held/powered modem domain, Phosh/Phoc and USB networking
 passing checks. D437's automatic reboot returned to charging mode (mode 8),
 so its initial recovery check failed. A separate qualified two-volatile-word
