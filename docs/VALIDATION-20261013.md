@@ -54,7 +54,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest verified bounded cycle, D473, consumed **28 RPC and 157 filesystem
+The latest verified bounded cycle, D479, consumed **28 RPC and 159 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -74,14 +74,14 @@ last 48 bytes. FS139 closed it while retaining the immutable OPEN/SEEK/GETSIZE/
 WRITE records and full RAM copy. FS140 answered a readonly compound request
 for another file: 800 bytes read at offset 64 from an 864-byte file, closed at
 cursor 864, with previous RAM ledgers preserved.
-The original DZC3 daemon's behavior was checked offline; 322 host test PASS lines, including full-prefix observer
+The original DZC3 daemon's behavior was checked offline; 326 host test PASS lines, including full-prefix observer
 and sanitizer checks, preceded the run. FS141 read 9048 bytes from a 9112-byte file and returned them as three packets.
 FS142 (MD144/AP145) read 496 bytes at offset 64 from a 1056-byte file and closed
 at cursor 560. FS143 (MD145/AP146) opened it read-only at cursor zero; FS144
 (MD146/AP147) read 64 bytes; FS145 (MD147/AP148) closed the active handle at cursor
 64, preserving the immutable OPEN and READ snapshots. The next captured request
-is FS158 (MD160), a WRITE of 40 bytes at offset 64, still unhandled in the
-live harness. FS146 (MD148/AP149) opened a fresh private RAM copy of 1056 bytes
+is FS160 (MD162), a readonly compound request asking for 6334 bytes from a
+different file, still unhandled in the live harness. FS146 (MD148/AP149) opened a fresh private RAM copy of 1056 bytes
 with flags `0x20010400` and cursor zero. FS147 (MD149/AP150) sought offset 64;
 FS148 (MD150/AP151) returned size 1056 without changing that cursor. FS149
 (MD151/AP152) wrote 496 received bytes into the private copy at offset 64,
@@ -95,15 +95,21 @@ opened that 144-byte file read-only at cursor zero; FS153 (MD155/AP156) read
 OPEN and READ records. FS155 (MD157/AP158) opened a fresh private RAM copy of
 that 144-byte file with flags `0x20010400` and cursor zero. FS156 (MD158/AP159)
 sought offset 64; FS157 (MD159/AP160) returned size 144 without changing that
-cursor. No persistent NVRAM writes occurred.
+cursor. FS158 (MD160/AP161) wrote 40 received bytes into the private RAM copy at
+offset 64, advancing to 104 and preserving the first 64 and last 40 bytes.
+FS159 (MD161/AP162) closed the active handle while retaining the full RAM copy
+and immutable OPEN/SEEK/GETSIZE/WRITE records. No persistent NVRAM writes occurred.
 
-**HS2 has not been reached.** D467, D470 and D473 automatically recovered to NORMAL0,
+**HS2 has not been reached.** D479 automatically recovered to NORMAL0,
 with all eight CPUs, held/powered modem domain, Phosh/Phoc and USB networking
 passing checks. D437's automatic reboot returned to charging mode (mode 8),
-so its initial recovery check failed. A separate qualified two-volatile-word
+so its initial recovery check failed. D476 also returned to mode 8 after
+consuming 158 replies. A separate qualified two-volatile-word
 SRAM recovery and ordinary normal reboot restored NORMAL0 with all checks
 passing. The original failure remains classified as
-`FAIL_RECOVERY_AFTER_145_REPLIES_CONSUMED`; the modem cycle was not repeated.
+`FAIL_RECOVERY_AFTER_145_REPLIES_CONSUMED` for D437 and
+`FAIL_RECOVERY_AFTER_158_REPLIES_CONSUMED` for D476. Both separately recovered
+to NORMAL0 with all checks passing; neither modem cycle was repeated.
 Before D440, all 20 LK tags were compared after the separate recovery. Names,
 structure and payloads were identical; only 580 unused bytes changed. The new
 cycle was bound to the exact qualified hash, preserving the original runs.
@@ -140,6 +146,12 @@ no retry after an uncertain send, and premature HS2 rejection. The existing
 FS142 answered it with AP sequence 145; the next MD sequence is 145 for FS143.
 The harness and independent audits now track request ordinal and transport
 sequence separately, while preserving the prior fragmented transaction.
+
+FS160 has been qualified offline using the original DZC3 dispatcher (185 cases)
+and independent packer (30 cases): two packets of 3476 and 2936 bytes. The TX
+ring requires a 6448-byte transaction split into 272 bytes at its end and 6176
+bytes at its beginning. This fragmented response with ring wrap is not yet
+implemented or tested on the phone; no payload reduction is used.
 
 SIM, calls and mobile data remain unavailable. The harness does not write
 persistent NVRAM. This repository does not include the device-specific evidence
