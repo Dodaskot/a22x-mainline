@@ -54,24 +54,31 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest verified bounded cycle, D394, consumed **28 RPC and 131 filesystem
+The latest bounded cycle, D397, consumed **28 RPC and 132 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
 bytes and advancing the cursor to 120. FS125 closed the active handle while
 retaining the full RAM copy and the immutable OPEN/SEEK/WRITE snapshots.
 FS126–129 answered absent OPOTA configuration-file time queries in the T and S
-namespaces. Only independently qualified transport-padding bytes may vary. The original DZC3 daemon's behavior was checked offline;
-270 host test PASS lines, including full-prefix observer and sanitizer checks,
-preceded the run. FS130 and FS131 each read 48 bytes at offset 64 from a 160-byte NVRAM file and closed at
-cursor 112, retaining the earlier private RAM ledgers. The next captured request
-is FS132, a readonly OPEN request for the same file, still unhandled.
+namespaces. Only independently qualified transport-padding bytes may vary.
+FS130 and FS131 each read 48 bytes at offset 64 from a 160-byte NVRAM file and
+closed at cursor 112. FS132 opened that file read-only with its cursor at zero,
+retaining the earlier private RAM ledgers. The original DZC3 daemon's behavior
+was checked offline; 272 host test PASS lines, including full-prefix observer
+and sanitizer checks, preceded the run. The next captured request is FS133,
+a 64-byte READ request, still unhandled.
 
-**HS2 has not been reached.** The run stopped at the unhandled request and
-rebooted. NORMAL0, all eight CPUs, held/powered modem domain, Phosh/Phoc and USB
-networking passed recovery checks. SIM, calls and mobile data remain unavailable.
-The harness does not write persistent NVRAM. This repository does not include
-the device-specific evidence or the experimental CCCI harness.
+**HS2 has not been reached.** The run stopped at the unhandled request. Its
+automatic reboot returned to charging mode (mode 8), so the initial recovery
+check failed. A separate qualified recovery using two volatile SRAM words and
+an ordinary normal reboot restored NORMAL0; all eight CPUs, held/powered modem
+domain, Phosh/Phoc and USB networking then passed checks. The original failure
+is preserved: D397 remains classified as
+`FAIL_RECOVERY_AFTER_132_REPLIES_CONSUMED`, rather than a clean automatic-recovery
+pass. SIM, calls and mobile data remain unavailable. The harness does not write
+persistent NVRAM. This repository does not include the device-specific evidence
+or the experimental CCCI harness.
 
 ## Artifact identity
 
