@@ -54,7 +54,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest verified bounded cycle, D482, consumed **28 RPC and 160 filesystem
+The latest verified bounded cycle, D485, consumed **28 RPC and 161 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -74,14 +74,12 @@ last 48 bytes. FS139 closed it while retaining the immutable OPEN/SEEK/GETSIZE/
 WRITE records and full RAM copy. FS140 answered a readonly compound request
 for another file: 800 bytes read at offset 64 from an 864-byte file, closed at
 cursor 864, with previous RAM ledgers preserved.
-The original DZC3 daemon's behavior was checked offline; 328 host test PASS lines, including full-prefix observer
+The original DZC3 daemon's behavior was checked offline; 330 host test PASS lines, including full-prefix observer
 and sanitizer checks, preceded the run. FS141 read 9048 bytes from a 9112-byte file and returned them as three packets.
 FS142 (MD144/AP145) read 496 bytes at offset 64 from a 1056-byte file and closed
 at cursor 560. FS143 (MD145/AP146) opened it read-only at cursor zero; FS144
 (MD146/AP147) read 64 bytes; FS145 (MD147/AP148) closed the active handle at cursor
-64, preserving the immutable OPEN and READ snapshots. The next captured request
-is FS161 (MD164), a readonly compound request asking for 6334 bytes from the
-corresponding file in the Y namespace, still unhandled in the live harness. FS146 (MD148/AP149) opened a fresh private RAM copy of 1056 bytes
+64, preserving the immutable OPEN and READ snapshots. FS146 (MD148/AP149) opened a fresh private RAM copy of 1056 bytes
 with flags `0x20010400` and cursor zero. FS147 (MD149/AP150) sought offset 64;
 FS148 (MD150/AP151) returned size 1056 without changing that cursor. FS149
 (MD151/AP152) wrote 496 received bytes into the private copy at offset 64,
@@ -100,7 +98,7 @@ offset 64, advancing to 104 and preserving the first 64 and last 40 bytes.
 FS159 (MD161/AP162) closed the active handle while retaining the full RAM copy
 and immutable OPEN/SEEK/GETSIZE/WRITE records. No persistent NVRAM writes occurred.
 
-**HS2 has not been reached.** D482 automatically recovered to NORMAL0,
+**HS2 has not been reached.** D485 automatically recovered to NORMAL0,
 with all eight CPUs, held/powered modem domain, Phosh/Phoc and USB networking
 passing checks. D437's automatic reboot returned to charging mode (mode 8),
 so its initial recovery check failed. D476 also returned to mode 8 after
@@ -156,6 +154,15 @@ ledgers. The next request carries MD164, confirming the separate request ordinal
 and packet sequence accounting. FS160 closed at cursor 6398 in a 12732-byte file;
 no payload reduction was used. The formal result remains
 `FAIL_UNHANDLED_FS_AFTER_160_REPLIES_CONSUMED`, with NORMAL0 recovery passing.
+
+D485 also consumed FS161 (MD164), the corresponding readonly compound request
+in the Y namespace, returning 6334 bytes as AP165/AP166. The 6448-byte wire
+transaction is contiguous at TX6176–12624; the handle closed at cursor 6398
+in a 12732-byte file. Both actual wire packets and the earlier FS160 transaction
+were independently verified, retaining all prior RAM and readonly ledgers.
+The next request, FS162 (MD166), opens the X namespace file read-only with
+flags `0x700`. The current formal result is
+`FAIL_UNHANDLED_FS_AFTER_161_REPLIES_CONSUMED`, with NORMAL0 recovery passing.
 
 SIM, calls and mobile data remain unavailable. The harness does not write
 persistent NVRAM. This repository does not include the device-specific evidence
