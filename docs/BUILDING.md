@@ -16,7 +16,8 @@ The script shallow-clones `v7.2` from the stable tree, applies
 `kernel/config/a22x-v135.config`. It produces `Image.gz`, the DTBs and
 `Module.symvers` (needed by `conn/`).
 
-`a22x-v135.config` is the exact configuration of the accepted kernel #95.
+`a22x-v135.config` is the exact configuration of the accepted kernel #95
+and remains unchanged for the tested v142/#100 source updates.
 `slim.config` and `pmos.config` are the fragments it was derived from
 (`defconfig` + both fragments with `merge_config.sh`, all `=m` turned into
 `=y`, then `CONFIG_MODULES=y` for the out-of-tree connectivity modules).
@@ -51,7 +52,7 @@ The modules must come from **the same kernel build** as the running
 ```sh
 BUSYBOX=/path/to/busybox.static HIMAX_FW=/path/to/Himax_firmware_fw_jdi.bin \
     boot/build-initramfs.sh                    # -> boot/initramfs.cpio.gz
-OUT=$PWD/kernel/out boot/mkboot.sh v135        # -> boot/images/boot-mainline-v135.img
+OUT=$PWD/kernel/out boot/mkboot.sh v142        # -> boot/images/boot-mainline-v142.img
 ```
 
 The initramfs starts USB NCM networking (phone `172.16.42.1`, PC

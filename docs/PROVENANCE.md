@@ -1,6 +1,8 @@
 # Provenance of this tree
 
 Baseline: **accepted v135 boot image, kernel build #95, conn95** (2026-10-10).
+Current source adds patches 0132–0135 tested in **v142/#100** (2026-10-13).
+Prebuilt releases remain v135; no new binary release is included.
 
 ## Kernel
 
@@ -63,3 +65,17 @@ status: on the phone `conn/tools/conn-start.sh` and
 `tools/phone/a22x-smoke.sh`, on the build host `kernel/build.sh` and
 `tools/kconfigcheck.py`. `conn-start.sh` works
 with the v135 modules.
+
+## v142 source update (2026-10-13)
+
+Patches 0132–0135 add the carried kexec relocation CFI fix, controller-local
+I2C supply lookup, MT6360 VBUS/alert handling, and MUSB/DT USB-C dual-role support.
+Applying all 135 patches to the declared Linux v7.2 base produces tree
+`e0b3aaca697f1a53d8edb402636450cd4a35a111`.
+The accepted CPU/GPU/CCI device-tree settings are preserved. Configuration and
+Module.symvers match the preceding kernel; installed connectivity modules were
+retained. The kernel mirror remains the historical baseline until separately synced.
+
+See [validation and limits](VALIDATION-20261013.md) for device results, artifact
+hashes, sensor observations and the current modem checkpoint. The CCCI test
+harness and device-specific NVRAM evidence remain outside this public tree.

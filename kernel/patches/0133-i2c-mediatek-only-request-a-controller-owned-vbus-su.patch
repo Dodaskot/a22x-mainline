@@ -1,0 +1,36 @@
+From b055890fea9665b6f73a04b526933b4975b56f86 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 13 Oct 2026 21:41:38 +0200
+Subject: [PATCH 133/135] i2c: mediatek: only request a controller-owned vbus
+ supply
+
+A child TCPC vbus-supply was found recursively, deferring the I2C
+controller and its PMIC children indefinitely. Check the controller node
+before requesting the optional supply.
+---
+ drivers/i2c/busses/i2c-mt65xx.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-mt65xx.c b/drivers/i2c/busses/i2c-mt65xx.c
+index 307925fb7..0385f44b5 100644
+--- a/drivers/i2c/busses/i2c-mt65xx.c
++++ b/drivers/i2c/busses/i2c-mt65xx.c
+@@ -1415,12 +1415,12 @@ static int mtk_i2c_probe(struct platform_device *pdev)
+ 	i2c->adap.quirks = i2c->dev_comp->quirks;
+ 	i2c->adap.timeout = 2 * HZ;
+ 	i2c->adap.retries = 1;
+-	i2c->adap.bus_regulator = devm_regulator_get_optional(&pdev->dev, "vbus");
+-	if (IS_ERR(i2c->adap.bus_regulator)) {
+-		if (PTR_ERR(i2c->adap.bus_regulator) == -ENODEV)
+-			i2c->adap.bus_regulator = NULL;
+-		else
+-			return PTR_ERR(i2c->adap.bus_regulator);
++	/* A child's USB VBUS supply must not become the I2C bus supply. */
++	if (of_property_present(pdev->dev.of_node, "vbus-supply")) {
++		i2c->adap.bus_regulator = devm_regulator_get_optional(&pdev->dev, "vbus");
++		if (IS_ERR(i2c->adap.bus_regulator))
++			return dev_err_probe(&pdev->dev, PTR_ERR(i2c->adap.bus_regulator),
++					     "Failed to get I2C bus supply\n");
+ 	}
+ 
+ 	ret = mtk_i2c_parse_dt(pdev->dev.of_node, i2c);

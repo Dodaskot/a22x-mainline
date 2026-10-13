@@ -129,3 +129,7 @@
 0129-arm64-dts-mediatek-test-A22x-big-CPU-900mV-ceiling-b.patch
 0130-arm64-dts-mediatek-qualify-A22x-stock-FY-top-CPU-and.patch
 0131-arm64-dts-mediatek-qualify-conservative-A22x-GPU-vol.patch
+0132-arm64-kexec-isolate-relocation-entry-from-kCFI-check.patch
+0133-i2c-mediatek-only-request-a-controller-owned-vbus-su.patch
+0134-usb-typec-mt6360-manage-source-VBUS-and-enable-alert.patch
+0135-usb-mediatek-enable-A22x-dual-role-USB-with-balanced.patch

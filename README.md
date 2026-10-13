@@ -14,9 +14,10 @@ It boots from the stock Samsung LK bootloader as an ordinary `boot.img`:
 no bootloader, modem or other partition is replaced. The userspace used
 during development is Arch Linux ARM with Phosh.
 
-This tree is the **accepted v135 baseline** (kernel build #95). See
-[docs/PROVENANCE.md](docs/PROVENANCE.md) for how it was reproduced and
-verified against the image that runs on the test handset.
+This source tree extends the **accepted v135 baseline** with the changes
+tested in **v142 (kernel build #100)**, including USB-C host/device switching.
+The downloadable v135 images remain unchanged. See [provenance](docs/PROVENANCE.md)
+and the [2026-10-13 validation report](docs/VALIDATION-20261013.md).
 
 > **Status: experimental.** Usable as a development phone, not as a daily
 > phone: no cellular modem, no camera. Flashing anything may brick your
@@ -34,11 +35,11 @@ verified against the image that runs on the test handset.
 | RAM | 3.44 GiB usable of 4 GiB (Android ZMC pool reclaimed), 4266 MT/s on both channels |
 | Thermal | LVTS sensors, CPU/GPU/SoC zones, restored after system sleep |
 | Storage | eMMC, microSD (SDR104) |
-| USB | peripheral (NCM networking); host/OTG not done |
+| USB | NCM networking and USB-C OTG storage; both plug orientations and return to charging/NCM tested |
 | Audio | speaker (SIA8109), earpiece, headphones + jack detection, built-in microphone (ALSA UCM provided) |
 | Wi-Fi / Bluetooth | vendor gen4m Wi-Fi port and own HCI-over-STP Bluetooth driver (`conn/`) |
 | Battery | MT6359 fuel gauge (coulomb counter), MT6360 charger |
-| Sensors | ICM-40607 IMU (auto-rotate), MMC5603 magnetometer, MN78911 light/proximity (uncalibrated) |
+| Sensors | ICM-40607 IMU, MMC5603 magnetometer, MN78911 light/proximity and auto-brightness; absolute lux scale uncalibrated |
 | Misc | torch, vibration, volume/power keys, RTC |
 | Sleep | deep s2idle (CPU/cluster off, 26 MHz off) works in instrumented test cycles at about 11.3 mA (stock Android: about 7.3–7.9 mA); not yet enabled automatically for everyday use |
 | NFC | Samsung S3NRN82: reading and writing tags/cards works (e.g. a PolygoCard transit card); no contactless payments; a tag cannot wake the phone from sleep yet |
@@ -49,7 +50,7 @@ Not working / not done:
   modem is powered and started, passes the first handshake (HS1) and its
   early service requests are being answered, but it does not finish booting
   (HS2) yet, so there is no SIM, calls or mobile data.
-- Camera, USB host/OTG.
+- Camera.
 - GPS and fingerprint (deferred).
 
 Details: [docs/HARDWARE.md](docs/HARDWARE.md).
@@ -57,8 +58,8 @@ Details: [docs/HARDWARE.md](docs/HARDWARE.md).
 ## Repository layout
 
 ```
-kernel/patches/   131 patches on top of Linux v7.2 (git am), with series file
-                  (as a git tree: github.com/Dodaskot/linux-a22x, branch a22x)
+kernel/patches/   135 patches on top of Linux v7.2 (git am), with series file
+                  (kernel mirror currently documents the historical v135 baseline)
 kernel/config/    full accepted .config (a22x-v135.config) + config fragments
 kernel/build.sh   clone v7.2, apply the series, build Image.gz/DTBs/modules
 kernel/update-patches.sh  regenerate kernel/patches from the kernel tree
@@ -77,8 +78,8 @@ releases/v135/    prebuilt boot.img + matching conn modules (Git LFS)
 kernel/build.sh                              # -> kernel/linux, kernel/out
 KSRC=$PWD/kernel/linux KOUT=$PWD/kernel/out conn/build.sh
 BUSYBOX=... HIMAX_FW=... boot/build-initramfs.sh
-OUT=$PWD/kernel/out boot/mkboot.sh v135      # -> boot/images/boot-mainline-v135.img
-boot/flash.sh boot/images/boot-mainline-v135.img   # phone in Download mode
+OUT=$PWD/kernel/out boot/mkboot.sh v142      # -> boot/images/boot-mainline-v142.img
+boot/flash.sh boot/images/boot-mainline-v142.img   # phone in Download mode
 ```
 
 A prebuilt v135 `boot.img` and matching Wi-Fi/BT modules are in

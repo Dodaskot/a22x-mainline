@@ -1,0 +1,205 @@
+From 4e53ca5eb9ed146b248df47004a3707ca4b58977 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 13 Oct 2026 21:41:38 +0200
+Subject: [PATCH 135/135] usb: mediatek: enable A22x dual-role USB with
+ balanced PHY power
+
+Describe MT6360 TCPC GPIO9, the 5V boost regulator and the connector
+graph. Balance PHY power references across NONE, host and device roles.
+Read-only USB storage tests passed in both connector orientations;
+return to PC NCM and charging passed.
+---
+ .../bindings/usb/mediatek,musb.yaml           | 15 ++++-
+ .../boot/dts/mediatek/mt6833-samsung-a22x.dts | 57 ++++++++++++++++++-
+ drivers/usb/musb/mediatek.c                   | 26 +++++----
+ 3 files changed, 86 insertions(+), 12 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/usb/mediatek,musb.yaml b/Documentation/devicetree/bindings/usb/mediatek,musb.yaml
+index a39d38db7..861932ee4 100644
+--- a/Documentation/devicetree/bindings/usb/mediatek,musb.yaml
++++ b/Documentation/devicetree/bindings/usb/mediatek,musb.yaml
+@@ -19,6 +19,7 @@ properties:
+       - enum:
+           - mediatek,mt8516-musb
+           - mediatek,mt2701-musb
++          - mediatek,mt6833-musb
+           - mediatek,mt7623-musb
+       - const: mediatek,mtk-musb
+ 
+@@ -67,9 +68,21 @@ properties:
+     description: Connector for dual role switch
+     type: object
+ 
++  port:
++    $ref: /schemas/graph.yaml#/properties/port
++    description: USB data connection to an external Type-C controller.
++
+ dependencies:
+-  usb-role-switch: [ connector ]
+   connector: [ usb-role-switch ]
++  port: [ usb-role-switch ]
++
++allOf:
++  - if:
++      required: [ usb-role-switch ]
++    then:
++      anyOf:
++        - required: [ connector ]
++        - required: [ port ]
+ 
+ required:
+   - compatible
+diff --git a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+index 29d83f771..f816ccac3 100644
+--- a/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
++++ b/arch/arm64/boot/dts/mediatek/mt6833-samsung-a22x.dts
+@@ -24,6 +24,7 @@
+ #include <dt-bindings/gpio/gpio.h>
+ #include <dt-bindings/input/input.h>
+ #include <dt-bindings/interrupt-controller/irq.h>
++#include <dt-bindings/usb/pd.h>
+ #include <dt-bindings/pinctrl/mt6833-pinfunc.h>
+ #include <dt-bindings/pinctrl/mt65xx.h>
+ #include "mt6833-samsung-a22x-lk-compat.dtsi"
+@@ -374,11 +375,18 @@ usb_otg: usb@11200000 {
+ 		interrupts = <0 96 4>;
+ 		interrupt-names = "mc";
+ 		phys = <&u2port0 PHY_TYPE_USB2>;
+-		dr_mode = "peripheral";
++		dr_mode = "otg";
++		usb-role-switch;
+ 		clocks = <&infracfg_ao CLK_IFRAO_SSUSB>,
+ 			 <&topckgen CLK_TOP_USB_TOP_SEL>,
+ 			 <&topckgen CLK_TOP_UNIVPLL_D5_D4>;
+ 		clock-names = "main", "mcu", "univpll";
++
++		port {
++			usb_otg_hs: endpoint {
++				remote-endpoint = <&typec_hs>;
++			};
++		};
+ 	};
+ 
+ 	/*
+@@ -615,7 +623,54 @@ mt6360_ldo5: ldo5 {
+ 			mt6360_chg: charger {
+ 				compatible = "mediatek,mt6360-chg";
+ 				richtek,vinovp-microvolt = <6500000>;
++
++				otg_vbus: usb-otg-vbus-regulator {
++					regulator-name = "usb-otg-vbus";
++					regulator-min-microvolt = <5000000>;
++					regulator-max-microvolt = <5000000>;
++				};
+ 			};
++
++			mt6360_tcpc: tcpc {
++				compatible = "mediatek,mt6360-tcpc";
++				/* A22X DTBO overrides the base GPIO24 with GPIO9. */
++				interrupts-extended = <&pio_ml 9 IRQ_TYPE_LEVEL_LOW>;
++				interrupt-names = "PD_IRQB";
++				pinctrl-names = "default";
++				pinctrl-0 = <&typec_irq_pin>;
++				vbus-supply = <&otg_vbus>;
++
++				connector {
++					compatible = "usb-c-connector";
++					label = "USB-C";
++					data-role = "dual";
++					power-role = "dual";
++					try-power-role = "sink";
++					source-pdos = <PDO_FIXED(5000, 500,
++						PDO_FIXED_DUAL_ROLE | PDO_FIXED_DATA_SWAP |
++						PDO_FIXED_USB_COMM)>;
++					sink-pdos = <PDO_FIXED(5000, 2000,
++						PDO_FIXED_DUAL_ROLE | PDO_FIXED_DATA_SWAP |
++						PDO_FIXED_USB_COMM)>;
++					op-sink-microwatt = <2500000>;
++
++					port {
++						typec_hs: endpoint {
++							remote-endpoint = <&usb_otg_hs>;
++						};
++					};
++				};
++			};
++		};
++	};
++};
++
++&pio_ml {
++	typec_irq_pin: typec-irq-pin {
++		pins {
++			pinmux = <PINMUX_GPIO9__FUNC_GPIO9>;
++			input-enable;
++			bias-pull-up;
+ 		};
+ 	};
+ };
+diff --git a/drivers/usb/musb/mediatek.c b/drivers/usb/musb/mediatek.c
+index 892934e19..6b3cc73ba 100644
+--- a/drivers/usb/musb/mediatek.c
++++ b/drivers/usb/musb/mediatek.c
+@@ -73,18 +73,23 @@ static int mtk_otg_switch_set(struct mtk_glue *glue, enum usb_role role)
+ 	struct musb *musb = glue->musb;
+ 	u8 devctl = readb(musb->mregs + MUSB_DEVCTL);
+ 	enum usb_role new_role;
++	int ret;
+ 
+ 	if (role == glue->role)
+ 		return 0;
+ 
++	if (glue->role == USB_ROLE_NONE &&
++	    (role == USB_ROLE_HOST || role == USB_ROLE_DEVICE)) {
++		ret = phy_power_on(glue->phy);
++		if (ret)
++			return ret;
++	}
++
+ 	switch (role) {
+ 	case USB_ROLE_HOST:
+ 		musb->xceiv->otg->state = OTG_STATE_A_WAIT_VRISE;
+ 		glue->phy_mode = PHY_MODE_USB_HOST;
+ 		new_role = USB_ROLE_HOST;
+-		if (glue->role == USB_ROLE_NONE)
+-			phy_power_on(glue->phy);
+-
+ 		devctl |= MUSB_DEVCTL_SESSION;
+ 		musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
+ 		MUSB_HST_MODE(musb);
+@@ -95,9 +100,6 @@ static int mtk_otg_switch_set(struct mtk_glue *glue, enum usb_role role)
+ 		new_role = USB_ROLE_DEVICE;
+ 		devctl &= ~MUSB_DEVCTL_SESSION;
+ 		musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
+-		if (glue->role == USB_ROLE_NONE)
+-			phy_power_on(glue->phy);
+-
+ 		MUSB_DEV_MODE(musb);
+ 		break;
+ 	case USB_ROLE_NONE:
+@@ -283,9 +285,12 @@ static int mtk_musb_init(struct musb *musb)
+ 	if (ret)
+ 		goto err_phy_init;
+ 
+-	ret = phy_power_on(glue->phy);
+-	if (ret)
+-		goto err_phy_power_on;
++	/* An unattached dual-role port gets its first power reference on attach. */
++	if (glue->role != USB_ROLE_NONE) {
++		ret = phy_power_on(glue->phy);
++		if (ret)
++			goto err_phy_power_on;
++	}
+ 
+ 	phy_set_mode(glue->phy, glue->phy_mode);
+ 
+@@ -342,7 +347,8 @@ static int mtk_musb_exit(struct musb *musb)
+ 	struct mtk_glue *glue = dev_get_drvdata(dev->parent);
+ 
+ 	mtk_otg_switch_exit(glue);
+-	phy_power_off(glue->phy);
++	if (glue->role != USB_ROLE_NONE)
++		phy_power_off(glue->phy);
+ 	phy_exit(glue->phy);
+ 	clk_bulk_disable_unprepare(MTK_MUSB_CLKS_NUM, glue->clks);
+ 
