@@ -1,4 +1,4 @@
-# A22x validation, 2026-10-13
+# A22x validation, 2026-10-13–14
 
 Tested device: Samsung SM-A226B. Running image: v142, Linux
 `7.2.0-a22x+`, build #100, LLVM 23.1.1. This update publishes source and
@@ -54,7 +54,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest verified bounded cycle, D428, consumed **28 RPC and 142 filesystem
+The latest bounded cycle, D437, consumed **28 RPC and 145 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -74,17 +74,23 @@ last 48 bytes. FS139 closed it while retaining the immutable OPEN/SEEK/GETSIZE/
 WRITE records and full RAM copy. FS140 answered a readonly compound request
 for another file: 800 bytes read at offset 64 from an 864-byte file, closed at
 cursor 864, with previous RAM ledgers preserved.
-The original DZC3 daemon's behavior was checked offline; 292 host test PASS lines, including full-prefix observer
+The original DZC3 daemon's behavior was checked offline; 298 host test PASS lines, including full-prefix observer
 and sanitizer checks, preceded the run. FS141 read 9048 bytes from a 9112-byte file and returned them as three packets.
 FS142 (MD144/AP145) read 496 bytes at offset 64 from a 1056-byte file and closed
-at cursor 560. The next captured request is FS143 (MD145), a readonly OPEN for
-that file, still unhandled in the live harness.
+at cursor 560. FS143 (MD145/AP146) opened it read-only at cursor zero; FS144
+(MD146/AP147) read 64 bytes; FS145 (MD147/AP148) closed the active handle at cursor
+64, preserving the immutable OPEN and READ snapshots. The next captured request
+is FS146 (MD148), another OPEN, still unhandled in the live harness.
 
-**HS2 has not been reached.** D401, D404, D407, D410, D413, D416, D419, D422, D425 and D428 stopped at their unhandled next
-requests and automatically rebooted to NORMAL0. All eight CPUs, held/powered
-modem domain, Phosh/Phoc and USB networking passed recovery checks. Wi-Fi profile
-restoration failed because the hotspot could not be found; USB access remained
-available.
+**HS2 has not been reached.** D431 and D434 automatically recovered to NORMAL0,
+with all eight CPUs, held/powered modem domain, Phosh/Phoc and USB networking
+passing checks. D437's automatic reboot returned to charging mode (mode 8),
+so its initial recovery check failed. A separate qualified two-volatile-word
+SRAM recovery and ordinary normal reboot restored NORMAL0 with all checks
+passing. The original failure remains classified as
+`FAIL_RECOVERY_AFTER_145_REPLIES_CONSUMED`; the modem cycle was not repeated.
+Wi-Fi restoration had previously failed because the hotspot could not be found;
+subsequent cycles use USB access without retrying that unavailable connection.
 
 The earlier D397 automatic reboot returned to charging mode (mode 8), so its
 initial recovery check failed. A separate qualified recovery using two volatile
