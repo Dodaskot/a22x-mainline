@@ -54,13 +54,14 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest verified bounded cycle, D373, consumed **28 RPC and 124 filesystem
+The latest verified bounded cycle, D376, consumed **28 RPC and 125 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
-bytes and advancing the cursor to 120. The original DZC3 daemon's behavior was checked offline;
-256 host test PASS lines, including full-prefix observer and sanitizer checks,
-preceded the run. The next captured request is FS125 (32 bytes), still unhandled.
+bytes and advancing the cursor to 120. FS125 closed the active handle while
+retaining the full RAM copy and the immutable OPEN/SEEK/WRITE snapshots. The original DZC3 daemon's behavior was checked offline;
+258 host test PASS lines, including full-prefix observer and sanitizer checks,
+preceded the run. The next captured request is FS126, a file-time query, still unhandled.
 
 **HS2 has not been reached.** The run stopped at the unhandled request and
 rebooted. NORMAL0, all eight CPUs, held/powered modem domain, Phosh/Phoc and USB
