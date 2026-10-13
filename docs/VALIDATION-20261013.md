@@ -54,7 +54,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest verified bounded cycle, D404, consumed **28 RPC and 134 filesystem
+The latest verified bounded cycle, D407, consumed **28 RPC and 135 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -66,12 +66,13 @@ FS130 and FS131 each read 48 bytes at offset 64 from a 160-byte NVRAM file and
 closed at cursor 112. FS132 opened that file read-only with its cursor at zero,
 retaining the earlier private RAM ledgers. FS133 read 64 bytes and advanced the
 active cursor to 64; FS134 closed it, preserving immutable OPEN and READ records.
-The original DZC3 daemon's behavior
-was checked offline; 276 host test PASS lines, including full-prefix observer
-and sanitizer checks, preceded the run. The next captured request is FS135,
-an OPEN request with flags `0x20010400`, still unhandled.
+FS135 reopened the same file with flags `0x20010400`, creating a fresh private
+RAM copy of 160 bytes at cursor zero. No earlier WRITE targeted this file.
+The original DZC3 daemon's behavior was checked offline; 278 host test PASS lines, including full-prefix observer
+and sanitizer checks, preceded the run. The next captured request is FS136,
+a SEEK_SET request to offset 64, still unhandled.
 
-**HS2 has not been reached.** D401 and D404 stopped at their unhandled next
+**HS2 has not been reached.** D401, D404 and D407 stopped at their unhandled next
 requests and automatically rebooted to NORMAL0. All eight CPUs, held/powered
 modem domain, Phosh/Phoc and USB networking passed recovery checks. Wi-Fi profile
 restoration failed because the hotspot could not be found; USB access remained
