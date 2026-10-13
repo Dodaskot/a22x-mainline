@@ -54,7 +54,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest verified bounded cycle, D407, consumed **28 RPC and 135 filesystem
+The latest verified bounded cycle, D419, consumed **28 RPC and 139 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -67,12 +67,16 @@ closed at cursor 112. FS132 opened that file read-only with its cursor at zero,
 retaining the earlier private RAM ledgers. FS133 read 64 bytes and advanced the
 active cursor to 64; FS134 closed it, preserving immutable OPEN and READ records.
 FS135 reopened the same file with flags `0x20010400`, creating a fresh private
-RAM copy of 160 bytes at cursor zero. No earlier WRITE targeted this file.
-The original DZC3 daemon's behavior was checked offline; 278 host test PASS lines, including full-prefix observer
-and sanitizer checks, preceded the run. The next captured request is FS136,
-a SEEK_SET request to offset 64, still unhandled.
+RAM copy of 160 bytes at cursor zero. FS136 sought offset 64; FS137 returned
+size 160 without changing that cursor. FS138 wrote 48 received bytes into the
+private copy at offset 64, advancing to 112 and preserving the first 64 and
+last 48 bytes. FS139 closed it while retaining the immutable OPEN/SEEK/GETSIZE/
+WRITE records and full RAM copy.
+The original DZC3 daemon's behavior was checked offline; 286 host test PASS lines, including full-prefix observer
+and sanitizer checks, preceded the run. The next captured request is FS140,
+a readonly compound request for a different file, still unhandled.
 
-**HS2 has not been reached.** D401, D404 and D407 stopped at their unhandled next
+**HS2 has not been reached.** D401, D404, D407, D410, D413, D416 and D419 stopped at their unhandled next
 requests and automatically rebooted to NORMAL0. All eight CPUs, held/powered
 modem domain, Phosh/Phoc and USB networking passed recovery checks. Wi-Fi profile
 restoration failed because the hotspot could not be found; USB access remained
@@ -85,6 +89,12 @@ checks passing. Its original failure is preserved as
 `FAIL_RECOVERY_AFTER_132_REPLIES_CONSUMED`. Before D401, comparison of all 20 LK
 tags proved identical names, structure and payloads; 838 unused bytes differed.
 The new cycle was bound to the exact qualified hash without relaxing the check.
+
+D416's first independent verification rejected a previously unlisted Wi-Fi
+scan-cancellation STATE message. Driver source confirmed its meaning; only that
+exact message was added to the allowed ambient log entries. Reverification of
+the same sealed evidence passed, with no repeated modem run. The original
+rejection is retained, and kernel-fault checks remain enforced.
 
 SIM, calls and mobile data remain unavailable. The harness does not write
 persistent NVRAM. This repository does not include the device-specific evidence
