@@ -54,7 +54,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest verified bounded cycle, D508, consumed **28 RPC and 168 filesystem
+The latest verified bounded cycle, D513, consumed **28 RPC and 169 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -74,7 +74,7 @@ last 48 bytes. FS139 closed it while retaining the immutable OPEN/SEEK/GETSIZE/
 WRITE records and full RAM copy. FS140 answered a readonly compound request
 for another file: 800 bytes read at offset 64 from an 864-byte file, closed at
 cursor 864, with previous RAM ledgers preserved.
-The original DZC3 daemon's behavior was checked offline; 344 host test PASS lines, including full-prefix observer
+The original DZC3 daemon's behavior was checked offline; 346 host test PASS lines, including full-prefix observer
 and sanitizer checks, preceded the run. FS141 read 9048 bytes from a 9112-byte file and returned them as three packets.
 FS142 (MD144/AP145) read 496 bytes at offset 64 from a 1056-byte file and closed
 at cursor 560. FS143 (MD145/AP146) opened it read-only at cursor zero; FS144
@@ -184,14 +184,27 @@ cases; only the write data may vary. D508 consumed FS168 (MD172/AP173),
 closing the active handle at cursor 64. Its entire RAM capture equals the
 immutable WRITE record; earlier OPEN, SEEK and WRITE snapshots and all 318
 prior artifacts were retained. The next request is FS169 (MD173).
-The current formal result is `FAIL_UNHANDLED_FS_AFTER_168_REPLIES_CONSUMED`,
-with NORMAL0 recovery passing.
+D513 consumed FS169 (MD173/AP174), opening a fresh 12732-byte private RAM
+copy in the Y namespace with flags `0x10400` and cursor zero. Its full captured
+hash matched the qualified Y snapshot, while the modified X copy and 321
+earlier artifacts were retained. The next request is FS170 (MD174), seeking
+to offset 32. D513 initially rebooted into mode 8, so the formal result remains
+`FAIL_RECOVERY_AFTER_169_REPLIES_CONSUMED`. A separate qualified two-word SRAM
+recovery restored NORMAL0 with all CPU, modem, UI and USB checks passing.
+The initial automatic recovery failure is retained; no modem cycle was rerun
+for that recovery.
+
+D511 did not pass independent verification because its FS169 RAM capture
+endpoint was missing. Its original failed archive is retained. The preflight
+capture audit now also requires every data and wire endpoint declared by the
+qualified policies, and an ownership audit rejects contradictory handler
+constraints before execution. D513 uses the corrected capture registration.
 
 D503 did not pass independent verification because a duplicate debugfs
 capture index produced an empty FS167 request file. Its original failed
 evidence is retained. D505 uses a corrected module and additionally checks
 that all debugfs capture slots are assigned once before device execution
-(332 slots in D508), including the named request, response and data mappings.
+(335 slots in D513), including the named request, response and data mappings.
 
 SIM, calls and mobile data remain unavailable. The harness does not write
 persistent NVRAM. This repository does not include the device-specific evidence
