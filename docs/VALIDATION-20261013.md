@@ -54,7 +54,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest verified bounded cycle, D519, consumed **28 RPC and 171 filesystem
+The latest verified bounded cycle, D522, consumed **28 RPC and 172 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -74,7 +74,7 @@ last 48 bytes. FS139 closed it while retaining the immutable OPEN/SEEK/GETSIZE/
 WRITE records and full RAM copy. FS140 answered a readonly compound request
 for another file: 800 bytes read at offset 64 from an 864-byte file, closed at
 cursor 864, with previous RAM ledgers preserved.
-The original DZC3 daemon's behavior was checked offline; 350 host test PASS lines, including full-prefix observer
+The original DZC3 daemon's behavior was checked offline; 352 host test PASS lines, including full-prefix observer
 and sanitizer checks, preceded the run. FS141 read 9048 bytes from a 9112-byte file and returned them as three packets.
 FS142 (MD144/AP145) read 496 bytes at offset 64 from a 1056-byte file and closed
 at cursor 560. FS143 (MD145/AP146) opened it read-only at cursor zero; FS144
@@ -98,7 +98,7 @@ offset 64, advancing to 104 and preserving the first 64 and last 40 bytes.
 FS159 (MD161/AP162) closed the active handle while retaining the full RAM copy
 and immutable OPEN/SEEK/GETSIZE/WRITE records. No persistent NVRAM writes occurred.
 
-**HS2 has not been reached.** D519 automatically recovered to NORMAL0,
+**HS2 has not been reached.** D522 automatically recovered to NORMAL0,
 with all eight CPUs, held/powered modem domain, Phosh/Phoc and USB networking
 passing checks. D437's automatic reboot returned to charging mode (mode 8),
 so its initial recovery check failed. D476 also returned to mode 8 after
@@ -205,8 +205,12 @@ Y OPEN snapshot and actual payload, preserving the first 32 and final 12668
 bytes. The modified X copy and all 326 earlier artifacts were retained.
 Original DZC3 argument and dispatcher checks cover 259 payloads and 777
 descriptor cases for this Y write. Automatic NORMAL0 recovery passed; the
-next request, FS172 (MD176), closes that handle. The current formal result is
-`FAIL_UNHANDLED_FS_AFTER_171_REPLIES_CONSUMED`. After the separate mode-8 recovery,
+next request, FS172 (MD176), closed that handle in D522 (AP177). Its entire
+12732-byte RAM capture equals the immutable Y WRITE record; the earlier
+OPEN, SEEK and WRITE descriptors, both modified copies and all 329 prior
+artifacts were retained. Automatic NORMAL0 recovery passed. The next request
+is FS173 (MD177). The current formal result is
+`FAIL_UNHANDLED_FS_AFTER_172_REPLIES_CONSUMED`. After the separate mode-8 recovery,
 all 20 LK tag payloads, names, offsets and sizes were independently confirmed
 unchanged; only 220 unused bytes differed, and the next preflight remained
 bound to the exact newly qualified raw hash.
@@ -221,7 +225,7 @@ D503 did not pass independent verification because a duplicate debugfs
 capture index produced an empty FS167 request file. Its original failed
 evidence is retained. D505 uses a corrected module and additionally checks
 that all debugfs capture slots are assigned once before device execution
-(340 slots in D519), including the named request, response and data mappings.
+(343 slots in D522), including the named request, response and data mappings.
 
 SIM, calls and mobile data remain unavailable. The harness does not write
 persistent NVRAM. This repository does not include the device-specific evidence
