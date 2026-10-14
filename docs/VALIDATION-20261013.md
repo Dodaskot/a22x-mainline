@@ -281,8 +281,8 @@ of FS183 was then verified in D562: both packets were consumed, their complete
 5312-byte ring readback matched the qualified frames, and the readonly handle
 closed at cursor 5260. All 360 prior artifacts, including the complete X and Y
 RAM histories, were retained. Automatic NORMAL0 recovery passed. D562 stopped at the next unhandled request after 183 replies.
-The next request is readonly OPEN184 (MD189/AP190) for the same 10456-byte
-LTEK_022 file, was qualified offline in D563 and verified on the phone in
+Readonly OPEN184 (MD189/AP190) for the same 10456-byte LTEK_022 file
+was qualified offline in D563 and verified on the phone in
 D565. It returned handle 1 with flags `0x700` and cursor zero, retaining an
 immutable OPEN record and all 363 prior artifacts, including both earlier
 RAM histories and FS183's two-packet wire capture. Automatic NORMAL0 recovery
