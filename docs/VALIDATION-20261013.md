@@ -55,7 +55,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest independently verified bounded cycle, D577, consumed **28 RPC and 188 filesystem
+The latest independently verified bounded cycle, D580, consumed **28 RPC and 189 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -75,7 +75,7 @@ last 48 bytes. FS139 closed it while retaining the immutable OPEN/SEEK/GETSIZE/
 WRITE records and full RAM copy. FS140 answered a readonly compound request
 for another file: 800 bytes read at offset 64 from an 864-byte file, closed at
 cursor 864, with previous RAM ledgers preserved.
-The original DZC3 daemon's behavior was checked offline; 390 host test PASS lines, including full-prefix observer
+The original DZC3 daemon's behavior was checked offline; 392 host test PASS lines, including full-prefix observer
 and sanitizer checks, preceded the run. FS141 read 9048 bytes from a 9112-byte file and returned them as three packets.
 FS142 (MD144/AP145) read 496 bytes at offset 64 from a 1056-byte file and closed
 at cursor 560. FS143 (MD145/AP146) opened it read-only at cursor zero; FS144
@@ -99,7 +99,7 @@ offset 64, advancing to 104 and preserving the first 64 and last 40 bytes.
 FS159 (MD161/AP162) closed the active handle while retaining the full RAM copy
 and immutable OPEN/SEEK/GETSIZE/WRITE records. No persistent NVRAM writes occurred.
 
-**HS2 has not been reached.** D577 automatically recovered to NORMAL0,
+**HS2 has not been reached.** D580 automatically recovered to NORMAL0,
 with all eight CPUs, held/powered modem domain, Phosh/Phoc and USB networking
 passing checks. D552 captured the WRITE181 continuation without sending a
 filesystem reply, but its automatic reboot entered charging mode (mode 8).
@@ -303,10 +303,18 @@ Automatic NORMAL0 recovery passed. SEEK188 (MD193/AP194) was then verified
 in D577: only the active cursor changed to 64, with an immutable SEEK record
 retained. The full 10456-byte RAM copy and OPEN187 at zero remained unchanged,
 along with all 372 prior artifacts and earlier X/Y histories. Automatic
-NORMAL0 recovery passed. The current formal result is
-`FAIL_UNHANDLED_FS_AFTER_188_REPLIES_CONSUMED`. The next request is GETSIZE189
-(MD194/AP195), returning 10456 without changing cursor 64; original DZC3
-behavior was qualified offline in D578, while live handling remains unverified. Before D555, all 20 LK tag payloads,
+NORMAL0 recovery passed. GETSIZE189 (MD194/AP195) was then verified in D580:
+it returned 10456 without changing cursor 64 or either RAM copy, retaining
+OPEN187 at zero and SEEK188 at 64. All 374 prior artifacts and earlier
+histories were preserved, and automatic NORMAL0 recovery passed. The current
+formal result is `FAIL_UNHANDLED_FS_FRAGMENT_AFTER_189_REPLIES_CONSUMED`.
+The next captured packet is WRITE190's first fragment (MD195), 3476 bytes,
+declaring a 5196-byte write. Its continuation and complete request remain
+unverified; no WRITE190 reply was sent. D581 qualified the original DZC3
+first-fragment receive block offline, with no filesystem dispatch. D580's
+initial verifier rejected the new first-fragment checkpoint; its diagnostic
+is retained. Read-only verification then passed with the exact packet hash,
+header and ring positions checked. Before D555, all 20 LK tag payloads,
 names, offsets and sizes were independently confirmed unchanged after the
 separate recovery; 472 unused bytes differed and no used bytes changed.
 The fresh preflight was bound to that exact qualified hash. The initial D549 verifier
@@ -327,7 +335,7 @@ D503 did not pass independent verification because a duplicate debugfs
 capture index produced an empty FS167 request file. Its original failed
 evidence is retained. D505 uses a corrected module and additionally checks
 that all debugfs capture slots are assigned once before device execution
-(387 slots in D577), including the named request, response and data mappings.
+(389 slots in D580), including the named request, response and data mappings.
 
 FS174 integration initially failed its offline full-prefix test because a numeric
 substitution changed the historical FS41 cursor along with the new ring pointer.
