@@ -54,7 +54,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest verified bounded cycle, D531, consumed **28 RPC and 175 filesystem
+The latest verified bounded cycle, D534, consumed **28 RPC and 175 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -74,7 +74,7 @@ last 48 bytes. FS139 closed it while retaining the immutable OPEN/SEEK/GETSIZE/
 WRITE records and full RAM copy. FS140 answered a readonly compound request
 for another file: 800 bytes read at offset 64 from an 864-byte file, closed at
 cursor 864, with previous RAM ledgers preserved.
-The original DZC3 daemon's behavior was checked offline; 358 host test PASS lines, including full-prefix observer
+The original DZC3 daemon's behavior was checked offline; 360 host test PASS lines, including full-prefix observer
 and sanitizer checks, preceded the run. FS141 read 9048 bytes from a 9112-byte file and returned them as three packets.
 FS142 (MD144/AP145) read 496 bytes at offset 64 from a 1056-byte file and closed
 at cursor 560. FS143 (MD145/AP146) opened it read-only at cursor zero; FS144
@@ -98,7 +98,7 @@ offset 64, advancing to 104 and preserving the first 64 and last 40 bytes.
 FS159 (MD161/AP162) closed the active handle while retaining the full RAM copy
 and immutable OPEN/SEEK/GETSIZE/WRITE records. No persistent NVRAM writes occurred.
 
-**HS2 has not been reached.** D531 automatically recovered to NORMAL0,
+**HS2 has not been reached.** D534 automatically recovered to NORMAL0,
 with all eight CPUs, held/powered modem domain, Phosh/Phoc and USB networking
 passing checks. D437's automatic reboot returned to charging mode (mode 8),
 so its initial recovery check failed. D476 also returned to mode 8 after
@@ -220,11 +220,17 @@ copy and immutable OPEN record. All 335 prior artifacts were preserved, and
 automatic NORMAL0 recovery passed. FS175 (MD179/AP180) returned size 12732
 in D531 without changing the active cursor or RAM. All 337 prior artifacts
 were preserved, and automatic NORMAL0 recovery passed. The next request,
-FS176 (MD180), starts a fragmented WRITE declaring 6334 bytes. Only its first
-3476-byte packet has been captured; the complete request and remaining payload
-are not yet qualified. Its physical RX frame crosses the ring end, moving
-from 17480 to 496. The current formal result is
-`FAIL_UNHANDLED_FS_FRAGMENT_AFTER_175_REPLIES_CONSUMED`. After the separate mode-8 recovery,
+FS176 (MD180), starts a fragmented WRITE declaring 6334 bytes. D534 consumed
+only its first 3476-byte packet, moving RX from 17480 to 496 across the ring end,
+and captured the final 2924-byte packet without acknowledging it. Both packets
+use MD sequence 180. The probe sent no FS176 response and changed no file RAM.
+All 339 prior artifacts were retained; automatic NORMAL0 recovery passed. Its
+formal result is `CAPTURED_FS176_CONTINUATION_AFTER_175_REPLIES_CONSUMED`.
+Offline D535 executed the original receive block on both actual packets and
+reassembled 6380 bytes. The original argument parser and WRITE dispatcher
+confirmed a 6334-byte write at offset 64, advancing to 6398 with a native
+40-byte reply. Qualification covers 259 payload cases, 777 dispatcher cases
+and 512 padding variants. A live FS176 response remains unverified. After the separate mode-8 recovery,
 all 20 LK tag payloads, names, offsets and sizes were independently confirmed
 unchanged; only 220 unused bytes differed, and the next preflight remained
 bound to the exact newly qualified raw hash.
@@ -239,7 +245,7 @@ D503 did not pass independent verification because a duplicate debugfs
 capture index produced an empty FS167 request file. Its original failed
 evidence is retained. D505 uses a corrected module and additionally checks
 that all debugfs capture slots are assigned once before device execution
-(350 slots in D531), including the named request, response and data mappings.
+(351 slots in D534), including the named request, response and data mappings.
 
 FS174 integration initially failed its offline full-prefix test because a numeric
 substitution changed the historical FS41 cursor along with the new ring pointer.
@@ -252,7 +258,8 @@ archive and error log were retained. A separate strict check of the exact
 unhandled first fragment and wrapped RX position verified FS175 and recovery
 without accepting FS176 or HS2. Offline execution of the original DZC3 receive
 block confirmed that the first fragment is buffered pending continuation;
-filesystem dispatch was not executed. The full WRITE remains unverified.
+filesystem dispatch was not executed. The complete WRITE has since passed offline qualification in D535;
+its live execution remains unverified.
 
 SIM, calls and mobile data remain unavailable. The harness does not write
 persistent NVRAM. This repository does not include the device-specific evidence
