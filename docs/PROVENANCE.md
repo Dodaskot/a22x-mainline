@@ -2,7 +2,8 @@
 
 Baseline: **accepted v135 boot image, kernel build #95, conn95** (2026-10-10).
 Current source adds patches 0132–0135 tested in **v142/#100** (2026-10-13).
-Prebuilt releases remain v135; no new binary release is included.
+The tested v142 image is published in `releases/v142/` (boot image only);
+`releases/v135/` is unchanged.
 
 ## Kernel
 
@@ -42,10 +43,11 @@ The source tree has no Samsung/MediaTek firmware blobs, busybox binaries,
 build outputs, test logs or device-specific data (serial numbers,
 calibration, Bluetooth address).
 
-Exception: the prebuilt `releases/v135/boot-a22x-v135.img` is the image
-that ran on the test handset, and its initramfs contains a static busybox
+Exception: the prebuilt `releases/v135/boot-a22x-v135.img` and
+`releases/v142/boot-a22x-v142.img` are images that ran on the test handset,
+and their initramfs (identical in both) contains a static busybox
 and the proprietary stock touch firmware `Himax_firmware_fw_jdi.bin`
-(listed in `releases/v135/README.md`).
+(listed in `releases/v135/README.md` and `releases/v142/README.md`).
 
 ## Fixes after v135
 
@@ -75,6 +77,14 @@ Applying all 135 patches to the declared Linux v7.2 base produces tree
 The accepted CPU/GPU/CCI device-tree settings are preserved. Configuration and
 Module.symvers match the preceding kernel; installed connectivity modules were
 retained. The kernel mirror remains the historical baseline until separately synced.
+
+`releases/v142/boot-a22x-v142.img` is the tested image (SHA-256
+`aa375adf2cfe1852a6422b1cb7c34c17f27e64e82f7980e9ea6c8c2c5071188c`). Its
+initramfs and command line are byte-identical to v135; the kernel is build
+#100 from the 135-patch tree above with `a22x-v135.config`, and the DTB is
+the built NFC DTB listed in the validation report. No connectivity modules
+are published for #100. The `btmtk_stp` fix listed above is in the source
+but not in any prebuilt module.
 
 See [validation and limits](VALIDATION-20261013.md) for device results, artifact
 hashes, sensor observations and the current modem checkpoint. The CCCI test

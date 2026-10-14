@@ -2,7 +2,8 @@
 
 Tested device: Samsung SM-A226B. Running image: v142, Linux
 `7.2.0-a22x+`, build #100, LLVM 23.1.1. This update publishes source and
-results; the downloadable v135 image and connectivity modules are unchanged.
+results; the tested v142 boot image is published in `releases/v142/`. The
+v135 image and connectivity modules are unchanged.
 
 ## USB-C OTG
 

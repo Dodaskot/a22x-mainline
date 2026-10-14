@@ -16,7 +16,8 @@ during development is Arch Linux ARM with Phosh.
 
 This source tree extends the **accepted v135 baseline** with the changes
 tested in **v142 (kernel build #100)**, including USB-C host/device switching.
-The downloadable v135 images remain unchanged. See [provenance](docs/PROVENANCE.md)
+A prebuilt v142 `boot.img` is in [releases/v142](releases/v142/README.md);
+the v135 images remain unchanged. See [provenance](docs/PROVENANCE.md)
 and the [2026-10-13 validation report](docs/VALIDATION-20261013.md).
 
 > **Status: experimental.** Usable as a development phone, not as a daily
@@ -69,7 +70,8 @@ boot/             mkboot.sh (boot.img for stock LK), initramfs init, flash.sh
 rootfs/           ALSA UCM profile, feedbackd theme
 tools/            bring-up helpers (memtool, clock/DT generators, smoke test)
 docs/             building/flashing guide, hardware notes, provenance
-releases/v135/    prebuilt boot.img + matching conn modules (Git LFS)
+releases/v142/    prebuilt v142 boot.img (Git LFS)
+releases/v135/    prebuilt v135 boot.img + matching conn modules (Git LFS)
 ```
 
 ## Quick start
@@ -82,7 +84,9 @@ OUT=$PWD/kernel/out boot/mkboot.sh v142      # -> boot/images/boot-mainline-v142
 boot/flash.sh boot/images/boot-mainline-v142.img   # phone in Download mode
 ```
 
-A prebuilt v135 `boot.img` and matching Wi-Fi/BT modules are in
+A prebuilt v142 `boot.img` (this source tree, kernel #100) is in
+[releases/v142](releases/v142/README.md); build the Wi-Fi/BT modules for it
+with `conn/build.sh`. The v135 `boot.img` and matching Wi-Fi/BT modules are in
 [releases/v135](releases/v135/README.md). They are kept exactly as built for
 v135 and do not contain source fixes made after it
 ([docs/PROVENANCE.md](docs/PROVENANCE.md#fixes-after-v135)).
@@ -92,10 +96,11 @@ Full instructions, the root filesystem layout and rollback:
 
 ## Proprietary firmware
 
-The source tree contains no Samsung/MediaTek firmware. The prebuilt
-`releases/v135/boot-a22x-v135.img` is the exception: its initramfs contains
-the stock touch firmware `Himax_firmware_fw_jdi.bin` (Samsung/Himax,
-proprietary), see [releases/v135](releases/v135/README.md).
+The source tree contains no Samsung/MediaTek firmware. The prebuilt images
+`releases/v142/boot-a22x-v142.img` and `releases/v135/boot-a22x-v135.img`
+are the exception: their initramfs contains the stock touch firmware
+`Himax_firmware_fw_jdi.bin` (Samsung/Himax, proprietary), see
+[releases/v142](releases/v142/README.md) and [releases/v135](releases/v135/README.md).
 
 For your own builds copy these from the stock firmware (`/vendor/firmware`
 of the same device):
