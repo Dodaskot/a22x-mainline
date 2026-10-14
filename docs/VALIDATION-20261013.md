@@ -54,7 +54,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest verified bounded cycle, D497, consumed **28 RPC and 165 filesystem
+The latest verified bounded cycle, D500, consumed **28 RPC and 166 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -74,7 +74,7 @@ last 48 bytes. FS139 closed it while retaining the immutable OPEN/SEEK/GETSIZE/
 WRITE records and full RAM copy. FS140 answered a readonly compound request
 for another file: 800 bytes read at offset 64 from an 864-byte file, closed at
 cursor 864, with previous RAM ledgers preserved.
-The original DZC3 daemon's behavior was checked offline; 338 host test PASS lines, including full-prefix observer
+The original DZC3 daemon's behavior was checked offline; 340 host test PASS lines, including full-prefix observer
 and sanitizer checks, preceded the run. FS141 read 9048 bytes from a 9112-byte file and returned them as three packets.
 FS142 (MD144/AP145) read 496 bytes at offset 64 from a 1056-byte file and closed
 at cursor 560. FS143 (MD145/AP146) opened it read-only at cursor zero; FS144
@@ -98,7 +98,7 @@ offset 64, advancing to 104 and preserving the first 64 and last 40 bytes.
 FS159 (MD161/AP162) closed the active handle while retaining the full RAM copy
 and immutable OPEN/SEEK/GETSIZE/WRITE records. No persistent NVRAM writes occurred.
 
-**HS2 has not been reached.** D497 automatically recovered to NORMAL0,
+**HS2 has not been reached.** D500 automatically recovered to NORMAL0,
 with all eight CPUs, held/powered modem domain, Phosh/Phoc and USB networking
 passing checks. D437's automatic reboot returned to charging mode (mode 8),
 so its initial recovery check failed. D476 also returned to mode 8 after
@@ -171,9 +171,12 @@ at cursor 64 while retaining the immutable OPEN and READ records and 308
 earlier artifacts. D497 consumed FS165 (MD169/AP170), reopening that file
 with flags `0x10400` and cursor zero. A fresh 12732-byte private RAM copy was
 captured and its complete hash independently checked against the qualified
-archive snapshot. The next request, FS166 (MD170), seeks to offset 32.
-The current formal result is `FAIL_UNHANDLED_FS_AFTER_165_REPLIES_CONSUMED`,
-with NORMAL0 recovery passing.
+archive snapshot. D500 consumed FS166 (MD170/AP171), seeking to offset 32
+without changing the RAM contents. The OPEN descriptor and a snapshot of
+the actual RAM after OPEN remain immutable for later comparisons; all 313
+earlier artifacts were retained. The next request, FS167 (MD171), writes
+32 bytes at that cursor. The current formal result is
+`FAIL_UNHANDLED_FS_AFTER_166_REPLIES_CONSUMED`, with NORMAL0 recovery passing.
 
 SIM, calls and mobile data remain unavailable. The harness does not write
 persistent NVRAM. This repository does not include the device-specific evidence
