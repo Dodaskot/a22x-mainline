@@ -55,7 +55,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest independently verified bounded cycle, D562, consumed **28 RPC and 183 filesystem
+The latest independently verified bounded cycle, D565, consumed **28 RPC and 184 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -75,7 +75,7 @@ last 48 bytes. FS139 closed it while retaining the immutable OPEN/SEEK/GETSIZE/
 WRITE records and full RAM copy. FS140 answered a readonly compound request
 for another file: 800 bytes read at offset 64 from an 864-byte file, closed at
 cursor 864, with previous RAM ledgers preserved.
-The original DZC3 daemon's behavior was checked offline; 380 host test PASS lines, including full-prefix observer
+The original DZC3 daemon's behavior was checked offline; 382 host test PASS lines, including full-prefix observer
 and sanitizer checks, preceded the run. FS141 read 9048 bytes from a 9112-byte file and returned them as three packets.
 FS142 (MD144/AP145) read 496 bytes at offset 64 from a 1056-byte file and closed
 at cursor 560. FS143 (MD145/AP146) opened it read-only at cursor zero; FS144
@@ -99,7 +99,7 @@ offset 64, advancing to 104 and preserving the first 64 and last 40 bytes.
 FS159 (MD161/AP162) closed the active handle while retaining the full RAM copy
 and immutable OPEN/SEEK/GETSIZE/WRITE records. No persistent NVRAM writes occurred.
 
-**HS2 has not been reached.** D562 automatically recovered to NORMAL0,
+**HS2 has not been reached.** D565 automatically recovered to NORMAL0,
 with all eight CPUs, held/powered modem domain, Phosh/Phoc and USB networking
 passing checks. D552 captured the WRITE181 continuation without sending a
 filesystem reply, but its automatic reboot entered charging mode (mode 8).
@@ -280,10 +280,16 @@ response is split into 3476/1796-byte packets (AP188/AP189). Live handling
 of FS183 was then verified in D562: both packets were consumed, their complete
 5312-byte ring readback matched the qualified frames, and the readonly handle
 closed at cursor 5260. All 360 prior artifacts, including the complete X and Y
-RAM histories, were retained. Automatic NORMAL0 recovery passed. The current
-formal result is `FAIL_UNHANDLED_FS_AFTER_183_REPLIES_CONSUMED`.
+RAM histories, were retained. Automatic NORMAL0 recovery passed. D562 stopped at the next unhandled request after 183 replies.
 The next request is readonly OPEN184 (MD189/AP190) for the same 10456-byte
-LTEK_022 file, qualified offline in D563; live OPEN184 handling is unverified. Before D555, all 20 LK tag payloads,
+LTEK_022 file, was qualified offline in D563 and verified on the phone in
+D565. It returned handle 1 with flags `0x700` and cursor zero, retaining an
+immutable OPEN record and all 363 prior artifacts, including both earlier
+RAM histories and FS183's two-packet wire capture. Automatic NORMAL0 recovery
+passed. The current formal result is
+`FAIL_UNHANDLED_FS_AFTER_184_REPLIES_CONSUMED`. The next request, READ185
+(MD190/AP191), reads the first 64 bytes of that same file; original DZC3
+behavior was qualified offline in D566, while live handling remains unverified. Before D555, all 20 LK tag payloads,
 names, offsets and sizes were independently confirmed unchanged after the
 separate recovery; 472 unused bytes differed and no used bytes changed.
 The fresh preflight was bound to that exact qualified hash. The initial D549 verifier
@@ -304,7 +310,7 @@ D503 did not pass independent verification because a duplicate debugfs
 capture index produced an empty FS167 request file. Its original failed
 evidence is retained. D505 uses a corrected module and additionally checks
 that all debugfs capture slots are assigned once before device execution
-(376 slots in D562), including the named request, response and data mappings.
+(378 slots in D565), including the named request, response and data mappings.
 
 FS174 integration initially failed its offline full-prefix test because a numeric
 substitution changed the historical FS41 cursor along with the new ring pointer.
