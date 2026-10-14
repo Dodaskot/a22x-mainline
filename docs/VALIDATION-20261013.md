@@ -55,7 +55,7 @@ that library is not included here.
 
 ## Modem checkpoint
 
-The latest independently verified bounded cycle, D595, consumed **28 RPC and 193 filesystem
+The latest independently verified bounded cycle, D598, consumed **28 RPC and 194 filesystem
 responses** on kernel #100. FS122 sought offset 64 in a private RAM copy of
 an NVRAM file; FS123 GETSIZE returned 176 bytes without changing the cursor.
 FS124 wrote 56 bytes into that private RAM copy, preserving the surrounding
@@ -75,7 +75,7 @@ last 48 bytes. FS139 closed it while retaining the immutable OPEN/SEEK/GETSIZE/
 WRITE records and full RAM copy. FS140 answered a readonly compound request
 for another file: 800 bytes read at offset 64 from an 864-byte file, closed at
 cursor 864, with previous RAM ledgers preserved.
-The original DZC3 daemon's behavior was checked offline; 403 host test PASS lines, including full-prefix observer
+The original DZC3 daemon's behavior was checked offline; 405 host test PASS lines, including full-prefix observer
 and sanitizer checks, preceded the run. FS141 read 9048 bytes from a 9112-byte file and returned them as three packets.
 FS142 (MD144/AP145) read 496 bytes at offset 64 from a 1056-byte file and closed
 at cursor 560. FS143 (MD145/AP146) opened it read-only at cursor zero; FS144
@@ -99,10 +99,10 @@ offset 64, advancing to 104 and preserving the first 64 and last 40 bytes.
 FS159 (MD161/AP162) closed the active handle while retaining the full RAM copy
 and immutable OPEN/SEEK/GETSIZE/WRITE records. No persistent NVRAM writes occurred.
 
-**HS2 has not been reached.** D595 automatically recovered to NORMAL0,
+**HS2 has not been reached.** D598 automatically recovered to NORMAL0,
 with all eight CPUs, held/powered modem domain, Phosh/Phoc and USB networking
 passing checks. Its formal result is
-`FAIL_UNHANDLED_FS_AFTER_193_REPLIES_CONSUMED`. D589 consumed the CLOSE191 reply, but its
+`FAIL_UNHANDLED_FS_AFTER_194_REPLIES_CONSUMED`. D589 consumed the CLOSE191 reply, but its
 automatic reboot entered charging mode (mode 8). A separate qualified
 two-volatile-word recovery restored NORMAL0, with all eight CPUs, held/powered
 modem domain, Phosh/Phoc and USB networking passing checks. Its original
@@ -350,8 +350,14 @@ qualified offline in D593. D595 then consumed the actual OPEN reply,
 retaining an immutable OPEN record at cursor zero and all 385 prior artifacts.
 All 403 host checks passed before execution, and automatic NORMAL0 recovery
 passed. The next request is READ194 (MD199/AP200), reading the first 64 bytes
-from LTEM_001. Original DZC3 behavior was qualified offline in D596; live
-READ194 handling remains unverified. D581 had qualified
+from LTEM_001. Original DZC3 behavior was qualified offline in D596.
+D598 consumed the READ194 reply and advanced only the active readonly
+handle to cursor 64, preserving OPEN193 at zero and the immutable READ64
+record. All 405 host checks passed before execution, and all 387 prior
+artifacts and automatic NORMAL0 recovery passed verification. The next
+request is CLOSE195 (MD200/AP201), closing the readonly handle at cursor
+64. Original DZC3 behavior was qualified offline in D599; live CLOSE195
+handling remains unverified. D581 had qualified
 the original first-fragment receive block before the D583 capture. D580's
 initial verifier rejected the new first-fragment checkpoint; its diagnostic
 is retained. Read-only verification then passed with the exact packet hash,
@@ -376,7 +382,7 @@ D503 did not pass independent verification because a duplicate debugfs
 capture index produced an empty FS167 request file. Its original failed
 evidence is retained. D505 uses a corrected module and additionally checks
 that all debugfs capture slots are assigned once before device execution
-(401 slots in D595), including the named request, response and data mappings.
+(403 slots in D598), including the named request, response and data mappings.
 
 FS174 integration initially failed its offline full-prefix test because a numeric
 substitution changed the historical FS41 cursor along with the new ring pointer.
