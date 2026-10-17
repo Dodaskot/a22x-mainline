@@ -87,6 +87,8 @@ workgroup, workgroup-size limits [512, 512, 512] and 32 KiB shared memory on the
 actual Mali-G57. The query created no VkDevice and submitted no GPU work. This
 allows a separate host noop shim to reproduce the target limits for exact
 compiler replay, without changing benchmark specialization or bypassing filters.
+The shim still models MC4/revision 0 rather than the handset's MC2/revision 1;
+this is a controlled relative compiler fixture, not a complete device simulator.
 The guarded modem handoff then resumed FS581 successfully on the same boot.
 
 The measured-limit shim subsequently replayed all 45 selected Particle/Stereo
