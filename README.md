@@ -56,6 +56,11 @@ Not working / not done:
 
 Details: [docs/HARDWARE.md](docs/HARDWARE.md).
 
+The [2026-10-17 development report](docs/VALIDATION-20261017.md) records
+OpenCL score 174 with a Gaussian Blur validation failure, an experimental
+Vulkan compute checkpoint, touchscreen shell selection and the FS565 modem
+checkpoint. These experiments are not included in the published boot images.
+
 ## Repository layout
 
 ```
