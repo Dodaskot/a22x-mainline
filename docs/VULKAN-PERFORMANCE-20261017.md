@@ -91,8 +91,10 @@ The guarded modem handoff then resumed FS581 successfully on the same boot.
 
 The measured-limit shim subsequently replayed all 45 selected Particle/Stereo
 pipeline hashes through both compilers: 90 successful single-pipeline compilations,
-zero skips and zero spills. Particle used 22 allocated registers with BI and 32
-with Kraid; Stereo main used 16 versus 32, and Stereo auxiliary 6 versus 20–22.
+zero skips and zero spills. Particle reported 22 Work registers with BI and 32
+with Kraid; Stereo main reported 16 versus 32, and Stereo auxiliary 6 versus 20–22.
+These values map to the same hardware allocation class of 32 registers per thread
+in both compilers; they do not establish an occupancy reduction.
 Static load/store estimates matched within every pair. This provides no compiler
 evidence that Kraid removes the load/store bottleneck in these targets; it is
 not a hardware throughput measurement. The exact proprietary inputs remain private.
