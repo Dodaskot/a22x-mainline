@@ -64,6 +64,10 @@ The tested driver is available through the per-user `a22x-vulkan-run PROGRAM`
 launcher and a Vulkan Test desktop entry. Loader enumeration through the
 installed launcher passed on Mali-G57 MC2; global driver selection is unchanged.
 
+The [performance investigation](VULKAN-PERFORMANCE-20261017.md) records the
+Android sub-score comparison, unsuccessful initial tuning and observed GPU
+scheduler timeouts. Benchmark completion is not a fault-free stability result.
+
 ## Touchscreen login and shell selection
 
 A private Phrog 0.53 / libPhosh 0.57 greeter was installed with the existing
@@ -103,9 +107,9 @@ The handset has approximately 3.44 GiB usable physical RAM, zstd zram and
 
 ## Modem checkpoint and recovery
 
-The latest fully qualified checkpoint before the Vulkan benchmark is
-**28 RPC + 571 filesystem requests**, candidate D1847 / live D1848, modem
-generation 9. HS2 remains absent; SIM,
+The latest fully qualified checkpoint before the Kraid diagnostic is
+**28 RPC + 580 filesystem requests**, candidate D1874 / live D1875, modem
+generation 18. HS2 remains absent; SIM,
 network registration, calls and mobile data are not working.
 
 FS565 passed original-DZC3 qualification, the full observer/sanitizer suite and
@@ -128,3 +132,11 @@ FS566 through FS571 subsequently passed autonomous complete cycles on the same
 boot. The loop paused before executing the fully prepared FS572 candidate to
 provide a quiet GPU benchmark window. After the completed Vulkan run and GPU
 cleanup, the autonomous loop was restarted with that prepared FS572 candidate.
+
+FS572 through FS580 subsequently completed full qualification. Two test helpers
+needed corrected expectations when reusing the historical strict FS217 WRITE:
+mutating its exact sample must be rejected, and an identical archive snapshot
+is valid when the captured WRITE did not change those bytes. Source auditors
+and protocol handlers were not relaxed. Variable-payload controls were retained
+and regression-checked. FS581 is fully prepared offline while the GPU diagnostic
+runs; a guarded handoff resumes live modem cycles after GPU cleanup.
