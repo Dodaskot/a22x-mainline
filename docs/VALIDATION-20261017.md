@@ -18,7 +18,7 @@ mapping identifies 407 as Gaussian Blur. The underlying cause remains unknown.
 The original result is preserved. Further diagnostics must compare actual
 Gaussian outputs without changing benchmark inputs, validation or scoring.
 
-## Experimental Vulkan compute
+## Experimental Vulkan graphics and compute
 
 A private PanVK frontend port, based on Mesa 26.3-devel and the experimental
 [panvk-g99-jm project](https://github.com/Noysz/panvk-g99-jm), enumerated the
@@ -26,9 +26,43 @@ actual Mali-G57 MC2. It retained the mainline Panfrost DRM backend.
 A hardware compute dispatch completed and all 64 output integers matched the
 independent CPU expectation `i * 3 + 7` exactly; fence timeout was five seconds.
 
-This establishes one hardware compute checkpoint. Graphics, WSI, CTS and broad
-application compatibility remain unverified. The driver is private; no global
-Vulkan ICD or system Mesa replacement was installed.
+The original private build also passed an offscreen graphics test: all 4,096
+clear-color pixels and all 4,032 strictly interior/exterior triangle pixels
+matched an independent CPU expectation. The 64 pixels exactly on the triangle
+edge were excluded from the raster tie-breaking comparison. A separate CPU
+fixture verified the harness; the hardware build explicitly rejects llvmpipe.
+
+A separate build enabling Wayland repeated both pixel checks successfully.
+Native `vkcube` on Mali-G57 completed one-frame and three-frame Wayland runs.
+A 120-frame attempt timed out while the Phrog login layer obscured the window;
+screenshots show the login screen only. This is consistent with occluded-surface
+throttling, but the cause is not proven. The phone boot and greeter/compositor
+identities remained unchanged, with no observed GPU fault/reset messages.
+Visible window rendering and sustained presentation remain unverified.
+
+These are limited hardware graphics/compute checkpoints, not Vulkan conformance
+or broad application compatibility. No global Vulkan ICD or system Mesa
+replacement was installed. The Wayland build SHA256 is
+`52f8672ac5d52fc1b3255b2cc1e4cb245f5a28c8c0bd864e21b8ddaeaf627275`.
+
+## Geekbench 6 Vulkan
+
+The unmodified Geekbench 6.7.2 Preview ARM binary completed all eight Vulkan
+workloads on Mali-G57 MC2 using the private Wayland-enabled PanVK build above.
+The run took **839 seconds (13 minutes 59 seconds)**, exited with status zero
+and uploaded [Vulkan score 989](https://browser.geekbench.com/v6/compute/6941119).
+There were no benchmark validation-failure messages, including for Gaussian
+Blur. The phone remained on the same boot. No software fallback or benchmark
+instrumentation was used; modem cycles were paused during this run.
+
+This is an application-level benchmark result, not Vulkan conformance. The
+driver still warns that it is experimental and not a conformant implementation.
+The OpenCL score above contains a failed workload, so its ratio to this Vulkan
+score should not be interpreted as a clean performance comparison.
+
+The tested driver is available through the per-user `a22x-vulkan-run PROGRAM`
+launcher and a Vulkan Test desktop entry. Loader enumeration through the
+installed launcher passed on Mali-G57 MC2; global driver selection is unchanged.
 
 ## Touchscreen login and shell selection
 
@@ -69,8 +103,9 @@ The handset has approximately 3.44 GiB usable physical RAM, zstd zram and
 
 ## Modem checkpoint and recovery
 
-The last fully qualified checkpoint is **28 RPC + 565 filesystem requests**,
-candidate D1828 / live D1830, modem generation 3. HS2 remains absent; SIM,
+The latest fully qualified checkpoint before the Vulkan benchmark is
+**28 RPC + 571 filesystem requests**, candidate D1847 / live D1848, modem
+generation 9. HS2 remains absent; SIM,
 network registration, calls and mobile data are not working.
 
 FS565 passed original-DZC3 qualification, the full observer/sanitizer suite and
@@ -88,3 +123,8 @@ targeted tests passed. Recovery bootstrap passed two HS1 exchanges without
 rebooting. A fresh FS565 cycle (D1830) then passed complete independent capture
 audit, UI/USB checks, claim release and clock stability on the same boot.
 The autonomous loop resumed from the next actual request, FS566.
+
+FS566 through FS571 subsequently passed autonomous complete cycles on the same
+boot. The loop paused before executing the fully prepared FS572 candidate to
+provide a quiet GPU benchmark window. After the completed Vulkan run and GPU
+cleanup, the autonomous loop was restarted with that prepared FS572 candidate.
