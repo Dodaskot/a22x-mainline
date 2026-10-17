@@ -62,6 +62,9 @@ Vulkan score 989 with no reported workload validation failures, touchscreen
 shell selection and the FS582 modem checkpoint. These experiments are not
 included in the published boot images.
 
+The [2026-10-18 modem checkpoint](docs/MODEM-VALIDATION-20261018.md) advances
+the verified prefix to 606 filesystem requests. HS2 is still pending.
+
 ## Repository layout
 
 ```
