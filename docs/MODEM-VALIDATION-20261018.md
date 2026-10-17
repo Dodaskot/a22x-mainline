@@ -1,7 +1,7 @@
 # Modem development checkpoint, 2026-10-18
 
-The latest verified snapshot is **28 RPC + 606 filesystem requests**, candidate
-D1954 / live D1955, modem generation 8 on development kernel #101. HS1 passes;
+The latest verified snapshot is **28 RPC + 609 filesystem requests**, candidate
+D1964 / live D1965, modem generation 11 on development kernel #101. HS1 passes;
 HS2 remains absent. SIM registration, calls and mobile data are not working.
 These changes are outside the published v135 boot-image baseline.
 
@@ -35,3 +35,12 @@ GPU testing and modem execution use a guarded handoff. Before FS605 resumed,
 the coordinator observed 67 seconds without GPU benchmark/controller processes,
 then independently checked boot, UI health, checkpoint, full test results and
 module hash. The handoff did not skip any native or live qualification gate.
+
+FS607 and FS608 completed the read-only header check and CLOSE. FS609 then
+reopened a fresh private copy of the retained NA77 RAM image using the captured
+legacy flags. Its qualifier pins the actual request, original WRITE history
+and completed fragment provenance. Original-firmware emulation, independent
+auditor controls, the complete sanitizer/build suite, same-boot execution and
+sealed capture audit all passed. FS608 took 119.438 seconds for its complete
+cycle; FS609 was prepared offline during coordinated GPU testing. HS2 remains
+absent. Later in-progress requests are not counted in this checkpoint.
