@@ -140,3 +140,9 @@ is valid when the captured WRITE did not change those bytes. Source auditors
 and protocol handlers were not relaxed. Variable-payload controls were retained
 and regression-checked. FS581 is fully prepared offline while the GPU diagnostic
 runs; a guarded handoff resumes live modem cycles after GPU cleanup.
+
+The full Kraid diagnostic subsequently completed with score 989. After the GPU
+window was released and independently checked, FS581 and FS582 passed complete
+same-boot qualification. The latest verified snapshot is candidate D1880 / live
+D1881, generation 20, **28 RPC + 582 filesystem requests**. HS2 remains absent;
+the autonomous loop is preparing the next captured request.

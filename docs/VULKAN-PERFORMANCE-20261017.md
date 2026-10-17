@@ -69,6 +69,30 @@ builds, runtime captures and proprietary benchmark shader data remain separate;
 these experiments are not installed into published boot images. Android-level
 performance has not yet been achieved.
 
-A full Kraid diagnostic is in progress. Early observation found canceled GPU
-fences (`ECANCELED`) during Background Blur and corresponding scheduler timeouts.
-The candidate is not accepted as stable, regardless of any eventual score.
+The full Kraid diagnostic completed with [score 989](https://browser.geekbench.com/v6/compute/6941207),
+893 seconds, exit 0 and all eight workloads without benchmark validation-failure
+messages. The observer checked 3,729 exported fence statuses after successful
+waits and found 18 `ECANCELED` statuses. Export/info/read failures and observed
+active-after-wait races were zero; direct syscall waits remain outside coverage.
+Phase correlation places 2 canceled fences in Background Blur and 16 in
+Gaussian Blur. The kernel interval contains 52 scheduler timeouts: 4 in
+Background Blur, 47 in Gaussian Blur and 1 within the two-second Edge-to-Gaussian
+transition. Historical clock drift before paired samples remains unmeasured.
+These counts describe
+different events and are not interchangeable. No speed improvement or stable
+replacement was established; the original private launcher remains selected.
+
+After the process exited, a metadata-only query verified 512 invocations per
+workgroup, workgroup-size limits [512, 512, 512] and 32 KiB shared memory on the
+actual Mali-G57. The query created no VkDevice and submitted no GPU work. This
+allows a separate host noop shim to reproduce the target limits for exact
+compiler replay, without changing benchmark specialization or bypassing filters.
+The guarded modem handoff then resumed FS581 successfully on the same boot.
+
+The measured-limit shim subsequently replayed all 45 selected Particle/Stereo
+pipeline hashes through both compilers: 90 successful single-pipeline compilations,
+zero skips and zero spills. Particle used 22 allocated registers with BI and 32
+with Kraid; Stereo main used 16 versus 32, and Stereo auxiliary 6 versus 20–22.
+Static load/store estimates matched within every pair. This provides no compiler
+evidence that Kraid removes the load/store bottleneck in these targets; it is
+not a hardware throughput measurement. The exact proprietary inputs remain private.
