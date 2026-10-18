@@ -1,7 +1,7 @@
 # Modem development checkpoint, 2026-10-18
 
-The latest verified snapshot is **28 RPC + 613 filesystem requests**, candidate
-D1977 / live D1978, modem generation 15 on development kernel #101. HS1 passes;
+The latest verified snapshot is **28 RPC + 614 filesystem requests**, candidate
+D1981 / live D1982, modem generation 16 on development kernel #101. HS1 passes;
 HS2 remains absent. SIM registration, calls and mobile data are not working.
 These changes are outside the published v135 boot-image baseline.
 
@@ -62,5 +62,12 @@ and accepts six consistent source-payload variations.
 A separate post-live original-DZC3 replay used all four actually captured
 fragments, not synthetic continuation samples. All six emulator scripts passed;
 the reassembled request, native response and resulting RAM matched the sealed
-phone capture. FS613 is included in the verified count. The next captured
-request is FS614 CLOSE, which remains unqualified in this snapshot.
+phone capture. FS613 is included in the verified count.
+
+FS614 CLOSE then passed original-firmware qualification, independent negative
+controls, the complete 593-group sanitizer/build suite, same-boot phone
+execution and sealed capture audit. It preserves the 26,592-byte private RAM
+image and cursor while closing the handle. The evidence archive hash was
+independently rechecked after the live run. The next captured request, FS615,
+is a compound read of the second half of that current RAM image. It remains
+unqualified; the autonomous loop stopped before executing it.
