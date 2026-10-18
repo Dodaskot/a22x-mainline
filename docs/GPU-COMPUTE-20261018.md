@@ -8,6 +8,7 @@ published boot-image baseline and do not establish Vulkan conformance.
 |---|---:|---|
 | Vulkan r4, hardware counters | 1236 | [6941631](https://browser.geekbench.com/v6/compute/6941631) |
 | Vulkan r4, clean repeat | 1233 | [6941639](https://browser.geekbench.com/v6/compute/6941639) |
+| Vulkan r4, descriptor cache-flush fix | 1238 | [6942019](https://browser.geekbench.com/v6/compute/6942019) |
 | Vulkan r4, shader diagnostic | 1238 | [6941712](https://browser.geekbench.com/v6/compute/6941712) |
 | OpenCL, system Rusticl on #101 | 351 | [6941685](https://browser.geekbench.com/v6/compute/6941685) |
 | OpenCL, private Rusticl r2 | 698 | [6941706](https://browser.geekbench.com/v6/compute/6941706) |
@@ -129,3 +130,26 @@ This is a diagnostic workaround for these fixtures, not a general correctness
 fix or performance result. No new Geekbench score, system-driver change or
 default promotion follows from these tests. The underlying execution and
 cache-maintenance path remains under investigation.
+
+The subsequent source audit identified a missing descriptor cache flush in the
+accepted r4 port. `descriptor_set_flush` calculated its dirty range, but a stub
+comment replaced the cache-maintenance call before the dirty markers were
+cleared. A private build from clean commit `1096b54505` replaces that stub with
+the existing `panvk_priv_bo_flush` call; other tracked sources are unchanged.
+The old build fails the isolated byte case on both sides of the comparison,
+while the fixed build passes with normal cached mappings and with kernel cache
+maintenance. The latter trace now includes the previously omitted descriptor
+storage BO. The unchanged full fixture also passes all 512 cases and 32,768
+output/guard words with the fixed driver, normal cached mappings and no observer.
+
+One unmodified full Geekbench Vulkan run with this fix scored 1238 in 722.6
+seconds. All eight workloads completed and the upload succeeded. Live library
+mapping and start/end hashes identify the private fixed driver. It used the
+normal 390–955 MHz governor range, without a frequency lock, shader tracing or
+preloaded instrumentation. The phone retained its boot and UI identities;
+the complete kernel window contained no new GPU fault, timeout or reset, and
+all benchmark processes exited. The only stderr line was PanVK's existing
+nonconformance warning. The score is close to the earlier 1233–1236 results;
+this single observation does not establish a performance gain. The fix remains
+a private development candidate rather than a system-driver promotion or a
+claim of general Vulkan conformance.
