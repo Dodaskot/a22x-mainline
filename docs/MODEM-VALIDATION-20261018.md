@@ -1,7 +1,7 @@
 # Modem development checkpoint, 2026-10-18
 
-The latest verified snapshot is **28 RPC + 615 filesystem requests**, candidate
-D1984 / live D1985, modem generation 17 on development kernel #101. HS1 passes;
+The latest verified snapshot is **28 RPC + 617 filesystem requests**, candidate
+D1990 / live D1991, modem generation 19 on development kernel #101. HS1 passes;
 HS2 remains absent. SIM registration, calls and mobile data are not working.
 These changes are outside the published v135 boot-image baseline.
 
@@ -76,6 +76,36 @@ sample and nine independently changed RAM patterns. The independent auditor
 rejects stale-owner responses when the old and current suffix differ. The
 full 594-group ASan/UBSan suite and W1 module build passed, followed by one
 same-boot phone run, complete capture audit and independent evidence-archive
-hash verification. The four packets use one TX pointer publication. The next
-captured request is FS616, a read-only OPEN of the same file; it remains
-unqualified in this snapshot.
+hash verification. The four packets use one TX pointer publication. Later
+qualified stages are listed below.
+
+FS616 reopens the same file read-only using the current FS613 RAM image after
+FS614 CLOSE and FS615 readback. Its debug snapshot remains an alias of current
+RAM. Qualification pins the captured request, private-source flags, complete
+WRITE history and all three fragment acknowledgements. Original DZC3 OPEN,
+argument, dispatcher and packer emulation passed. Nine coherent changed-RAM
+controls passed; stale snapshots, altered source state and nonboolean
+publication flags were rejected. The full 595-group sanitizer/build suite,
+one same-boot phone run and independent sealed-capture audit passed.
+
+FS617 reads the first 64 bytes from that current image. Its 108-byte reply
+occupies a 128-byte transport frame at TX offset 20,368. This crosses the
+20,480-byte ring boundary: the correct physical writes are 112 + 16 bytes and
+the next TX index is 16. The complete observer caught a production bug in the
+generated sender and final ledger, which had assumed an unwrapped index of
+20,496. Both failed offline attempts were retained; no phone run used them.
+
+The corrected sender verifies both physical spans before ACK or pointer
+publication. Checks cover 1,024 frame-bit mutations, 128 readback-byte
+corruptions, invalid plans, fault points, request truncation and output
+capacity. A separate test calls the actual shared ring planner. Independent
+ASan/UBSan tests of two original Samsung HIF source versions confirm the
+112 + 16 copy, index 16 and publication ordering. These are source-reference
+checks; an exact match to the DZC3 kernel binary has not been established.
+
+FS617 then passed all 596 complete-suite groups, the module build, one
+same-boot phone run, the actual current-RAM capture auditor and independent
+archive verification. Local verification rehashed all 2,551 source inputs,
+633 archived test executables and 2,096 extracted evidence files. HS2 remains
+absent. The next captured request is FS618, a 32-byte CLOSE; it is not included
+in this verified snapshot.

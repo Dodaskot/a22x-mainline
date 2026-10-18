@@ -84,3 +84,23 @@ some returned untouched output sentinels. CPU fixture checks passed, but these
 hardware observations remain unexplained. No new GPU fault or UI change was
 observed. The candidate has no accepted Geekbench score and remains unpromoted;
 static instruction reductions do not establish a performance improvement.
+
+A source-provenance audit now ties the accepted Vulkan r4 binary to clean
+commit `1096b54505`. Rebuilding with the historical generated version label
+reproduces every file byte except the 20-byte GNU build ID; code, read-only
+data, relocations and symbols match. The version-label override affects only
+build metadata. No final ELF bytes were patched. The later `9ff8` optimization
+artifact came from a shared tree that also included rejected r5 speculation
+enabled by default. It has been retired from promotion consideration; matching
+a few shader outputs had not established whole-driver baseline identity.
+
+The accepted r4 and retired `9ff8` binaries also lack the earlier retained-fence
+error-reporting change. Their JM `gpu_queue_check_status` returns success
+unconditionally, and the common fence-wait path does not independently inspect
+the submitted sync-file error status. A successful API wait therefore does not
+prove that the submitted GPU job completed without error. No submitted-status
+payload was captured in the failing owned-fixture runs, so this finding does
+not establish cancellation or explain the missing writes. The unchanged kernel
+fault log does not resolve that question either. This is a reporting gap and
+an investigation limit, not a demonstrated cause or a correctness fix. No
+additional benchmark result or driver promotion follows from this audit.
