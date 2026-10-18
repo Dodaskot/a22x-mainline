@@ -44,7 +44,8 @@ benchmark result yet.
 
 Extended independent Vulkan checks found one shared-memory mismatch on the r4
 baseline. A twelve-case flag comparison and a subsequent 176-case history soak
-passed, so the initial failure remains unexplained. These repetitions do not
+passed. Repeating the original, uninstrumented test sequence also passed all
+104 cases, so the initial failure remains unexplained. These repetitions do not
 establish a fix. The experimental driver is not a fully validated general
 compute implementation, even when Geekbench's own workload checks pass.
 

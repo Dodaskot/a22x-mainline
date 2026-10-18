@@ -1,7 +1,7 @@
 # Modem development checkpoint, 2026-10-18
 
-The latest verified snapshot is **28 RPC + 612 filesystem requests**, candidate
-D1973 / live D1974, modem generation 14 on development kernel #101. HS1 passes;
+The latest verified snapshot is **28 RPC + 613 filesystem requests**, candidate
+D1977 / live D1978, modem generation 15 on development kernel #101. HS1 passes;
 HS2 remains absent. SIM registration, calls and mobile data are not working.
 These changes are outside the published v135 boot-image baseline.
 
@@ -29,7 +29,8 @@ the new explicit case retains the existing two-packet cases.
 FS606 passed original-firmware emulation, all complete-suite groups, module
 build, same-boot phone execution, independent capture audit and sealed archive
 verification. Its measured complete cycle took 115.572 seconds. The autonomous
-loop then began the next captured request; this snapshot does not qualify it.
+loop then began the next captured request. Later qualified stages are listed
+below.
 
 GPU testing and modem execution use a guarded handoff. Before FS605 resumed,
 the coordinator observed 67 seconds without GPU benchmark/controller processes,
@@ -43,7 +44,7 @@ and completed fragment provenance. Original-firmware emulation, independent
 auditor controls, the complete sanitizer/build suite, same-boot execution and
 sealed capture audit all passed. FS608 took 119.438 seconds for its complete
 cycle; FS609 was prepared offline during coordinated GPU testing. HS2 remains
-absent. Later in-progress requests are not counted in this checkpoint.
+absent. Subsequent qualified stages are listed below.
 
 FS610 SEEK, FS611 GETSIZE and FS612 relative SEEK completed their complete
 qualification gates on the same boot. FS612 moves from offset 64 to 13,328;
@@ -51,5 +52,15 @@ its independent auditor rejects 100 corruptions and accepts three consistent
 prior-payload variations. FS613 is a captured four-fragment second-half WRITE.
 Original DZC3 receive/reassembly/argument/dispatcher emulation passed offline,
 including five first-fragment indices, 259 payload cases and 777 dispatcher
-cases. Continuation fixtures remain synthetic. FS613 is not integrated or
-live-qualified and is not included in the count above.
+cases. FS613 subsequently passed the full 592-group sanitizer/build suite,
+independent capture audit and same-boot live execution. Its first two incoming
+frames are contiguous; the third crosses the receive-ring boundary in 1824 +
+1672 bytes. All three partial acknowledgements are verified before the final
+reply and private RAM update. The independent auditor rejects 134 corruptions
+and accepts six consistent source-payload variations.
+
+A separate post-live original-DZC3 replay used all four actually captured
+fragments, not synthetic continuation samples. All six emulator scripts passed;
+the reassembled request, native response and resulting RAM matched the sealed
+phone capture. FS613 is included in the verified count. The next captured
+request is FS614 CLOSE, which remains unqualified in this snapshot.
