@@ -11,6 +11,7 @@ published boot-image baseline and do not establish Vulkan conformance.
 | Vulkan r4, shader diagnostic | 1238 | [6941712](https://browser.geekbench.com/v6/compute/6941712) |
 | OpenCL, system Rusticl on #101 | 351 | [6941685](https://browser.geekbench.com/v6/compute/6941685) |
 | OpenCL, private Rusticl r2 | 698 | [6941706](https://browser.geekbench.com/v6/compute/6941706) |
+| OpenCL, private signed-offset vectorization candidate | 748 | [6941745](https://browser.geekbench.com/v6/compute/6941745) |
 
 The clean Vulkan repeat and private OpenCL run exited successfully and completed
 all eight workloads. The OpenCL run reported no validation failures. Diagnostic
@@ -57,3 +58,20 @@ cases. It was rejected without a complete Geekbench run. A Vulkan unroll-factor
 comparison passed 38 Particle-style reference/timing cases; factor eight
 showed only a small, size-dependent benefit and was not promoted. Neither
 experiment has a new published Geekbench score.
+
+A separate OpenCL candidate changes vectorizer address analysis while retaining
+the original lowest-address expression for the merged load. It avoids the
+extra runtime 64-bit address arithmetic of the rejected signed-affine rewrite.
+It passed 42 CPU-reference cases and 14 native IR checks. Fixed-frequency
+microbenchmarks showed mixed, small effects, rather than a consistent gain.
+
+One unmodified full Geekbench run with this candidate scored 748 in 1031 seconds
+(about 17 minutes). All eight workloads completed, exit status was zero, stderr
+was empty, and the post-run kernel log contained no new GPU fault, timeout or
+reset. The loaded library hash was verified before and after the run; the sole
+OpenCL device was the Mali-G57 MC2, with no CPU fallback. The UI remained healthy
+and benchmark processes were gone afterward. The run used the normal
+390–955 MHz governor range, without a frequency lock. Its score is about 7%
+above the earlier 698, but this is a single development observation, without a
+matched repeated comparison. The candidate remains private and is not promoted
+as the system driver. Per-workload scores have not yet been retrieved.
