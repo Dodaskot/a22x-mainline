@@ -1,7 +1,7 @@
 # Modem development checkpoint, 2026-10-18
 
-The latest verified snapshot is **28 RPC + 617 filesystem requests**, candidate
-D1990 / live D1991, modem generation 19 on development kernel #101. HS1 passes;
+The latest verified snapshot is **28 RPC + 620 filesystem requests**, candidate
+D1999 / live D2000, modem generation 22 on development kernel #101. HS1 passes;
 HS2 remains absent. SIM registration, calls and mobile data are not working.
 These changes are outside the published v135 boot-image baseline.
 
@@ -107,5 +107,37 @@ FS617 then passed all 596 complete-suite groups, the module build, one
 same-boot phone run, the actual current-RAM capture auditor and independent
 archive verification. Local verification rehashed all 2,551 source inputs,
 633 archived test executables and 2,096 extracted evidence files. HS2 remains
-absent. The next captured request is FS618, a 32-byte CLOSE; it is not included
-in this verified snapshot.
+absent. Subsequent qualified stages are listed below.
+
+FS618 closes the read-only handle at offset 64 while retaining the full current
+private RAM image. Original-firmware qualification, all 597 suite groups, the
+module build, one same-boot phone run and independent sealed-capture checks
+passed. The source FS613 image remains unchanged.
+
+FS619 reopens a new private copy of that current FS613 image with the captured
+flags `0x21010400`. Its source history is [257, 266, 613], followed by CLOSE614,
+READ615 and the read-only OPEN/READ/CLOSE chain 616–618. It copies current RAM,
+rather than restoring the archived sample or the earlier FS266 image. The
+qualifier pins the captured request, source archive and actual RAM reconstruction;
+four original DZC3 OPEN oracle scripts and source audits 609–618 passed.
+
+Nine coherent source variations update the WRITE input and all four fragments,
+current RAM, READ615 response and wire, snapshot616 and the new private image
+together. All nine pass; 27 stale-image/readback controls fail. The independent
+auditor also rejects 720 semantic request-bit changes, six RAM corruptions,
+98 source-state changes and 27 fragment-state changes, while accepting all
+16 ignored padding bits. A stale descriptive owner annotation is not used to
+select the RAM source; the actual latest WRITE ordinal and lineage are pinned.
+
+FS619 passed all 598 complete-suite groups, ASan/UBSan, the W1 module build,
+one same-boot phone run and the complete capture audit. Local independent
+verification rehashed 2,560 source inputs, 633 archived test executables and
+2,103 extracted evidence files. HS2 remains absent.
+
+FS620 moves the private handle from offset 0 to 64, preserving the current
+26,592-byte image and captured private flags. Original-firmware qualification,
+all 599 suite groups, ASan/UBSan, the W1 module build, one same-boot phone run
+and the capture audit passed. Independent local verification rehashed all
+2,564 source inputs, 634 archived test executables and 2,106 extracted evidence
+files, then reran the actual source/capture auditors through FS620. The verified
+snapshot ends at FS620; HS2 has not been observed.

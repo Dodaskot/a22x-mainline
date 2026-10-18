@@ -99,8 +99,33 @@ error-reporting change. Their JM `gpu_queue_check_status` returns success
 unconditionally, and the common fence-wait path does not independently inspect
 the submitted sync-file error status. A successful API wait therefore does not
 prove that the submitted GPU job completed without error. No submitted-status
-payload was captured in the failing owned-fixture runs, so this finding does
-not establish cancellation or explain the missing writes. The unchanged kernel
-fault log does not resolve that question either. This is a reporting gap and
+payload was captured in the earlier uninstrumented failures, so this finding
+does not establish cancellation or explain those missing writes. The unchanged
+kernel fault log does not resolve that question either. This is a reporting gap and
 an investigation limit, not a demonstrated cause or a correctness fix. No
 additional benchmark result or driver promotion follows from this audit.
+
+A later passive-observer diagnostic captured the exact submitted fence and its
+mapped waits in four owned byte-buffer/echo cases. All four retained submitted
+fences completed with positive status `+1`, yet three output comparisons failed.
+These instrumented cases therefore did not reproduce cancellation or an active
+submitted fence after the wait. Positive fence completion still does not prove
+correct shader execution, descriptors or CPU visibility; instrumentation also
+changes timing.
+
+On the unchanged accepted r4 binary, a cache-mapping A/B and a repeated ABBA
+comparison reproduced byte case 5 failing with the default internal mappings
+and passing with process-local `PANVK_DEBUG=no_wb_mmap`. Both echo controls
+passed. Input/output allocations and fixture data remained unchanged. The
+option changes internal buffer mappings together, so these observations do
+not identify a particular allocation or establish a cache-maintenance fault.
+
+With the same diagnostic option and no observer loaded, the unchanged owned
+byte-buffer fixture then passed all 512 cases and 32,768 checked output/guard
+words with access groups of three or four bytes and robustness settings 0/1.
+All processes exited; boot and UI identity remained unchanged, with no new GPU
+fault events.
+This is a diagnostic workaround for these fixtures, not a general correctness
+fix or performance result. No new Geekbench score, system-driver change or
+default promotion follows from these tests. The underlying execution and
+cache-maintenance path remains under investigation.
