@@ -63,7 +63,7 @@ shell selection and the FS582 modem checkpoint. These experiments are not
 included in the published boot images.
 
 The [2026-10-18 modem checkpoint](docs/MODEM-VALIDATION-20261018.md) advances
-the verified prefix to 614 filesystem requests. HS2 is still pending.
+the verified prefix to 615 filesystem requests. HS2 is still pending.
 
 The [2026-10-18 GPU compute report](docs/GPU-COMPUTE-20261018.md) records
 private Vulkan r4 scores of 1236/1233 and an OpenCL Rusticl r2 score of 698,

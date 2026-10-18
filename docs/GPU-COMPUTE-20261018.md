@@ -75,3 +75,12 @@ and benchmark processes were gone afterward. The run used the normal
 above the earlier 698, but this is a single development observation, without a
 matched repeated comparison. The candidate remains private and is not promoted
 as the system driver. Per-workload scores have not yet been retrieved.
+
+A further opt-in Vulkan vectorization candidate reduced instruction counts in
+captured Edge/Horizon shaders without changing their requested byte footprint.
+Hardware qualification stopped on an owned byte-buffer fixture with the new
+pass disabled. Follow-up case comparisons also failed on the earlier r4 build;
+some returned untouched output sentinels. CPU fixture checks passed, but these
+hardware observations remain unexplained. No new GPU fault or UI change was
+observed. The candidate has no accepted Geekbench score and remains unpromoted;
+static instruction reductions do not establish a performance improvement.

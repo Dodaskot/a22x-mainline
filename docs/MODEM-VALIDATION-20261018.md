@@ -1,7 +1,7 @@
 # Modem development checkpoint, 2026-10-18
 
-The latest verified snapshot is **28 RPC + 614 filesystem requests**, candidate
-D1981 / live D1982, modem generation 16 on development kernel #101. HS1 passes;
+The latest verified snapshot is **28 RPC + 615 filesystem requests**, candidate
+D1984 / live D1985, modem generation 17 on development kernel #101. HS1 passes;
 HS2 remains absent. SIM registration, calls and mobile data are not working.
 These changes are outside the published v135 boot-image baseline.
 
@@ -68,6 +68,14 @@ FS614 CLOSE then passed original-firmware qualification, independent negative
 controls, the complete 593-group sanitizer/build suite, same-boot phone
 execution and sealed capture audit. It preserves the 26,592-byte private RAM
 image and cursor while closing the handle. The evidence archive hash was
-independently rechecked after the live run. The next captured request, FS615,
-is a compound read of the second half of that current RAM image. It remains
-unqualified; the autonomous loop stopped before executing it.
+independently rechecked after the live run.
+
+FS615 reads the 13,264-byte second half directly from the current private RAM
+image. Original-firmware dispatch and four-packet packing passed for the actual
+sample and nine independently changed RAM patterns. The independent auditor
+rejects stale-owner responses when the old and current suffix differ. The
+full 594-group ASan/UBSan suite and W1 module build passed, followed by one
+same-boot phone run, complete capture audit and independent evidence-archive
+hash verification. The four packets use one TX pointer publication. The next
+captured request is FS616, a read-only OPEN of the same file; it remains
+unqualified in this snapshot.
