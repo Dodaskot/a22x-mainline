@@ -41,3 +41,18 @@ at 955 MHz; the current investigation concerns shader execution. OpenCL's
 Gaussian and Stereo workloads also remain substantially slower than Vulkan.
 Further compiler experiments are pending validation and have no new promoted
 benchmark result yet.
+
+Extended independent Vulkan checks found one shared-memory mismatch on the r4
+baseline. A twelve-case flag comparison and a subsequent 176-case history soak
+passed, so the initial failure remains unexplained. These repetitions do not
+establish a fix. The experimental driver is not a fully validated general
+compute implementation, even when Geekbench's own workload checks pass.
+
+The next OpenCL signed-affine address experiment passed 42 independent
+CPU-reference cases, including signed offsets, carry/wrap, shared-memory
+barriers and image boundaries. Some scalar reads combined into 64-bit loads,
+but repeated warm timings were about 5–11% slower in the tested larger filter
+cases. It was rejected without a complete Geekbench run. A Vulkan unroll-factor
+comparison passed 38 Particle-style reference/timing cases; factor eight
+showed only a small, size-dependent benefit and was not promoted. Neither
+experiment has a new published Geekbench score.

@@ -1,7 +1,7 @@
 # Modem development checkpoint, 2026-10-18
 
-The latest verified snapshot is **28 RPC + 609 filesystem requests**, candidate
-D1964 / live D1965, modem generation 11 on development kernel #101. HS1 passes;
+The latest verified snapshot is **28 RPC + 612 filesystem requests**, candidate
+D1973 / live D1974, modem generation 14 on development kernel #101. HS1 passes;
 HS2 remains absent. SIM registration, calls and mobile data are not working.
 These changes are outside the published v135 boot-image baseline.
 
@@ -44,3 +44,12 @@ auditor controls, the complete sanitizer/build suite, same-boot execution and
 sealed capture audit all passed. FS608 took 119.438 seconds for its complete
 cycle; FS609 was prepared offline during coordinated GPU testing. HS2 remains
 absent. Later in-progress requests are not counted in this checkpoint.
+
+FS610 SEEK, FS611 GETSIZE and FS612 relative SEEK completed their complete
+qualification gates on the same boot. FS612 moves from offset 64 to 13,328;
+its independent auditor rejects 100 corruptions and accepts three consistent
+prior-payload variations. FS613 is a captured four-fragment second-half WRITE.
+Original DZC3 receive/reassembly/argument/dispatcher emulation passed offline,
+including five first-fragment indices, 259 payload cases and 777 dispatcher
+cases. Continuation fixtures remain synthetic. FS613 is not integrated or
+live-qualified and is not included in the count above.
