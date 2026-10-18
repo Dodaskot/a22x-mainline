@@ -153,3 +153,17 @@ nonconformance warning. The score is close to the earlier 1233–1236 results;
 this single observation does not establish a performance gain. The fix remains
 a private development candidate rather than a system-driver promotion or a
 claim of general Vulkan conformance.
+
+The user transcribed these subscores from result 6942019; the CLI supplies only
+the total. Particle Physics remains at the earlier r4 level of 82.3 FPS.
+
+| Workload | Score | Throughput |
+|---|---:|---:|
+| Background Blur | 608 | 2.51 images/s |
+| Face Detection | 311 | 1.01 images/s |
+| Horizon Detection | 1613 | 50.2 Mpixels/s |
+| Edge Detection | 1975 | 73.2 Mpixels/s |
+| Gaussian Blur | 1839 | 80.1 Mpixels/s |
+| Feature Matching | 493 | 19.4 Mpixels/s |
+| Stereo Matching | 5406 | 5.14 Gpixels/s |
+| Particle Physics | 1871 | 82.3 FPS |
