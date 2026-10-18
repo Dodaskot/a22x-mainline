@@ -11,6 +11,8 @@ published boot-image baseline and do not establish Vulkan conformance.
 | Vulkan r4, descriptor cache-flush fix | 1238 | [6942019](https://browser.geekbench.com/v6/compute/6942019) |
 | Vulkan r7, task grouping, hardware counters | 1287 | [6941804](https://browser.geekbench.com/v6/compute/6941804) |
 | Vulkan, clean combination plus late byte vectorization | 1345 | [6942096](https://browser.geekbench.com/v6/compute/6942096) |
+| Vulkan, same combination with dispatch audit | 1337 | [6942126](https://browser.geekbench.com/v6/compute/6942126) |
+| Vulkan, expensive Particle branches preserved | 1415 | [6942135](https://browser.geekbench.com/v6/compute/6942135) |
 | Vulkan r4, shader diagnostic | 1238 | [6941712](https://browser.geekbench.com/v6/compute/6941712) |
 | OpenCL, system Rusticl on #101 | 351 | [6941685](https://browser.geekbench.com/v6/compute/6941685) |
 | OpenCL, private Rusticl r2 | 698 | [6941706](https://browser.geekbench.com/v6/compute/6941706) |
@@ -321,3 +323,90 @@ improvement does not explain the real Particle workload and is not a proposed
 Geekbench optimization. The remaining major targets are Particle and Edge;
 Face's 2.5% deficit still needs repeated measurements to distinguish it from
 ordinary variation.
+
+## Dispatch diagnosis: conditional execution and short byte loops
+
+A separate capture layer mapped the actual dispatches without changing GPU
+commands. The complete instrumented run scored **1337**, with Particle 2335 /
+102.8 FPS, Edge 2262 and Horizon 1940; the user supplied those subscores.
+It completed all eight workloads in 588 seconds with matching driver hashes,
+no workload validation messages or new GPU errors, unchanged boot/UI identity
+and complete process cleanup. This is the previous 1345 driver with tracing,
+not a run of the conditional-execution change described below.
+
+The trace contains 3,728 submissions and matching queue-idle completions,
+without missing pipeline hashes or parser anomalies. It distinguishes
+autotuning from the twenty repeated final workload chains. Timing uses host
+submission-to-completion spans because this JM driver does not implement GPU
+timestamp writes. It is not per-shader GPU timestamp profiling.
+
+Particle's final chain runs the same 32-thread shader on 4,096 workgroups
+200 times. Its median completion span is 1.946 seconds, while the host's
+submission call takes 3.58 ms for the whole chain. Host submission cost cannot
+explain the approximately twofold Android throughput gap.
+
+The captured Particle shader originally rejects distant pairs before loading
+the other velocity or doing reciprocal-square-root arithmetic. Two compiler
+stages allow expensive operations to be speculated when converting branches
+to selects. The resulting machine code performs those operations even for
+pairs that cannot collide. Preserving expensive branches in both stages
+restores the early rejection. Changing only the later stage is insufficient.
+
+A private fixture executes the actual captured SPIR-V and specialization
+constants. Native replay verifies that its machine code matches the recorded
+Geekbench pipeline byte for byte. Sparse, medium and dense generated inputs
+have independent Lavapipe references, checked with absolute and relative
+tolerance 2e-5, plus unchanged inputs and output guards. All 72 bounded phone
+runs passed. Mirrored fixed-frequency measurements at 4,096 particles show
+**1.77–1.84x higher throughput** with expensive branches preserved. These
+generated-input, submit-through-fence timings are not Geekbench FPS.
+
+Replaying all 47 distinct shaders from the observed final workload chains
+changes only Particle's machine code under this setting. Its static program
+grows from 410 to 470 instructions while becoming faster on those inputs:
+dynamic work avoided matters more than static instruction count.
+
+Edge's largest isolated autotuning stage averages neighboring byte pixels:
+about 77 ms per dispatch, versus about 280 ms for the eight-stage final chain.
+The compiler rejects its loop-header-computed invariant bound, leaving nested
+loops with scalar byte loads. Enabling that analysis and unrolling three
+iterations accelerates the radius-one stage by **16.8%** in the captured-module
+fixture. Four iterations slow it down: the common inner loop has only three
+iterations, so the four-copy fast path is unused. Forty-eight phone runs passed
+an independent exact C reference, including boundaries, padding, guards and
+robustness settings. A radius-two case favors a different unroll factor.
+
+This identifies a concrete Edge optimization target, not a new Edge subscore
+or justification for globally enabling the old header-invariant option. The
+select-only full-benchmark candidate leaves that Edge experiment disabled.
+
+The select-only candidate subsequently completed an uninstrumented full run:
+**1415 Vulkan**, result [6942135](https://browser.geekbench.com/v6/compute/6942135),
+571 seconds. All eight workloads completed without validation messages;
+mapped driver and executable hashes matched before and after, no new GPU errors
+appeared, boot/UI identity was retained and benchmark/proxy processes exited.
+The normal governor range was used after cooling to the same 45 C initial
+threshold. The system driver was not replaced.
+
+User-transcribed subscores confirm that the improvement is concentrated in
+Particle, as predicted by the captured-code comparison:
+
+| Workload | Clean 1345 candidate | Select-only 1415 candidate |
+|---|---:|---:|
+| Background Blur | 657 | 655 |
+| Face Detection | 311 | 311 |
+| Horizon Detection | 1991 | 1990 |
+| Edge Detection | 2299 | 2299 |
+| Gaussian Blur | 1841 | 1837 |
+| Feature Matching | 492 | 491 |
+| Stereo Matching | 5408 | 5408 |
+| Particle Physics | 2336 / 102.8 FPS | **3534 / 155.5 FPS** |
+
+Particle improves **51.3%**, while total score increases 5.2%. This confirms a
+substantial source of its slowdown in the unmodified benchmark. It remains a
+single development comparison, rather than a controlled repeated median.
+The residual gaps against Android 6.5.0 are about **25.0% for Particle**,
+**17.0% for Edge** and 2.5% for Face. Particle is 27.5% behind the older Android
+6.0.2 result. The remaining difference has not been fully explained; preserve
+this candidate while qualifying a conservative general short-loop improvement
+and investigating Particle with the early exits intact.
