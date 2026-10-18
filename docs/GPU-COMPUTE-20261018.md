@@ -9,6 +9,7 @@ published boot-image baseline and do not establish Vulkan conformance.
 | Vulkan r4, hardware counters | 1236 | [6941631](https://browser.geekbench.com/v6/compute/6941631) |
 | Vulkan r4, clean repeat | 1233 | [6941639](https://browser.geekbench.com/v6/compute/6941639) |
 | Vulkan r4, descriptor cache-flush fix | 1238 | [6942019](https://browser.geekbench.com/v6/compute/6942019) |
+| Vulkan r7, task grouping, hardware counters | 1287 | [6941804](https://browser.geekbench.com/v6/compute/6941804) |
 | Vulkan r4, shader diagnostic | 1238 | [6941712](https://browser.geekbench.com/v6/compute/6941712) |
 | OpenCL, system Rusticl on #101 | 351 | [6941685](https://browser.geekbench.com/v6/compute/6941685) |
 | OpenCL, private Rusticl r2 | 698 | [6941706](https://browser.geekbench.com/v6/compute/6941706) |
@@ -39,7 +40,8 @@ workload passes validation.
 Particle Physics remains a major Vulkan optimization target: about 82 FPS in
 the r4 runs. An earlier claim of substantial GPU idle time included idle time
 after the test ended. During the actual workload the GPU is about 99.9% active
-at 955 MHz; the current investigation concerns shader execution. OpenCL's
+at 955 MHz; activity alone does not establish efficient task grouping or full
+occupancy. The separate r7 result below reports 102.8 FPS. OpenCL's
 Gaussian and Stereo workloads also remain substantially slower than Vulkan.
 Further compiler experiments are pending validation and have no new promoted
 benchmark result yet.
@@ -167,3 +169,34 @@ the total. Particle Physics remains at the earlier r4 level of 82.3 FPS.
 | Feature Matching | 493 | 19.4 Mpixels/s |
 | Stereo Matching | 5406 | 5.14 Gpixels/s |
 | Particle Physics | 1871 | 82.3 FPS |
+
+The user also transcribed the subscores for the earlier r7 result 6941804.
+Its phone log records total 1287, all eight workloads and exit zero. This run
+included a separate hardware-counter sampler, despite the launcher metadata
+labeling it uninstrumented. The comparison below uses the reported scores,
+not phase durations from that sampler.
+
+| Workload | r4 + cache fix | r7 | Score change | r7 throughput |
+|---|---:|---:|---:|---:|
+| Background Blur | 608 | 656 | +7.9% | 2.71 images/s |
+| Face Detection | 311 | 310 | -0.3% | 1.01 images/s |
+| Horizon Detection | 1613 | 1612 | -0.1% | 50.2 Mpixels/s |
+| Edge Detection | 1975 | 2013 | +1.9% | 74.7 Mpixels/s |
+| Gaussian Blur | 1839 | 1835 | -0.2% | 80.0 Mpixels/s |
+| Feature Matching | 493 | 492 | -0.2% | 19.4 Mpixels/s |
+| Stereo Matching | 5406 | 5408 | +0.04% | 5.14 Gpixels/s |
+| Particle Physics | 1871 | 2336 | +24.9% | 102.8 FPS |
+| Total | 1238 | 1287 | +4.0% | |
+
+The largest observed changes are Particle Physics and Background Blur;
+most other workloads remain near the r4 level. Particle throughput rises
+from 82.3 to 102.8 FPS. This supports investigating task grouping, but these
+single historical runs are not a controlled repeated A/B comparison.
+
+The tested 1238 driver changes descriptor cache maintenance only and retains
+the r4 dispatch path. The separate r7 source adds task-axis/increment selection
+for direct dispatch, but lacks that descriptor cache fix. Its tree also has
+other changes relative to clean r4. Neither result therefore represents a
+qualified combination of both fixes, and the entire r7 tree is not an isolated
+test of task grouping. A combined candidate still needs qualification and
+matched performance measurements.
