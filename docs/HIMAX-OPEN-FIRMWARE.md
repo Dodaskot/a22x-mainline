@@ -78,7 +78,15 @@ See [the reproducible ISA analysis](HIMAX-NDS32-ANALYSIS.md) for evidence,
 address mappings, validation and remaining uncertainties. The exact core model
 and full ISA revision are still unknown.
 
-1. Establish a compatible assembler/compiler for the observed NDS32 extensions.
+The historical Andes v3 toolchain now builds independent NDS32 C. An open
+[report encoder](HIMAX-REPORT-COMPONENT.md) and bounded
+[signal computations](HIMAX-SIGNAL-COMPONENTS.md) have been compared with
+original machine code in the vendor CPU simulator. These are components,
+not a complete runnable replacement. A [finite CPU diagnostic](../firmware/himax/diagnostic/README.md)
+also passes startup/mailbox/vector tests in the simulator; it is not flashable
+as a complete controller firmware.
+
+1. Complete startup and peripheral initialization with explicit recovery.
 2. Extend the recovered startup/interrupt map into scanning and report production,
    marking uncertain register semantics explicitly.
 3. Derive a host/controller protocol specification and separate panel-specific

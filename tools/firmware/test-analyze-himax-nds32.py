@@ -40,6 +40,22 @@ class TestNDS32(unittest.TestCase):
     def test_address_display_wrap(self):
         self.assertEqual(m.normalize_addresses('jal 0x140000080'), 'jal 0x40000080')
 
+    def test_short_inline_switch_is_data_and_validates_targets(self):
+        # Seven byte offsets followed by one padding byte; no firmware needed.
+        code = bytearray(0x80)
+        code[0x20:0x28] = bytes([8,12,16,8,16,12,8,0])
+        starts = {m.BASE+0x28, m.BASE+0x2c, m.BASE+0x30}
+        self.assertEqual(m.switch_targets(code,0x20,7,1,starts),
+            [m.BASE+i for i in (0x28,0x2c,0x30,0x28,0x30,0x2c,0x28)])
+        code[0x22] = 9  # Would target the middle of a real instruction.
+        with self.assertRaisesRegex(ValueError,'boundary mismatch'):
+            m.switch_targets(code,0x20,7,1,starts)
+        with self.assertRaisesRegex(ValueError,'bounds'):
+            m.switch_targets(code,0x7f,7,1,starts)
+        self.assertIn((0x650,7,1),m.SWITCH_TABLES)
+        self.assertIn((0x650,0x658),m.DATA_SPANS)
+        self.assertFalse(any(start<0x658 and end>0x650 for start,end in m.RANGES))
+
     @unittest.skipUnless(shutil.which('rasm2'), 'rasm2 absent')
     def test_decoder_sign_width_and_ex9(self):
         # Synthetic stream: backward call, EX9, return, barrier.

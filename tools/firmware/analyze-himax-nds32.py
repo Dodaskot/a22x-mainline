@@ -22,9 +22,9 @@ ITB_OFFSET = 0xb918
 ITB_SLOTS = 383
 # Inline switch tables are established by bounds, table-base calculations,
 # load width, and an indirect jump; padding follows returns and precedes calls.
-SWITCH_TABLES = ((0x7794, 18, 1), (0x7ad8, 6, 1),
+SWITCH_TABLES = ((0x650, 7, 1), (0x7794, 18, 1), (0x7ad8, 6, 1),
                  (0x87f0, 7, 2), (0x9320, 46, 2))
-DATA_SPANS = ((0x40, 0x64), (0x5be, 0x5c0), (0x7794, 0x77a6),
+DATA_SPANS = ((0x40, 0x64), (0x5be, 0x5c0), (0x650, 0x658), (0x7794, 0x77a6),
               (0x7aba, 0x7abc), (0x7ad8, 0x7ade), (0x87b2, 0x87b4),
               (0x87f0, 0x87fe), (0x9306, 0x9308), (0x9320, 0x937c),
               (0xb5c6, 0xb5c8), (0xb652, 0xb654))
@@ -71,6 +71,17 @@ def normalize_addresses(text):
     return re.sub(r'0x[0-9a-f]+',
                   lambda m: f'0x{int(m[0], 16) & 0xffffffff:08x}'
                   if int(m[0], 16) > 0xffffffff else m[0], text)
+
+
+def switch_targets(code, offset, count, width, starts):
+    """Validate an inline unsigned byte/halfword offset table and its targets."""
+    if width not in (1, 2) or count <= 0 or offset < 0 or offset + count*width > len(code):
+        raise ValueError('Invalid switch table bounds or width')
+    targets = [BASE + offset + int.from_bytes(
+        code[offset+i*width:offset+(i+1)*width], 'little') for i in range(count)]
+    if any(target not in starts for target in targets):
+        raise ValueError(f'Switch table boundary mismatch at {offset:#x}')
+    return targets
 
 
 def decode(data, address, executable='rasm2'):
@@ -133,10 +144,7 @@ def analyze(blob, executable='rasm2'):
     invalid = [r for r in branches if r['direct_target'] not in starts]
     switches = []
     for off, count, width in SWITCH_TABLES:
-        targets = [BASE + off + int.from_bytes(code[off + i * width:off + (i + 1) * width], 'little')
-                   for i in range(count)]
-        if any(target not in starts for target in targets):
-            raise ValueError(f'Switch table boundary mismatch at {off:#x}')
+        targets = switch_targets(code, off, count, width, starts)
         switches.append(dict(address=BASE + off, count=count, width=width, targets=targets))
     summary = dict(firmware_sha256=SHA, code_sha256=hashlib.sha256(code).hexdigest(),
                    decoder=subprocess.check_output([executable, '-v'], text=True).strip(),

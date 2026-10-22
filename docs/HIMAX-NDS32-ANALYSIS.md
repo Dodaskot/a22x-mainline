@@ -70,11 +70,12 @@ observed minimum table extent. This is not a claim about its physical maximum.
 Examples of recovered table semantics include a base load for `0x90000000`,
 a base load for shared RAM `0x10007000`, and a data-synchronization barrier.
 
-Four inline switch tables are separated from instructions using each dispatcher's
+Five inline switch tables are separated from instructions using each dispatcher's
 bounds, base calculation, load width and indirect jump:
 
 | CPU address | Entries | Entry width | Interpretation |
 |---|---:|---:|---|
+| `0x40000650` | 7 | 1 byte | Unsigned offset from table base |
 | `0x40007794` | 18 | 1 byte | Unsigned offset from table base |
 | `0x40007ad8` | 6 | 1 byte | Unsigned offset from table base |
 | `0x400087f0` | 7 | 2 bytes | Little-endian unsigned offset from table base |
@@ -84,9 +85,15 @@ Return-alignment padding and the pointer block are also excluded. Without
 these exclusions, a linear decoder produces fake instructions and even a
 spurious out-of-image jump from switch-table data.
 
-With these exclusions the listing has **16872 instruction records**, no unknown
+An additional seven-entry byte-offset switch table at code offset `0x650`
+and its padding byte are excluded through `0x658`. Its dispatcher subtracts
+2 from the mode, bounds it below7, loads a byte relative to GP−49816, then
+jumps relative to that same table base. Validated targets land on instruction
+boundaries; a synthetic corrupted-target test checks rejection.
+
+With these exclusions the listing has **16870 instruction records**, no unknown
 instructions, and **925 direct J/JAL edges**, all targeting selected instruction
-boundaries. All 77 switch-table entries also point to selected instruction
+boundaries. All 84 switch-table entries also point to selected instruction
 boundaries. These checks establish internal consistency, not that every
 instruction is reachable or that every indirect call has been recovered.
 
