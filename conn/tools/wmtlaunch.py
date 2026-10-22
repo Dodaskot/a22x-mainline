@@ -2,7 +2,7 @@
 # Minimal replacement for the vendor wmt_launcher (MT6833 CONSYS, soc2_2 RAM patches).
 import os, sys, fcntl, struct, select, time, glob
 
-FW = "/lib/firmware"
+FW = os.environ.get("WMT_FW_DIR", "/lib/firmware")
 PREFIX = os.environ.get("WMT_PATCH_SET", "1_1")   # soc2_2_ram_<type>_<PREFIX>_hdr.bin
 MAGIC = 0xa0
 def IOW(nr, size=8):  return (1 << 30) | (size << 16) | (MAGIC << 8) | nr

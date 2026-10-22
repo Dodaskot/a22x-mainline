@@ -1,0 +1,65 @@
+#!/bin/busybox sh
+# Called only by initramfs init, after mounting /newroot and before switch_root.
+# Keep a RAM-backed bundle and runtime units; never replace installed rootfs files.
+set -eu
+newroot=${1:?new root required}
+bundle=/a22x-boot
+[ -d "$bundle" ] || exit 0
+[ "$(cat "$bundle/conn/kernel-release")" = "$(uname -v)" ] || {
+    echo 'a22x-boot-bundle: kernel build mismatch; refusing bundled modules' >&2
+    exit 1
+}
+[ -x "$newroot/usr/bin/python3" ] || {
+    echo 'a22x-boot-bundle: rootfs needs /usr/bin/python3' >&2
+    exit 1
+}
+[ -e /sys/module/firmware_class/parameters/path ] || exit 1
+mkdir -p /run
+if ! grep -q ' /run ' /proc/mounts; then
+    mount -t tmpfs -o mode=0755,nosuid,nodev tmpfs /run
+fi
+mkdir -p /run/a22x-boot /run/systemd/system/multi-user.target.wants
+cp -a "$bundle/." /run/a22x-boot/
+cat > /run/systemd/system/a22x-conn.service <<'EOF'
+[Unit]
+Description=A22X boot-bundled connectivity
+Before=NetworkManager.service
+After=systemd-modules-load.service
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=A22X_CONN_DIR=/run/a22x-boot/conn
+Environment=A22X_BT_ADDR_FILE=/opt/a22x-conn/bt_addr
+ExecStart=/run/a22x-boot/conn/conn-start.sh
+[Install]
+WantedBy=multi-user.target
+EOF
+cat > /run/systemd/system/a22x-wmt-launcher.service <<'EOF'
+[Unit]
+Description=A22X boot-bundled WMT launcher
+[Service]
+Environment=WMT_FW_DIR=/run/a22x-boot/firmware
+ExecStart=/usr/bin/python3 /run/a22x-boot/conn/wmtlaunch.py serve
+Restart=on-failure
+EOF
+# Drop-ins also cover an existing /etc unit, which takes priority over /run units.
+mkdir -p /run/systemd/system/a22x-conn.service.d /run/systemd/system/a22x-wmt-launcher.service.d
+cat > /run/systemd/system/a22x-conn.service.d/90-boot-bundle.conf <<'EOF'
+[Service]
+Environment=A22X_CONN_DIR=/run/a22x-boot/conn
+Environment=A22X_BT_ADDR_FILE=/opt/a22x-conn/bt_addr
+ExecStart=
+ExecStart=/run/a22x-boot/conn/conn-start.sh
+EOF
+cat > /run/systemd/system/a22x-wmt-launcher.service.d/90-boot-bundle.conf <<'EOF'
+[Service]
+Environment=WMT_FW_DIR=/run/a22x-boot/firmware
+ExecStart=
+ExecStart=/usr/bin/python3 /run/a22x-boot/conn/wmtlaunch.py serve
+EOF
+ln -sf ../a22x-conn.service /run/systemd/system/multi-user.target.wants/a22x-conn.service
+# /run is moved into the new root by init. Both firmware loader and userspace
+# launcher use this path after switch_root; default firmware lookup still falls back.
+printf '%s' /run/a22x-boot/firmware > /sys/module/firmware_class/parameters/path
+mkdir -p "$newroot/run"
+mount --move /run "$newroot/run"

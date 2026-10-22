@@ -65,13 +65,18 @@ if [ -n "$root" ] && ! grep -q a22x.noswitch /proc/cmdline; then
 	mkdir -p /newroot
 	if mount -t ext4 -o rw "$root" /newroot 2>/dev/null; then
 		if [ -x /newroot/sbin/init ] || [ -L /newroot/sbin/init ]; then
-			msg "switching to $want on $root"
-			killall telnetd udhcpd 2>/dev/null
-			umount /sys/kernel/config /sys/fs/pstore /dev/pts 2>/dev/null
-			for m in dev proc sys; do mount --move /$m /newroot/$m; done
-			exec switch_root /newroot /sbin/init
+			if /bin/a22x-boot-bundle /newroot; then
+				msg "switching to $want on $root"
+				killall telnetd udhcpd 2>/dev/null
+				umount /sys/kernel/config /sys/fs/pstore /dev/pts 2>/dev/null
+				for m in dev proc sys; do mount --move /$m /newroot/$m; done
+				exec switch_root /newroot /sbin/init
+			else
+				msg "connectivity bundle preparation failed; keeping recovery shell"
+			fi
+		else
+			msg "no init on $root, staying in initramfs"
 		fi
-		msg "no init on $root, staying in initramfs"
 		umount /newroot
 	else
 		msg "could not mount $root as ext4"

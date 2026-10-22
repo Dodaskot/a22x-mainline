@@ -3,7 +3,7 @@
 # mainline kernel. The modules are built out of tree (conn/build.sh) for this
 # exact kernel. They cannot be unloaded and reloaded cleanly, so this never
 # rmmods: a bring-up that stopped half way is reported and needs a reboot.
-D=/opt/a22x-conn
+D=${A22X_CONN_DIR:-/opt/a22x-conn}
 MODS="btif wmt_drv wmt_chrdev_wifi wlan_6833_axi btmtk_stp"
 REBOOT="reboot, then check: journalctl -b -u a22x-conn -u a22x-wmt-launcher"
 
@@ -55,5 +55,6 @@ insmod $D/wmt_chrdev_wifi.ko || fail "insmod wmt_chrdev_wifi.ko failed; $REBOOT"
 insmod $D/wlan_6833_axi.ko || fail "insmod wlan_6833_axi.ko failed; $REBOOT"
 wifi_on
 # Bluetooth: factory address from nvdata (APCFG/APRDEB/BT_Addr), stored once
-insmod $D/btmtk_stp.ko bdaddr=$(cat $D/bt_addr 2>/dev/null) ||
+BT_ADDR_FILE=${A22X_BT_ADDR_FILE:-$D/bt_addr}
+insmod $D/btmtk_stp.ko bdaddr=$(cat "$BT_ADDR_FILE" 2>/dev/null) ||
 	fail "insmod btmtk_stp.ko failed (Wi-Fi is up); $REBOOT"

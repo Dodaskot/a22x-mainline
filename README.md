@@ -139,3 +139,11 @@ of the same device):
 Kernel patches and `conn/` are GPL-2.0 (Linux kernel and the Samsung/MediaTek
 GPL source release respectively). Everything else in this repository is
 GPL-2.0-only unless a file says otherwise. See [LICENSE](LICENSE).
+
+## Installation and optional boot bundle
+
+Start with [Arch Linux ARM + Phosh installation](docs/ARCH-PHOSH-INSTALL.md)
+and [kernel build/flashing instructions](docs/BUILDING.md). An
+[optional boot bundle](docs/BOOT-BUNDLE.md) can carry matching connectivity
+modules and locally supplied firmware; it is not yet hardware-validated and
+does not replace the proprietary controller firmware with open code.

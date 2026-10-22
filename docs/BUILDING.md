@@ -70,9 +70,14 @@ Phosh does not start with less) and `clk_ignore_unused pd_ignore_unused`.
 `EXTRA_CMDLINE="cma=96M a22x.root=<partname>"` boots from another partition,
 for example a root filesystem on the microSD card.
 
+For the optional matching connectivity modules and firmware in the same boot
+image, see [BOOT-BUNDLE.md](BOOT-BUNDLE.md). This option is not yet hardware
+validated; published v143 remains unchanged.
+
 ## 4. Root filesystem
 
-Any aarch64 distribution works; development used Arch Linux ARM with Phosh
+For a fresh Arch Linux ARM + Phosh root filesystem, see
+[ARCH-PHOSH-INSTALL.md](ARCH-PHOSH-INSTALL.md). Development used Arch Linux ARM with Phosh
 on the `userdata` partition (ext4). Install:
 
 - `/opt/a22x-conn/`: `conn/out/*.ko`, `conn/out/kernel-release`,
