@@ -5,9 +5,10 @@ Main repository: https://gitlab.com/pessdres/a22x-mainline
 attached to the GitHub releases).
 
 > **AI-assisted development.** This port was developed with heavy use of
-> AI coding assistants (Claude and Codex). Every change was built and
-> tested on the real phone; see [docs/PROVENANCE.md](docs/PROVENANCE.md)
-> for how the published baseline was verified.
+> AI coding assistants (Claude and Codex). Validation includes builds,
+> offline checks and the hardware tests stated in each report. New packaging
+> features awaiting hardware tests are marked explicitly. See
+> [docs/PROVENANCE.md](docs/PROVENANCE.md) for the published baseline.
 
 Linux 7.2 port for the Samsung Galaxy A22 5G, MediaTek MT6833 (Dimensity 700).
 It boots from the stock Samsung LK bootloader as an ordinary `boot.img`:
@@ -64,8 +65,9 @@ shell selection and the FS582 modem checkpoint. The v143 boot image includes
 the kernel #101 watchdog change; Mesa drivers and shell configuration are
 installed separately in the root filesystem.
 
-The [2026-10-18 modem checkpoint](docs/MODEM-VALIDATION-20261018.md) advances
-the verified prefix to 620 filesystem requests. HS2 is still pending.
+The [2026-10-22 modem checkpoint](docs/MODEM-VALIDATION-20261022.md) records
+927 verified filesystem requests and recovery from a full phone filesystem.
+HS2 is still pending; this test infrastructure is separate from the boot release.
 
 The [2026-10-18 GPU compute report](docs/GPU-COMPUTE-20261018.md) records
 **Vulkan 1415** ([result](https://browser.geekbench.com/v6/compute/6942135)),
@@ -126,13 +128,22 @@ are the exception: their initramfs contains the stock touch firmware
 [releases/v143](releases/v143/README.md), [releases/v142](releases/v142/README.md)
 and [releases/v135](releases/v135/README.md).
 
-For your own builds copy these from the stock firmware (`/vendor/firmware`
-of the same device):
+For your own builds, obtain these **five binary firmware files** from the stock
+`/vendor/firmware` of the same device:
 
 - touch: `Himax_firmware_fw_jdi.bin` (built into the initramfs)
 - connectivity: `soc2_2_ram_mcu_1_1_hdr.bin`, `soc2_2_ram_bt_1_1_hdr.bin`,
-  `soc2_2_ram_wifi_1_1_hdr.bin`, `WIFI_RAM_CODE_soc2_2_1_1.bin`,
-  `WMT_SOC.cfg`, `wifi.cfg`
+  `soc2_2_ram_wifi_1_1_hdr.bin`, `WIFI_RAM_CODE_soc2_2_1_1.bin`
+
+
+The two text configurations, `WMT_SOC.cfg` and `wifi.cfg`, are now provided
+as [documented A22X defaults](conn/firmware/README.md). They do not require
+extraction from Android. The optional boot bundle uses them when no local
+override is supplied. The five controller firmware binaries remain proprietary.
+
+The [Himax firmware investigation](docs/HIMAX-OPEN-FIRMWARE.md) includes an
+open offline format inspector and verified section/CRC analysis. An open
+replacement controller program has not yet been implemented.
 
 ## License
 

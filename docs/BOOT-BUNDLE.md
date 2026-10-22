@@ -15,8 +15,9 @@ new connectivity bundle. Keep a tested image available before hardware trials.
 ## Build
 
 First build the kernel and `conn/` against the same kernel output directory
-as described in [BUILDING.md](BUILDING.md). Supply the seven local files listed
-under [proprietary firmware](../README.md#proprietary-firmware). No firmware
+as described in [BUILDING.md](BUILDING.md). Supply the five binary files listed under
+[proprietary firmware](../README.md#proprietary-firmware). The two text
+configurations have [repository defaults](../conn/firmware/README.md). No firmware
 is downloaded or committed by these scripts. If `WMT_SOC.cfg` or `wifi.cfg`
 is absent from the supplied directory, its repository `conn/firmware/`
 configuration is used; an explicit local configuration takes priority.

@@ -12,7 +12,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 : "${BUSYBOX:?set BUSYBOX=/path/to/static/aarch64/busybox}"
 : "${HIMAX_FW:?set HIMAX_FW=/path/to/Himax_firmware_fw_jdi.bin}"
-# Optional: all five modules built with this KOUT, plus six local conn firmware/configs.
+# Optional: all five modules built with this KOUT, plus four local conn firmware binaries and two configuration files.
 # Omitting CONN_MODULES preserves the historical touch-only image.
 if [ -n "${CONN_MODULES:-}" ]; then
     : "${CONN_FIRMWARE:?set CONN_FIRMWARE to the stock connectivity firmware directory}"
