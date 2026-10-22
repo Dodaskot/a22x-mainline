@@ -72,13 +72,15 @@ provides additional primary source material. The exact ported source in patch
 
 ## Remaining work
 
-The MCU instruction-set architecture is **not identified yet**. Controller
-addresses and familiar-looking bytes are insufficient proof of an ISA.
+The instruction set is now identified as **Andes NDS32**, based on matching
+startup/vector structures, EX9 expansion and the host stop-command handshake.
+See [the reproducible ISA analysis](HIMAX-NDS32-ANALYSIS.md) for evidence,
+address mappings, validation and remaining uncertainties. The exact core model
+and full ISA revision are still unknown.
 
-1. Establish the MCU/ISA from a primary datasheet or corroborated reset/vector
-   and instruction-decoding evidence before selecting a compiler.
-2. Map interrupt vectors and register accesses offline, marking uncertain
-   annotations explicitly.
+1. Establish a compatible assembler/compiler for the observed NDS32 extensions.
+2. Extend the recovered startup/interrupt map into scanning and report production,
+   marking uncertain register semantics explicitly.
 3. Derive a host/controller protocol specification and separate panel-specific
    configuration from algorithms.
 4. Establish a minimal SRAM diagnostic program and recovery procedure before
