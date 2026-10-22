@@ -1,8 +1,14 @@
 # GPU compute development results, 2026-10-18
 
 Private Mesa builds on development kernel #101 completed Geekbench 6.7.2
-LinuxARM Preview on the Mali-G57 MC2. These experiments are outside the
-published boot-image baseline and do not establish Vulkan conformance.
+LinuxARM Preview on the Mali-G57 MC2. Kernel #101 is now published as
+[v143](../releases/v143/README.md); the private Mesa builds remain separate
+userspace installations. These results do not establish Vulkan conformance.
+
+Latest fully postchecked uninstrumented Vulkan result: **1415**, compared
+with the historical r4 repeat at 1233 (+14.8%). Latest recorded OpenCL
+candidate: **748**. A later **1432** instrumented Vulkan result is archived
+but lacks the complete post-run qualification described below.
 
 | API / build | Score | Public result |
 |---|---:|---|
@@ -13,6 +19,7 @@ published boot-image baseline and do not establish Vulkan conformance.
 | Vulkan, clean combination plus late byte vectorization | 1345 | [6942096](https://browser.geekbench.com/v6/compute/6942096) |
 | Vulkan, same combination with dispatch audit | 1337 | [6942126](https://browser.geekbench.com/v6/compute/6942126) |
 | Vulkan, expensive Particle branches preserved | 1415 | [6942135](https://browser.geekbench.com/v6/compute/6942135) |
+| Vulkan, short byte-loop candidate, instrumented; incomplete postchecks | 1432 | [6942162](https://browser.geekbench.com/v6/compute/6942162) |
 | Vulkan r4, shader diagnostic | 1238 | [6941712](https://browser.geekbench.com/v6/compute/6941712) |
 | OpenCL, system Rusticl on #101 | 351 | [6941685](https://browser.geekbench.com/v6/compute/6941685) |
 | OpenCL, private Rusticl r2 | 698 | [6941706](https://browser.geekbench.com/v6/compute/6941706) |
@@ -410,3 +417,26 @@ The residual gaps against Android 6.5.0 are about **25.0% for Particle**,
 6.0.2 result. The remaining difference has not been fully explained; preserve
 this candidate while qualifying a conservative general short-loop improvement
 and investigating Particle with the early exits intact.
+
+## Archive review, 2026-10-22
+
+Rechecked the Build-Host run records before publishing v143. The 1415 run's
+sealed result records exit 0, all eight workloads, successful upload,
+identical driver/executable hashes before and after, verified loaded driver,
+no new GPU errors, unchanged healthy UI, no remaining GPU jobs, and
+`verified_complete=true`. Its elapsed time was 570.506 seconds. Driver SHA-256:
+`14f6fc43b5c17c4b4dadceb1ac84d8e16f4d04a7d9a95ff73e59a901b3711eff`.
+
+A subsequent short-byte-loop candidate uploaded **1432**, result
+[6942162](https://browser.geekbench.com/v6/compute/6942162), in 555.677 seconds.
+Its archived status/metadata record exit 0, all eight workloads, successful
+upload, verified loaded driver and unchanged driver/executable hashes.
+Driver SHA-256:
+`c6d4e8fe1cd1a5cd6e81f5ccc050ae43a5117690f6aa077ba6908e6e0068b3b8`.
+This run includes dispatch instrumentation and a hardware-counter sampler;
+its complete consolidated GPU-error/UI/cleanup postcheck is absent from the
+archive reviewed here. It is a recorded diagnostic result, not a newly
+qualified replacement for the clean 1415 candidate. The later user-transcribed
+Edge 2413, Horizon 2074 and Particle 3531 subscores are not assigned to this
+URL without a matching per-workload record. Historical results stay in the
+table so the development sequence remains traceable.

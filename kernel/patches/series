@@ -133,3 +133,4 @@
 0133-i2c-mediatek-only-request-a-controller-owned-vbus-su.patch
 0134-usb-typec-mt6360-manage-source-VBUS-and-enable-alert.patch
 0135-usb-mediatek-enable-A22x-dual-role-USB-with-balanced.patch
+0136-drm-panfrost-allow-two-seconds-for-compute-jobs.patch

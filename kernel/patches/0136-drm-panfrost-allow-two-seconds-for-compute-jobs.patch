@@ -1,0 +1,24 @@
+From: Dodaskot <pessdres@gmail.com>
+Date: Thu, 22 Oct 2026 12:00:00 +0200
+Subject: [PATCH] drm/panfrost: allow two seconds for compute jobs
+
+Valid long-running compute workloads on Mali-G57 MC2 exceed the 500 ms
+watchdog. Increase the timeout to 2000 ms, retaining timeout recovery.
+This is the sole source change in the tested kernel build #101.
+
+---
+ drivers/gpu/drm/panfrost/panfrost_job.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/panfrost/panfrost_job.c b/drivers/gpu/drm/panfrost/panfrost_job.c
+--- a/drivers/gpu/drm/panfrost/panfrost_job.c
++++ b/drivers/gpu/drm/panfrost/panfrost_job.c
+@@ -23,7 +23,7 @@
+ #include "panfrost_dump.h"
+
+ #define MAX_JM_CTX_PER_FILE 64
+-#define JOB_TIMEOUT_MS 500
++#define JOB_TIMEOUT_MS 2000
+
+ #define job_write(dev, reg, data) writel(data, dev->iomem + (reg))
+ #define job_read(dev, reg) readl(dev->iomem + (reg))

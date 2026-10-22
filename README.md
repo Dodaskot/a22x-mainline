@@ -15,9 +15,10 @@ no bootloader, modem or other partition is replaced. The userspace used
 during development is Arch Linux ARM with Phosh.
 
 This source tree extends the **accepted v135 baseline** with the changes
-tested in **v142 (kernel build #100)**, including USB-C host/device switching.
-A prebuilt v142 `boot.img` is in [releases/v142](releases/v142/README.md);
-the v135 images remain unchanged. See [provenance](docs/PROVENANCE.md)
+tested in **v142 (kernel build #100)**, including USB-C host/device switching,
+and the **v143 (kernel build #101)** GPU compute watchdog fix.
+The latest prebuilt image is in [releases/v143](releases/v143/README.md);
+the v142 and v135 images remain unchanged. See [provenance](docs/PROVENANCE.md)
 and the [2026-10-13 validation report](docs/VALIDATION-20261013.md).
 
 > **Status: experimental.** Usable as a development phone, not as a daily
@@ -59,20 +60,27 @@ Details: [docs/HARDWARE.md](docs/HARDWARE.md).
 The [2026-10-17 development report](docs/VALIDATION-20261017.md) records
 OpenCL score 174 with a Gaussian Blur validation failure, an experimental
 Vulkan score 989 with no reported workload validation failures, touchscreen
-shell selection and the FS582 modem checkpoint. These experiments are not
-included in the published boot images.
+shell selection and the FS582 modem checkpoint. The v143 boot image includes
+the kernel #101 watchdog change; Mesa drivers and shell configuration are
+installed separately in the root filesystem.
 
 The [2026-10-18 modem checkpoint](docs/MODEM-VALIDATION-20261018.md) advances
 the verified prefix to 620 filesystem requests. HS2 is still pending.
 
 The [2026-10-18 GPU compute report](docs/GPU-COMPUTE-20261018.md) records
-private Vulkan r4 scores of 1236/1233 and an OpenCL Rusticl r2 score of 698,
-with public result links and validation limits.
+**Vulkan 1415** ([result](https://browser.geekbench.com/v6/compute/6942135)),
+up from r4's 1236/1233, and **OpenCL 748**
+([result](https://browser.geekbench.com/v6/compute/6941745)), up from Rusticl r2's
+698. A later instrumented Vulkan run uploaded **1432**
+([result](https://browser.geekbench.com/v6/compute/6942162)); its archived
+post-run checks are incomplete, so it is listed separately. These results use
+private Mesa builds, which are **not bundled in the boot image**. See the report
+for per-workload scores, driver changes and validation limits.
 
 ## Repository layout
 
 ```
-kernel/patches/   135 patches on top of Linux v7.2 (git am), with series file
+kernel/patches/   136 patches on top of Linux v7.2 (git am), with series file
                   (kernel mirror currently documents the historical v135 baseline)
 kernel/config/    full accepted .config (a22x-v135.config) + config fragments
 kernel/build.sh   clone v7.2, apply the series, build Image.gz/DTBs/modules
@@ -83,6 +91,7 @@ boot/             mkboot.sh (boot.img for stock LK), initramfs init, flash.sh
 rootfs/           ALSA UCM profile, feedbackd theme
 tools/            bring-up helpers (memtool, clock/DT generators, smoke test)
 docs/             building/flashing guide, hardware notes, provenance
+releases/v143/    latest prebuilt boot.img, kernel #101 (Git LFS)
 releases/v142/    prebuilt v142 boot.img (Git LFS)
 releases/v135/    prebuilt v135 boot.img + matching conn modules (Git LFS)
 ```
@@ -93,12 +102,12 @@ releases/v135/    prebuilt v135 boot.img + matching conn modules (Git LFS)
 kernel/build.sh                              # -> kernel/linux, kernel/out
 KSRC=$PWD/kernel/linux KOUT=$PWD/kernel/out conn/build.sh
 BUSYBOX=... HIMAX_FW=... boot/build-initramfs.sh
-OUT=$PWD/kernel/out boot/mkboot.sh v142      # -> boot/images/boot-mainline-v142.img
-boot/flash.sh boot/images/boot-mainline-v142.img   # phone in Download mode
+OUT=$PWD/kernel/out boot/mkboot.sh v143      # -> boot/images/boot-mainline-v143.img
+boot/flash.sh boot/images/boot-mainline-v143.img   # phone in Download mode
 ```
 
-A prebuilt v142 `boot.img` (this source tree, kernel #100) is in
-[releases/v142](releases/v142/README.md); build the Wi-Fi/BT modules for it
+A prebuilt v143 `boot.img` (this source tree, kernel #101) is in
+[releases/v143](releases/v143/README.md); build the Wi-Fi/BT modules for it
 with `conn/build.sh`. The v135 `boot.img` and matching Wi-Fi/BT modules are in
 [releases/v135](releases/v135/README.md). They are kept exactly as built for
 v135 and do not contain source fixes made after it
@@ -110,10 +119,12 @@ Full instructions, the root filesystem layout and rollback:
 ## Proprietary firmware
 
 The source tree contains no Samsung/MediaTek firmware. The prebuilt images
-`releases/v142/boot-a22x-v142.img` and `releases/v135/boot-a22x-v135.img`
+`releases/v143/boot-a22x-v143.img`, `releases/v142/boot-a22x-v142.img`
+and `releases/v135/boot-a22x-v135.img`
 are the exception: their initramfs contains the stock touch firmware
 `Himax_firmware_fw_jdi.bin` (Samsung/Himax, proprietary), see
-[releases/v142](releases/v142/README.md) and [releases/v135](releases/v135/README.md).
+[releases/v143](releases/v143/README.md), [releases/v142](releases/v142/README.md)
+and [releases/v135](releases/v135/README.md).
 
 For your own builds copy these from the stock firmware (`/vendor/firmware`
 of the same device):

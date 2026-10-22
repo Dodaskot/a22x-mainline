@@ -2,8 +2,9 @@
 
 Baseline: **accepted v135 boot image, kernel build #95, conn95** (2026-10-10).
 Current source adds patches 0132–0135 tested in **v142/#100** (2026-10-13).
-The tested v142 image is published in `releases/v142/` (boot image only);
-`releases/v135/` is unchanged.
+Patch 0136 adds the tested #101 watchdog change, published as **v143**.
+The latest image is in `releases/v143/` (boot image only);
+`releases/v142/` and `releases/v135/` are unchanged.
 
 ## Kernel
 
@@ -44,8 +45,9 @@ build outputs, test logs or device-specific data (serial numbers,
 calibration, Bluetooth address).
 
 Exception: the prebuilt `releases/v135/boot-a22x-v135.img` and
-`releases/v142/boot-a22x-v142.img` are images that ran on the test handset,
-and their initramfs (identical in both) contains a static busybox
+`releases/v142/boot-a22x-v142.img`, plus `releases/v143/boot-a22x-v143.img`,
+are images that ran on the test handset,
+and their initramfs (identical in all three) contains a static busybox
 and the proprietary stock touch firmware `Himax_firmware_fw_jdi.bin`
 (listed in `releases/v135/README.md` and `releases/v142/README.md`).
 
@@ -89,3 +91,27 @@ but not in any prebuilt module.
 See [validation and limits](VALIDATION-20261013.md) for device results, artifact
 hashes, sensor observations and the current modem checkpoint. The CCCI test
 harness and device-specific NVRAM evidence remain outside this public tree.
+
+## v143 / kernel #101 publication (2026-10-22)
+
+Patch 0136 changes only Panfrost `JOB_TIMEOUT_MS` from 500 to 2000 ms so
+valid long-running compute jobs can complete. Timeout recovery is retained.
+It applies on top of the v142 source described above; config and DTB are
+unchanged. The published image was built on 2026-10-17, not rebuilt for this
+release, and kernel `7.2.0-a22x+ #101` was confirmed running on the handset
+on 2026-10-22.
+
+The reconstruction of the v142 kernel baseline differed from the original
+raw kernel by 78 bytes, limited to GNU build IDs and empty-initramfs mtimes;
+executable content was identical. The #101 kernel adds the one-line timeout
+change. The release retains the v142 boot header, command line, DTB and
+initramfs byte-for-byte. Its SHA-256 is
+`0dc6162e0b6608ce5e772738b272d1c2ce8cd31b27189ee8c73cf111ce6d374e`.
+Component hashes are in [kernel101-provenance.json](../releases/v143/kernel101-provenance.json).
+
+The [GPU report](GPU-COMPUTE-20261018.md) records complete Geekbench runs
+on #101. Private PanVK/Rusticl compiler and task-splitting changes live in
+userspace and are not included in this boot image. No connectivity modules,
+root filesystem, cellular test harness or device-specific NVRAM are added
+by this release. Build connectivity modules for this source/config as in
+[BUILDING.md](BUILDING.md).

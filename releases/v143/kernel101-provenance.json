@@ -1,0 +1,13 @@
+{
+  "baseline_boot_sha256": "aa375adf2cfe1852a6422b1cb7c34c17f27e64e82f7980e9ea6c8c2c5071188c",
+  "candidate_boot_sha256": "0dc6162e0b6608ce5e772738b272d1c2ce8cd31b27189ee8c73cf111ce6d374e",
+  "candidate_image_sha256": "7844150c9fcdcf7921abe28994c9816c4131107dffe60d5bb8d97a11aba687dd",
+  "candidate_gzip_sha256": "b7d2f4c07a30d10703b8d430c3cabb5339236f612a20f39663081ca0e848308f",
+  "dtb_sha256": "3a87ca9785d91db1bd079ded9cc9833e31aaf927afc2a1e8f4542ef50e5c05a6",
+  "ramdisk_sha256": "aea42de710039e32677a76d0a5440df308f7d2471cae213166320508bb2aa196",
+  "boot_bytes": 33554432,
+  "kernel_build": 101,
+  "job_timeout_ms": 2000,
+  "baseline_job_timeout_ms": 500,
+  "ramdisk_header_dtb_unchanged": true
+}
