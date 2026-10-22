@@ -84,7 +84,10 @@ The historical Andes v3 toolchain now builds independent NDS32 C. An open
 original machine code in the vendor CPU simulator. These are components,
 not a complete runnable replacement. A [finite CPU diagnostic](../firmware/himax/diagnostic/README.md)
 also passes startup/mailbox/vector tests in the simulator; it is not flashable
-as a complete controller firmware.
+as a complete controller firmware. [Threshold/peak extraction](HIMAX-SEED-COMPONENT.md)
+is implemented for documented ordinary-mode inputs. The
+[component overview](../firmware/himax/README.md) separates these checks from
+the remaining device integration.
 
 1. Complete startup and peripheral initialization with explicit recovery.
 2. Extend the recovered startup/interrupt map into scanning and report production,
