@@ -50,9 +50,9 @@ and the [2026-10-13 validation report](docs/VALIDATION-20261013.md).
 Not working / not done:
 
 - **Cellular modem and SIM** — in progress, not part of this baseline. The
-  modem is powered and started, passes the first handshake (HS1) and its
-  early service requests are being answered, but it does not finish booting
-  (HS2) yet, so there is no SIM, calls or mobile data.
+  bounded development harness reached **HS2 after 1446 verified filesystem
+  requests** on 2026-10-24. Persistent modem operation, SIM service, network
+  registration, calls and mobile data are not implemented yet.
 - Camera.
 - GPS and fingerprint (deferred).
 
@@ -65,9 +65,11 @@ shell selection and the FS582 modem checkpoint. The v143 boot image includes
 the kernel #101 watchdog change; Mesa drivers and shell configuration are
 installed separately in the root filesystem.
 
-The [2026-10-22 modem checkpoint](docs/MODEM-VALIDATION-20261022.md) records
-927 verified filesystem requests and recovery from a full phone filesystem.
-HS2 is still pending; this test infrastructure is separate from the boot release.
+The [2026-10-24 modem report](docs/MODEM-VALIDATION-20261024.md) records
+**FS1446 / HS2 confirmed**, with a successful independent capture audit and
+no AP reboot during the corrected run. The test infrastructure remains
+separate from the published boot release; reaching HS2 does not enable
+cellular service in that image.
 
 The [2026-10-18 GPU compute report](docs/GPU-COMPUTE-20261018.md) records
 **Vulkan 1415** ([result](https://browser.geekbench.com/v6/compute/6942135)),
