@@ -115,3 +115,13 @@ userspace and are not included in this boot image. No connectivity modules,
 root filesystem, cellular test harness or device-specific NVRAM are added
 by this release. Build connectivity modules for this source/config as in
 [BUILDING.md](BUILDING.md).
+
+## SIM1 investigation update (2026-11-03)
+
+The [current modem report](MODEM-VALIDATION-20261103.md) describes subsequent
+experiments in the separate development harness. Its FS1446/HS2 result,
+READY failure, source analysis and host-only stock capture qualification
+are identified separately. The report includes retained evidence hashes;
+the raw device captures and private test environment are not published.
+This documentation update adds no kernel patches, boot images or firmware,
+and does not change the v135/v142/v143 release contents.

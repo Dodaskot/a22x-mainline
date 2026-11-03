@@ -51,8 +51,10 @@ Not working / not done:
 
 - **Cellular modem and SIM** — in progress, not part of this baseline. The
   bounded development harness reached **HS2 after 1446 verified filesystem
-  requests** on 2026-10-24. Persistent modem operation, SIM service, network
-  registration, calls and mobile data are not implemented yet.
+  requests** on 2026-10-24 and revalidated that prefix on 2026-11-03.
+  The subsequent READY stage still encounters a DigRF assertion; SIM1,
+  network registration, calls and mobile data do not work yet. See the
+  [current SIM1 investigation](docs/MODEM-VALIDATION-20261103.md).
 - Camera.
 - GPS and fingerprint (deferred).
 
@@ -70,6 +72,12 @@ The [2026-10-24 modem report](docs/MODEM-VALIDATION-20261024.md) records
 no AP reboot during the corrected run. The test infrastructure remains
 separate from the published boot release; reaching HS2 does not enable
 cellular service in that image.
+
+The [2026-11-03 SIM1 report](docs/MODEM-VALIDATION-20261103.md) records the
+latest ASSERT107, RF power/clock checks, captured PC Monitor limits and a
+bounded post-fault DHL test. A new stock RF comparison controller has passed
+39 host tests; its Android capture is still pending. These diagnostics do
+not establish the cause of the fault or add cellular support to v143.
 
 The [2026-10-18 GPU compute report](docs/GPU-COMPUTE-20261018.md) records
 **Vulkan 1415** ([result](https://browser.geekbench.com/v6/compute/6942135)),
