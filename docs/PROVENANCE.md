@@ -3,6 +3,9 @@
 Baseline: **accepted v135 boot image, kernel build #95, conn95** (2026-10-10).
 Current source adds patches 0132–0135 tested in **v142/#100** (2026-10-13).
 Patch 0136 adds the tested #101 watchdog change, published as **v143**.
+Patch 0137 imports the Himax teardown change from the deployed **kernel #102**.
+The full kernel mirror and this patch series now have the same source tree;
+see [the source publication report](KERNEL-SYNC-20261103.md).
 The latest image is in `releases/v143/` (boot image only);
 `releases/v142/` and `releases/v135/` are unchanged.
 
@@ -78,7 +81,8 @@ Applying all 135 patches to the declared Linux v7.2 base produces tree
 `e0b3aaca697f1a53d8edb402636450cd4a35a111`.
 The accepted CPU/GPU/CCI device-tree settings are preserved. Configuration and
 Module.symvers match the preceding kernel; installed connectivity modules were
-retained. The kernel mirror remains the historical baseline until separately synced.
+retained. This source is now also available as kernel tag `a22x-v142`;
+see [the later mirror synchronization](KERNEL-SYNC-20261103.md).
 
 `releases/v142/boot-a22x-v142.img` is the tested image (SHA-256
 `aa375adf2cfe1852a6422b1cb7c34c17f27e64e82f7980e9ea6c8c2c5071188c`). Its
@@ -125,3 +129,15 @@ are identified separately. The report includes retained evidence hashes;
 the raw device captures and private test environment are not published.
 This documentation update adds no kernel patches, boot images or firmware,
 and does not change the v135/v142/v143 release contents.
+
+## Kernel source synchronization (2026-11-03)
+
+The subsequent kernel publication adds patch 0137 and advances
+`Dodaskot/linux-a22x` branch `a22x` to the retained #102 source. All 94,902
+tracked file contents and modes match that source snapshot, with no extra
+source files. The configuration remains byte-identical to `a22x-v135.config`.
+The changed Himax driver builds with the pinned Clang 23.1.1 toolchain.
+
+No new boot image is released by this source synchronization. v143 still
+contains patches 0001–0136, and `a22x-kernel102` identifies the newer source.
+See [commits, tree hashes and validation limits](KERNEL-SYNC-20261103.md).

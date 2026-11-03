@@ -1,0 +1,157 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 3 Nov 2026 13:12:27 +0100
+Subject: [PATCH 137/137] input: himax: quiesce callbacks before freeing device
+ state
+
+Keep report buffers, input devices and command tables alive until IRQs,
+firmware work and proc callbacks have stopped. Mark the device as removing
+before disabling interrupts, and reject resume or IRQ re-enable during
+teardown. Unregister the input devices and remove the factory proc subtree.
+
+Import the exact three-file change from the retained SM-A226B kernel #102
+source. Its deployed BOOT SHA256 is
+60aa3b3be80a404559d0ed9f587d2a086d35ac651b912e72cbb41b5a84344940.
+The remaining source files match the v143/#101 tree byte for byte.
+---
+ .../touchscreen/himax_hx83112f/himax_common.c | 60 +++++++++++++------
+ .../touchscreen/himax_hx83112f/himax_common.h |  1 +
+ .../himax_hx83112f/himax_platform.c           |  5 ++
+ 3 files changed, 49 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/input/touchscreen/himax_hx83112f/himax_common.c b/drivers/input/touchscreen/himax_hx83112f/himax_common.c
+index 7ceb92721..e7eefe46e 100644
+--- a/drivers/input/touchscreen/himax_hx83112f/himax_common.c
++++ b/drivers/input/touchscreen/himax_hx83112f/himax_common.c
+@@ -928,11 +928,21 @@ static int wt_fac_proc_init(void)
+ 	return 0;
+ 
+ fail:
+-	remove_proc_entry(WT_FAC_PROC_TOUCH_FOLDER, NULL);
++	proc_remove(wt_fac_touch_proc_dir);
++	wt_fac_touch_proc_dir = NULL;
++	wt_fac_proc_self_test_file = NULL;
+ 
+ 	return -ENOMEM;
+ }
+ 
++static void wt_fac_proc_deinit(void)
++{
++	/* proc_remove() removes the subtree and drains active proc callbacks. */
++	proc_remove(wt_fac_touch_proc_dir);
++	wt_fac_touch_proc_dir = NULL;
++	wt_fac_proc_self_test_file = NULL;
++}
++
+ void himax_parse_assign_cmd(uint32_t addr, uint8_t *cmd, int len)
+ {
+ 	/*I("%s: Entering!\n", __func__);*/
+@@ -3316,6 +3326,7 @@ int himax_chip_common_init(void)
+ 	himax_debug_remove();
+ err_debug_init_failed:
+ #endif
++	wt_fac_proc_deinit();
+ 	himax_common_proc_deinit();
+ err_creat_proc_file_failed:
+ #if defined(HX_SMART_WAKEUP)
+@@ -3360,17 +3371,33 @@ void himax_chip_common_deinit(void)
+ {
+ 	struct himax_ts_data *ts = private_ts;
+ 
+-	himax_ts_unregister_interrupt();
+-
+-#if defined(CONFIG_TOUCHSCREEN_HIMAX_INSPECT)
+-	himax_inspect_data_clear();
+-#endif
++	/* Keep all report buffers, input devices and command tables alive until
++	 * every IRQ, work item and proc callback that can use them has stopped.
++	 */
++	WRITE_ONCE(ts->removing, true);
++	himax_int_enable(0);
++	if (ts->use_irq)
++		synchronize_irq(ts->hx_irq);
+ 
++	wt_fac_proc_deinit();
++	himax_common_proc_deinit();
+ #if defined(CONFIG_TOUCHSCREEN_HIMAX_DEBUG)
+ 	himax_debug_remove();
+ #endif
+ 
+-	himax_common_proc_deinit();
++#if defined(HX_CONTAINER_SPEED_UP)
++	cancel_delayed_work_sync(&ts->ts_int_work);
++	destroy_workqueue(ts->ts_int_workqueue);
++#endif
++#if defined(HX_BOOT_UPGRADE) || defined(HX_ZERO_FLASH)
++	cancel_delayed_work_sync(&ts->work_boot_upgrade);
++	destroy_workqueue(ts->himax_boot_upgrade_wq);
++#endif
++	himax_ts_unregister_interrupt();
++
++#if defined(CONFIG_TOUCHSCREEN_HIMAX_INSPECT)
++	himax_inspect_data_clear();
++#endif
+ 	himax_report_data_deinit();
+ 
+ #if defined(HX_SMART_WAKEUP)
+@@ -3414,16 +3441,12 @@ else
+ 	cancel_delayed_work_sync(&ts->work_att);
+ 	destroy_workqueue(ts->himax_att_wq);
+ #endif
+-	input_free_device(ts->input_dev);
+-#if defined(HX_CONTAINER_SPEED_UP)
+-	cancel_delayed_work_sync(&ts->ts_int_work);
+-	destroy_workqueue(ts->ts_int_workqueue);
+-#endif
+-
+-#if defined(HX_BOOT_UPGRADE) || defined(HX_ZERO_FLASH)
+-	cancel_delayed_work_sync(&ts->work_boot_upgrade);
+-	destroy_workqueue(ts->himax_boot_upgrade_wq);
+-#endif
++	input_unregister_device(ts->input_dev);
++	ts->input_dev = NULL;
++	if (ic_data->HX_STYLUS_FUNC) {
++		input_unregister_device(ts->stylus_dev);
++		ts->stylus_dev = NULL;
++	}
+ 	himax_gpio_power_deconfig(ts->pdata);
+ 	if (himax_mcu_cmd_struct_free)
+ 		himax_mcu_cmd_struct_free();
+@@ -3529,6 +3552,9 @@ int himax_chip_common_resume(struct himax_ts_data *ts)
+ 	int result = 0;
+ #endif
+ 
++	if (READ_ONCE(ts->removing))
++		return -ENODEV;
++
+ 	if (ts->suspended == false) {
+ 		I("%s: Already resumed, skip...\n", __func__);
+ 		goto END;
+diff --git a/drivers/input/touchscreen/himax_hx83112f/himax_common.h b/drivers/input/touchscreen/himax_hx83112f/himax_common.h
+index 010a0482f..eee6da9ae 100644
+--- a/drivers/input/touchscreen/himax_hx83112f/himax_common.h
++++ b/drivers/input/touchscreen/himax_hx83112f/himax_common.h
+@@ -450,6 +450,7 @@ struct himax_ts_data {
+ 	struct sec_cmd_data sec;
+ #endif
+ 	bool initialized;
++	bool removing;
+ 	bool suspended;
+ 	int notouch_frame;
+ 	int ic_notouch_frame;
+diff --git a/drivers/input/touchscreen/himax_hx83112f/himax_platform.c b/drivers/input/touchscreen/himax_hx83112f/himax_platform.c
+index 91e282079..e6a72c424 100644
+--- a/drivers/input/touchscreen/himax_hx83112f/himax_platform.c
++++ b/drivers/input/touchscreen/himax_hx83112f/himax_platform.c
+@@ -137,6 +137,11 @@ void himax_int_enable(int enable)
+ 	unsigned long irqflags;
+ 
+ 	spin_lock_irqsave(&ts->irq_lock, irqflags);
++	/* A firmware/self-test worker must not re-enable an IRQ during removal. */
++	if (enable == 1 && READ_ONCE(ts->removing)) {
++		spin_unlock_irqrestore(&ts->irq_lock, irqflags);
++		return;
++	}
+ 	if (enable == 1 && atomic_read(&ts->irq_state) == 0) {
+ 		atomic_set(&ts->irq_state, 1);
+ 		enable_irq(ts->hx_irq);

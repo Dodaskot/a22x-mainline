@@ -15,9 +15,12 @@ It boots from the stock Samsung LK bootloader as an ordinary `boot.img`:
 no bootloader, modem or other partition is replaced. The userspace used
 during development is Arch Linux ARM with Phosh.
 
-This source tree extends the **accepted v135 baseline** with the changes
-tested in **v142 (kernel build #100)**, including USB-C host/device switching,
-and the **v143 (kernel build #101)** GPU compute watchdog fix.
+This source tree extends the **accepted v135 baseline** with the USB-C/OTG
+changes tested in **v142 (kernel build #100)**, the **v143 (kernel build #101)**
+GPU compute watchdog fix, and the **kernel #102** Himax teardown fix.
+The [public kernel branch](https://github.com/Dodaskot/linux-a22x/tree/a22x)
+and this repository's 137-patch series describe the same source tree;
+see the [kernel publication report](docs/KERNEL-SYNC-20261103.md).
 The latest prebuilt image is in [releases/v143](releases/v143/README.md);
 the v142 and v135 images remain unchanged. See [provenance](docs/PROVENANCE.md)
 and the [2026-10-13 validation report](docs/VALIDATION-20261013.md).
@@ -92,8 +95,8 @@ for per-workload scores, driver changes and validation limits.
 ## Repository layout
 
 ```
-kernel/patches/   136 patches on top of Linux v7.2 (git am), with series file
-                  (kernel mirror currently documents the historical v135 baseline)
+kernel/patches/   137 patches on top of Linux v7.2 (git am), with series file
+                  (same source as linux-a22x branch a22x / kernel #102)
 kernel/config/    full accepted .config (a22x-v135.config) + config fragments
 kernel/build.sh   clone v7.2, apply the series, build Image.gz/DTBs/modules
 kernel/update-patches.sh  regenerate kernel/patches from the kernel tree
@@ -114,13 +117,14 @@ releases/v135/    prebuilt v135 boot.img + matching conn modules (Git LFS)
 kernel/build.sh                              # -> kernel/linux, kernel/out
 KSRC=$PWD/kernel/linux KOUT=$PWD/kernel/out conn/build.sh
 BUSYBOX=... HIMAX_FW=... boot/build-initramfs.sh
-OUT=$PWD/kernel/out boot/mkboot.sh v143      # -> boot/images/boot-mainline-v143.img
-boot/flash.sh boot/images/boot-mainline-v143.img   # phone in Download mode
+OUT=$PWD/kernel/out boot/mkboot.sh local     # -> boot/images/boot-mainline-local.img
+boot/flash.sh boot/images/boot-mainline-local.img  # phone in Download mode
 ```
 
-A prebuilt v143 `boot.img` (this source tree, kernel #101) is in
+A prebuilt v143 `boot.img` (patches 0001–0136, kernel #101) is in
 [releases/v143](releases/v143/README.md); build the Wi-Fi/BT modules for it
-with `conn/build.sh`. The v135 `boot.img` and matching Wi-Fi/BT modules are in
+against the `a22x-v143` kernel tag with `conn/build.sh`. Patch 0137 is in the
+current source and is not included in that image. The v135 `boot.img` and matching Wi-Fi/BT modules are in
 [releases/v135](releases/v135/README.md). They are kept exactly as built for
 v135 and do not contain source fixes made after it
 ([docs/PROVENANCE.md](docs/PROVENANCE.md#fixes-after-v135)).

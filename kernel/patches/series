@@ -134,3 +134,4 @@
 0134-usb-typec-mt6360-manage-source-VBUS-and-enable-alert.patch
 0135-usb-mediatek-enable-A22x-dual-role-USB-with-balanced.patch
 0136-drm-panfrost-allow-two-seconds-for-compute-jobs.patch
+0137-input-himax-quiesce-callbacks-before-freeing-device-sta.patch

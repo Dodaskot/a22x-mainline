@@ -4,19 +4,23 @@ The a22x kernel is Linux `v7.2` plus the commits in `patches/`.
 The patches were developed with heavy use of AI coding assistants (Claude
 and Codex) and tested on the real phone.
 
-The historical v135 tree is published at
-https://github.com/Dodaskot/linux-a22x, tag `a22x-v135` (kernel build #95).
-This repository's series now also contains patches 0132–0135 tested in v142/#100.
-The kernel mirror has not been updated as part of this change; use the series
-here to build the current source. Its tree hash is
-`e0b3aaca697f1a53d8edb402636450cd4a35a111`.
+The complete source is published at
+https://github.com/Dodaskot/linux-a22x, branch `a22x`. Its 137 commits above
+`v7.2` match this repository's patch series. Current tree:
+`043297180017cae94b2574a598b9075d5cb064dd` (kernel #102).
+
+The mirror also retains tags `a22x-v135` (#95), `a22x-v142` (#100),
+`a22x-v143` (#101), and `a22x-kernel102`. The latest prebuilt release remains
+v143; patch 0137 adds the #102 Himax teardown change to the source only.
+See [publication, source identity and validation](../docs/KERNEL-SYNC-20261103.md).
 
 ## Building
 
 ```sh
 ./build.sh                    # clone v7.2 from kernel.org, git am, build
-# historical v135 source only:
-git clone -b a22x-v135 https://github.com/Dodaskot/linux-a22x
+# full current source, equivalent to the patch series:
+git clone -b a22x https://github.com/Dodaskot/linux-a22x
+# use tag a22x-v143 when building modules for the published v143 image
 ```
 
 Before building, `build.sh` checks the source tree: no unfinished
