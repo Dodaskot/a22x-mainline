@@ -67,7 +67,8 @@ case ${GATE_UNUSED_CLOCKS:-0} in
     1) CLK_RETENTION_ARG="" ;;
     *) echo 'GATE_UNUSED_CLOCKS must be 0 or 1' >&2; exit 2 ;;
 esac
-CMDLINE="bootopt=64S3,32N2,64N2 earlycon=mt6833uart,0x11002000 console=ttyS0,921600n8 console=tty0 loglevel=8 ignore_loglevel${CLK_RETENTION_ARG} pd_ignore_unused printk.devkmsg=on mem_sleep_default=s2idle${EXTRA_CMDLINE:+ $EXTRA_CMDLINE}"
+# Keep serial diagnostics; the panel belongs to the charging UI or compositor.
+CMDLINE="bootopt=64S3,32N2,64N2 earlycon=mt6833uart,0x11002000 console=ttyS0,921600n8 fbcon=logo-count:0 vt.global_cursor_default=0 loglevel=8 ignore_loglevel${CLK_RETENTION_ARG} pd_ignore_unused printk.devkmsg=on mem_sleep_default=s2idle${EXTRA_CMDLINE:+ $EXTRA_CMDLINE}"
 
 mkbootimg \
 	--header_version 2 \

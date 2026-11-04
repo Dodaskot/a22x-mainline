@@ -10,6 +10,7 @@
 *.order
 Module.symvers
 /boot/images/
+/boot/charger/build/
 /boot/initramfs.cpio.gz
 # proprietary firmware: never commit
 *.bin

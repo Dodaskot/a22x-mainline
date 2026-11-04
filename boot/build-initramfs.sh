@@ -8,6 +8,8 @@
 #   HIMAX_FW  Himax_firmware_fw_jdi.bin from the stock /vendor/firmware/
 #             (touch controller firmware, Samsung/Himax proprietary)
 # memtool is built from tools/memtool.c with an aarch64 cross compiler.
+# Charger uses a separate static-libc compiler: CHARGER_CC or CROSS_COMPILE.
+# See charger/README.md; the default is aarch64-linux-gnu-gcc.
 set -euo pipefail
 cd "$(dirname "$0")"
 : "${BUSYBOX:?set BUSYBOX=/path/to/static/aarch64/busybox}"
@@ -31,6 +33,7 @@ install -m755 initramfs/bin/a22x-boot-bundle "$WORK/bin/"
 install -m755 initramfs/bin/reboot-download "$WORK/bin/"
 install -m755 "$BUSYBOX" "$WORK/bin/busybox"
 install -m644 "$HIMAX_FW" "$WORK/lib/firmware/Himax_firmware_fw_jdi.bin"
+python3 charger/build.py --output "$WORK/bin/a22x-charger"
 if [ -n "${CONN_MODULES:-}" ]; then
     python3 build-connectivity-bundle.py --modules "$CONN_MODULES" \
         --firmware "$CONN_FIRMWARE" --kout "$KOUT" --himax "$HIMAX_FW" \

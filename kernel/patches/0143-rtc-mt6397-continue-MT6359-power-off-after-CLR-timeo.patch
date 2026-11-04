@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Wed, 4 Nov 2026 21:37:57 +0100
+Subject: [PATCH 143/143] rtc: mt6397: continue MT6359 power-off after CLR
+ timeout
+
+A22x UART shows the CLR bit remaining set for 500 ms, aborting
+the power-off sequence before PWRHOLD release. Match the active
+Samsung MT6359P sequence by warning and continuing after a bit
+poll timeout. Preserve regmap read errors separately, including
+transport ETIMEDOUT, so failed PMIC access still takes the fallback.
+
+Keep the existing 500 ms limit and all other power-off steps.
+---
+ drivers/rtc/rtc-mt6397.c | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/rtc/rtc-mt6397.c b/drivers/rtc/rtc-mt6397.c
+index 08def24c2..fce8ec0c5 100644
+--- a/drivers/rtc/rtc-mt6397.c
++++ b/drivers/rtc/rtc-mt6397.c
+@@ -58,7 +58,7 @@ static int mt6359_rtc_power_off(struct sys_off_data *data)
+ 	struct mt6397_rtc *rtc = data->cb_data;
+ 	const char *stage = "power-key release";
+ 	unsigned int val;
+-	int ret, lock_ret;
++	int ret, lock_ret, poll_ret;
+ 
+ 	/*
+ 	 * PWRAP's regmap uses a mutex and sleepable polling. Run after device
+@@ -103,12 +103,21 @@ static int mt6359_rtc_power_off(struct sys_off_data *data)
+ 	ret = mtk_rtc_write_trigger(rtc);
+ 	if (ret)
+ 		goto out_unlock;
+-	ret = regmap_read_poll_timeout(rtc->regmap,
+-				      rtc->addr_base + RTC_BBPU, val,
+-				      !(val & MT6359_RTC_BBPU_CLR),
+-				      MTK_RTC_POLL_DELAY_US, 500000);
++	/*
++	 * The vendor sequence continues if CLR remains set after 500 ms.
++	 * Keep the read error separate: PWRAP can also return -ETIMEDOUT.
++	 */
++	poll_ret = read_poll_timeout(regmap_read, ret,
++				     ret || !(val & MT6359_RTC_BBPU_CLR),
++				     MTK_RTC_POLL_DELAY_US, 500000, false,
++				     rtc->regmap, rtc->addr_base + RTC_BBPU,
++				     &val);
+ 	if (ret)
+ 		goto out_unlock;
++	if (poll_ret)
++		dev_warn(data->dev,
++			 "RTC_BBPU_CLR timeout (BBPU=%#x); continuing power-off\n",
++			 val);
+ 
+ 	stage = "RTC reload";
+ 	ret = regmap_update_bits(rtc->regmap, rtc->addr_base + RTC_BBPU,

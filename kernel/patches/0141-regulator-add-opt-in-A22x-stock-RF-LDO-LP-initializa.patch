@@ -1,0 +1,311 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Wed, 4 Nov 2026 00:57:18 +0100
+Subject: [PATCH 141/143] regulator: add opt-in A22x stock RF LDO LP
+ initialization
+
+---
+ drivers/regulator/mt6359-a22x-lp-init-core.h | 156 +++++++++++++++++++
+ drivers/regulator/mt6359-a22x-lp-init.h      | 105 +++++++++++++
+ drivers/regulator/mt6359-regulator.c         |   6 +
+ 3 files changed, 267 insertions(+)
+ create mode 100644 drivers/regulator/mt6359-a22x-lp-init-core.h
+ create mode 100644 drivers/regulator/mt6359-a22x-lp-init.h
+
+diff --git a/drivers/regulator/mt6359-a22x-lp-init-core.h b/drivers/regulator/mt6359-a22x-lp-init-core.h
+new file mode 100644
+index 000000000..52e7b275a
+--- /dev/null
++++ b/drivers/regulator/mt6359-a22x-lp-init-core.h
+@@ -0,0 +1,156 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++#ifndef MT6359_A22X_LP_INIT_CORE_H
++#define MT6359_A22X_LP_INIT_CORE_H
++
++/*
++ * A22x MT6359P experiment: the four LDO subsets of the vendor MT6833
++ * SODI3 then Deepidle init calls, in their observed order. No VSEL writes.
++ * The same transaction code is compiled by the host fault-injection harness.
++ */
++struct a22x_lp_field {
++	unsigned int address, mask;
++};
++
++static const struct a22x_lp_field a22x_lp_init_fields[] = {
++	{ 0x1b9c, 0x1400 }, { 0x1ba0, 0x0005 }, { 0x1ba6, 0x0005 },
++	{ 0x1bc0, 0x1400 }, { 0x1bc4, 0x0005 }, { 0x1bca, 0x0005 },
++	{ 0x1c42, 0x0800 }, { 0x1c46, 0x0002 }, { 0x1c4c, 0x0002 },
++	{ 0x1c66, 0x1400 }, { 0x1c6a, 0x0005 }, { 0x1c70, 0x0005 },
++};
++
++struct a22x_lp_update {
++	unsigned int field, mask;
++};
++
++/* Each update sets its one source-qualified bit. VA09 occurs in both phases. */
++static const struct a22x_lp_update a22x_lp_init_updates[] = {
++	{ 3, 0x0400 }, { 4, 0x0001 }, { 5, 0x0001 }, /* VRF12 SRCLKEN0 */
++	{ 9, 0x0400 }, {10, 0x0001 }, {11, 0x0001 }, /* VA12  SRCLKEN0 */
++	{ 6, 0x0800 }, { 7, 0x0002 }, { 8, 0x0002 }, /* VA09  SRCLKEN1 */
++	{ 0, 0x0400 }, { 1, 0x0001 }, { 2, 0x0001 }, /* VXO22 SRCLKEN0 */
++	{ 3, 0x1000 }, { 4, 0x0004 }, { 5, 0x0004 }, /* VRF12 SRCLKEN2 */
++	{ 9, 0x1000 }, {10, 0x0004 }, {11, 0x0004 }, /* VA12  SRCLKEN2 */
++	{ 6, 0x0800 }, { 7, 0x0002 }, { 8, 0x0002 }, /* VA09  SRCLKEN1 */
++	{ 0, 0x1000 }, { 1, 0x0004 }, { 2, 0x0004 }, /* VXO22 SRCLKEN2 */
++};
++
++struct a22x_lp_io {
++	int (*read)(void *ctx, unsigned int reg, unsigned int *value);
++	int (*update)(void *ctx, unsigned int reg, unsigned int mask,
++		      unsigned int value);
++	u64 (*now)(void *ctx);
++	void *ctx;
++};
++
++struct a22x_lp_step {
++	u64 begin, end;
++	unsigned int readback;
++	int write_error, read_error;
++};
++
++struct a22x_lp_transaction {
++	unsigned int pre[12], final[12], rollback[12];
++	struct a22x_lp_step step[24], undo[24];
++	unsigned int saved, attempted, verified, undo_attempted, undo_verified;
++	int error, rollback_error;
++	bool complete;
++};
++
++static int a22x_lp_verify(const struct a22x_lp_io *io, unsigned int *values)
++{
++	unsigned int i;
++	int ret;
++
++	for (i = 0; i < ARRAY_SIZE(a22x_lp_init_fields); i++) {
++		const struct a22x_lp_field *f = &a22x_lp_init_fields[i];
++
++		ret = io->read(io->ctx, f->address, &values[i]);
++		if (ret)
++			return ret;
++		if ((values[i] & f->mask) != f->mask)
++			return -ESTALE;
++	}
++	return 0;
++}
++
++static int a22x_lp_apply(const struct a22x_lp_io *io,
++			struct a22x_lp_transaction *t)
++{
++	unsigned int i;
++	int ret;
++
++	/* A transaction object cannot be replayed, even after a preimage failure. */
++	if (t->error || t->saved || t->attempted || t->complete)
++		return -EALREADY;
++	for (i = 0; i < ARRAY_SIZE(a22x_lp_init_fields); i++) {
++		ret = io->read(io->ctx, a22x_lp_init_fields[i].address, &t->pre[i]);
++		if (ret) {
++			t->error = ret;
++			return ret;
++		}
++		t->saved++;
++	}
++	for (i = 0; i < ARRAY_SIZE(a22x_lp_init_updates); i++) {
++		const struct a22x_lp_update *u = &a22x_lp_init_updates[i];
++		const struct a22x_lp_field *f = &a22x_lp_init_fields[u->field];
++		struct a22x_lp_step *s = &t->step[i];
++
++		/* Include a failed write in rollback: the bus may have committed it. */
++		t->attempted = i + 1;
++		s->begin = io->now(io->ctx);
++		s->read_error = -ECANCELED;
++		s->write_error = io->update(io->ctx, f->address, u->mask, u->mask);
++		ret = s->write_error;
++		if (!ret) {
++			s->read_error = io->read(io->ctx, f->address, &s->readback);
++			ret = s->read_error;
++			if (!ret && (s->readback & u->mask) != u->mask)
++				ret = -EIO;
++		}
++		s->end = io->now(io->ctx);
++		if (ret)
++			goto rollback;
++		t->verified++;
++	}
++	ret = a22x_lp_verify(io, t->final);
++	if (ret)
++		goto rollback;
++	t->complete = true;
++	return 0;
++
++rollback:
++	t->error = ret;
++	/* Restore only attempted owned bits, in reverse source order. */
++	for (i = t->attempted; i > 0; i--) {
++		const struct a22x_lp_update *u = &a22x_lp_init_updates[i - 1];
++		const struct a22x_lp_field *f = &a22x_lp_init_fields[u->field];
++		struct a22x_lp_step *s = &t->undo[i - 1];
++		unsigned int wanted = t->pre[u->field] & u->mask;
++
++		t->undo_attempted++;
++		s->begin = io->now(io->ctx);
++		s->write_error = io->update(io->ctx, f->address, u->mask, wanted);
++		/* Read even after write error; retain that error regardless of value. */
++		s->read_error = io->read(io->ctx, f->address, &s->readback);
++		s->end = io->now(io->ctx);
++		ret = s->write_error ? s->write_error : s->read_error;
++		if (!ret && (s->readback & u->mask) != wanted)
++			ret = -EIO;
++		if (ret && !t->rollback_error)
++			t->rollback_error = ret;
++		if (!ret)
++			t->undo_verified++;
++	}
++	/* Independent final owned-bit check, including fields not yet written. */
++	for (i = 0; i < ARRAY_SIZE(a22x_lp_init_fields); i++) {
++		const struct a22x_lp_field *f = &a22x_lp_init_fields[i];
++
++		ret = io->read(io->ctx, f->address, &t->rollback[i]);
++		if (!ret && ((t->rollback[i] ^ t->pre[i]) & f->mask))
++			ret = -ESTALE;
++		if (ret && !t->rollback_error)
++			t->rollback_error = ret;
++	}
++	return t->error;
++}
++#endif
+diff --git a/drivers/regulator/mt6359-a22x-lp-init.h b/drivers/regulator/mt6359-a22x-lp-init.h
+new file mode 100644
+index 000000000..254be4fae
+--- /dev/null
++++ b/drivers/regulator/mt6359-a22x-lp-init.h
+@@ -0,0 +1,105 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++#include <linux/mutex.h>
++#include "mt6359-a22x-lp-init-core.h"
++
++static bool a22x_lp_stock_init;
++module_param_named(a22x_lp_stock_init, a22x_lp_stock_init, bool, 0400);
++MODULE_PARM_DESC(a22x_lp_stock_init, "Opt-in A22x MT6359P four-LDO stock LP init before regulator registration");
++static DEFINE_MUTEX(a22x_lp_init_lock);
++static bool a22x_lp_init_attempted;
++static struct a22x_lp_transaction a22x_lp_init_receipt;
++
++static int a22x_lp_init_read(void *ctx, unsigned int reg, unsigned int *value)
++{
++	return regmap_read(ctx, reg, value);
++}
++
++static int a22x_lp_init_update(void *ctx, unsigned int reg,
++			       unsigned int mask, unsigned int value)
++{
++	return regmap_update_bits(ctx, reg, mask, value);
++}
++
++static u64 a22x_lp_init_now(void *ctx)
++{
++	return ktime_get_boottime_ns();
++}
++
++static bool a22x_lp_init_provider(struct device *dev, struct mt6397_chip *chip,
++				 int hw_ver)
++{
++	struct device *wrapper;
++
++	if (!of_machine_is_compatible("samsung,a22x") ||
++	    !of_machine_is_compatible("mediatek,mt6833") || hw_ver != 0x5930 ||
++	    !chip || chip->chip_id != MT6359_CHIP_ID || !chip->regmap ||
++	    chip->dev != dev->parent || !chip->dev->of_node)
++		return false;
++	wrapper = chip->dev->parent;
++	if (!wrapper || !wrapper->of_node ||
++	    !of_device_is_available(chip->dev->of_node) ||
++	    !of_device_is_available(wrapper->of_node) ||
++	    strcmp(of_node_full_name(chip->dev->of_node),
++		   "/pmic-wrapper@10026000/pmic") ||
++	    strcmp(of_node_full_name(wrapper->of_node), "/pmic-wrapper@10026000") ||
++	    !of_device_is_compatible(chip->dev->of_node, "mediatek,mt6359") ||
++	    !of_device_is_compatible(wrapper->of_node, "mediatek,mt6833-pwrap"))
++		return false;
++	return dev_get_regmap(wrapper, NULL) == chip->regmap &&
++	       regmap_get_device(chip->regmap) == wrapper &&
++	       regmap_get_val_bytes(chip->regmap) == 2;
++}
++
++static int a22x_lp_init(struct device *dev, struct mt6397_chip *chip, int hw_ver)
++{
++	struct a22x_lp_transaction *t = &a22x_lp_init_receipt;
++	struct a22x_lp_io io = {
++		.read = a22x_lp_init_read, .update = a22x_lp_init_update,
++		.now = a22x_lp_init_now,
++	};
++	unsigned int i, values[12];
++	int ret;
++	u64 begin, end;
++
++	if (!a22x_lp_stock_init)
++		return 0;
++	if (!a22x_lp_init_provider(dev, chip, hw_ver))
++		return dev_err_probe(dev, -ENODEV, "A22X_LP_INIT provider rejected; writes=0\n");
++	io.ctx = chip->regmap;
++
++	mutex_lock(&a22x_lp_init_lock);
++	if (a22x_lp_init_attempted) {
++		/* Probe retries may verify success, never reapply or retry a failure. */
++		ret = t->complete ? a22x_lp_verify(&io, values) : -ECANCELED;
++		dev_info(dev, "A22X_LP_INIT recheck result=%d writes=0\n", ret);
++		goto out;
++	}
++	a22x_lp_init_attempted = true;
++	begin = ktime_get_boottime_ns();
++	ret = a22x_lp_apply(&io, t);
++	end = ktime_get_boottime_ns();
++	/* Print after the transaction, so console latency does not split writes. */
++	dev_info(dev, "A22X_LP_INIT v1 hwcid=%04x begin=%llu end=%llu saved=%u attempted=%u verified=%u complete=%u error=%d undo_attempted=%u undo_verified=%u rollback_error=%d\n",
++		 hw_ver, begin, end, t->saved, t->attempted, t->verified,
++		 t->complete, t->error, t->undo_attempted, t->undo_verified,
++		 t->rollback_error);
++	for (i = 0; i < t->saved; i++)
++		dev_info(dev, "A22X_LP_INIT_FIELD i=%u addr=%04x mask=%04x pre=%04x final=%04x rollback=%04x\n",
++			 i, a22x_lp_init_fields[i].address, a22x_lp_init_fields[i].mask,
++			 t->pre[i], t->final[i], t->rollback[i]);
++	for (i = 0; i < t->attempted; i++) {
++		const struct a22x_lp_update *u = &a22x_lp_init_updates[i];
++		const struct a22x_lp_step *s = &t->step[i], *b = &t->undo[i];
++
++		dev_info(dev, "A22X_LP_INIT_STEP i=%u addr=%04x mask=%04x value=%04x begin=%llu end=%llu write_error=%d read_error=%d readback=%04x\n",
++			 i, a22x_lp_init_fields[u->field].address, u->mask, u->mask,
++			 s->begin, s->end, s->write_error, s->read_error, s->readback);
++		if (t->undo_attempted)
++			dev_info(dev, "A22X_LP_INIT_UNDO i=%u begin=%llu end=%llu write_error=%d read_error=%d readback=%04x\n",
++				 i, b->begin, b->end, b->write_error, b->read_error,
++				 b->readback);
++	}
++out:
++	mutex_unlock(&a22x_lp_init_lock);
++	return ret;
++}
+diff --git a/drivers/regulator/mt6359-regulator.c b/drivers/regulator/mt6359-regulator.c
+index e75c6c0f5..725d6bd54 100644
+--- a/drivers/regulator/mt6359-regulator.c
++++ b/drivers/regulator/mt6359-regulator.c
+@@ -15,6 +15,7 @@
+ #include <linux/regulator/of_regulator.h>
+ 
+ #include "mt6359-a22x-lp-observe.h"
++#include "mt6359-a22x-lp-init.h"
+ 
+ #define MT6359_BUCK_MODE_AUTO		0
+ #define MT6359_BUCK_MODE_FORCE_PWM	1
+@@ -1053,6 +1054,11 @@ static int mt6359_regulator_probe(struct platform_device *pdev)
+ 
+ 	lp_attempt = a22x_lp_observe_begin(mt6397, hw_ver);
+ 	a22x_lp_observe(&pdev->dev, mt6397->regmap, lp_attempt, "pre", hw_ver);
++	ret = a22x_lp_init(&pdev->dev, mt6397, hw_ver);
++	if (ret) {
++		a22x_lp_observe(&pdev->dev, mt6397->regmap, lp_attempt, "post", hw_ver);
++		return ret;
++	}
+ 
+ 	if (hw_ver >= MT6359P_CHIP_VER) {
+ 		mt6359_info = mt6359p_regulators;

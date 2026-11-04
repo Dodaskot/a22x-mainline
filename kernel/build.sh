@@ -79,8 +79,8 @@ mkdir -p "$OUT"
 if [ -f "$OUT/.config" ]; then
 	config="existing $OUT/.config"
 else
-	cp "$here/config/a22x-v135.config" "$OUT/.config"
-	config="config/a22x-v135.config"
+	cp "$here/config/a22x-v144.config" "$OUT/.config"
+	config="config/a22x-v144.config"
 fi
 MAKE="make -C $SRC O=$OUT ARCH=arm64 LLVM=1"
 $MAKE olddefconfig

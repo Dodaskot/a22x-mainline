@@ -135,3 +135,9 @@
 0135-usb-mediatek-enable-A22x-dual-role-USB-with-balanced.patch
 0136-drm-panfrost-allow-two-seconds-for-compute-jobs.patch
 0137-input-himax-quiesce-callbacks-before-freeing-device-sta.patch
+0138-rtc-mt6397-add-opt-in-MT6359-power-off-for-A22x.patch
+0139-power-reset-preserve-A22x-normal-restart-with-charge.patch
+0140-regulator-add-opt-in-A22x-LP-probe-observations.patch
+0141-regulator-add-opt-in-A22x-stock-RF-LDO-LP-initializa.patch
+0142-regulator-bind-A22x-LP-init-to-exact-OF-node-identit.patch
+0143-rtc-mt6397-continue-MT6359-power-off-after-CLR-timeo.patch

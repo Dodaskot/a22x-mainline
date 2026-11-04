@@ -1,9 +1,12 @@
 # Building, installing and flashing
 
-Everything is cross-compiled with LLVM/Clang (`LLVM=1`). The reference
-builds used Clang 23.1.1 (kernel.org LLVM toolchain). Host tools needed:
+The kernel and connectivity modules are cross-compiled with LLVM/Clang
+(`LLVM=1`); the reference kernel used Clang 23.1.1. The charger also needs
+an AArch64 C compiler with static libc (default `aarch64-linux-gnu-gcc`;
+override `CHARGER_CC` for another compatible toolchain). Host tools:
 `git`, `make`, `clang`/`lld`/`llvm-strip`, `python3`, `cpio`, `gzip`,
 `mkbootimg`/`unpack_bootimg`/`avbtool` (AOSP), `heimdall`.
+See [charger build and tests](../boot/charger/README.md).
 
 ## 1. Kernel
 
@@ -11,13 +14,15 @@ builds used Clang 23.1.1 (kernel.org LLVM toolchain). Host tools needed:
 kernel/build.sh [linux-dir] [out-dir]     # defaults: kernel/linux, kernel/out
 ```
 
-The script shallow-clones `v7.2` from the stable tree, applies
-`kernel/patches/*.patch` with `git am` and builds with
-`kernel/config/a22x-v135.config`. It produces `Image.gz`, the DTBs and
-`Module.symvers` (needed by `conn/`).
+The script shallow-clones `v7.2` from the stable tree, applies all 143
+`kernel/patches/*.patch` files with `git am` and starts new output directories
+with `kernel/config/a22x-v144.config`. It produces `Image.gz`, the DTBs and
+`Module.symvers` (needed by `conn/`). Existing output directories retain
+their existing .config; use a fresh output directory for the v144 default.
 
-`a22x-v135.config` is the exact configuration of the accepted kernel #95
-and remains unchanged for the v142/#100, v143/#101 and kernel #102 source updates.
+`a22x-v144.config` is the exact kernel #107 configuration. Its only change
+from `a22x-v135.config` is `CONFIG_POWER_RESET_A22X_REBOOT=y`.
+The historical v135 config still identifies #95, v142/#100, v143/#101 and #102.
 `slim.config` and `pmos.config` are the fragments it was derived from
 (`defconfig` + both fragments with `merge_config.sh`, all `=m` turned into
 `=y`, then `CONFIG_MODULES=y` for the out-of-tree connectivity modules).
@@ -55,24 +60,37 @@ BUSYBOX=/path/to/busybox.static HIMAX_FW=/path/to/Himax_firmware_fw_jdi.bin \
 OUT=$PWD/kernel/out boot/mkboot.sh local       # -> boot/images/boot-mainline-local.img
 ```
 
-The initramfs starts USB NCM networking (phone `172.16.42.1`, PC
+On an A22x boot with the single exact LK argument `androidboot.mode=charger`,
+init enters the static charger as PID 1 before USB networking or rootfs
+mounting. The display shows the battery level while ordinary userspace
+remains stopped. Debug/rescue overrides retain the normal init path;
+see [the charger policy](../boot/charger/README.md).
+
+Normal boot starts USB NCM networking (phone `172.16.42.1`, PC
 `172.16.42.2`), then `switch_root`s to the partition whose GPT name is given
 by `a22x.root=` (default `userdata`, ext4). Add `a22x.noswitch` to stay in
-the initramfs; it then offers a root shell on the UART and an
+the initramfs; it then offers a root shell on UART and an
 **unauthenticated telnet root shell over USB**.
 
 `mkboot.sh` builds what LK expects: header v2, page size 2048, stock load
 addresses, the DTB as an Android DT table, a 0x180000-byte shim in front of
 the kernel (LK insists on loading at 0x40080000; mainline needs 2 MiB
 alignment), and an AVB hash footer padded to the 32 MiB boot partition.
-Default command line additions: `cma=96M` (required by the native display;
-Phosh does not start with less) and `clk_ignore_unused pd_ignore_unused`.
+Default command line additions include `cma=96M` (required by the native
+display; Phosh does not start with less), `clk_ignore_unused pd_ignore_unused`,
+`fbcon=logo-count:0` and `vt.global_cursor_default=0`. The default no longer
+selects `console=tty0`, so kernel logs stay off the panel while UART logging
+is retained. Do not add `console=tty0` if a quiet charging display is wanted.
 `EXTRA_CMDLINE="cma=96M a22x.root=<partname>"` boots from another partition,
 for example a root filesystem on the microSD card.
 
 For the optional matching connectivity modules and firmware in the same boot
 image, see [BOOT-BUNDLE.md](BOOT-BUNDLE.md). This option is not yet hardware
-validated; published v143 remains unchanged.
+validated and is not included in the v144 prebuilt image. The public init
+retains the bundle guard and root selector; the published image retains the
+previously tested non-bundle normal-boot init. Its charger source is identical
+to `boot/charger/src/`. See the [v144 manifest](../releases/v144/kernel107-provenance.json)
+for exact binary inputs and additional opt-in LP diagnostic parameters.
 
 ## 4. Root filesystem
 

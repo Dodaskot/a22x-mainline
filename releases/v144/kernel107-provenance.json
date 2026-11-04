@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "release": "v144",
+  "device": "Samsung Galaxy A22 5G SM-A226B / a22x / MediaTek MT6833",
+  "boot_image": {
+    "filename": "boot.img",
+    "bytes": 33554432,
+    "sha256": "b3f59daa37ad50e0ac6bfaed83f6954147536d07119f1b46a9981ee19d9b17ab",
+    "payload_bytes": 21811200,
+    "header_version": 2,
+    "page_size": 2048,
+    "board": "SRPTL28A011",
+    "kernel_load_address": "0x40080000",
+    "ramdisk_load_address": "0x51100000",
+    "tags_address": "0x47c80000",
+    "dtb_address": "0x47c80000",
+    "avb_algorithm": "NONE",
+    "avb_hash_verified": true,
+    "command_line": "bootopt=64S3,32N2,64N2 earlycon=mt6833uart,0x11002000 console=ttyS0,921600n8 loglevel=8 ignore_loglevel clk_ignore_unused pd_ignore_unused printk.devkmsg=on mem_sleep_default=s2idle cma=96M mt6359_regulator.a22x_lp_probe=1 mt6359_regulator.a22x_lp_stock_init=1 fbcon=logo-count:0 vt.global_cursor_default=0"
+  },
+  "kernel": {
+    "release": "7.2.0-a22x+",
+    "build": 107,
+    "build_version": "#107 SMP PREEMPT Wed Nov 04 20:39:09 UTC 2026",
+    "source_commit": "79a09eba25ef8cb4e03a98325c6ec1e606961810",
+    "source_tree": "ed30c94c761a0e49d6206b94751c7b7e74e73d47",
+    "patch_count": 143,
+    "config_path": "kernel/config/a22x-v144.config",
+    "config_sha256": "aca24ae1a7cd143127968006a6d9329e0eb7458a49016fe096bcb97327a52364",
+    "image_sha256": "eced200e2ace9c96ba8e185e9ccc22ee11805681432443bac9ca8325254fdafc",
+    "shimmed_image_sha256": "cd9d1240b08cd43714eb7b7e0473ee32829e51bf296b0c4e8ff5d9e497225198",
+    "shimmed_gzip_sha256": "d66684238453a8a8037cd758ff267b7d4647789866e4bed1d81a6f4790d5395b",
+    "boot_payload_sha256": "ee0140c23f808ca482f846b0b97281ee938d6f263b81872977470cb629fed34c"
+  },
+  "dtb": {
+    "name": "mt6833-samsung-a22x-nfc-experimental.dtb",
+    "sha256": "d01dd9ef8e4cab80e2d7f866ea32ce2eea55450d84ee67bb7a8b79502bf8281e",
+    "android_dt_table_sha256": "dab40e2b791bec807d9beb8a75ea160b23bd172c63b421add5f48b8cfd601755",
+    "appended_dtb_matches_table": true
+  },
+  "ramdisk": {
+    "sha256": "e652045d011605d7295201fc9a0dbfcba2d942b4c0950d4f079a6e94d9faed39",
+    "init_sha256": "cc03c01ca189f2ddf6cd491c215daaaac9c9ff26adff1f82cb148153f6ff7d55",
+    "changed_entries_from_v143": [
+      "init",
+      "bin/a22x-charger"
+    ],
+    "connectivity_modules_embedded": false,
+    "connectivity_firmware_embedded": false,
+    "root_filesystem_included": false,
+    "exact_deployed_image": true,
+    "rebuilt_from_public_build_scripts": false,
+    "note": "The published image is the unchanged handset-tested artifact. Public initramfs scripts also retain their pre-existing optional connectivity-bundle validation."
+  },
+  "charger": {
+    "version": "a22x-minimal-charger-v1",
+    "architecture": "AArch64",
+    "static": true,
+    "pt_interp_present": false,
+    "bytes": 598000,
+    "sha256": "eec42faac2a435cc8a9742b221f0eb3b934e62be5fcb57fb874823ef2a7b518d",
+    "source_sha256": {
+      "boot/charger/src/charger.c": "25b581ba068154e88517e313a18a275931a85ba549f2abfef6745c7832de4e6e",
+      "boot/charger/src/charger_policy.c": "9f32ead39193358ddbb4c38e4509bfcc0519c6a7213179203d8582b84fdfed33",
+      "boot/charger/src/charger_policy.h": "221189a444dfe0641a7021cf1698b6b44a7fe150c2e0f7639bb8ea2cc334a689",
+      "boot/charger/src/charger_ui.c": "2cc7818a31fc58ca89ac80bd56a2c734d760b896db19604762df805ac1432e18",
+      "boot/charger/src/charger_ui.h": "e84b5f86401aab15f1754580f0e9f5e0da5ea244e9dba5cfa28ea42ad0a56c50"
+    },
+    "compiler": "GCC 16.2.0 (Arch aarch64-linux-gnu-gcc 16.2.0-1)",
+    "libc": "GNU C Library 2.44 (Arch aarch64-linux-gnu-glibc 2.44-1)",
+    "license": "GPL-2.0-only controller; MIT policy and UI; statically linked GNU libc"
+  },
+  "unchanged_ramdisk_components": {
+    "busybox": {
+      "sha256": "7d93682be37cf6ed46699f6fff546b80bf133cf8ec342c2d04bc23387f78bc34",
+      "provenance": "Byte-identical to v143: Debian busybox-static 1:1.37.0-6+b9",
+      "license": "GPL-2.0",
+      "source_url": "https://sources.debian.org/src/busybox/1:1.37.0-6/"
+    },
+    "himax_firmware": {
+      "path": "lib/firmware/Himax_firmware_fw_jdi.bin",
+      "bytes": 131072,
+      "sha256": "fd4df971965dfe5e550ba4a6a9e94e1b67d5ca128dad3eb74ebaa1873d591f1a",
+      "provenance": "Byte-identical to v143; Samsung stock /vendor/firmware",
+      "license": "Samsung/Himax proprietary"
+    },
+    "memtool_sha256": "03e36287f15eeb20473a79a772b002250b8a91c33e2dc4df5723deb44ef050cc",
+    "reboot_download_sha256": "a21266617997c68f00ea5af6d2c60d1cccd8d68da21fcc81951afbe93b653bf1"
+  },
+  "verification": {
+    "stock_boot_geometry_match": true,
+    "boot_partition_readback_hash_matches": true,
+    "normal_boot_and_graphical_greeter": true,
+    "normal_failed_systemd_units": 0,
+    "minimal_charger_pid1_observed": true,
+    "rootfs_unmounted_and_normal_userspace_off_in_charger": true,
+    "uart_retained": true,
+    "framebuffer_kernel_console_disabled": true,
+    "charger_last_observed_kernel_uptime_seconds": 213.110434,
+    "reboot_or_panic_observed_during_charger_window": false,
+    "user_reported_charger_ui_works": true,
+    "user_reported_no_visible_boot_logs": true,
+    "user_reported_faster_normal_boot": true,
+    "normal_boot_speed_measured": false,
+    "physical_short_power_separately_verified": false,
+    "physical_long_power_separately_verified": false,
+    "physical_unplug_separately_verified": false,
+    "full_charge_cycle_or_soc_accuracy_verified": false,
+    "modem_or_cellular_service_verified": false
+  },
+  "experimental_parameters_enabled_in_this_prebuilt": [
+    "mt6359_regulator.a22x_lp_probe=1",
+    "mt6359_regulator.a22x_lp_stock_init=1"
+  ]
+}

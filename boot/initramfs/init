@@ -4,6 +4,14 @@ export PATH=/bin
 mount -t devtmpfs dev /dev 2>/dev/null
 mount -t proc proc /proc
 mount -t sysfs sys /sys
+
+# Charge-only boot: PID 1 stays in this initramfs, before USB or rootfs setup.
+# Explicit rescue/debug/unit selections keep the existing normal boot path.
+if /bin/a22x-charger --check-boot >/dev/null 2>&1; then
+	exec /bin/a22x-charger </dev/console >/dev/console 2>&1
+	# A successful exec never returns; do not continue into the normal system.
+	while true; do sleep 60; done
+fi
 mount -t pstore pstore /sys/fs/pstore 2>/dev/null
 mount -t configfs configfs /sys/kernel/config
 mkdir -p /dev/pts && mount -t devpts devpts /dev/pts

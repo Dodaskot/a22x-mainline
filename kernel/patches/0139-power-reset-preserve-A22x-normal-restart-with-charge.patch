@@ -1,0 +1,176 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 3 Nov 2026 13:54:04 +0100
+Subject: [PATCH 139/143] power: reset: preserve A22x normal restart with
+ charger attached
+
+---
+ drivers/power/reset/Kconfig              | 10 +++
+ drivers/power/reset/Makefile             |  1 +
+ drivers/power/reset/a22x-reboot-policy.h | 40 ++++++++++++
+ drivers/power/reset/a22x-reboot.c        | 78 ++++++++++++++++++++++++
+ 4 files changed, 129 insertions(+)
+ create mode 100644 drivers/power/reset/a22x-reboot-policy.h
+ create mode 100644 drivers/power/reset/a22x-reboot.c
+
+diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
+index 124afb99f..11665ea8c 100644
+--- a/drivers/power/reset/Kconfig
++++ b/drivers/power/reset/Kconfig
+@@ -9,6 +9,16 @@ menuconfig POWER_RESET
+ 
+ if POWER_RESET
+ 
++config POWER_RESET_A22X_REBOOT
++	bool "Samsung Galaxy A22 5G bootloader restart markers"
++	depends on ARCH_MEDIATEK && ARM64
++	depends on OF && HAS_IOMEM
++	help
++	  Write Samsung's SRAM restart reason before the platform resets an
++	  A22x. This keeps an ordinary restart with a charger connected in
++	  normal boot mode and supports explicit recovery/download requests.
++	  This driver does not reset or power off the system itself.
++
+ config POWER_RESET_AS3722
+ 	bool "ams AS3722 power-off driver"
+ 	depends on MFD_AS3722
+diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
+index d7ae97241..367806213 100644
+--- a/drivers/power/reset/Makefile
++++ b/drivers/power/reset/Makefile
+@@ -1,4 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0
++obj-$(CONFIG_POWER_RESET_A22X_REBOOT) += a22x-reboot.o
+ obj-$(CONFIG_POWER_RESET_AS3722) += as3722-poweroff.o
+ obj-$(CONFIG_POWER_RESET_AT91_POWEROFF) += at91-poweroff.o
+ obj-$(CONFIG_POWER_RESET_AT91_RESET) += at91-reset.o
+diff --git a/drivers/power/reset/a22x-reboot-policy.h b/drivers/power/reset/a22x-reboot-policy.h
+new file mode 100644
+index 000000000..961dd810f
+--- /dev/null
++++ b/drivers/power/reset/a22x-reboot-policy.h
+@@ -0,0 +1,40 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++#ifndef A22X_REBOOT_POLICY_H
++#define A22X_REBOOT_POLICY_H
++
++#define A22X_RESET_MAGIC		0x12345678U
++#define A22X_REASON_NORMAL	0x12345670U
++#define A22X_REASON_DOWNLOAD	0x12345671U
++#define A22X_REASON_RECOVERY	0x12345674U
++#define A22X_REASON_BOOTLOADER	0x1234567dU
++
++/* False leaves both existing SRAM words untouched. */
++static inline bool a22x_reboot_reason(const char *cmd, unsigned int marker,
++				      unsigned int reason, unsigned int *next_reason)
++{
++	if (!cmd || !*cmd) {
++		/* Preserve the existing raw-SRAM Download/Recovery helpers. */
++		if (marker == A22X_RESET_MAGIC &&
++		    (reason == A22X_REASON_DOWNLOAD ||
++		     reason == A22X_REASON_RECOVERY ||
++		     reason == A22X_REASON_BOOTLOADER))
++			return false;
++		*next_reason = A22X_REASON_NORMAL;
++	} else if (!strcmp(cmd, "normal") || !strcmp(cmd, "reboot")) {
++		/* An explicit normal request overrides every stale reason. */
++		*next_reason = A22X_REASON_NORMAL;
++	} else if (!strcmp(cmd, "download")) {
++		*next_reason = A22X_REASON_DOWNLOAD;
++	} else if (!strcmp(cmd, "recovery")) {
++		*next_reason = A22X_REASON_RECOVERY;
++	} else if (!strcmp(cmd, "bootloader")) {
++		*next_reason = A22X_REASON_BOOTLOADER;
++	} else {
++		/* Other explicit requests belong to their existing handlers. */
++		return false;
++	}
++
++	return true;
++}
++
++#endif
+diff --git a/drivers/power/reset/a22x-reboot.c b/drivers/power/reset/a22x-reboot.c
+new file mode 100644
+index 000000000..4f6e5646e
+--- /dev/null
++++ b/drivers/power/reset/a22x-reboot.c
+@@ -0,0 +1,78 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Samsung Galaxy A22 5G restart markers consumed by the stock bootloader.
++ *
++ * Samsung sec_reboot() sets these words to prevent a normal restart with
++ * VBUS present from becoming a power-off charging boot. The boot mode itself
++ * is not stored here: NORMAL_BOOT=0 is the later bootloader atag,boot value.
++ */
++#include <linux/errno.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/notifier.h>
++#include <linux/of.h>
++#include <linux/printk.h>
++#include <linux/reboot.h>
++#include <linux/string.h>
++
++#include "a22x-reboot-policy.h"
++
++/* ram_console + off_linux + last_reboot_reason.is_power_reset */
++#define A22X_REBOOT_FLAGS	(0x11d000 + 0x140 + 0x3f4)
++
++static void __iomem *a22x_reboot_flags;
++
++static int a22x_reboot_notify(struct notifier_block *nb,
++			      unsigned long mode, void *data)
++{
++	u32 marker = readl(a22x_reboot_flags);
++	u32 reason = readl(a22x_reboot_flags + sizeof(u32));
++	u32 next_reason;
++
++	if (!a22x_reboot_reason(data, marker, reason, &next_reason))
++		return NOTIFY_DONE;
++
++	writel(A22X_RESET_MAGIC, a22x_reboot_flags);
++	writel(next_reason, a22x_reboot_flags + sizeof(u32));
++	/* Flush posted writes before handing reset to PSCI or the watchdog. */
++	marker = readl(a22x_reboot_flags);
++	reason = readl(a22x_reboot_flags + sizeof(u32));
++	if (marker != A22X_RESET_MAGIC || reason != next_reason)
++		pr_err("a22x-reboot: SRAM readback %08x/%08x, expected %08x/%08x\n",
++		       marker, reason, A22X_RESET_MAGIC, next_reason);
++	else
++		pr_info("a22x-reboot: SRAM restart markers %08x/%08x\n",
++			marker, reason);
++
++	/* This handler supplies the reason; the next handler performs reset. */
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block a22x_reboot_nb = {
++	.notifier_call = a22x_reboot_notify,
++	/* Run after shutdown, before PSCI (129) and the MTK watchdog (128). */
++	.priority = 192,
++};
++
++static int __init a22x_reboot_init(void)
++{
++	int ret;
++
++	if (!of_machine_is_compatible("samsung,a22x"))
++		return 0;
++
++	a22x_reboot_flags = ioremap(A22X_REBOOT_FLAGS, 2 * sizeof(u32));
++	if (!a22x_reboot_flags)
++		return -ENOMEM;
++
++	/* The restart-only chain is never called for power-off or halt. */
++	ret = register_restart_handler(&a22x_reboot_nb);
++	if (ret) {
++		iounmap(a22x_reboot_flags);
++		return ret;
++	}
++
++	pr_info("a22x-reboot: Samsung SRAM restart handler registered\n");
++	return 0;
++}
++device_initcall(a22x_reboot_init);

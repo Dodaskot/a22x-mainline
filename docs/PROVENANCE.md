@@ -4,10 +4,11 @@ Baseline: **accepted v135 boot image, kernel build #95, conn95** (2026-10-10).
 Current source adds patches 0132–0135 tested in **v142/#100** (2026-10-13).
 Patch 0136 adds the tested #101 watchdog change, published as **v143**.
 Patch 0137 imports the Himax teardown change from the deployed **kernel #102**.
-The full kernel mirror and this patch series now have the same source tree;
-see [the source publication report](KERNEL-SYNC-20261103.md).
-The latest image is in `releases/v143/` (boot image only);
-`releases/v142/` and `releases/v135/` are unchanged.
+Patches 0138–0143 add the power-off/restart fixes and opt-in LP work carried
+by kernel #107. The full kernel and patch series have the same source tree;
+see [the current source report](KERNEL-SYNC-20261104.md).
+The latest image is [v144](../releases/v144/README.md), with the minimal
+charger and quiet display. Earlier v135/v142/v143 artifacts are unchanged.
 
 ## Kernel
 
@@ -47,12 +48,11 @@ The source tree has no Samsung/MediaTek firmware blobs, busybox binaries,
 build outputs, test logs or device-specific data (serial numbers,
 calibration, Bluetooth address).
 
-Exception: the prebuilt `releases/v135/boot-a22x-v135.img` and
-`releases/v142/boot-a22x-v142.img`, plus `releases/v143/boot-a22x-v143.img`,
-are images that ran on the test handset,
-and their initramfs (identical in all three) contains a static busybox
-and the proprietary stock touch firmware `Himax_firmware_fw_jdi.bin`
-(listed in `releases/v135/README.md` and `releases/v142/README.md`).
+Exceptions are the prebuilt images in `releases/v135/`, `releases/v142/`,
+`releases/v143/` and `releases/v144/`. They ran on the test handset and
+contain static BusyBox and proprietary stock touch firmware
+`Himax_firmware_fw_jdi.bin`. The first three share an initramfs; v144 adds
+the charger. Each release documents its binary contents and provenance.
 
 ## Fixes after v135
 
@@ -141,3 +141,30 @@ The changed Himax driver builds with the pinned Clang 23.1.1 toolchain.
 No new boot image is released by this source synchronization. v143 still
 contains patches 0001–0136, and `a22x-kernel102` identifies the newer source.
 See [commits, tree hashes and validation limits](KERNEL-SYNC-20261103.md).
+
+## v144 / kernel #107 and minimal charger (2026-11-04)
+
+v144 publishes the exact tested 32 MiB boot image, SHA-256
+`b3f59daa37ad50e0ac6bfaed83f6954147536d07119f1b46a9981ee19d9b17ab`.
+Its kernel comes from commit
+`79a09eba25ef8cb4e03a98325c6ec1e606961810`, tree
+`ed30c94c761a0e49d6206b94751c7b7e74e73d47`, with the full
+`a22x-v144.config`. The six new kernel commits are retained without
+rewriting their lineage.
+
+The image adds a static charger in initramfs and removes the panel kernel
+console while preserving UART. Normal boot, BOOT readback identity and
+power-off entry into charger mode were observed. Charger PID 1 remained
+active through kernel uptime 213 seconds with no reset; the user subsequently
+confirmed the charging display, absence of on-screen logs and a qualitatively
+faster startup. No timed boot-speed comparison or separate user confirmation
+of long-Power/unplug behavior is claimed.
+
+Public build integration preserves the repository's newer optional bundle
+guard and root selector. Consequently, building current source is not a
+claim of reproducing every byte of the previously flashed initramfs. The
+charger runtime source is byte-identical to the tested source; the release
+[manifest](../releases/v144/kernel107-provenance.json) pins its inputs and components.
+The image retains opt-in RF-LDO LP parameters from the tested #107 profile;
+this does not establish cellular service. Matching connectivity modules and
+the root filesystem are separate.
