@@ -3,3 +3,4 @@
 0003-usb-musb-mediatek-re-attach-the-device-role-after-sy.patch
 0004-drm-mediatek-change-the-refresh-rate-through-the-DSI.patch
 0005-drm-mediatek-draw-the-A22x-boot-splash.patch
+0006-usb-musb-keep-the-device-link-through-system-sleep.patch

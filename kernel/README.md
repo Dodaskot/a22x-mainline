@@ -19,20 +19,22 @@ Historical tags `a22x-v135` (#95), `a22x-v142` (#100),
 See [source identity and validation](../docs/KERNEL-SYNC-20261104.md)
 and the [prebuilt v144 image](../releases/v144/README.md).
 
-## BOOT kernel #121 and recovery kernel #120
+## BOOT kernel #122 and recovery kernel #120
 
-Both kernels add five commits to kernel #107 (`79a09eba2`). The first four are
-the same in both; the fifth is each kernel's own boot splash. They are published
-as separate branches and as patch series in this repository:
+Both kernels add commits to kernel #107 (`79a09eba2`): five in the recovery
+kernel and six in the BOOT kernel. The first four are the same in both; the
+fifth is each kernel's own boot splash, and the BOOT kernel's sixth keeps the
+USB link through system sleep. They are published as separate branches and as
+patch series in this repository:
 
-| | BOOT kernel #121 | Recovery kernel #120 |
+| | BOOT kernel #122 | Recovery kernel #120 |
 |---|---|---|
-| Branch / tag | [`a22x-boot`](https://github.com/Dodaskot/linux-a22x/tree/a22x-boot) / `a22x-boot-kernel121` | [`a22x-recovery`](https://github.com/Dodaskot/linux-a22x/tree/a22x-recovery) / `a22x-recovery-kernel120` |
-| Commit / tree | `4fa8876fa058…` / `ca59160d9166…` | `75bd4b80ecdc…` / `68a6851dce3e…` |
+| Branch / tag | [`a22x-boot`](https://github.com/Dodaskot/linux-a22x/tree/a22x-boot) / `a22x-boot-kernel122` (#121: `a22x-boot-kernel121`) | [`a22x-recovery`](https://github.com/Dodaskot/linux-a22x/tree/a22x-recovery) / `a22x-recovery-kernel120` |
+| Commit / tree | `201f64dd8d30…` / `17821ecbfa59…` | `75bd4b80ecdc…` / `68a6851dce3e…` |
 | Patches above #107 | [a22x-boot/](a22x-boot/) | [a22x-recovery/](a22x-recovery/) |
-| Config | [a22x-boot-k121.config](config/a22x-boot-k121.config) | [a22x-recovery-k120.config](config/a22x-recovery-k120.config) |
+| Config | [a22x-boot-k121.config](config/a22x-boot-k121.config) (unchanged for #122) | [a22x-recovery-k120.config](config/a22x-recovery-k120.config) |
 | Release string | `7.2.0-a22x+` | `7.2.0-a22x-recovery+` |
-| Used in | [v145 boot.img](../releases/v145/README.md) | [A22x recovery 0.6.124](../recovery/README.md) |
+| Used in | [v146 boot.img](../releases/v146/README.md) (#121: [v145](../releases/v145/README.md)) | [A22x recovery 0.6](../recovery/README.md) |
 
 1. `usb: musb: gadget: keep OUT packets that arrive before the next request`
 2. `usb: gadget: f_ncm: retry the timeout flush while u_ether is busy`
@@ -42,9 +44,14 @@ as separate branches and as patch series in this repository:
    compositor or greeter takes the display) or
    `drm/mediatek: draw the A22x recovery boot splash` (a progress bar that the
    recovery interface finishes)
+6. BOOT only: `usb: musb: keep the device link through system sleep` (#122):
+   while a computer is attached, the controller keeps its session, pull-up and
+   interrupts through sleep, so the computer never loses the phone; its traffic
+   wakes the phone.
 
 Applying each series to `79a09eba2` gives exactly the tree of its branch. The
-BOOT payload of v145 is byte-identical to the #121 build output. The #121
+BOOT payloads of v145 and v146 are byte-identical to the #121 and #122 build
+outputs. The #121
 config differs from `a22x-v144.config` only in the boot splash options and in
 Landlock (with `SECURITY_NETWORK` and `SECURITY_PATH`). The recovery config is
 a separate, smaller configuration that keeps XZ and ZSTD initramfs support.

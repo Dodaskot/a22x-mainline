@@ -59,9 +59,11 @@ The charger-off path was observed with the same `/init` in an earlier image
 (v1r3): power-off with the cable, LK charger mode, then "charge-only boot is
 off" and a normal start without the Power key.
 
-Not verified with this image: USB networking after suspend inside a running
-installed system (it was verified with the same driver code in the recovery);
-the cellular modem (not provided). A restart sometimes lands in the previous
+USB networking after suspend inside a running installed system was verified
+later, on 2026-11-10 with Fedora 45: after PowerDevil's sleep and a Power-key
+wake, USB networking answered 8 seconds after waking. During the sleep the
+computer loses the phone; [v146](../v146/README.md) keeps the link. Not
+verified with this image: the cellular modem (not provided). A restart sometimes lands in the previous
 boot mode, because the preloader starts twice and the restart markers in SRAM
 are lost; this is not caused by the kernel, see the
 [recovery known problems](../../recovery/README.md#known-problems).

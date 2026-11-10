@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "release": "v146",
+  "device": "Samsung Galaxy A22 5G SM-A226B / a22x / MediaTek MT6833",
+  "boot_image": {
+    "filename": "boot.img",
+    "bytes": 33554432,
+    "sha256": "9701f48ddced60c648e79a502885778935d1cb5610a011d77fc1898eea01d41a",
+    "internal_name": "BOOT v1r6",
+    "header_version": 2,
+    "page_size": 2048,
+    "board": "SRPTL28A011",
+    "command_line": "bootopt=64S3,32N2,64N2 earlycon=mt6833uart,0x11002000 console=ttyS0,921600n8 loglevel=8 ignore_loglevel clk_ignore_unused pd_ignore_unused printk.devkmsg=on mem_sleep_default=s2idle cma=96M mt6359_regulator.a22x_lp_probe=1 mt6359_regulator.a22x_lp_stock_init=1 fbcon=logo-count:0 vt.global_cursor_default=0 fbcon=vc:1-62"
+  },
+  "kernel": {
+    "release": "7.2.0-a22x+",
+    "build": 122,
+    "version_string": "(ClangBuiltLinux clang version 23.1.1 (https://github.com/llvm/llvm-project.git 6dfe1677ab8dffbc6ec13d53a1e0215d75147689), ClangBuiltLinux LLD 23.1.1 (https://github.com/llvm/llvm-project.git 6dfe1677ab8dffbc6ec13d53a1e0215d75147689)) #122 SMP PREEMPT Tue Nov 10 10:00:00 UTC 2026",
+    "source_repository": "https://github.com/Dodaskot/linux-a22x",
+    "source_branch": "a22x-boot",
+    "source_tag": "a22x-boot-kernel122",
+    "source_commit": "201f64dd8d30bde7395bf8afb28b23f2193d7d99",
+    "source_tree": "17821ecbfa59baf5fd407518141477f00a8f8a6a",
+    "base_commit_kernel107": "79a09eba25ef8cb4e03a98325c6ec1e606961810",
+    "patches_above_kernel107": "kernel/a22x-boot/ (6)",
+    "config_path": "kernel/config/a22x-boot-k121.config",
+    "config_identical_to_kernel121": true,
+    "config_sha256": "8e58352f8b55282240d3d6529017351e0ea47e50ea261a982c252674db319380",
+    "image_sha256": "a5a784b9e4915dfcdf549305de66a8fa54a8e7c5bb9818457677f0b75e3c19f9",
+    "image_gz_sha256": "01e9d8badea6dce609e8df57cbfb0c7a30c9399d4a7f897c4ee8ea7527e54893",
+    "shimmed_image_sha256": "45a3cff9860622afb0cca7e527d01ed49658f595312fafa8774abcffba8af4d1",
+    "boot_payload_sha256": "e3dd1806c3cc601864811f938064959336cca541a621eb1b55e379b7b405ec3d",
+    "payload_equals_build_output": true
+  },
+  "dtb": {
+    "appended_sha256": "d01dd9ef8e4cab80e2d7f866ea32ce2eea55450d84ee67bb7a8b79502bf8281e",
+    "unchanged_from_v145": true
+  },
+  "ramdisk": {
+    "sha256": "e0be596ae3ea876e6e38d1965b4dc07a3268401cdb400257d54991cd7f5daf3b",
+    "files_sha256": {
+      "init": "c5b8c9c3a33f925b1edac40d6cf221926eed471b35c0c6898546109464c705db",
+      "bin/reboot-download": "a21266617997c68f00ea5af6d2c60d1cccd8d68da21fcc81951afbe93b653bf1",
+      "bin/memtool": "03e36287f15eeb20473a79a772b002250b8a91c33e2dc4df5723deb44ef050cc",
+      "bin/busybox": "7d93682be37cf6ed46699f6fff546b80bf133cf8ec342c2d04bc23387f78bc34",
+      "lib/firmware/Himax_firmware_fw_jdi.bin": "fd4df971965dfe5e550ba4a6a9e94e1b67d5ca128dad3eb74ebaa1873d591f1a",
+      "bin/a22x-charger": "eec42faac2a435cc8a9742b221f0eb3b934e62be5fcb57fb874823ef2a7b518d"
+    },
+    "changed_entries_from_v145": [],
+    "unchanged_from_v145": true,
+    "connectivity_modules_embedded": false,
+    "connectivity_firmware_embedded": false,
+    "root_filesystem_included": false,
+    "exact_deployed_image": true,
+    "rebuilt_from_public_build_scripts": false
+  },
+  "unchanged_components": {
+    "everything_but_the_kernel": "header, command line, ramdisk and appended device tree are byte-identical to v145",
+    "busybox": "Debian busybox-static 1:1.37.0-6+b9 (GPL-2.0, https://sources.debian.org/src/busybox/1:1.37.0-6/)",
+    "himax_firmware": "lib/firmware/Himax_firmware_fw_jdi.bin, Samsung stock /vendor/firmware, proprietary"
+  },
+  "verification": {
+    "boot_partition_readback_hash_matches": true,
+    "normal_boot_kernel_122_observed": true,
+    "flashed_with": "the A22x recovery, Flash a partition (read back by the recovery)",
+    "usb_ncm_and_ssh": true,
+    "systems_booted": [
+      "Fedora 45 (Plasma Mobile, SDDM)"
+    ],
+    "usb_link_kept_through_sleep": "PowerDevil suspendToRam -> s2idle, woken by the musb interrupt after 0.2 s; over 300 s the computer kept the device and NCM carrier, every ping answered",
+    "brightness_slider_in_system_settings": "backlight 200 -> 52 -> 191 of 255",
+    "modem_or_cellular_service_verified": false
+  }
+}

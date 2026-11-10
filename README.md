@@ -15,14 +15,16 @@ It boots from the stock Samsung LK bootloader as an ordinary `boot.img`:
 no bootloader, modem or other partition is replaced. The userspace used
 during development is Arch Linux ARM with Phosh.
 
-The latest release is **v145 (kernel build #121)**. It keeps USB networking
-alive after system sleep and during large uploads, changes between 60 and
-90 Hz without a dark flash, shows a boot splash from the first frame, and
-can skip the charging screen when the installed system asks for it. Kernel
-#121 is kernel #107 plus five commits: branch
+The latest release is **v146 (kernel build #122)**: the computer no longer
+loses the phone while it sleeps, because the USB link stays up through system
+sleep. It keeps everything v145 (#121) added: USB networking after sleep and
+during large uploads, 60/90 Hz changes without a dark flash, a boot splash
+from the first frame, and skipping the charging screen when the installed
+system asks for it. Kernel #122 is kernel #107 plus six commits: branch
 [`a22x-boot`](https://github.com/Dodaskot/linux-a22x/tree/a22x-boot) and
 [kernel/a22x-boot/](kernel/a22x-boot/). See the
-[prebuilt v145 boot.img](releases/v145/README.md).
+[prebuilt v146 boot.img](releases/v146/README.md)
+([v145](releases/v145/README.md)).
 
 **[A22x recovery](recovery/README.md)** ([українською](recovery/README.uk.md))
 is a Linux recovery for the RECOVERY partition, with its own kernel #120
@@ -56,20 +58,20 @@ teardown fix. See [provenance](docs/PROVENANCE.md) for the release history.
 | Area | State |
 |---|---|
 | Boot | stock LK, header-v2 boot.img with a 0x180000 shim, UART earlycon |
-| Display | native MT6833 DSI (C-PHY) + JDI HX83112F panel, DCS backlight, 60/90 Hz switched without a dark flash (v145), boot splash (v145), full power-off; simpledrm fallback |
+| Display | native MT6833 DSI (C-PHY) + JDI HX83112F panel, DCS backlight: brightness from the system settings slider (checked live in Plasma Mobile on 2026-11-10) and automatic brightness, 60/90 Hz switched without a dark flash (v145), boot splash (v145), full power-off; simpledrm fallback |
 | Touch | Himax HX83112F zero-flash (stock firmware required) |
 | GPU | Mali-G57 via Panfrost, DVFS 390–955 MHz |
 | CPU / CCI | DVFS, little 2.0 GHz / big 2.203 GHz, CCI 1.131 GHz, PSCI CPU idle |
 | RAM | 3.44 GiB usable of 4 GiB (Android ZMC pool reclaimed), 4266 MT/s on both channels |
 | Thermal | LVTS sensors, CPU/GPU/SoC zones, restored after system sleep |
 | Storage | eMMC, microSD (SDR104) |
-| USB | NCM networking and USB-C OTG storage; both plug orientations and return to charging/NCM tested; v145 keeps large uploads and re-attaches after system sleep |
+| USB | NCM networking and USB-C OTG storage; both plug orientations and return to charging/NCM tested; v145 keeps large uploads and re-attaches after system sleep; v146 keeps the link to a computer through sleep |
 | Audio | speaker (SIA8109), earpiece, headphones + jack detection, built-in microphone (ALSA UCM provided) |
 | Wi-Fi / Bluetooth | vendor gen4m Wi-Fi port and own HCI-over-STP Bluetooth driver (`conn/`) |
 | Battery | MT6359 fuel gauge (coulomb counter), MT6360 charger; v144 adds an initramfs-only power-off charging display |
 | Sensors | ICM-40607 IMU, MMC5603 magnetometer, MN78911 light/proximity and auto-brightness; absolute lux scale uncalibrated |
 | Misc | torch, vibration, volume/power keys, RTC |
-| Sleep | deep s2idle (CPU/cluster off, 26 MHz off) works in instrumented test cycles at about 11.3 mA (stock Android: about 7.3–7.9 mA); not yet enabled automatically for everyday use |
+| Sleep | s2idle (CPU/cluster off, 26 MHz off) works in everyday use: installed systems suspend by themselves and with the Power key and wake with the Power key; display, Wi-Fi and USB come back. About 11.3 mA asleep (stock Android: about 7.3–7.9 mA). While a computer is attached (v146), its USB traffic keeps the phone awake and the link up |
 | NFC | Samsung S3NRN82: reading and writing tags/cards works (e.g. a PolygoCard transit card); no contactless payments; a tag cannot wake the phone from sleep yet |
 
 Not working / not done:

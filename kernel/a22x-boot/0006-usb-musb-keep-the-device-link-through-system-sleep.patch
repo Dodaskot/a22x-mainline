@@ -1,0 +1,120 @@
+From 201f64dd8d30bde7395bf8afb28b23f2193d7d99 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 10 Nov 2026 10:35:40 +0100
+Subject: [PATCH] usb: musb: keep the device link through system sleep
+
+On the MT6833 glue, a connected peripheral whose controller may wake the
+system now keeps its session, pull-up and interrupts through system
+sleep, and musb_resume has nothing to restore. The host sees no
+disconnect, and its traffic wakes the system, so while a computer is
+attached the phone does not stay in s2idle, as with the vendor driver.
+Without a host (a charger only, or no cable) musb_suspend ends the
+session as before, and the glue re-attaches the device role on resume.
+
+Tested on SM-A226B with kernel #122 and Fedora 45: PowerDevil's
+suspendToRam entered s2idle, the musb interrupt woke the system 0.2 s
+later, and over five minutes the computer kept the device and its NCM
+carrier and every ping was answered.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ drivers/usb/musb/mediatek.c  |  7 +++++++
+ drivers/usb/musb/musb_core.c | 22 +++++++++++++++++++---
+ drivers/usb/musb/musb_core.h |  3 +++
+ 3 files changed, 29 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/usb/musb/mediatek.c b/drivers/usb/musb/mediatek.c
+index 7f4bcd18a..4072c90b4 100644
+--- a/drivers/usb/musb/mediatek.c
++++ b/drivers/usb/musb/mediatek.c
+@@ -266,6 +266,8 @@ static int mtk_musb_init(struct musb *musb)
+ 	int ret;
+ 
+ 	glue->musb = musb;
++	/* A22x: stay connected to the computer through system sleep. */
++	musb->keep_link_in_sleep = of_device_is_compatible(dev->parent->of_node, "mediatek,mt6833-musb");
+ 	musb->phy = glue->phy;
+ 	musb->xceiv = glue->xceiv;
+ 	musb->is_host = false;
+@@ -611,6 +613,11 @@ static void mtk_musb_complete(struct device *dev)
+ 	if (!musb || IS_ERR_OR_NULL(glue->role_sw) ||
+ 	    glue->role != USB_ROLE_DEVICE || !musb->gadget_driver)
+ 		return;
++	/* The link stayed up through this sleep: the computer never lost the device. */
++	if (musb->link_kept) {
++		musb->link_kept = false;
++		return;
++	}
+ 	dev_info(dev, "re-attaching the device role after system sleep\n");
+ 	usb_role_switch_set_role(glue->role_sw, USB_ROLE_NONE);
+ 	usb_role_switch_set_role(glue->role_sw, USB_ROLE_DEVICE);
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index 9baa41a35..abd469e55 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -2814,15 +2814,26 @@ static int musb_suspend(struct device *dev)
+ 	}
+ 
+ 	musb_gadget_rx_work_suspend(musb);
+-	musb_platform_disable(musb);
+-	musb_disable_interrupts(musb);
++	/*
++	 * A connected peripheral whose controller may wake the system keeps its
++	 * session, pull-up and interrupts: the host sees no disconnect, and its
++	 * traffic wakes the system. Clocks and PHY stay on with wakeup anyway.
++	 */
++	musb->link_kept = musb->keep_link_in_sleep && is_peripheral_active(musb) &&
++			  device_may_wakeup(dev) && musb->gadget_driver &&
++			  musb->g.speed != USB_SPEED_UNKNOWN &&
++			  (musb_readb(musb->mregs, MUSB_DEVCTL) & MUSB_DEVCTL_SESSION);
++	if (!musb->link_kept) {
++		musb_platform_disable(musb);
++		musb_disable_interrupts(musb);
++	}
+ 
+ 	musb->flush_irq_work = true;
+ 	while (flush_delayed_work(&musb->irq_work))
+ 		;
+ 	musb->flush_irq_work = false;
+ 
+-	if (!(musb->ops->quirks & MUSB_PRESERVE_SESSION))
++	if (!musb->link_kept && !(musb->ops->quirks & MUSB_PRESERVE_SESSION))
+ 		musb_writeb(musb->mregs, MUSB_DEVCTL, 0);
+ 
+ 	WARN_ON(!list_empty(&musb->pending_list));
+@@ -2863,6 +2874,10 @@ static int musb_resume(struct device *dev)
+ 	 * unconditionally.
+ 	 */
+ 
++	/* Nothing was turned off when the link was kept: no context to restore. */
++	if (musb->link_kept)
++		goto resume_work;
++
+ 	musb_restore_context(musb);
+ 
+ 	devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
+@@ -2880,6 +2895,7 @@ static int musb_resume(struct device *dev)
+ 		musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
+ 	}
+ 
++resume_work:
+ 	spin_lock_irqsave(&musb->lock, flags);
+ 	error = musb_run_resume_work(musb);
+ 	if (error)
+diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
+index e4299482b..b9c98e117 100644
+--- a/drivers/usb/musb/musb_core.h
++++ b/drivers/usb/musb/musb_core.h
+@@ -291,6 +291,9 @@ struct musb {
+ 	struct work_struct	gadget_rx_work;
+ 	/* Protected by lock; binding, start and PM lifetimes are distinct. */
+ 	bool			gadget_callbacks;
++	/* Device role kept connected through system sleep (glue opt-in; link_kept: this sleep). */
++	bool			keep_link_in_sleep;
++	bool			link_kept;
+ 	bool			gadget_rx_started;
+ 	bool			gadget_rx_paused;
+ 	bool			gadget_rx_resetting;
+-- 
+2.56.0
+
