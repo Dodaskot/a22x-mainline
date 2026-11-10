@@ -1277,3 +1277,12 @@ and choosing it once more showed that the image is already on the partition.
 computer when userdata was open read-only after choosing an image; it is now opened for
 writing during the transfer and read-only again after it. The result page offers "Back to
 recovery" only where it leads home, and "Back to files" only from the file pages themselves.
+
+**Wipe, as in TWRP (build 148).** The Install page gets a fourth card, Wipe. Cache empties
+everything on the cache volume except the recovery's own folder (its settings and keys, saved
+Wi-Fi networks, plans from the Android app and setup scripts) and lost+found; a review lists
+what stays and a hold starts it. A whole volume leads to Files, where each volume is erased
+with a hold. Files are removed by descriptor, so a symbolic link is removed and never
+followed, and the volume is left as it was found. On the phone it removed eight leftovers of
+Android (update and backup folders, Magisk's log, the stock recovery's logs, 8.1 MiB) and kept
+the recovery's folder file for file.

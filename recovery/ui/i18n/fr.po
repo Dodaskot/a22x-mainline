@@ -4316,3 +4316,54 @@ msgstr "Retour"
 
 msgid "A computer is connected over SSH or SFTP: close that session, then try again"
 msgstr "Un ordinateur est connecté en SSH ou SFTP : fermez cette session, puis réessayez"
+
+msgid "A whole volume"
+msgstr "Un volume entier"
+
+msgid "a22x-recovery: the recovery's settings and keys, saved Wi-Fi networks, plans from the Android app and setup scripts."
+msgstr "a22x-recovery : réglages et clés du recovery, réseaux Wi-Fi enregistrés, plans de l’app Android et scripts de configuration."
+
+msgid "Cache"
+msgstr "Cache"
+
+msgid "Cache could not be wiped."
+msgstr "Le cache n’a pas pu être vidé."
+
+msgid "Cache wiped"
+msgstr "Cache vidé"
+
+msgid "Cache, or a whole volume before an installation"
+msgstr "Le cache, ou un volume entier avant une installation"
+
+msgid "Erase what is no longer needed. Nothing is erased before you hold the button."
+msgstr "Effacez ce qui n’est plus utile. Rien n’est effacé avant que vous mainteniez le bouton."
+
+msgid "Erasing userdata removes every Linux system and every saved image. Android's factory reset comes with the Android installer."
+msgstr "Effacer userdata supprime chaque système Linux et chaque image enregistrée. La réinitialisation d’Android viendra avec l’installateur Android."
+
+msgid "Everything else on cache is deleted: update packages, logs and temporary files."
+msgstr "Tout le reste du cache est supprimé : paquets de mise à jour, journaux et fichiers temporaires."
+
+msgid "Nothing has been erased yet."
+msgstr "Rien n’a encore été effacé."
+
+msgid "Only cache is wiped this way. Erase other volumes in Files"
+msgstr "Seul le cache est vidé ainsi. Effacez les autres volumes dans Fichiers"
+
+msgid "Removed %u items and freed %s. The recovery's own folder stays: its settings, Wi-Fi networks, plans and scripts."
+msgstr "%u éléments supprimés, %s libérés. Le dossier propre du recovery reste : réglages, réseaux Wi-Fi, plans et scripts."
+
+msgid "STAYS"
+msgstr "CONSERVÉ"
+
+msgid "Update packages, logs and temporary files"
+msgstr "Paquets de mise à jour, journaux et fichiers temporaires"
+
+msgid "userdata, cache or an SD card, in Files"
+msgstr "userdata, le cache ou une carte SD, dans Fichiers"
+
+msgid "Wipe"
+msgstr "Effacer"
+
+msgid "Wipe cache"
+msgstr "Vider le cache"

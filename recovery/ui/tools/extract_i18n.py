@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCES = ('recovery_ui.c', 'systems_ui.h', 'install_ui.h', 'wifi_ui.h', 'installer_ui.h', 'images_ui.h', 'adb_ui.h', 'packages_ui.h', 'identity_ui.h', 'android_plan_ui.h', 'screenshot_ui.h', 'charger_ui.h', 'shells_ui.h', 'locale_ui.h', 'terminal_ui.h', 'flash_ui.h', 'theme.h')
+SOURCES = ('recovery_ui.c', 'systems_ui.h', 'install_ui.h', 'wifi_ui.h', 'installer_ui.h', 'images_ui.h', 'adb_ui.h', 'packages_ui.h', 'identity_ui.h', 'android_plan_ui.h', 'wipe_ui.h', 'screenshot_ui.h', 'charger_ui.h', 'shells_ui.h', 'locale_ui.h', 'terminal_ui.h', 'flash_ui.h', 'theme.h')
 HELPERS = ('../flash.py', '../themes.py', '../sysinfo.py')
 WORDS = {'unavailable', 'mounted', 'offline', 'raw', 'active', 'yes', 'no', 'live', 'history', 'on', 'off', 'unknown',
          'backup', 'wipe', 'restore', '30 s', 'minimal', 'signed', 'none', 'arm64',
@@ -34,6 +34,7 @@ BACKEND_TEXT = {'There was not enough free space on userdata for the packages.',
                 'Charging', 'Discharging', 'Full', 'Not charging', 'Unlocked', 'Locked', 'Green', 'Yellow', 'Orange', 'Red',
                 'Storage is busy: stop USB files, or wait for the running operation to finish',
                 'A computer is connected over SSH or SFTP: close that session, then try again',
+                'Only cache is wiped this way. Erase other volumes in Files',  # filesystem.py wipe (2026-11-10)
                 # filesystem.py reason_text: shown under a volume that cannot be opened.
                 'Android logical-partition container; mapping is not implemented', 'Raw image; not a filesystem',
                 'Firmware or service partition; file access is not admitted', 'This partition is already used by another block mapping',

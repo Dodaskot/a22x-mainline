@@ -286,6 +286,32 @@ class FilesystemFixtureTest(FilesystemFixtureSupport):
             result = self.cli('mount', '--volume', 'userdata', '--mode', 'rw', '--confirm', ok=False)
         self.assertEqual(result['error']['code'], 'OPERATION_BUSY')
 
+    def test_wipe_cache_keeps_the_recoverys_own_folder(self):
+        """TWRP's Wipe → Cache (2026-11-10): everything else on cache goes; a22x-recovery (settings,
+        keys, Wi-Fi networks, plans, scripts) and lost+found stay; the volume is left as it was."""
+        cache = self.root / 'volumes/cache'
+        (cache / 'a22x-recovery/scripts').mkdir(parents=True)
+        (cache / 'a22x-recovery/settings.json').write_text('{"theme": "daylight"}')
+        (cache / 'a22x-recovery/scripts/my-setup.sh').write_text('#!/bin/sh\n')
+        (cache / 'lost+found').mkdir()
+        (cache / 'recovery').mkdir()
+        (cache / 'recovery/last_log').write_text('old log')
+        (cache / 'ota.zip').write_bytes(b'PK\x03\x04' + bytes(4000))
+        (cache / 'link-out').symlink_to(self.data / 'config.txt')  # removed, never followed
+        self.config['volumes'].append({'id': 'cache', 'path': 'volumes/cache', 'fs_type': 'ext4', 'mounted': True, 'read_only': True})
+        self.write_config()
+        refused = self.cli('wipe', '--volume', 'cache', ok=False)
+        self.assertEqual(refused['error']['code'], 'CONFIRMATION_REQUIRED')
+        done = self.cli('wipe', '--volume', 'cache', '--confirm')
+        self.assertEqual((done['removed'], done['kept']), (3, ['a22x-recovery', 'lost+found']))
+        self.assertEqual(sorted(p.name for p in cache.iterdir()), ['a22x-recovery', 'lost+found'])
+        self.assertEqual((cache / 'a22x-recovery/scripts/my-setup.sh').read_text(), '#!/bin/sh\n')
+        self.assertEqual(self.source.read_text(), 'before\n')  # the symlink's target is untouched
+        self.assertTrue(self.ctx.volume('cache')['read_only'])  # read-only again, as it was
+        other = self.cli('wipe', '--volume', 'userdata', '--confirm', ok=False)
+        self.assertEqual(other['error']['code'], 'WIPE_NOT_ADMITTED')
+        self.assertTrue(self.source.exists())
+
     def test_a_computer_session_is_named_as_the_reason(self):
         """2026-11-10: an SSH or SFTP session holds the lease; the message says so, not USB files."""
         sessions = self.root / 'ssh-sessions'

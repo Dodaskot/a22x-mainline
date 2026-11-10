@@ -4316,3 +4316,54 @@ msgstr "Wstecz"
 
 msgid "A computer is connected over SSH or SFTP: close that session, then try again"
 msgstr "Komputer jest połączony przez SSH lub SFTP: zamknij tę sesję i spróbuj ponownie"
+
+msgid "A whole volume"
+msgstr "Cały wolumin"
+
+msgid "a22x-recovery: the recovery's settings and keys, saved Wi-Fi networks, plans from the Android app and setup scripts."
+msgstr "a22x-recovery: ustawienia i klucze recovery, zapisane sieci Wi-Fi, plany z aplikacji Android i skrypty konfiguracji."
+
+msgid "Cache"
+msgstr "Cache"
+
+msgid "Cache could not be wiped."
+msgstr "Nie udało się wyczyścić cache."
+
+msgid "Cache wiped"
+msgstr "Cache wyczyszczony"
+
+msgid "Cache, or a whole volume before an installation"
+msgstr "Cache albo cały wolumin przed instalacją"
+
+msgid "Erase what is no longer needed. Nothing is erased before you hold the button."
+msgstr "Usuń to, co nie jest już potrzebne. Nic nie zostanie usunięte, zanim przytrzymasz przycisk."
+
+msgid "Erasing userdata removes every Linux system and every saved image. Android's factory reset comes with the Android installer."
+msgstr "Wyczyszczenie userdata usuwa każdy system Linux i każdy zapisany obraz. Przywracanie ustawień fabrycznych Androida pojawi się razem z instalatorem Androida."
+
+msgid "Everything else on cache is deleted: update packages, logs and temporary files."
+msgstr "Wszystko inne w cache zostanie usunięte: pakiety aktualizacji, dzienniki i pliki tymczasowe."
+
+msgid "Nothing has been erased yet."
+msgstr "Nic jeszcze nie zostało usunięte."
+
+msgid "Only cache is wiped this way. Erase other volumes in Files"
+msgstr "W ten sposób czyści się tylko cache. Inne woluminy usuń w Plikach"
+
+msgid "Removed %u items and freed %s. The recovery's own folder stays: its settings, Wi-Fi networks, plans and scripts."
+msgstr "Usunięto elementów: %u, zwolniono %s. Własny folder recovery zostaje: ustawienia, sieci Wi-Fi, plany i skrypty."
+
+msgid "STAYS"
+msgstr "ZOSTAJE"
+
+msgid "Update packages, logs and temporary files"
+msgstr "Pakiety aktualizacji, dzienniki i pliki tymczasowe"
+
+msgid "userdata, cache or an SD card, in Files"
+msgstr "userdata, cache albo karta SD, w Plikach"
+
+msgid "Wipe"
+msgstr "Czyszczenie"
+
+msgid "Wipe cache"
+msgstr "Wyczyść cache"

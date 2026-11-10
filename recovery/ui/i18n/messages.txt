@@ -53,8 +53,10 @@ A system image on a USB stick or SD card
 A text login for a USB or Bluetooth keyboard. It starts the shell picked last.
 A touch login made of Phosh, with the on-screen keyboard and a list of the shells.
 A touch login made of Phosh, with the on-screen keyboard and a list of the shells. Arch builds it on the phone: 30-40 minutes more.
+A whole volume
 A Wi-Fi password has 8 to 63 characters
 A Wi-Fi password has 8 to 63 characters.
+a22x-recovery: the recovery's settings and keys, saved Wi-Fi networks, plans from the Android app and setup scripts.
 About %u min left
 About phone
 ACCESS
@@ -184,6 +186,10 @@ Buttons
 By default the language of this recovery.
 bytes
 Cable
+Cache
+Cache could not be wiped.
+Cache wiped
+Cache, or a whole volume before an installation
 Calculator
 Calendar
 Camera
@@ -372,8 +378,11 @@ Enter password
 Enter the recovery password.
 Enter the Unix mode as four octal digits.
 Erase userdata, then install from the internet or a file
+Erase what is no longer needed. Nothing is erased before you hold the button.
 Erasing userdata
+Erasing userdata removes every Linux system and every saved image. Android's factory reset comes with the Android installer.
 Europe
+Everything else on cache is deleted: update packages, logs and temporary files.
 Everything on userdata is replaced by this image
 EXACT WRITE TARGETS
 Exact write targets
@@ -684,6 +693,7 @@ Not mounted
 Not mounted or not available
 Not read yet
 not reported
+Nothing has been erased yet.
 Nothing has been written yet.
 Nothing is downloaded for the desktop.
 Nothing is downloaded.
@@ -705,6 +715,7 @@ on
 ON MICROSD
 On: a charger shows the battery
 Only a freshly reviewed qualified Linux used-block plan can write these targets.
+Only cache is wiped this way. Erase other volumes in Files
 Only systemd distributions are supported by the current device adapter
 Only this reviewed plan can be started.
 Open
@@ -866,6 +877,7 @@ Remove password
 Remove safely
 Remove system
 Remove this system
+Removed %u items and freed %s. The recovery's own folder stays: its settings, Wi-Fi networks, plans and scripts.
 Removed themes are back
 Rename
 Renamed
@@ -1023,6 +1035,7 @@ Start the active Linux system
 Start this recovery again
 State
 Status unavailable
+STAYS
 Step %u of %u
 Stock Android
 Stock firmware from a prepared bundle.
@@ -1336,6 +1349,7 @@ Unmount userdata, then review a fresh plan?
 Unpacking the system image
 Unsupported
 Up
+Update packages, logs and temporary files
 Updated from the servers: %u
 USB address unavailable
 USB debugging
@@ -1373,6 +1387,7 @@ Userdata is restored and checked first. Keep power and SD connected. Recovery do
 Userdata is still mounted or changed. Review its current state before another attempt.
 Userdata stays unmounted after backup
 Userdata was not present in the fresh volume inventory. Refresh before continuing.
+userdata, cache or an SD card, in Files
 V
 VALUE
 VERIFIED BACKUP SOURCE
@@ -1413,7 +1428,9 @@ Wi-Fi did not start. Restart recovery and try again.
 Wi-Fi failed.
 Wi-Fi network
 Wi-Fi: %s  /  script: %s
+Wipe
 wipe
+Wipe cache
 Without a network here, the saved networks of installed systems are used.
 Working
 WPA

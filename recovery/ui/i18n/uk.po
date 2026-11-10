@@ -4316,3 +4316,54 @@ msgstr "Назад"
 
 msgid "A computer is connected over SSH or SFTP: close that session, then try again"
 msgstr "До recovery підключено комп'ютер через SSH або SFTP: закрийте той сеанс і спробуйте ще раз"
+
+msgid "A whole volume"
+msgstr "Цілий том"
+
+msgid "a22x-recovery: the recovery's settings and keys, saved Wi-Fi networks, plans from the Android app and setup scripts."
+msgstr "a22x-recovery: налаштування й ключі recovery, збережені мережі Wi-Fi, плани із застосунку Android і скрипти налаштування."
+
+msgid "Cache"
+msgstr "Кеш"
+
+msgid "Cache could not be wiped."
+msgstr "Не вдалося очистити кеш."
+
+msgid "Cache wiped"
+msgstr "Кеш очищено"
+
+msgid "Cache, or a whole volume before an installation"
+msgstr "Кеш або цілий том перед встановленням"
+
+msgid "Erase what is no longer needed. Nothing is erased before you hold the button."
+msgstr "Стирайте те, що більше не потрібне. Нічого не стирається, доки ви не утримаєте кнопку."
+
+msgid "Erasing userdata removes every Linux system and every saved image. Android's factory reset comes with the Android installer."
+msgstr "Стирання userdata видаляє всі системи Linux і всі збережені образи. Скидання Android до заводських налаштувань з'явиться разом зі встановлювачем Android."
+
+msgid "Everything else on cache is deleted: update packages, logs and temporary files."
+msgstr "Усе інше в кеші видаляється: пакети оновлень, журнали й тимчасові файли."
+
+msgid "Nothing has been erased yet."
+msgstr "Поки що нічого не стерто."
+
+msgid "Only cache is wiped this way. Erase other volumes in Files"
+msgstr "Так очищується лише кеш. Інші томи стирайте у «Файлах»"
+
+msgid "Removed %u items and freed %s. The recovery's own folder stays: its settings, Wi-Fi networks, plans and scripts."
+msgstr "Видалено елементів: %u, звільнено %s. Власна тека recovery лишається: її налаштування, мережі Wi-Fi, плани й скрипти."
+
+msgid "STAYS"
+msgstr "ЛИШАЄТЬСЯ"
+
+msgid "Update packages, logs and temporary files"
+msgstr "Пакети оновлень, журнали й тимчасові файли"
+
+msgid "userdata, cache or an SD card, in Files"
+msgstr "userdata, кеш або SD-картка — у «Файлах»"
+
+msgid "Wipe"
+msgstr "Очищення"
+
+msgid "Wipe cache"
+msgstr "Очистити кеш"

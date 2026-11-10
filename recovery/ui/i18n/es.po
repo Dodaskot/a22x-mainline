@@ -4316,3 +4316,54 @@ msgstr "Atrás"
 
 msgid "A computer is connected over SSH or SFTP: close that session, then try again"
 msgstr "Hay un ordenador conectado por SSH o SFTP: cierre esa sesión y vuelva a intentarlo"
+
+msgid "A whole volume"
+msgstr "Un volumen entero"
+
+msgid "a22x-recovery: the recovery's settings and keys, saved Wi-Fi networks, plans from the Android app and setup scripts."
+msgstr "a22x-recovery: ajustes y claves del recovery, redes Wi-Fi guardadas, planes de la app de Android y scripts de configuración."
+
+msgid "Cache"
+msgstr "Caché"
+
+msgid "Cache could not be wiped."
+msgstr "No se pudo borrar la caché."
+
+msgid "Cache wiped"
+msgstr "Caché borrada"
+
+msgid "Cache, or a whole volume before an installation"
+msgstr "La caché o un volumen entero antes de una instalación"
+
+msgid "Erase what is no longer needed. Nothing is erased before you hold the button."
+msgstr "Borra lo que ya no necesitas. No se borra nada hasta que mantengas pulsado el botón."
+
+msgid "Erasing userdata removes every Linux system and every saved image. Android's factory reset comes with the Android installer."
+msgstr "Borrar userdata elimina cada sistema Linux y cada imagen guardada. El restablecimiento de fábrica de Android llegará con el instalador de Android."
+
+msgid "Everything else on cache is deleted: update packages, logs and temporary files."
+msgstr "Todo lo demás en la caché se elimina: paquetes de actualización, registros y archivos temporales."
+
+msgid "Nothing has been erased yet."
+msgstr "Aún no se ha borrado nada."
+
+msgid "Only cache is wiped this way. Erase other volumes in Files"
+msgstr "Solo la caché se borra así. Borra otros volúmenes en Archivos"
+
+msgid "Removed %u items and freed %s. The recovery's own folder stays: its settings, Wi-Fi networks, plans and scripts."
+msgstr "%u elementos eliminados, %s liberados. La carpeta propia del recovery se conserva: ajustes, redes Wi-Fi, planes y scripts."
+
+msgid "STAYS"
+msgstr "SE CONSERVA"
+
+msgid "Update packages, logs and temporary files"
+msgstr "Paquetes de actualización, registros y archivos temporales"
+
+msgid "userdata, cache or an SD card, in Files"
+msgstr "userdata, la caché o una tarjeta SD, en Archivos"
+
+msgid "Wipe"
+msgstr "Borrar"
+
+msgid "Wipe cache"
+msgstr "Borrar la caché"

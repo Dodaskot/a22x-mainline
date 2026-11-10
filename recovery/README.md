@@ -13,7 +13,7 @@ on-phone check: [docs/PROGRESS.md](docs/PROGRESS.md).
 
 | | |
 |---|---|
-| Recovery | 0.6.147, SHA-256 `0c20339567dc23339a2883f49d9003091af92899bd97d32b85f4796d88760bfb` |
+| Recovery | 0.6.148, SHA-256 `d32df642dcea44bfc91e7ed8907943cbd87f0dca24fc940c17f5587c3daa0042` |
 | Recovery kernel | `7.2.0-a22x-recovery+ #123`: [linux-a22x](https://github.com/Dodaskot/linux-a22x) branch `a22x-recovery`, tag `a22x-recovery-kernel123` |
 | Tested with | BOOT v146 (`releases/v146`, kernel `#122`) and v145 (kernel `#121`), branch `a22x-boot` |
 | Image | not published: it contains firmware captured from the developer's phone and the developer's SSH key (see [Building](#building)) |
@@ -106,6 +106,9 @@ networks are not part of this repository.
   partition's content is saved first, and the same image is recognised as
   already there. Checked on the phone on `odm`: written, read back, restored
   from the saved copy, super's metadata unchanged (2026-11-10).
+- **Wipe** (Install → Wipe), as in TWRP: cache without the recovery's own
+  folder (its settings, keys, Wi-Fi networks, plans and scripts stay), or a
+  whole volume in Files. Checked on the phone (2026-11-10).
 - Images are judged by their **contents**, not by a list of approved hashes
   (`bootimage.py`): a BOOT or recovery image must be complete (the kernel
   unpacks to its end, or its AVB hash matches) and made for this phone (the

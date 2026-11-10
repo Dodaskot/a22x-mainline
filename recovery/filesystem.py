@@ -9,7 +9,7 @@ lock. Fixture mode operates only on declared directories, never block devices.
 from __future__ import annotations
 
 import argparse
-from contextlib import contextmanager, ExitStack
+from contextlib import contextmanager, ExitStack, suppress
 import ctypes
 import errno
 import fcntl
@@ -18,6 +18,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import stat
 import struct
 import subprocess
@@ -1956,7 +1957,7 @@ def parser():
     erase.add_argument('--expected-volume-token')
     erase.add_argument('--fs', choices=('ext4', 'vfat', 'f2fs'), required=True)
     erase.add_argument('--confirm', action='store_true')
-    for name in ('check', 'resize'):
+    for name in ('check', 'resize', 'wipe'):
         repair = commands.add_parser(name)
         repair.add_argument('--volume', required=True)
         repair.add_argument('--expected-volume-token')
@@ -1997,6 +1998,48 @@ def parser():
     return p
 
 
+# Wipe → Cache, as TWRP's (2026-11-10): everything on the volume except what the recovery keeps there
+# (its settings, keys, saved Wi-Fi networks, plans and scripts in a22x-recovery).
+WIPE_KEEP = {'cache': ('a22x-recovery', 'lost+found')}
+
+
+def wipe_contents(context, ident, confirmed=False, expected=None):
+    """Delete everything at the top of IDENT except WIPE_KEEP. The volume is mounted for writing
+    when needed and left as it was found (not mounted, or read-only)."""
+    context.confirm(confirmed)
+    if ident not in WIPE_KEEP:
+        fail('WIPE_NOT_ADMITTED', 'Only cache is wiped this way. Erase other volumes in Files', volume=ident)
+    volume = context.volume(ident, expected)
+    mounted_here = not volume['mounted']
+    reopen = volume['mounted'] and volume['read_only'] and volume.get('mount_owner') == 'filesystem'
+    if mounted_here or reopen:
+        context.mount(ident, 'rw', True, volume['volume_token'])
+    removed = 0
+    try:
+        with PinnedVolume(context, ident, writing=True) as pin:
+            before = os.fstatvfs(pin.fd)
+            for name in sorted(os.listdir(pin.fd)):
+                if name in WIPE_KEEP[ident]:
+                    continue
+                pin.recheck()
+                info = os.stat(name, dir_fd=pin.fd, follow_symlinks=False)
+                if stat.S_ISDIR(info.st_mode):
+                    shutil.rmtree(name, dir_fd=pin.fd)  # By descriptor: a symlink is removed, never followed.
+                else:
+                    os.unlink(name, dir_fd=pin.fd)
+                removed += 1
+            os.sync()
+            after = os.fstatvfs(pin.fd)
+            freed = max(0, (after.f_bavail - before.f_bavail) * after.f_frsize)
+    finally:
+        if mounted_here:
+            context.unmount(ident)
+        elif reopen:
+            with suppress(OSError, FilesystemError):  # Still writable then; Files shows it as it is.
+                context.mount(ident, 'ro', True, context.volume(ident)['volume_token'])
+    return {'volume': ident, 'removed': removed, 'freed_bytes': freed, 'kept': list(WIPE_KEEP[ident])}
+
+
 def dispatch(context, args):
     action = args.operation
     with context.operation_lock():
@@ -2017,6 +2060,8 @@ def dispatch(context, args):
             return context.unmount(v, expected)
         if action == 'format':
             return context.format(v, args.fs, args.confirm, expected)
+        if action == 'wipe':
+            return wipe_contents(context, v, args.confirm, expected)
         if action == 'check':
             return context.check(v, args.confirm, expected)
         if action == 'resize':
