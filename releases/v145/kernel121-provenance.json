@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "release": "v145",
+  "device": "Samsung Galaxy A22 5G SM-A226B / a22x / MediaTek MT6833",
+  "boot_image": {
+    "filename": "boot.img",
+    "bytes": 33554432,
+    "sha256": "e3542fcdd905a4b89a10eb828fa983bc9f0837a2635155d0124c692f6c5fbb1f",
+    "internal_name": "BOOT v1r5",
+    "header_version": 2,
+    "page_size": 2048,
+    "board": "SRPTL28A011",
+    "command_line": "bootopt=64S3,32N2,64N2 earlycon=mt6833uart,0x11002000 console=ttyS0,921600n8 loglevel=8 ignore_loglevel clk_ignore_unused pd_ignore_unused printk.devkmsg=on mem_sleep_default=s2idle cma=96M mt6359_regulator.a22x_lp_probe=1 mt6359_regulator.a22x_lp_stock_init=1 fbcon=logo-count:0 vt.global_cursor_default=0 fbcon=vc:1-62"
+  },
+  "kernel": {
+    "release": "7.2.0-a22x+",
+    "build": 121,
+    "version_string": "#121 SMP PREEMPT Mon Nov 09 20:00:00 UTC 2026",
+    "source_repository": "https://github.com/Dodaskot/linux-a22x",
+    "source_branch": "a22x-boot",
+    "source_tag": "a22x-boot-kernel121",
+    "source_commit": "4fa8876fa0581a9dd731d2d50331c73ed089d4ec",
+    "source_tree": "ca59160d916687b093a787f47d03f9d2d24358af",
+    "base_commit_kernel107": "79a09eba25ef8cb4e03a98325c6ec1e606961810",
+    "patches_above_kernel107": "kernel/a22x-boot/ (5)",
+    "config_path": "kernel/config/a22x-boot-k121.config",
+    "config_sha256": "8e58352f8b55282240d3d6529017351e0ea47e50ea261a982c252674db319380",
+    "image_sha256": "2baf3684145178da6ba0fed14c951e568492a9ab469bcbe384febeafa29dccbe",
+    "image_gz_sha256": "316a2b4f61423da076450294a937c65dd2ba12d2319122aa643d0c84c4a320b6",
+    "shimmed_image_sha256": "26e1533f05bb55643b64c2ee0594d9a7c26dd7f53a41fe0c912899290bfe6b92",
+    "boot_payload_sha256": "c9696234dbb9dba94e7724ecd55922cb9418171502c37523f1a410276be89dce",
+    "payload_equals_build_output": true,
+    "compiler": "ClangBuiltLinux clang 23.1.1 and LLD 23.1.1 (llvm-project 6dfe1677ab8dffbc6ec13d53a1e0215d75147689)"
+  },
+  "dtb": {
+    "appended_sha256": "d01dd9ef8e4cab80e2d7f866ea32ce2eea55450d84ee67bb7a8b79502bf8281e",
+    "unchanged_from_v144": true
+  },
+  "ramdisk": {
+    "sha256": "e0be596ae3ea876e6e38d1965b4dc07a3268401cdb400257d54991cd7f5daf3b",
+    "files_sha256": {
+      "init": "c5b8c9c3a33f925b1edac40d6cf221926eed471b35c0c6898546109464c705db",
+      "bin/reboot-download": "a21266617997c68f00ea5af6d2c60d1cccd8d68da21fcc81951afbe93b653bf1",
+      "bin/memtool": "03e36287f15eeb20473a79a772b002250b8a91c33e2dc4df5723deb44ef050cc",
+      "bin/busybox": "7d93682be37cf6ed46699f6fff546b80bf133cf8ec342c2d04bc23387f78bc34",
+      "lib/firmware/Himax_firmware_fw_jdi.bin": "fd4df971965dfe5e550ba4a6a9e94e1b67d5ca128dad3eb74ebaa1873d591f1a",
+      "bin/a22x-charger": "eec42faac2a435cc8a9742b221f0eb3b934e62be5fcb57fb874823ef2a7b518d"
+    },
+    "changed_entries_from_v144": [
+      "init"
+    ],
+    "init_source": "boot/initramfs/init (charger_off); the prebuilt keeps the tested init without the optional bundle guard",
+    "connectivity_modules_embedded": false,
+    "connectivity_firmware_embedded": false,
+    "root_filesystem_included": false,
+    "exact_deployed_image": true,
+    "rebuilt_from_public_build_scripts": false
+  },
+  "unchanged_components": {
+    "charger": "bin/a22x-charger, byte-identical to v144 (boot/charger)",
+    "busybox": "Debian busybox-static 1:1.37.0-6+b9, byte-identical to v144 (GPL-2.0, https://sources.debian.org/src/busybox/1:1.37.0-6/)",
+    "himax_firmware": "lib/firmware/Himax_firmware_fw_jdi.bin, Samsung stock /vendor/firmware, proprietary, byte-identical to v144"
+  },
+  "verification": {
+    "boot_partition_readback_hash_matches": true,
+    "normal_boot_kernel_121_observed": true,
+    "vendor_wifi_bt_modules_loaded": true,
+    "usb_ncm_and_ssh": true,
+    "systems_booted": [
+      "Ubuntu 26.04",
+      "Ubuntu 24.04",
+      "Debian/Mobian 13 Phosh",
+      "Debian/Mobian 13 Plasma Mobile",
+      "Manjaro ARM",
+      "Arch Linux ARM",
+      "postmarketOS v26.06",
+      "Fedora 45"
+    ],
+    "charger_off_path_observed_with_v1r3_init": true,
+    "usb_after_suspend_in_installed_system_verified": false,
+    "modem_or_cellular_service_verified": false
+  }
+}

@@ -49,10 +49,15 @@ build outputs, test logs or device-specific data (serial numbers,
 calibration, Bluetooth address).
 
 Exceptions are the prebuilt images in `releases/v135/`, `releases/v142/`,
-`releases/v143/` and `releases/v144/`. They ran on the test handset and
-contain static BusyBox and proprietary stock touch firmware
+`releases/v143/`, `releases/v144/` and `releases/v145/`. They ran on the test
+handset and contain static BusyBox and proprietary stock touch firmware
 `Himax_firmware_fw_jdi.bin`. The first three share an initramfs; v144 adds
-the charger. Each release documents its binary contents and provenance.
+the charger and v145 the charger-off check in `/init`. Each release documents
+its binary contents and provenance.
+
+The A22x recovery in `recovery/` is source only. Its image needs platform
+files captured from the phone (device firmware, Bluetooth address, platform
+profile), and those are not published.
 
 ## Fixes after v135
 

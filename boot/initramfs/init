@@ -7,10 +7,31 @@ mount -t sysfs sys /sys
 
 # Charge-only boot: PID 1 stays in this initramfs, before USB or rootfs setup.
 # Explicit rescue/debug/unit selections keep the existing normal boot path.
+# The active system may turn the charge-only boot off: then a phone that LK starts in charger
+# mode (also after a reset that lost the restart markers) boots Linux instead of waiting for
+# a Power hold (2026-11-09). userdata is read without replaying its journal, then released.
+charger_off() {
+	n=0
+	while [ ! -e /sys/class/block/mmcblk0 ] && [ $n -lt 10 ]; do sleep 0.5; n=$((n + 1)); done
+	for p in /sys/class/block/mmcblk0p*; do
+		grep -qx 'PARTNAME=userdata' "$p/uevent" 2>/dev/null || continue
+		mkdir -p /charger-flag
+		mount -t ext4 -o ro,noload "/dev/${p##*/}" /charger-flag 2>/dev/null || return 1
+		mode=$(head -c 8 /charger-flag/etc/a22x/charger-mode 2>/dev/null)
+		umount /charger-flag
+		case "$mode" in off*) return 0 ;; esac
+		return 1
+	done
+	return 1
+}
 if /bin/a22x-charger --check-boot >/dev/null 2>&1; then
+	if charger_off; then
+		echo "a22x-init: charge-only boot is off (/etc/a22x/charger-mode); starting the system" > /dev/kmsg
+	else
 	exec /bin/a22x-charger </dev/console >/dev/console 2>&1
 	# A successful exec never returns; do not continue into the normal system.
 	while true; do sleep 60; done
+	fi
 fi
 mount -t pstore pstore /sys/fs/pstore 2>/dev/null
 mount -t configfs configfs /sys/kernel/config
