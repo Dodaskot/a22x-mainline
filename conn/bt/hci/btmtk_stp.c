@@ -34,7 +34,7 @@ static struct btmtk_stp *g_bt;
 /* the factory address lives in nvdata (APCFG/APRDEB/BT_Addr), not in the chip */
 static char *bdaddr;
 module_param(bdaddr, charp, 0444);
-MODULE_PARM_DESC(bdaddr, "public BD address, e.g. 7C:C2:25:A5:6A:37");
+MODULE_PARM_DESC(bdaddr, "public BD address, e.g. 00:11:22:33:44:55");
 
 static bool dump;
 module_param(dump, bool, 0644);
