@@ -278,6 +278,39 @@ class TestImageInstall(unittest.TestCase):
         self.assertIn('EXTRA_SHELLS=\'\'', conf)
         self.assertIn('GREETER=auto', conf)
 
+    def test_a_prepared_password_hash_reaches_first_boot(self):
+        """2026-11-10: a plan from the Android app has the account's SHA-512 hash, not its password."""
+        (Path(os.environ['A22X_PLATFORM_HELPERS']) / 'wpa_supplicant').write_bytes(b'static wpa_supplicant')
+        hashed = '$6$a22xsalt$' + 'C' * 86
+        options = d.image_options('phosh', 'new', 'olena', None, 0, None, password_hash=hashed)
+        self.assertNotIn('password', {k for k, v in options.items() if v})
+        d.install(self.f.context, d.image_plan(self.f.context, 'sdcard-p1', '/distro-1.0.tar.gz', options)['plan'], True)
+        conf = (self.root('distro-1-0') / 'etc/a22x/firstboot.conf').read_text()
+        self.assertIn("NEW_PASSWORD=''", conf)
+        self.assertIn("NEW_PASSWORD_HASH='%s'" % hashed, conf)
+        for wrong in ('$1$md5$x', 'plain-246810', '$6$salt$short'):
+            with self.assertRaises(d.fs.FilesystemError) as caught:
+                d.image_options('phosh', 'new', 'olena', None, 0, None, password_hash=wrong)
+            self.assertEqual(caught.exception.code, 'INVALID_PASSWORD')
+        with self.assertRaises(d.fs.FilesystemError):
+            d.image_options('phosh', 'new', 'olena', '246810', 0, None, password_hash=hashed)  # one or the other
+
+    def test_an_added_system_knows_the_shared_account(self):
+        """2026-11-10, Ubuntu added beside Fedora: the setup script saw no A22X_USER, and automatic
+        sign-in found the account only because it was called "user"."""
+        (Path(os.environ['A22X_PLATFORM_HELPERS']) / 'wpa_supplicant').write_bytes(b'static wpa_supplicant')
+        for name in ('etc/passwd', 'etc/group'):
+            path = self.f.live / name
+            path.write_text(path.read_text().replace('user:x:', 'mira:x:').replace('/home/user', '/home/mira'))
+        d.install(self.f.context, self.plan(desktop='phosh'), True)
+        conf = (self.root('distro-1-0') / 'etc/a22x/firstboot.conf').read_text()
+        self.assertIn("NEW_USER=''", conf)
+        self.assertIn('PHONE_USER=mira', conf)
+        second = d.install(self.f.context, self.plan(desktop='phosh', account='new', username='olena', password='x'),
+                           True)['installed_slot']
+        conf = (self.root(second) / 'etc/a22x/firstboot.conf').read_text()
+        self.assertIn('PHONE_USER=olena', conf)
+
     def test_the_new_root_is_open_to_every_user_during_the_setup(self):
         """2026-11-09: pacman's download user alpm could not reach "/" of a root made 0700."""
         seen = []

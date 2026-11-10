@@ -5,11 +5,13 @@ An Android app or a Linux system writes a22x-recovery/handoff.json on the cache 
 
     {"schema": "a22x.handoff.v1", "source": "android-app",
      "wifi": [{"ssid": "Home", "password": "secret-pass"}],
-     "language": "uk", "timezone": "Europe/Kyiv"}
+     "language": "uk", "timezone": "Europe/Kyiv", "time_utc": 1794306000}
 
 At startup the recovery reads it once and deletes it before anything else, so a password never stays
 on the disk. Networks are kept as WPA keys like the ones chosen on the phone, and the language and
-time zone become the recovery's own settings. What was taken is noted, without secrets, in
+time zone become the recovery's own settings. time_utc (when the file was written) only ever moves
+the clock forward: a clock behind it is set to it, a correct clock is left alone. What was taken is
+noted, without secrets, in
 a22x-recovery/handoff-applied.json. Setup scripts go to a22x-recovery/scripts/ beside it; the install
 pages offer them like a script on an SD card.
 """
@@ -28,6 +30,8 @@ APPLIED = Path('a22x-recovery/handoff-applied.json')
 LANGUAGES = ('en', 'uk', 'de', 'fr', 'pl', 'es')
 LIMIT = 64 * 1024
 MAX_WIFI = 8
+EARLIEST = 1793491200  # 2026-11-01: a time before this release is not believed
+LATEST = 4102444800  # 2100-01-01
 
 
 def take(root):
@@ -74,6 +78,22 @@ def checked(record):
     return networks, language, zone
 
 
+def set_clock(seconds):
+    time.clock_settime(time.CLOCK_REALTIME, float(seconds))
+
+
+def advance_clock(record, now=None, setter=None):
+    """Move the clock forward to time_utc when it is behind by more than two minutes; never back."""
+    value = record.get('time_utc')
+    if not isinstance(value, int) or isinstance(value, bool) or not EARLIEST <= value <= LATEST:
+        return None
+    now = time.time() if now is None else now
+    if now >= value - 120:
+        return None
+    (setter or set_clock)(value)
+    return value
+
+
 def apply_record(record, remember=None, load=None, store=None):
     """Apply a handoff; returns what was taken, without secrets."""
     import settings
@@ -116,6 +136,9 @@ def main(argv=None):
         return 0
     try:
         applied = apply_record(record)
+        clock = advance_clock(record)
+        if clock:
+            applied['clock_set_to'] = clock
     except (OSError, ValueError) as exc:
         print(json.dumps({'ok': False, 'error': str(exc)[:200]}))
         return 1

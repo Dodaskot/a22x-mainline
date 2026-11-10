@@ -17,6 +17,20 @@ mkdir -p /dev/pts /run/lock /run/a22x-recovery/ui /run/a22x-recovery/plans/ui
 mount -t devpts -o mode=0620 devpts /dev/pts
 mount -t configfs configfs /sys/kernel/config 2>/dev/null
 
+# busy_wait OUTPUT COMMAND...: run COMMAND into OUTPUT; while it is refused only because another
+# helper holds the operation lock for a moment, try again, for up to 15 seconds (2026-11-10: the
+# restart once more met the Wi-Fi join that recovery starts in the background).
+busy_wait() {
+    out=$1
+    shift
+    for n in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+        "$@" > "$out" 2>&1 && return 0
+        grep -qs OPERATION_BUSY "$out" || return 1
+        sleep 1
+    done
+    return 1
+}
+
 msg() {
     echo "a22x-recovery: $*" > /dev/kmsg
     echo "a22x-recovery: $*" > /dev/console
@@ -159,11 +173,26 @@ while true; do
         : > /run/a22x-recovery/handoff.done
         /usr/bin/python3 /opt/a22x-recovery/handoff.py apply > /run/a22x-recovery/handoff.json 2>&1
     fi
+    # A restart into the system that came straight back here (the preloader started twice and
+    # lost the restart markers, 2026-11-10) is tried once more, without the interface.
+    if [ ! -e /run/a22x-recovery/intent.done ] && [ -f /opt/a22x-recovery/restart_intent.py ]; then
+        : > /run/a22x-recovery/intent.done
+        /usr/bin/python3 /opt/a22x-recovery/restart_intent.py check > /run/a22x-recovery/restart-intent.json 2>&1
+        case "$(cat /run/a22x-recovery/restart-intent.json)" in
+            *'"retry":"normal"'*) auto_rc=200; msg "the restart into the system came back to recovery; restarting once more" ;;
+            *'"retry":"download"'*) auto_rc=203; msg "the restart into Download came back to recovery; restarting once more" ;;
+        esac
+    fi
     # Remembered Wi-Fi networks: recovery joins the strongest one in the background, once per start.
-    if [ ! -e /run/a22x-recovery/wifi-auto.started ] && [ -f /opt/a22x-recovery/wifi.py ]; then
+    # Not before a restart once more: joining holds the operation lock the checks below need.
+    if [ -z "${auto_rc:-}" ] && [ ! -e /run/a22x-recovery/wifi-auto.started ] && [ -f /opt/a22x-recovery/wifi.py ]; then
         : > /run/a22x-recovery/wifi-auto.started
         /usr/bin/python3 /opt/a22x-recovery/wifi.py auto > /run/a22x-recovery/wifi-auto.json 2>&1 &
     fi
+    if [ -n "${auto_rc:-}" ]; then
+        rc=$auto_rc
+        auto_rc=
+    else
     msg "starting native recovery UI"
     /bin/recovery-ui --device \
         --backend /opt/a22x-recovery/backend/recoveryctl.py \
@@ -182,6 +211,7 @@ while true; do
         --allow-power-actions \
         > /run/a22x-recovery/ui.stdout 2> /run/a22x-recovery/ui.log
     rc=$?
+    fi
     case "$rc" in
         200|201|202|203)
             # A confirmed power action ends a terminal left running in the background:
@@ -192,17 +222,21 @@ while true; do
                 --expected-session-token "$terminal_token" >/dev/null 2>&1
             # An explicit normal boot also checks interrupted image installation.
             # Recovery/Download stay usable to repair an incomplete image write.
-            if [ "$rc" = 200 ] && ! /usr/bin/python3 /opt/a22x-recovery/install.py --mode device boot-check \
-                > /run/a22x-recovery/power-install.json 2>&1; then
-                power_refused "The phone stayed in recovery: an image installation needs attention in Install images."
+            if [ "$rc" = 200 ] && ! busy_wait /run/a22x-recovery/power-install.json \
+                /usr/bin/python3 /opt/a22x-recovery/install.py --mode device boot-check; then
+                if grep -qs OPERATION_BUSY /run/a22x-recovery/power-install.json; then
+                    power_refused "The phone stayed in recovery: a backup, restore or installation is still running. Wait until it finishes, then try again."
+                else
+                    power_refused "The phone stayed in recovery: an image installation needs attention in Install images."
+                fi
                 sleep 3
                 continue
             fi
             # A normal Linux boot explicitly checks the durable rootfs-switch
             # journal. The helper temporarily uses a guarded RO mount if needed.
             # Recovery and Download remain available for an interrupted switch.
-            if [ "$rc" = 200 ] && ! /usr/bin/python3 /opt/a22x-recovery/distro.py --device boot-check \
-                > /run/a22x-recovery/power-systems.json 2>&1; then
+            if [ "$rc" = 200 ] && ! busy_wait /run/a22x-recovery/power-systems.json \
+                /usr/bin/python3 /opt/a22x-recovery/distro.py --device boot-check; then
                 power_refused "The phone stayed in recovery: there is no bootable system on userdata, or a system switch must be finished in Systems."
                 sleep 3
                 continue
@@ -223,6 +257,10 @@ while true; do
                     201) target=poweroff ;;
                     202) target=recovery ;;
                     203) target=download ;;
+                esac
+                case "$target" in normal|download)
+                    /usr/bin/python3 /opt/a22x-recovery/restart_intent.py write "$target" \
+                        > /run/a22x-recovery/power-intent.json 2>&1 ;;
                 esac
                 /bin/recovery-power "$target" 2> /run/a22x-recovery/power-result.txt
                 # Only a refusal returns here; the reason goes on screen, not only into a RAM log.

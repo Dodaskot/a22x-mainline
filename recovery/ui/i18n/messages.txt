@@ -6,13 +6,17 @@
  bytes
  bytes skipped / %s
 %.120s / %.24s / %s free
+%s  /  from the catalog, %s download
 %s / %u history rows / basic ANSI
 %s available
+%s is missing in cache
 %s is not supported
 %s was written and read back. Every byte matches the image.%s
 %s, %d %s
+%s, password from the app
 %u apps chosen
 %u Hz display mode is active.
+%u of %u partitions, %s
 %u partitions, %s
 1 min
 10 min
@@ -30,6 +34,7 @@ A computer is asking to use this phone.
 A network name has 1 to 32 bytes
 A network name has at most 32 bytes.
 A new diagnostic archive will be written to this volume. Existing archives are retained.
+A new folder A22xAndroidBackups gets each chosen partition and its checksum; empty space takes no room. userdata cannot hold it: a factory reset of Android erases it.
 A new folder A22xIdentityBackups is written with every partition and its checksum. Keep it off the phone too: no image or firmware download contains it.
 A new theme always spreads as a circle, unless animations are off.
 A package download failed in recovery.
@@ -52,6 +57,7 @@ About phone
 ACCESS
 Access stays open until the phone locks or restarts. The computer never sees the password.
 ACCOUNT
+Account
 active
 ADB connection
 Add a new slot alongside the current Linux.
@@ -79,11 +85,16 @@ An allowed computer is remembered. When the recovery has a password, it is asked
 An ARM64 ISO, disk image (raw, qcow2, VHD), Vagrant box or rootfs archive.
 An incomplete import remains in /.a22x-systems/staging for inspection. No automatic cleanup is performed.
 An installation is unfinished
+An installation prepared in the A22x app.
 An interrupted RECOVERY write can require Samsung Download mode and external recovery flashing.
 An X11 login screen with an on-screen keyboard, made for Xfce.
+Android %s (%s)  /  %s  /  Linux %s
 Android archive
 Android boot image
 Android logical-partition container; mapping is not implemented
+Android partitions
+Android partitions restored and checked
+Android partitions saved
 Android state requires its matching retained system/vendor firmware.
 Android super image
 Android system partitions
@@ -104,6 +115,7 @@ Arctic
 arm64
 ARM64 root filesystems / shared /home / existing BOOT
 As in image
+As in recovery
 As in recovery (%s)
 Asia
 Asked at start and after the screen turns off
@@ -138,6 +150,7 @@ Backups will be saved to the USB stick
 Basic ANSI, UTF-8, history and completion. Full-screen programs may have limited display support.
 Battery
 Beaver
+Beside the current Linux
 Beside the installed systems: they and /home stay.
 Blur dissolve
 Board revision
@@ -154,6 +167,7 @@ BOOT preserved / userdata becomes empty ext4
 BOOT restored last, after userdata verification
 BOOT source
 BOOT, DTBO, vbmeta and other images
+BOOT, super, dtbo, vbmeta and others of this phone.
 Bootloader
 Bootloader lock
 BRIGHTNESS
@@ -176,6 +190,7 @@ Cancel selection
 Cancelling...
 Catalog
 Change
+Change choices
 Change only this exact entry if it still matches the version you inspected. This action is not recursive.
 Change password
 Changes only this entry. No recursive mode changes.
@@ -235,6 +250,7 @@ Choose where the script is stored.
 Choose where the theme file is stored.
 Chromium
 Clean install
+Clean install: userdata is erased first
 Clock
 Close whatever is using the stick and try again.
 Code name
@@ -252,6 +268,7 @@ Computer access: open
 Confirm
 Connect
 Connect from the computer attached by USB.
+Connect to Wi-Fi first: the desktop and apps are downloaded during the installation.
 Connected
 Connecting...
 CONNECTION
@@ -288,6 +305,7 @@ Deleted
 Deny
 Design capacity
 DESKTOP
+Desktop
 Desktop: %s  /  apps: %u
 DESTINATION
 DESTINATION VOLUME
@@ -298,6 +316,7 @@ Device tree overlays
 Diagnostic logs may include filenames, hardware identifiers and network details. Inspect the archive before sharing it.
 Diagnostics cannot be exported now.
 Diagnostics exported
+Discard (hold)
 Discard edits?
 Discharging
 Disconnect
@@ -322,7 +341,7 @@ Each system keeps its own /etc and /var. Shared /home requires matching account 
 Edit text
 Editing disabled: file exceeds the 64 KiB UI limit.
 Efficiency cores
-EFS, IMEI and modem data
+EFS and IMEI, or BOOT, super and others
 EFS, IMEI and modem data of this phone.
 Elapsed %u:%02u
 Email
@@ -403,6 +422,7 @@ Friday
 FROM
 From a file
 From a theme file
+From the Android app
 FROM THE CATALOG
 From the internet
 Full
@@ -421,6 +441,7 @@ Hold 1 second to discard
 Hold 2 seconds to back up
 Hold 2 seconds to confirm
 Hold 2 seconds to delete
+Hold 2 seconds to discard the plan
 Hold 2 seconds to export
 Hold 2 seconds to install
 Hold 2 seconds to share read / write
@@ -444,6 +465,7 @@ Hold: erase, FAT32
 Hold: grow to fill the partition
 Hold: write
 How one page gives way to the next.
+Identity
 Identity already matches this copy
 Identity partitions
 Identity restored and checked
@@ -523,6 +545,7 @@ Light
 Light glass on a soft gradient
 LINK TEXT
 Linux %.85s / %.24s
+Linux %s  /  %s
 Linux / boot + rootfs
 LINUX BACKUP
 Linux backup
@@ -613,6 +636,7 @@ No automatic replay. Partial partition writes are not atomic.
 No changed target is listed.
 No checksum was saved next to this image. The image is checked again while it is written.
 No completed backups
+No copy of Android partitions on this volume.
 No current executable plan is available for this operation.
 No host key reported.
 No identity copy on this volume.
@@ -710,7 +734,9 @@ PARTITION
 Partition flashed
 Partition restored
 Partitions
+Partitions already match this copy
 Partitions are unavailable.
+Partitions to save
 PASSWORD
 Password
 Password removed
@@ -723,6 +749,7 @@ Permissions
 Permissions updated
 Phone identity
 Phone identity saved
+Phone partitions
 Phone shell
 Photos
 Pick a partition, then an image from SD, USB stick or phone storage.
@@ -741,9 +768,11 @@ Power actions are disabled in this build configuration.
 Power off
 Power off the phone?
 Power options
+Prepare it again in the app, or discard it here.
 Prepare userdata for Linux %s.
 Preparing
 Preparing the new system
+Preparing...
 Previous
 Processor
 Profile unavailable
@@ -780,6 +809,8 @@ Reading the saved images...
 Reading USB status...
 Reading Wi-Fi...
 Reading...
+Ready from the Android app: %s
+Ready: %s
 Reboot recovery
 Reboot system
 Reboot to recovery?
@@ -847,6 +878,7 @@ Restore
 restore
 Restore a partition image
 Restore admitted for regular-file fixtures
+Restore Android partitions
 Restore BOOT last
 Restore filesystem blocks
 Restore from a copy
@@ -959,6 +991,7 @@ Shell exited (%d). Exit to release storage.
 Shells and sign-in
 Shift
 Short press Power to turn the screen off or on.
+Sign-in
 SIGN-IN SCREEN
 Sign-in: %s  /  also: %s
 signed
@@ -1016,6 +1049,7 @@ System image
 System image source
 System language
 System monitor
+Systems could not be read.
 Systems from the internet
 Tap again to remove
 Tap destination to cycle mounted writable volumes.
@@ -1066,6 +1100,7 @@ The complete UTF-8 text and file hash were not returned. Editing is disabled.
 The compressed file is damaged
 The current content will be saved to %s first.
 The current folder path is too long for this interface.
+The current Linux stays active until you switch to the new one.
 The current Linux stays active. A separate review is required to switch. Existing BOOT and shared /home are retained.
 The current partition could not be read
 The current partition will not be saved first
@@ -1096,7 +1131,6 @@ The header differs from the usual A22x boot layout
 The helper did not describe the image.
 The helper did not return a result.
 The helper verified bytes. This does not prove that the selected system boots.
-The identity backup did not finish.
 The identity backup helper is not configured.
 The image changed on its server. The catalog now lists the new version: start the installation again.
 The image could not be downloaded. Check the Wi-Fi connection and try again.
@@ -1116,6 +1150,7 @@ The image store on userdata is not a folder
 The image was deleted.
 The images match their servers.
 The input acknowledgement did not match. Pending input was discarded and will not be replayed.
+The installation could not be planned.
 The installed root filesystem changes. /home stays shared; each system retains its own /etc and /var. BOOT is retained.
 The installer result did not match the requested environment or operation.
 The interrupted transaction changed. Review the refreshed Systems screen.
@@ -1144,12 +1179,14 @@ The operation was stopped.
 The package site did not answer. Check Wi-Fi and try again.
 The page grows out of the tile, with its icon
 The page grows while the one behind goes soft
+The partition backup did not finish.
 The partition could not be read back
 The partition does not match the image after writing
 The partition is mounted. Unmount it in Files before writing
 The partitions that differ are saved to a new copy first, then written and read back.
 The password could not be changed
 The password is wrong.
+The password was set in the Android app.
 The passwords do not match
 The phone details are not available yet.
 The phone starts Linux when charging
@@ -1161,7 +1198,12 @@ The phone stayed in recovery: there is no bootable system on userdata, or a syst
 The picture cannot be read
 The picture data must be text
 The picture has the wrong size
+THE PLAN CANNOT BE USED
+The plan cannot be used
+The plan could not be deleted from cache.
+The plan from the Android app cannot be used.
 The plan is blocked. Read the reported blockers.
+The plan was discarded
 The private RAM work directory is unavailable.
 The removal was not confirmed. Refresh Systems.
 The requested %u Hz mode was not confirmed by the subsequent status read. Reported mode: %u Hz.
@@ -1237,6 +1279,7 @@ This phone
 This plan expired. Return and review again.
 This plan expired. Return and review it again.
 This recovery checks and repairs ext2, ext3 and ext4 only
+This recovery does not know every choice of the plan.
 This recovery has no Wi-Fi driver.
 This recovery stays installed, so you can return to Linux from a backup.
 This recovery, from a new image
@@ -1293,6 +1336,7 @@ Used ext4 blocks: %s
 USER NAME
 User name
 userdata / Linux rootfs
+Userdata and cache could not be prepared.
 Userdata and recovery stay unchanged. A valid BOOT header does not prove that this kernel or ramdisk boots on this phone.
 Userdata changed during installation
 Userdata changed since planning
@@ -1301,9 +1345,11 @@ USERDATA IS EMPTY
 Userdata is empty, so nothing is replaced. The new system is active after installation: restart into it from Power.
 Userdata is empty. The system you install becomes the only one, with the desktop, account, Wi-Fi, apps and setup script you choose.
 USERDATA IS ERASED
+Userdata is erased first: Android's data, every Linux system and /home on it.
 Userdata is erased first: every Linux system and /home on it. The new system is active after installation.
 Userdata is formatted for Android. This erases every Linux system and /home on the phone.
 Userdata is mounted with write access
+Userdata is not ready for an installation. Open Systems to see why.
 Userdata is now an empty ext4 filesystem. Boot and the SD snapshot were preserved.
 Userdata is restored and checked first. Keep power and SD connected. Recovery does not reboot automatically.
 Userdata is still mounted or changed. Review its current state before another attempt.
@@ -1332,6 +1378,7 @@ Volume settings
 Volume unavailable
 Volume unmounted
 VOLUMES
+Wait for the current operation to finish.
 Waiting for backend
 Waiting for the terminal supervisor to exit...
 Warm wood and a quiet river
@@ -1354,6 +1401,7 @@ Working
 WPA
 Writable
 Write a saved copy back to this phone.
+Write a saved copy back. A replaced BOOT starts Android instead of Linux.
 Write access allows changes on this volume. Nothing is formatted.
 Write access enabled
 Write access lets Systems install and switch systems. Nothing is formatted.

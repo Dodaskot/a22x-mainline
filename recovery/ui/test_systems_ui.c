@@ -15,6 +15,28 @@ int main(int argc,char**argv){
     a->fs_dirty=true;copy(a->fs_text,sizeof(a->fs_text),"unsaved system editor ґ");screen(a,OS_MENU);
     SCHECK(test_press(a,A_SYSTEMS,50)&&a->screen==RESULT&&a->result_return==FILE_EDIT&&!a->job.pid&&!strcmp(a->fs_text,"unsaved system editor ґ"));
     a->fs_dirty=false;screen(a,OS_MENU);SCHECK(test_press(a,A_SYSTEMS,50)&&systems_settle(a)&&a->screen==SYSTEMS&&a->systems_known);
+    if(!strcmp(which,"android-plan")){
+        /* 2026-11-10: the plan the Android app left in cache opens by itself over the home page. */
+        screen(a,HOME);android_plan_tick(a);SCHECK(a->job.kind==J_APLAN_SHOW&&systems_settle(a));
+        SCHECK(a->screen==APLAN&&a->aplan_valid&&!strcmp(a->aplan_catalog,"ubuntu-24.04")&&!a->aplan_erase&&a->aplan_script_present&&!strcmp(a->aplan_user,"olena"));
+        render(a);Button*review=test_button(a,A_APLAN_REVIEW);SCHECK(review&&review->enabled);
+        /* The Install page shows it first; a second tick does not ask again. */
+        screen(a,OS_MENU);render(a);SCHECK(test_button(a,A_APLAN)!=NULL);android_plan_tick(a);SCHECK(!a->job.pid);
+        SCHECK(test_press(a,A_APLAN,50)&&a->screen==APLAN);
+        /* Review: cache is mounted for the script, then the usual review of the installation. */
+        SCHECK(test_press(a,A_APLAN_REVIEW,50));for(int n=0;n<6&&a->job.pid;n++)systems_settle(a);
+        if(a->screen!=SYSTEMS_PLAN)fprintf(stderr,"android plan: screen=%d error=%s\n",a->screen,a->aplan_error);
+        SCHECK(a->screen==SYSTEMS_PLAN&&a->systems_plan_valid&&a->systems_plan_kind==J_SYS_IMPORT_PLAN&&!strcmp(a->systems_remote_id,"ubuntu-24.04")&&!a->systems_wipe);
+        SCHECK(a->systems_desktop==2&&((a->systems_shells>>3)&1u)&&a->systems_new_account&&!strcmp(a->systems_username,"olena")&&a->systems_password_hash[0]=='$'&&!a->systems_password[0]);
+        SCHECK(((a->systems_apps>>8)&1u)&&((a->systems_apps>>15)&1u)&&a->systems_locale==1&&a->systems_tz>=0&&!strcmp(tz_zones[a->systems_tz].id,"Europe/Kyiv"));
+        SCHECK(!strcmp(a->systems_script_volume,"cache")&&!strcmp(a->systems_script_path,"/a22x-recovery/scripts/setup.sh")&&a->aplan_used);
+        /* A new choice on the pages drops the plan's password hash. */
+        systems_forget_plan(a);systems_forget_choices(a);SCHECK(!a->systems_password_hash[0]&&!a->aplan_used);
+        /* Discarding deletes the plan from cache, only after the hold. */
+        screen(a,APLAN);SCHECK(test_press(a,A_APLAN_FORGET,1000)&&!a->job.pid&&a->aplan_present);
+        SCHECK(test_press(a,A_APLAN_FORGET,2100)&&systems_settle(a)&&a->screen==HOME&&!a->aplan_present);
+        goto finished;
+    }
     if(!strcmp(which,"unmounted")||!strcmp(which,"readonly")||!strcmp(which,"no-profile")){
         SCHECK(!systems_ready(a)&&!test_press(a,A_SYS_IMPORT,50)&&!a->job.pid);
         if(!strcmp(which,"unmounted")){

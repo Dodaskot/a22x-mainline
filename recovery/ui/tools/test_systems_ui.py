@@ -16,7 +16,7 @@ spec = importlib.util.spec_from_file_location('a22x_distro_fixture', ROOT/'tests
 fixture_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fixture_module)
 distro = fixture_module.d
-CASES = ('roundtrip', 'tamper', 'resume', 'rollback', 'accounts', 'unmounted', 'readonly', 'no-profile')
+CASES = ('roundtrip', 'tamper', 'resume', 'rollback', 'accounts', 'unmounted', 'readonly', 'no-profile', 'android-plan')
 
 
 def main():
@@ -57,6 +57,24 @@ def main():
                 (root/'filesystem-fixture.json').write_text(json.dumps(f.context_json))
             elif case == 'no-profile':
                 (root/'distro-platform.json').unlink()
+            elif case == 'android-plan':
+                # 2026-11-10: a plan the Android app left in cache. The catalog has no server
+                # addresses here, so planning never asks the network.
+                catalog = json.loads((ROOT/'catalog.json').read_text())
+                for entry in catalog['images']:
+                    entry.pop('source', None)
+                (root/'catalog.json').write_text(json.dumps(catalog))
+                scripts = root/'cache/a22x-recovery/scripts'
+                scripts.mkdir(parents=True)
+                (scripts/'setup.sh').write_text('#!/bin/sh\necho from the app\n')
+                (root/'cache/a22x-recovery/install-plan.json').write_text(json.dumps({
+                    'schema': 'a22x.install-plan.v1', 'source': 'android-app test', 'created_utc': 1794306000,
+                    'system': {'catalog': 'ubuntu-24.04'}, 'erase_userdata': False, 'desktop': 'phosh', 'shells': ['gnome'],
+                    'sign_in': 'auto', 'apps': ['ssh', 'calculator'],
+                    'account': {'username': 'olena', 'password_sha512': '$6$a22xsalt$' + 'D' * 86},
+                    'locale': 'uk_UA', 'timezone': 'Europe/Kyiv', 'script': 'setup.sh'}))
+                f.context_json['volumes'].append({'id': 'cache', 'path': 'cache', 'mounted': False, 'read_only': False})
+                (root/'filesystem-fixture.json').write_text(json.dumps(f.context_json))
             run = subprocess.run([binary, str(root), str(ROOT/'distro.py'), case, sys.executable], capture_output=True, text=True, timeout=90)
             (UI/f'{prefix}-{case}.stdout.log').write_text(run.stdout)
             (UI/f'{prefix}-{case}.stderr.log').write_text(run.stderr)
@@ -65,7 +83,9 @@ def main():
             result = json.loads(run.stdout)
             assert result['ok']
             f.assert_home(unittest.TestCase())
-            if case not in ('unmounted', 'readonly', 'no-profile'):
+            if case == 'android-plan':
+                assert not (root/'cache/a22x-recovery/install-plan.json').exists()  # discarded on the page
+            if case not in ('unmounted', 'readonly', 'no-profile', 'android-plan'):
                 status = distro.status(f.context)
                 expected = 'new-linux' if case == 'resume' else 'original'
                 assert status['active'] == expected and not status['transaction']

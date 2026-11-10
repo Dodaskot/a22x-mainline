@@ -1631,8 +1631,12 @@ def wifi_choice(value):
     return {'ssid': ssid, 'password': password}
 
 
+# A password prepared in the Android app arrives only as a SHA-512 crypt hash (2026-11-10).
+SHA512_CRYPT = re.compile(r'\$6\$(?:rounds=[1-9][0-9]{3,8}\$)?[./A-Za-z0-9]{1,16}\$[./A-Za-z0-9]{86}')
+
+
 def image_options(desktop, account, username, password, trial_seconds, authorized_key, wifi=None, apps=(), script=None,
-                  packages=(), shells=(), greeter='auto', system_locale=None, timezone=None):
+                  packages=(), shells=(), greeter='auto', system_locale=None, timezone=None, password_hash=None):
     require(desktop in DESKTOPS, 'INVALID_DESKTOP', 'Unknown desktop choice')
     chosen = list(shells or ())
     require(all(isinstance(s, str) and s in SHELLS for s in chosen), 'INVALID_SHELL', 'Unknown shell choice')
@@ -1648,8 +1652,12 @@ def image_options(desktop, account, username, password, trial_seconds, authorize
     if account == 'new':
         require(isinstance(username, str) and re.fullmatch(r'[a-z_][a-z0-9_-]{0,31}', username),
                 'INVALID_USERNAME', 'Use lowercase letters, digits, hyphens or underscores')
-        require(isinstance(password, str) and 1 <= len(password) <= 128 and ':' not in password
-                and all(ord(c) >= 32 for c in password), 'INVALID_PASSWORD', 'Enter a password without a colon')
+        if password_hash is not None:
+            require(password is None and isinstance(password_hash, str) and SHA512_CRYPT.fullmatch(password_hash),
+                    'INVALID_PASSWORD', 'The prepared password is not a SHA-512 hash')
+        else:
+            require(isinstance(password, str) and 1 <= len(password) <= 128 and ':' not in password
+                    and all(ord(c) >= 32 for c in password), 'INVALID_PASSWORD', 'Enter a password without a colon')
     apps = list(apps or ())
     require(all(item in APPS for item in apps), 'INVALID_APP', 'Unknown app choice')
     # Packages found by the search, named as the distribution names them.
@@ -1663,6 +1671,7 @@ def image_options(desktop, account, username, password, trial_seconds, authorize
         logical_path(script['path'])
     return {'desktop': desktop, 'account': account, 'username': username if account == 'new' else None,
             'password': password if account == 'new' else None, 'trial_seconds': int(trial_seconds or 0),
+            **({'password_hash': password_hash} if account == 'new' and password_hash is not None else {}),
             'authorized_key': authorized_key, 'wifi': wifi_choice(wifi), 'apps': [item for item in APPS if item in apps],
             'script': script, **({'packages': packages} if packages else {}), **({'shells': shells} if shells else {}),
             **({'greeter': greeter} if greeter != 'auto' else {}), **({'locale': system_locale} if system_locale else {}),
@@ -2706,7 +2715,7 @@ def unreadable_passwords(root, meta, options):
         secret = meta.get('shadow', {}).get(item['name'], '!')
         if secret[:1] in ('!', '*', '') or secret.startswith(PORTABLE_HASHES):
             continue
-        if options.get('username') == item['name'] and options.get('password'):
+        if options.get('username') == item['name'] and (options.get('password') or options.get('password_hash')):
             continue
         fail('PASSWORD_FORMAT_UNSUPPORTED',
              'This system cannot read the saved password of this account. Choose New user with the same name and enter the password again.',
@@ -3339,11 +3348,18 @@ def install_image(context, plan, confirmed=False):
                     or options.get('wifi') or options.get('packages'):
                 entered = options.get('wifi') or {}
                 language, offset, zone = recovery_locale(context)
+                # The phone's user: the typed account, else the first shared one. An added system
+                # had none, so its setup script saw no A22X_USER and automatic sign-in only found
+                # the account because it was called "user" (2026-11-10).
+                shared = sorted((a for a in meta['accounts'] if str(a.get('home', '')).startswith('/home/')), key=lambda a: a['uid'])
+                phone_user = options['username'] or (shared[0]['name'] if shared else '')
                 lines = {'DESKTOP': desktop, 'EXTRA_SHELLS': ' '.join(options.get('shells') or ()),
                          'GREETER': options.get('greeter') or 'auto',
                          'A22X_LANGUAGE': language, 'A22X_UTC_OFFSET': str(offset),
                          'A22X_LOCALE': options.get('locale') or '', 'A22X_TIMEZONE': options.get('timezone') or zone,
                          'NEW_USER': options['username'] or '', 'NEW_PASSWORD': options['password'] or '',
+                         'NEW_PASSWORD_HASH': options.get('password_hash') or '',
+                         'PHONE_USER': phone_user,
                          'APPS': ' '.join(options.get('apps') or ()), 'PRIMARY_USER': '1' if clean else '',
                          'EXTRA_PACKAGES': ' '.join(options.get('packages') or ()),
                          'WIFI_SSID': entered.get('ssid', ''), 'WIFI_PASSWORD': entered.get('password', '')}
@@ -3767,6 +3783,7 @@ def parser():
     imp.add_argument('--account', choices=('keep', 'new'), default='keep')
     imp.add_argument('--username')
     imp.add_argument('--password-file', type=Path)
+    imp.add_argument('--password-hash-file', type=Path, help='Private file: a SHA-512 crypt hash instead of the password')
     imp.add_argument('--trial-seconds', type=int, default=0)
     imp.add_argument('--authorized-key-file', type=Path)
     imp.add_argument('--wifi-file', type=Path, help='Private file: the network name, then its password, one per line')
@@ -3837,6 +3854,7 @@ def main(argv=None):
                     result = import_plan(context, args.source_volume, args.manifest, args.expected_source_token)
                 else:
                     secret = args.password_file.read_text().rstrip('\n') if args.password_file else None
+                    hashed = args.password_hash_file.read_text().strip() if args.password_hash_file else None
                     key = args.authorized_key_file.read_text() if args.authorized_key_file else None
                     wifi = None
                     if args.wifi_file:
@@ -3849,7 +3867,7 @@ def main(argv=None):
                     result = image_plan(context, args.source_volume, args.manifest,
                                         image_options(args.desktop, args.account, args.username, secret,
                                                       args.trial_seconds, key, wifi, args.app, script, args.package,
-                                                      args.shell, args.greeter, args.locale, args.timezone),
+                                                      args.shell, args.greeter, args.locale, args.timezone, hashed),
                                         args.expected_source_token, wipe=args.wipe,
                                         remote=plan_entry(context, args.remote) if args.remote else None)
             elif operation == 'remove-slot':

@@ -21,6 +21,8 @@ mkdir -p "$work"/assets "$work"/gen "$work"/classes "$work"/test "$work"/dex "$w
 
 cp "$RECOVERY_IMG" "$work/assets/recovery.img"
 cp "$BOOT_IMG" "$work/assets/boot.img"
+# The recovery's catalog, for the Plan card (2026-11-10): the same images its install pages offer.
+cp "$here/../catalog.json" "$work/assets/catalog.json"
 python3 - "$work/assets" "$RECOVERY_VERSION" "$BOOT_VERSION" <<'P'
 import hashlib, json, os, sys
 folder, recovery, boot = sys.argv[1:4]
@@ -34,14 +36,19 @@ with open(os.path.join(folder, 'images.json'), 'w') as f:
 P
 
 # The rules shared with the recovery are tested on this computer first.
-javac -nowarn --release 8 -d "$work/test" "$here"/src/org/a22x/installer/{Json,Handoff,Root,Scripts,Compat}.java "$here"/test/org/a22x/installer/{HandoffTest,ScriptsMain}.java
+javac -nowarn --release 8 -d "$work/test" "$here"/src/org/a22x/installer/{Json,Handoff,Root,Scripts,Compat,Plan,Sha512Crypt}.java "$here"/test/org/a22x/installer/{HandoffTest,ScriptsMain}.java
 java -cp "$work/test" org.a22x.installer.HandoffTest
 
-code=$(echo "$RECOVERY_VERSION" | awk -F. '{print $1 * 1000000 + $2 * 1000 + $3}')
+# APP_REVISION: a new build of the app around the same recovery (2026-11-10: 0.6.138-r2, the theme
+# change in place); the version code grows either way, so it installs over the last one.
+revision=${APP_REVISION:-0}
+code=$(echo "$RECOVERY_VERSION" | awk -F. -v r="$revision" '{print ($1 * 1000000 + $2 * 1000 + $3) * 10 + r}')
+name=$RECOVERY_VERSION
+[ "$revision" = 0 ] || name="$RECOVERY_VERSION-r$revision"
 "$TOOLS/bin/aapt2" compile --dir "$here/res" -o "$work/res.zip"
 "$TOOLS/bin/aapt2" link -o "$work/base.apk" -I "$TOOLS/framework-res.apk" --manifest "$here/AndroidManifest.xml" \
     -A "$work/assets" --min-sdk-version 26 --target-sdk-version 33 --version-code "$code" \
-    --version-name "$RECOVERY_VERSION" --java "$work/gen" "$work/res.zip"
+    --version-name "$name" --java "$work/gen" "$work/res.zip"
 javac -nowarn --release 8 -cp "$TOOLS/android-stubs.jar" -d "$work/classes" $(find "$here/src" "$work/gen" -name '*.java')
 java -cp "$TOOLS/r8.jar" com.android.tools.r8.D8 --release --min-api 26 --lib "$TOOLS/android-stubs.jar" \
     --output "$work/dex" $(find "$work/classes" -name '*.class') 2> "$work/d8.log" || { cat "$work/d8.log"; exit 1; }

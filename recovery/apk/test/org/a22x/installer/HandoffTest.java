@@ -48,6 +48,74 @@ public final class HandoffTest {
         check(bare.compatible, "only the code name, nothing against it");
         Compat.Result empty = Compat.judge(facts());
         check(!empty.compatible, "nothing known");
+        // 2026-11-10, before the person's test on a OnePlus 15 (Snapdragon): refused by the page.
+        Compat.Result oneplus = Compat.judge(facts("model", "CPH2747", "device", "OP5D55L1", "product", "CPH2747EEA",
+                "bootloader", "unknown", "hardware", "qcom", "ro.board.platform", "canoe", "ro.boot.hardware", "qcom"));
+        check(!oneplus.compatible && state(oneplus, "chip") == Compat.State.CONFLICT, "a OnePlus");
+    }
+
+    /** The plan for the recovery: SHA-512 crypt as openssl passwd -6 makes it, and the JSON
+     *  install_plan.py takes (2026-11-10). */
+    private static void plan() {
+        String[][] vectors = {
+            {"Hello world!", "$6$saltstring$svn8UoSVapNtMuq1ukKS4tPQd8iKwSMHWjl/O817G3uBnIFNjnQJuesI68u4OTLiBFdcbYEdFCoEOfaS35inz1"},
+            {"246810", "$6$saltstring$PPiDvwUYv3930wbGLFb1yeDzkLbaHopTtJR6ICCMVsuSrU7rHbA/lSmFc06LfEdK7.iEjilA9mFrPkmr.jurv0"},
+            {"пароль-ґ", "$6$saltstring$gaZ4J4U/LIboJ4vb5wYsi9hkrT8tx1Epq3YNCTKSItyJscPl55WMiMDpHj6RpI0rU4Z1FIJgH38JTOez54Sjo."},
+            {"a-very-long-password-that-is-longer-than-sixty-four-bytes-for-the-loop-0123456789",
+             "$6$saltstring$k8NvnPdSdaKg3k17pF4ztNmDPXNYNc5YLYiGP.x4IN3Mkt1Drm6.UoD1Vka0kmp0IyzvyKdE0jcU99Uf4NUSZ/"}};
+        for (String[] v : vectors) check(Sha512Crypt.crypt(v[0], "saltstring").equals(v[1]), "sha512 crypt of " + v[0]);
+        check(Sha512Crypt.crypt("246810", "a22xSalt0123ABCD").equals(
+                "$6$a22xSalt0123ABCD$PLyuULaxrkDLMMzwGCfe88HTP/knKVPCz2VuBCZPVbsacZXjuEw6833K5yKPQoMURJd9f189nEre15HUkFVKV0"), "16-character salt");
+        String fresh = Sha512Crypt.hash("246810");
+        check(fresh.matches("\\$6\\$[./A-Za-z0-9]{16}\\$[./A-Za-z0-9]{86}") && !fresh.equals(Sha512Crypt.hash("246810")), "random salt");
+        java.util.Set<String> catalog = new java.util.HashSet<>(java.util.Arrays.asList("ubuntu-24.04", "debian-13"));
+        Plan.Choice c = new Plan.Choice();
+        c.catalog = "ubuntu-24.04"; c.desktop = "phosh"; c.shells.add("gnome"); c.shells.add("phosh"); c.apps.add("calculator"); c.apps.add("ssh");
+        c.username = "user"; c.password = "246810"; c.locale = "uk_UA"; c.timezone = "Europe/Kyiv"; c.script = "my-setup.sh";
+        check(Plan.problem(c, catalog) == null, "a good plan");
+        String hash = Sha512Crypt.crypt("246810", "saltstring");
+        String json = Plan.json(c, hash, "A22x Recovery installer 0.6.139", 1794306000L);
+        @SuppressWarnings("unchecked") java.util.Map<String, Object> r = (java.util.Map<String, Object>) Json.parse(json);
+        check(Plan.SCHEMA.equals(r.get("schema")) && Boolean.TRUE.equals(r.get("erase_userdata")) && Long.valueOf(1794306000L).equals(r.get("created_utc")), "schema, erase, time");
+        check("[gnome]".equals(String.valueOf(r.get("shells"))) && "[ssh, calculator]".equals(String.valueOf(r.get("apps"))), "shells without the main one, apps in order");
+        check(json.contains("\"password_sha512\":\"" + hash.replace("/", "\\/") + "\"") || json.contains("\"password_sha512\":\"" + hash + "\""), "the hash");
+        check(!json.contains("246810"), "never the password itself");
+        check("uk_UA".equals(Plan.locale("uk")) && "uk_UA".equals(Plan.locale("UA")) && Plan.locale("ja") == null, "languages");
+        c.catalog = "windows-11"; check("plan_bad_system".equals(Plan.problem(c, catalog)), "unknown image");
+        c.catalog = "ubuntu-24.04"; c.password = ""; check("plan_bad_password".equals(Plan.problem(c, catalog)), "no password");
+        c.password = "a:b"; check("plan_bad_password".equals(Plan.problem(c, catalog)), "a colon");
+        c.password = "246810"; c.username = "Root"; check("plan_bad_user".equals(Plan.problem(c, catalog)), "user name");
+        c.username = "user"; c.desktop = "image"; check("plan_shells_need_desktop".equals(Plan.problem(c, catalog)), "shells need a desktop");
+        c.shells.clear(); c.signIn = "gdm"; check("plan_sign_in_needs_desktop".equals(Plan.problem(c, catalog)), "sign-in needs a desktop");
+        c.signIn = "auto"; c.script = "../x.sh"; check("bad_name".equals(Plan.problem(c, catalog)), "script name");
+        java.util.Map<String, String> images = Plan.catalog("{\"images\":[{\"id\":\"ubuntu-24.04\",\"name\":\"Ubuntu Server\",\"version\":\"24.04 LTS\"},{\"name\":\"no id\"}]}");
+        check(images.size() == 1 && "Ubuntu Server 24.04 LTS".equals(images.get("ubuntu-24.04")), "catalog");
+    }
+
+    /** The root script stops on another phone by itself: exact A22x partition sizes and MT6833. */
+    private static void flashGuards() {
+        String sha = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        String s = Scripts.flash("recovery", "/data/x.img", 41943040L, sha, "/sdcard/A22x", Scripts.RECOVERY_PARTITION, Scripts.PLATFORM,
+                "recovery", "boot");
+        int write = s.indexOf("dd if=");
+        int backup = s.indexOf("cat \"$dev\" > \"$copy\"");
+        check(s.indexOf("NOT_THIS_PHONE platform") >= 0 && s.indexOf("NOT_THIS_PHONE platform") < backup, "platform before anything is read");
+        check(s.indexOf("[ \"$psize\" = \"$PSIZE\" ]") >= 0 && s.indexOf("[ \"$psize\" = \"$PSIZE\" ]") < backup && backup < write,
+                "exact size before the backup and the write");
+        check(s.contains("PSIZE=41943040") && s.contains("PLAT=mt6833") && s.contains("tr 'A-Z' 'a-z'"), "A22x values");
+        check(Scripts.partitionSize("boot") == 33554432L, "boot size");
+        try {
+            Scripts.flash("recovery", "/data/x.img", 41943040L, sha, "/sdcard/A22x", 1L, "", "recovery");
+            check(false, "a partition smaller than the image");
+        } catch (IllegalArgumentException expected) {
+            // refused while building the script
+        }
+        try {
+            Scripts.flash("super", "/data/x.img", 1L, sha, "/sdcard/A22x", 2L, "", "recovery", "boot");
+            check(false, "a partition the app never writes");
+        } catch (IllegalArgumentException expected) {
+            // refused while building the script
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -93,6 +161,8 @@ public final class HandoffTest {
         check(Handoff.scriptNameAllowed("my-setup.sh") && !Handoff.scriptNameAllowed("../x.sh")
                 && !Handoff.scriptNameAllowed("x.txt") && !Handoff.scriptNameAllowed(".hidden.sh"), "script names");
         compat();
+        flashGuards();
+        plan();
         System.out.println("{\"ok\":true,\"checks\":" + checks + "}");
     }
 }

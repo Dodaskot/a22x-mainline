@@ -1120,3 +1120,76 @@ follows the theme too (it used to be dark always). **On the phone:** the kernel
 logged "boot splash: daylight theme" 1.8 s after boot, and a screenshot of
 "Restarting recovery" shows the Daylight theme. Recovery 137 was flashed from
 recovery 136 with "Flash a partition".
+
+## 2026-11-10 night: installations prepared in the Android app, Android partition backups (builds 138 to 141)
+
+**An installation prepared in the app.** The app's new card chooses a system from the
+recovery's own catalog (shipped inside the app), the main shell and more shells, the
+sign-in, apps, the system language and time zone, the account and a setup script saved
+in `cache`, and warns in red that userdata is erased. It writes
+`cache:/a22x-recovery/install-plan.json` and can restart into the recovery. The account's
+password leaves the app only as a SHA-512 crypt hash (the app's Java implementation
+matches `openssl passwd -6`, including non-ASCII and passwords over 64 bytes);
+`distro.py` takes it with `--password-hash-file` and the first start sets it with
+`chpasswd -e`. In the recovery, `install_plan.py` checks the plan strictly (only known
+catalog images, shells, sign-ins, apps and languages; unknown fields, a plain password,
+an MD5 hash or a path in the script name make it unusable), the plan page opens by
+itself once after startup, and the Install page shows it first, highlighted. "Review
+installation" mounts userdata with write access and `cache` read-only for the script,
+fills the usual install pages with the plan and opens their usual review, where Install
+is held as for any other installation; the plan is deleted after that installation, or
+when it is discarded with a hold.
+
+**A second guard in the app's flash script.** Besides the compatibility check on the
+page, the root script itself now stops with `NOT_THIS_PHONE` before reading or writing
+anything unless the partition has exactly the A22x size (recovery 40 MiB, boot 32 MiB)
+and the platform properties name MT6833 (checked with a stand-in `getprop` reporting a
+Qualcomm phone: it stopped first). The Wi-Fi card can fill in the name of the network
+the phone is on; passwords saved in Android are not read, the password is typed once.
+
+**Android partition backups.** "Phone partitions" in Backup now has two kinds: the
+phone's identity (EFS, IMEI, NV data) and the partitions of an Android installation
+(BOOT, super, dtbo, vbmeta, prism, optics), any of them chosen. Zero blocks become holes
+in the copies, so a mostly empty `super` takes only its data; userdata is not accepted
+as the destination because a factory reset of Android erases it; such a copy may go
+back to any phone with the same partition layout, after the partitions it replaces are
+saved.
+
+**Fixes from the run on Ubuntu 24.04 with Phosh and GNOME.** The "Switch to ..."
+launchers were hidden in the wrong shells: Phosh calls itself `Phosh:GNOME`, so
+`NotShowIn=GNOME` hid "Switch to GNOME" in Phosh and "Switch to Phosh" in GNOME. Now the
+running shell's own launcher is hidden for the user at each start, and the launchers
+show in Phosh's phone app grid. After signing out, greetd 0.9 opens its next session
+through the `greetd-greeter` PAM service, which did not mark it as a Wayland session,
+so GNOME Shell refused to start twice (the switcher then went back to Phosh, as
+designed); that service now gets the same line. A system added beside another one now
+knows the shared account's name for automatic sign-in and for its setup script.
+
+**On the phone (build 138).** A plan written by the app's own code was placed in `cache`
+(beside the existing systems, so nothing was erased). After unlocking, the recovery opened
+the plan by itself; "Review installation" led to the usual review, the installation of
+Ubuntu 24.04 from the catalog took about seven minutes, and the plan was gone from `cache`
+afterwards. The new system took the account with the password that had arrived only as a
+hash (SSH and Phosh's keypad accepted it); "Switch to GNOME" was in Phosh's normal app grid
+and started GNOME Shell, and "Switch to Phosh" in GNOME's grid brought Phosh back.
+
+**A restart that comes back is tried once more (builds 139 to 141).** The first restart into the
+new system came back to the recovery again (the sixth time: the preloader started twice,
+`sram header is not match, format all`, and the restart markers were lost). Before a
+restart into the system or Download, `/init` now notes the target in
+`cache:/a22x-recovery/restart-intent.json` together with the mount count of userdata's
+ext4 superblock. Every Linux system started from userdata mounts it with write access,
+which counts up; so a recovery that starts less than 60 seconds later (such a return takes
+about 30) with the same count restarts once more without the interface, and only once, so
+a system that really cannot start does not make it loop. A changed count means the system
+did start (also after flashing from Download), and nothing is repeated. Tried on the phone
+by writing an intent and restarting the recovery: the new recovery decided to restart after
+5.4 seconds, but its first check met the Wi-Fi join that the recovery starts in the
+background, which holds the operation lock; the join now waits until after such a restart,
+and the checks before a restart wait up to 15 seconds for a lock held only for a moment.
+
+**The app's theme change (0.6.138-r2).** Changing the theme closed the app on a OnePlus:
+it disabled the launcher entry it was running from and restarted through another one.
+The page is now built again in place and the new theme grows from the tapped button as a
+circle, like in the recovery; the launcher entry (the icon) changes only when the app is
+left and no root work runs.

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- The recovery's own labels (ui/systems_ui.h, shells_ui.h and i18n there), generated 2026-11-10. -->
+<resources>
+    <string-array name="plan_desktops">
+        <item>Phosh</item>
+        <item>GNOME</item>
+        <item>Plasma Mobile</item>
+        <item>Xfce</item>
+        <item>Sxmo</item>
+        <item>Lomiri</item>
+        <item>Консоль</item>
+        <item>Як в образі</item>
+    </string-array>
+    <string-array name="plan_greeters">
+        <item>Автоматичний вхід</item>
+        <item>Phrog</item>
+        <item>Текстовий вхід</item>
+        <item>GDM</item>
+        <item>SDDM</item>
+        <item>LightDM</item>
+    </string-array>
+    <string-array name="plan_apps">
+        <item>Браузер</item>
+        <item>Налаштування</item>
+        <item>Файли</item>
+        <item>Термінал</item>
+        <item>Редактор</item>
+        <item>Магазин</item>
+        <item>Клавіатура</item>
+        <item>Telegram</item>
+        <item>SSH-сервер</item>
+        <item>Пошта</item>
+        <item>Музика</item>
+        <item>Відеоплеєр</item>
+        <item>Фото</item>
+        <item>Документи</item>
+        <item>Офіс</item>
+        <item>Калькулятор</item>
+        <item>Годинник</item>
+        <item>Погода</item>
+        <item>Карти</item>
+        <item>Камера</item>
+        <item>Контакти</item>
+        <item>Календар</item>
+        <item>Паролі</item>
+        <item>Flatpak</item>
+        <item>Chromium</item>
+        <item>Подкасти</item>
+        <item>Повідомлення</item>
+        <item>Git</item>
+        <item>Системний монітор</item>
+    </string-array>
+</resources>

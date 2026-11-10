@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Back up and restore this phone's own identity partitions (EFS, NV data), as TWRP does.
+"""Back up and restore this phone's own identity partitions (EFS, NV data), and its Android
+partitions (BOOT, super, dtbo, vbmeta and others), as TWRP does.
 
 IMEI, calibration and modem NV data live in small partitions that no image of Android or
 Linux carries; a lost or damaged copy cannot be downloaded again. `backup` reads them into
@@ -9,7 +10,12 @@ only to partitions with the very same GPT geometry, only while they are not in u
 the current content first and reads every partition back. Bootloader partitions are never
 listed. Every call prints one JSON line; progress goes to stderr.
 
-    identity_backup.py --device list
+--kind android (2026-11-10) works on the partitions of an Android installation instead, into
+A22xAndroidBackups: --labels chooses some of them; zero blocks become holes in the copies;
+userdata is no destination (Android's factory reset erases it); a copy may go back to any
+phone with the very same partition layout, since these partitions hold nothing of one phone.
+
+    identity_backup.py --device [--kind android] list
     identity_backup.py --device backup --volume ID
     identity_backup.py --device backups --volume ID
     identity_backup.py --device verify --volume ID --path /A22xIdentityBackups/NAME
@@ -47,6 +53,30 @@ LABELS = ('efs', 'sec_efs', 'nvcfg', 'nvdata', 'nvram', 'persist', 'protect1', '
 # bootloader's settings, which LK rewrites on almost every start (found by comparing on the phone).
 RETIRED = ('param',)
 MAX_PART = 128 * 1024 * 1024
+PREFIX = 'identity'
+SAME_PHONE = True
+ANDROID_LABELS = ('boot', 'dtbo', 'vbmeta', 'vbmeta_system', 'vbmeta_vendor', 'super', 'prism', 'optics')
+KINDS = {
+    'identity': {'SCHEMA': SCHEMA, 'FOLDER': FOLDER, 'LABELS': LABELS, 'RETIRED': RETIRED, 'MAX_PART': MAX_PART,
+                 'PREFIX': 'identity', 'SAME_PHONE': True},
+    'android': {'SCHEMA': 'a22x.android-backup.v1', 'FOLDER': 'A22xAndroidBackups', 'LABELS': ANDROID_LABELS,
+                'RETIRED': (), 'MAX_PART': 8 << 30, 'PREFIX': 'android', 'SAME_PHONE': False},
+}
+KIND = 'identity'
+CHOSEN = None  # --labels: the partitions to save, all of the kind when None
+
+
+def use(kind, labels=None):
+    """Work on one kind of backup from now on; LABELS limits it to some of its partitions."""
+    global KIND, CHOSEN
+    require(kind in KINDS, 'INVALID_ARGUMENT', 'Unknown kind of backup')
+    globals().update(KINDS[kind])
+    KIND = kind
+    CHOSEN = None
+    if labels:
+        chosen = tuple(label for label in labels.split(',') if label)
+        require(chosen and all(label in LABELS for label in chosen), 'INVALID_ARGUMENT', 'Choose partitions of this kind of backup')
+        CHOSEN = chosen
 MAX_MANIFEST = 1 << 16
 CHUNK = install.CHUNK
 BLKFLSBUF = 0x1261
@@ -83,7 +113,7 @@ class Device:
             fields = dict(line.split('=', 1) for line in (sysfs / 'uevent').read_text().splitlines() if '=' in line)
             require(fields.get('PARTNAME') == label, 'GPT_IDENTITY_MISMATCH', 'The partition name changed', label=label)
             size = int((sysfs / 'size').read_text()) * 512
-            require(0 < size <= MAX_PART, 'PARTITION_TOO_LARGE', 'An identity partition is unexpectedly large', label=label)
+            require(0 < size <= MAX_PART, 'PARTITION_TOO_LARGE', 'A partition is unexpectedly large for this kind of backup', label=label)
             found.append({'label': label, 'path': str(path), 'device': devno, 'size_bytes': size,
                           'partition_number': int((sysfs / 'partition').read_text()),
                           'start_sector': int((sysfs / 'start').read_text()), 'partuuid': fields.get('PARTUUID', ''),
@@ -123,7 +153,7 @@ class Fixture:
         self.lock_path = self.root / '.operation.lock'
         config = json.loads((self.root / 'install-fixture.json').read_text())
         self.identity = hashlib.sha256(config['device']['identity'].encode()).hexdigest()
-        self.config = config.get('identity_parts', {})
+        self.config = config.get('android_parts' if KIND == 'android' else 'identity_parts', {})
         self.busy = set(config.get('identity_busy', ()))
 
     def parts(self):
@@ -160,10 +190,15 @@ def read_part(context, part, progress, out=None):
             data = os.pread(fd, min(CHUNK, part['size_bytes'] - done), done)
             require(data, 'TARGET_READ_FAILED', 'The partition could not be read', label=part['label'])
             if out is not None:
-                install.write_all(out, data)
+                if data.count(0) == len(data):  # A hole: what an unused part of super is mostly made of.
+                    os.lseek(out, len(data), os.SEEK_CUR)
+                else:
+                    install.write_all(out, data)
             digest.update(data)
             done += len(data)
             progress('Reading', part['label'], done, part['size_bytes'])
+        if out is not None:
+            os.ftruncate(out, part['size_bytes'])
         return digest.hexdigest()
     finally:
         os.close(fd)
@@ -195,9 +230,12 @@ def write_new(folder, name, data):
         os.close(fd)
 
 
-def save(context, volume, parts, progress, prefix='identity'):
+def save(context, volume, parts, progress, prefix=None):
     """One new folder with every partition and its manifest; the files are read back."""
+    prefix = prefix or PREFIX
     with fs.PinnedVolume(context.fs, volume, writing=True) as pin:
+        require(KIND != 'android' or (pin.volume.get('label') or pin.volume.get('id')) != 'userdata', 'DESTINATION_NOT_ALLOWED',
+                'Save Android partitions to an SD card or a USB stick: a factory reset of Android erases userdata')
         info = os.statvfs(pin.fd)
         need = sum(p['size_bytes'] for p in parts) + CHUNK
         require(info.f_bavail * info.f_frsize >= need, 'NO_SPACE', 'The volume has too little free space for the backup',
@@ -261,7 +299,7 @@ def backup_folder(context, volume, path):
         except ValueError:
             fs.fail('BACKUP_DAMAGED', 'The manifest is not readable')
         require(isinstance(manifest, dict) and manifest.get('schema') == SCHEMA and isinstance(manifest.get('partitions'), list)
-                and manifest['partitions'], 'BACKUP_DAMAGED', 'This is not an identity backup')
+                and manifest['partitions'], 'BACKUP_DAMAGED', 'This is not a backup of this kind')
         for row in manifest['partitions']:
             require(isinstance(row, dict) and row.get('label') in LABELS + RETIRED and row.get('file') == row['label'] + '.img'
                     and isinstance(row.get('size_bytes'), int) and 0 < row['size_bytes'] <= MAX_PART
@@ -295,12 +333,17 @@ def backups(context, args):
         try:
             with backup_folder(context, args.volume, '/%s/%s' % (FOLDER, name)) as (_folder, manifest, manifest_sha):
                 rows.append({'path': '/%s/%s' % (FOLDER, name), 'created_utc': manifest.get('created_utc'),
-                             'same_phone': manifest.get('device_identity') == context.identity,
+                             'same_phone': manifest.get('device_identity') == context.identity or not SAME_PHONE,
                              'partitions': len(manifest['partitions']), 'manifest_sha256': manifest_sha,
                              'bytes': sum(r['size_bytes'] for r in manifest['partitions'])})
         except (OSError, fs.FilesystemError):
             continue
     return {'backups': rows, 'folder': FOLDER}
+
+
+def chosen_parts(context):
+    parts = context.parts()
+    return [p for p in parts if CHOSEN is None or p['label'] in CHOSEN]
 
 
 def listing(context):
@@ -311,8 +354,8 @@ def listing(context):
 
 def backup(context, args, progress):
     with operation_lock(context.lock_path, context.mode):
-        parts = context.parts()
-        require(parts, 'NO_IDENTITY_PARTITIONS', 'No identity partition was found')
+        parts = chosen_parts(context)
+        require(parts, 'NO_IDENTITY_PARTITIONS', 'No partition of this kind was found')
         return save(context, args.volume, parts, progress)
 
 
@@ -320,7 +363,7 @@ def verify(context, args, progress):
     with backup_folder(context, args.volume, args.path) as (folder, manifest, manifest_sha):
         verify_files(folder, manifest, progress)
         current = {p['label']: p for p in context.parts()}
-        same_phone = manifest.get('device_identity') == context.identity
+        same_phone = manifest.get('device_identity') == context.identity or not SAME_PHONE
         wanted = [r for r in manifest['partitions'] if r['label'] not in RETIRED]
         matching = [r['label'] for r in wanted
                     if r['label'] in current and geometry(current[r['label']]) == {k: r.get(k) for k in geometry(current[r['label']])}]
@@ -334,7 +377,7 @@ def restore(context, args, progress):
     with operation_lock(context.lock_path, context.mode):
         with backup_folder(context, args.volume, args.path) as (folder, manifest, manifest_sha):
             require(manifest_sha == args.expected_manifest_sha256, 'BACKUP_CHANGED', 'The backup changed after it was checked')
-            require(manifest.get('device_identity') == context.identity, 'OTHER_PHONE',
+            require(manifest.get('device_identity') == context.identity or not SAME_PHONE, 'OTHER_PHONE',
                     'This backup belongs to another phone. Restoring it would give this phone a foreign identity')
             current = {p['label']: p for p in context.parts()}
             targets = []
@@ -387,6 +430,8 @@ def parser():
     mode = result.add_mutually_exclusive_group(required=True)
     mode.add_argument('--device', action='store_true')
     mode.add_argument('--fixture', type=Path)
+    result.add_argument('--kind', choices=sorted(KINDS), default='identity')
+    result.add_argument('--labels', default='')
     commands = result.add_subparsers(dest='command', required=True)
     commands.add_parser('list')
     commands.add_parser('backup').add_argument('--volume', required=True)
@@ -412,6 +457,7 @@ def main(argv=None):
             last[:] = [(phase, label), now]
 
     try:
+        use(args.kind, args.labels)
         context = Fixture(args.fixture) if args.fixture else Device()
         result = {'list': lambda: listing(context), 'backup': lambda: backup(context, args, progress),
                   'verify': lambda: verify(context, args, progress), 'restore': lambda: restore(context, args, progress),

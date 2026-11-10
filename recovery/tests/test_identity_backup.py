@@ -162,3 +162,67 @@ class IdentityBackup(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class AndroidPartitionsBackup(unittest.TestCase):
+    """2026-11-10: the same machinery for an Android installation's partitions (--kind android)."""
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp(prefix='a22x-android-', dir=os.environ.get('TMPDIR')))
+        self.addCleanup(shutil.rmtree, self.root, True)
+        for name in ('parts', 'sd', 'data'):
+            (self.root / name).mkdir()
+        self.data = {'boot': os.urandom(1 << 16), 'vbmeta': os.urandom(1 << 12),
+                     'super': bytes(1 << 21) + os.urandom(1 << 12) + bytes(1 << 21)}
+        for label, data in self.data.items():
+            (self.root / 'parts' / label).write_bytes(data)
+        self.config('fixture:phone-a')
+        (self.root / 'filesystem-fixture.json').write_text(json.dumps({'schema': 'a22x.filesystem.fixture.v1', 'volumes': [
+            {'id': 'sdcard-p1', 'path': 'sd', 'mounted': True, 'read_only': False},
+            {'id': 'userdata', 'path': 'data', 'mounted': True, 'read_only': False}]}))
+
+    def config(self, identity):
+        (self.root / 'install-fixture.json').write_text(json.dumps({
+            'schema': 'a22x.install.fixture.v1', 'device': {'model': 'SM-A226B', 'identity': identity},
+            'identity_parts': {}, 'android_parts': {label: {'path': 'parts/' + label} for label in self.data}}))
+
+    def run_helper(self, *args, labels=None):
+        out, err = io.StringIO(), io.StringIO()
+        extra = ['--labels', labels] if labels else []
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = ib.main(['--fixture', str(self.root), '--kind', 'android', *extra, *args])
+        return code, json.loads(out.getvalue().splitlines()[-1])
+
+    def test_chosen_partitions_are_saved_with_holes_and_checked(self):
+        code, listed = self.run_helper('list')
+        self.assertEqual([p['label'] for p in listed['partitions']], ['boot', 'vbmeta', 'super'])
+        code, result = self.run_helper('backup', '--volume', 'sdcard-p1', labels='boot,super')
+        self.assertEqual(code, 0, result)
+        self.assertTrue(result['path'].startswith('/A22xAndroidBackups/android-'))
+        folder = self.root / 'sd' / result['path'].lstrip('/')
+        self.assertEqual(sorted(p.name for p in folder.iterdir()), ['boot.img', 'manifest.json', 'super.img'])
+        self.assertEqual((folder / 'super.img').read_bytes(), self.data['super'])
+        self.assertLess((folder / 'super.img').stat().st_blocks * 512, len(self.data['super']) // 2)  # holes
+        code, verified = self.run_helper('verify', '--volume', 'sdcard-p1', '--path', result['path'])
+        self.assertTrue(verified['verified'] and verified['restorable'], verified)
+
+    def test_userdata_is_no_destination(self):
+        code, result = self.run_helper('backup', '--volume', 'userdata')
+        self.assertEqual((code, result['error']['code']), (2, 'DESTINATION_NOT_ALLOWED'))
+        code, result = self.run_helper('list', labels='lk')
+        self.assertEqual((code, result['error']['code']), (2, 'INVALID_ARGUMENT'))  # never the bootloader
+
+    def test_a_copy_goes_back_to_a_phone_with_the_same_layout(self):
+        code, result = self.run_helper('backup', '--volume', 'sdcard-p1')
+        self.assertEqual(code, 0, result)
+        self.config('fixture:phone-b')  # another A22x: nothing of one phone is in these partitions
+        code, listed = self.run_helper('backups', '--volume', 'sdcard-p1')
+        self.assertTrue(listed['backups'][0]['same_phone'])
+        sha = listed['backups'][0]['manifest_sha256']
+        code, same = self.run_helper('restore', '--volume', 'sdcard-p1', '--path', result['path'], '--expected-manifest-sha256', sha, '--confirm')
+        self.assertTrue(same['identical'], same)
+        (self.root / 'parts' / 'boot').write_bytes(os.urandom(1 << 16))
+        code, done = self.run_helper('restore', '--volume', 'sdcard-p1', '--path', result['path'], '--expected-manifest-sha256', sha, '--confirm')
+        self.assertEqual((code, done['restored']), (0, ['boot']), done)
+        self.assertEqual((self.root / 'parts' / 'boot').read_bytes(), self.data['boot'])
+        self.assertTrue(done['before'].startswith('/A22xAndroidBackups/before-restore-'))
+        ib.use('identity')

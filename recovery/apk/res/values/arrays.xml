@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- The recovery's own labels (ui/systems_ui.h, shells_ui.h and i18n there), generated 2026-11-10. -->
+<resources>
+    <string-array name="plan_desktops">
+        <item>Phosh</item>
+        <item>GNOME</item>
+        <item>Plasma Mobile</item>
+        <item>Xfce</item>
+        <item>Sxmo</item>
+        <item>Lomiri</item>
+        <item>Console</item>
+        <item>As in image</item>
+    </string-array>
+    <string-array name="plan_greeters">
+        <item>Automatic sign-in</item>
+        <item>Phrog</item>
+        <item>Text login</item>
+        <item>GDM</item>
+        <item>SDDM</item>
+        <item>LightDM</item>
+    </string-array>
+    <string-array name="plan_apps">
+        <item>Browser</item>
+        <item>Settings</item>
+        <item>Files</item>
+        <item>Terminal</item>
+        <item>Text editor</item>
+        <item>App store</item>
+        <item>Keyboard</item>
+        <item>Telegram</item>
+        <item>SSH server</item>
+        <item>Email</item>
+        <item>Music</item>
+        <item>Video player</item>
+        <item>Photos</item>
+        <item>Documents</item>
+        <item>Office</item>
+        <item>Calculator</item>
+        <item>Clock</item>
+        <item>Weather</item>
+        <item>Maps</item>
+        <item>Camera</item>
+        <item>Contacts</item>
+        <item>Calendar</item>
+        <item>Passwords</item>
+        <item>Flatpak</item>
+        <item>Chromium</item>
+        <item>Podcasts</item>
+        <item>Messages</item>
+        <item>Git</item>
+        <item>System monitor</item>
+    </string-array>
+    <string-array name="plan_locales" translatable="false">
+        <item>English</item>
+        <item>Українська</item>
+        <item>Deutsch</item>
+        <item>Français</item>
+        <item>Polski</item>
+        <item>Español</item>
+        <item>Italiano</item>
+        <item>Português</item>
+        <item>Nederlands</item>
+        <item>Čeština</item>
+        <item>Română</item>
+        <item>Türkçe</item>
+        <item>Русский</item>
+    </string-array>
+</resources>

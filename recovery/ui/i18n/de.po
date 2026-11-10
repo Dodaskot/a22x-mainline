@@ -27,11 +27,17 @@ msgstr " Bytes übersprungen / %s"
 msgid "%.120s / %.24s / %s free"
 msgstr "%.120s / %.24s / %s frei"
 
+msgid "%s  /  from the catalog, %s download"
+msgstr "%s  /  aus dem Katalog, %s Download"
+
 msgid "%s / %u history rows / basic ANSI"
 msgstr "%s / %u Verlaufszeilen / einfaches ANSI"
 
 msgid "%s available"
 msgstr "%s verfügbar"
+
+msgid "%s is missing in cache"
+msgstr "%s fehlt in cache"
 
 msgid "%s is not supported"
 msgstr "%s wird nicht unterstützt"
@@ -42,11 +48,17 @@ msgstr "%s wurde geschrieben und zurückgelesen. Jedes Byte stimmt mit dem Image
 msgid "%s, %d %s"
 msgstr "%s, %d. %s"
 
+msgid "%s, password from the app"
+msgstr "%s, Passwort aus der App"
+
 msgid "%u apps chosen"
 msgstr "%u Apps gewählt"
 
 msgid "%u Hz display mode is active."
 msgstr "Anzeigemodus %u Hz ist aktiv."
+
+msgid "%u of %u partitions, %s"
+msgstr "%u von %u Partitionen, %s"
 
 msgid "%u partitions, %s"
 msgstr "%u Partitionen, %s"
@@ -84,6 +96,9 @@ msgstr "Im Terminal läuft ein Befehl und belegt den Speicher. Warten Sie, bis e
 msgid "A completed manifest is published only after the archive and its decoded hash have been verified."
 msgstr "Ein fertiges Manifest wird erst veröffentlicht, nachdem das Archiv und sein entpackter Hash geprüft wurden."
 
+msgid "A computer is asking to use ADB with this recovery."
+msgstr "Ein Computer möchte ADB mit diesem Recovery verwenden."
+
 msgid "A computer is asking to use this phone."
 msgstr "Ein Computer möchte dieses Telefon verwenden."
 
@@ -95,6 +110,9 @@ msgstr "Ein Netzwerkname hat höchstens 32 Byte."
 
 msgid "A new diagnostic archive will be written to this volume. Existing archives are retained."
 msgstr "Auf dieses Volume wird ein neues Diagnosearchiv geschrieben. Vorhandene Archive bleiben erhalten."
+
+msgid "A new folder A22xAndroidBackups gets each chosen partition and its checksum; empty space takes no room. userdata cannot hold it: a factory reset of Android erases it."
+msgstr "Ein neuer Ordner A22xAndroidBackups erhält jede gewählte Partition mit Prüfsumme; leerer Platz belegt nichts. userdata ist kein Ziel: ein Zurücksetzen von Android löscht sie."
 
 msgid "A new folder A22xIdentityBackups is written with every partition and its checksum. Keep it off the phone too: no image or firmware download contains it."
 msgstr "Ein neuer Ordner in A22xIdentityBackups wird mit jeder Partition und ihrer Prüfsumme geschrieben. Bewahren Sie ihn auch außerhalb des Telefons auf: kein Image und keine Firmware enthält ihn."
@@ -116,6 +134,9 @@ msgstr "Für geprüfte Pläne ist ein privates Laufzeitverzeichnis erforderlich.
 
 msgid "A qualified stock profile is not available in this recovery."
 msgstr "In diesem Recovery ist kein qualifiziertes Stock-Profil verfügbar."
+
+msgid "A required rootfs directory is missing or symlinked"
+msgstr "Ein benötigtes Verzeichnis des Wurzeldateisystems fehlt oder ist ein Symlink"
 
 msgid "A running shell was not confirmed. No additional session was started."
 msgstr "Eine laufende Shell wurde nicht bestätigt. Es wurde keine weitere Sitzung gestartet."
@@ -159,11 +180,20 @@ msgstr "Der Zugriff bleibt offen, bis das Telefon sperrt oder neu startet. Der C
 msgid "ACCOUNT"
 msgstr "KONTO"
 
+msgid "Account"
+msgstr "Konto"
+
 msgid "active"
 msgstr "aktiv"
 
+msgid "ADB connection"
+msgstr "ADB-Verbindung"
+
 msgid "Add a new slot alongside the current Linux."
 msgstr "Neuen Slot neben dem aktuellen Linux hinzufügen."
+
+msgid "Add a system"
+msgstr "System hinzufügen"
 
 msgid "Add a theme from a file"
 msgstr "Design aus einer Datei hinzufügen"
@@ -222,6 +252,9 @@ msgstr "Immer"
 msgid "America"
 msgstr "Amerika"
 
+msgid "An allowed computer is remembered. When the recovery has a password, it is asked as well."
+msgstr "Ein erlaubter Computer wird gespeichert. Hat das Recovery ein Passwort, wird es ebenfalls abgefragt."
+
 msgid "An ARM64 ISO, disk image (raw, qcow2, VHD), Vagrant box or rootfs archive."
 msgstr "Ein ARM64-ISO, Disk-Image (raw, qcow2, VHD), eine Vagrant-Box oder ein Rootfs-Archiv."
 
@@ -231,11 +264,17 @@ msgstr "Ein unvollständiger Import bleibt zur Prüfung in /.a22x-systems/stagin
 msgid "An installation is unfinished"
 msgstr "Eine Installation ist nicht beendet"
 
+msgid "An installation prepared in the A22x app."
+msgstr "Eine in der A22x-App vorbereitete Installation."
+
 msgid "An interrupted RECOVERY write can require Samsung Download mode and external recovery flashing."
 msgstr "Ein unterbrochener RECOVERY-Schreibvorgang kann den Samsung-Download-Modus und externes Flashen des Recovery erfordern."
 
 msgid "An X11 login screen with an on-screen keyboard, made for Xfce."
 msgstr "Ein X11-Anmeldebildschirm mit Bildschirmtastatur, gemacht für Xfce."
+
+msgid "Android %s (%s)  /  %s  /  Linux %s"
+msgstr "Android %s (%s)  /  %s  /  Linux %s"
 
 msgid "Android archive"
 msgstr "Android-Archiv"
@@ -245,6 +284,15 @@ msgstr "Android-Boot-Image"
 
 msgid "Android logical-partition container; mapping is not implemented"
 msgstr "Android-Container für logische Partitionen; Zuordnung ist nicht implementiert"
+
+msgid "Android partitions"
+msgstr "Android-Partitionen"
+
+msgid "Android partitions restored and checked"
+msgstr "Android-Partitionen wiederhergestellt und geprüft"
+
+msgid "Android partitions saved"
+msgstr "Android-Partitionen gesichert"
 
 msgid "Android state requires its matching retained system/vendor firmware."
 msgstr "Der Android-Zustand braucht die passende gesicherte System-/Vendor-Firmware."
@@ -305,6 +353,9 @@ msgstr "ARM64-Root-Dateisysteme / gemeinsames /home / vorhandenes BOOT"
 
 msgid "As in image"
 msgstr "Wie im Image"
+
+msgid "As in recovery"
+msgstr "Wie im Recovery"
 
 msgid "As in recovery (%s)"
 msgstr "Wie im Recovery (%s)"
@@ -408,6 +459,12 @@ msgstr "Akku"
 msgid "Beaver"
 msgstr "Biber"
 
+msgid "Beside the current Linux"
+msgstr "Neben dem aktuellen Linux"
+
+msgid "Beside the installed systems: they and /home stay."
+msgstr "Neben den installierten Systemen: sie und /home bleiben."
+
 msgid "Blur dissolve"
 msgstr "Weichzeichnen"
 
@@ -452,6 +509,9 @@ msgstr "BOOT-Quelle"
 
 msgid "BOOT, DTBO, vbmeta and other images"
 msgstr "BOOT, DTBO, vbmeta und weitere Images"
+
+msgid "BOOT, super, dtbo, vbmeta and others of this phone."
+msgstr "BOOT, super, dtbo, vbmeta und weitere dieses Telefons."
 
 msgid "Bootloader"
 msgstr "Bootloader"
@@ -519,6 +579,9 @@ msgstr "Katalog"
 msgid "Change"
 msgstr "Ändern"
 
+msgid "Change choices"
+msgstr "Auswahl ändern"
+
 msgid "Change only this exact entry if it still matches the version you inspected. This action is not recursive."
 msgstr "Ändern Sie nur genau diesen Eintrag, wenn er noch der geprüften Version entspricht. Diese Aktion ist nicht rekursiv."
 
@@ -551,6 +614,9 @@ msgstr "Prüfung: Fehler behoben"
 
 msgid "Check: no errors found"
 msgstr "Prüfung: keine Fehler gefunden"
+
+msgid "checked against the catalog"
+msgstr "mit dem Katalog geprüft"
 
 msgid "Checking BOOT"
 msgstr "BOOT wird geprüft"
@@ -624,6 +690,9 @@ msgstr "Design-Datei wählen"
 msgid "Choose an already mounted writable volume."
 msgstr "Wählen Sie ein bereits beschreibbar eingehängtes Volume."
 
+msgid "Choose an image of the store"
+msgstr "Wählen Sie ein gespeichertes Abbild"
+
 msgid "Choose an image of userdata or BOOT"
 msgstr "Wählen Sie ein Image von Userdata oder BOOT"
 
@@ -690,6 +759,9 @@ msgstr "Chromium"
 msgid "Clean install"
 msgstr "Neuinstallation"
 
+msgid "Clean install: userdata is erased first"
+msgstr "Neuinstallation: userdata wird zuerst gelöscht"
+
 msgid "Clock"
 msgstr "Uhr"
 
@@ -741,6 +813,9 @@ msgstr "Verbinden"
 msgid "Connect from the computer attached by USB."
 msgstr "Verbinden Sie sich vom per USB angeschlossenen Computer."
 
+msgid "Connect to Wi-Fi first: the desktop and apps are downloaded during the installation."
+msgstr "Zuerst mit WLAN verbinden: Desktop und Apps werden während der Installation geladen."
+
 msgid "Connected"
 msgstr "Verbunden"
 
@@ -755,6 +830,9 @@ msgstr "Kontakte"
 
 msgid "Continue"
 msgstr "Weiter"
+
+msgid "copied file"
+msgstr "kopierte Datei"
 
 msgid "Copy and rename require a new destination. Delete removes a regular file or an empty folder."
 msgstr "Kopieren und Umbenennen brauchen ein neues Ziel. Löschen entfernt eine normale Datei oder einen leeren Ordner."
@@ -828,6 +906,12 @@ msgstr "Dezember"
 msgid "Delete"
 msgstr "Löschen"
 
+msgid "Delete a saved system that is not running."
+msgstr "Ein gespeichertes System löschen, das gerade nicht läuft."
+
+msgid "Delete this image?"
+msgstr "Dieses Abbild löschen?"
+
 msgid "Deleted"
 msgstr "Gelöscht"
 
@@ -839,6 +923,9 @@ msgstr "Nennkapazität"
 
 msgid "DESKTOP"
 msgstr "DESKTOP"
+
+msgid "Desktop"
+msgstr "Desktop"
 
 msgid "Desktop: %s  /  apps: %u"
 msgstr "Desktop: %s  /  Apps: %u"
@@ -869,6 +956,9 @@ msgstr "Diagnose kann jetzt nicht exportiert werden."
 
 msgid "Diagnostics exported"
 msgstr "Diagnose exportiert"
+
+msgid "Discard (hold)"
+msgstr "Verwerfen (halten)"
 
 msgid "Discard edits?"
 msgstr "Änderungen verwerfen?"
@@ -909,6 +999,15 @@ msgstr "Fertig: %u Pakete"
 msgid "Download %s over Wi-Fi, checked against the catalog"
 msgstr "%s per WLAN herunterladen, mit dem Katalog geprüft"
 
+msgid "Download from the catalog"
+msgstr "Aus dem Katalog herunterladen"
+
+msgid "Download to the phone"
+msgstr "Auf das Telefon laden"
+
+msgid "Downloading %s..."
+msgstr "%s wird heruntergeladen..."
+
 msgid "Downloading the system image"
 msgstr "Systemabbild wird heruntergeladen"
 
@@ -933,8 +1032,8 @@ msgstr "Bearbeiten deaktiviert: Datei überschreitet das UI-Limit von 64 KiB."
 msgid "Efficiency cores"
 msgstr "Effizienzkerne"
 
-msgid "EFS, IMEI and modem data"
-msgstr "EFS, IMEI und Modemdaten"
+msgid "EFS and IMEI, or BOOT, super and others"
+msgstr "EFS und IMEI oder BOOT, super und weitere"
 
 msgid "EFS, IMEI and modem data of this phone."
 msgstr "EFS, IMEI und Modemdaten dieses Telefons."
@@ -1161,6 +1260,9 @@ msgstr "Das Formatieren löscht alles auf diesem Volume, auch Sicherungen."
 msgid "Formatting userdata"
 msgstr "userdata wird formatiert"
 
+msgid "Free on userdata: %s"
+msgstr "Frei auf userdata: %s"
+
 msgid "Friday"
 msgstr "Freitag"
 
@@ -1172,6 +1274,9 @@ msgstr "Aus einer Datei"
 
 msgid "From a theme file"
 msgstr "Aus einer Design-Datei"
+
+msgid "From the Android app"
+msgstr "Aus der Android-App"
 
 msgid "FROM THE CATALOG"
 msgstr "AUS DEM KATALOG"
@@ -1193,6 +1298,9 @@ msgstr "GHz"
 
 msgid "Git"
 msgstr "Git"
+
+msgid "GNOME locks its screen only when GDM signs in."
+msgstr "GNOME sperrt den Bildschirm nur, wenn GDM die Anmeldung übernimmt."
 
 msgid "GNOME's login screen with its on-screen keyboard."
 msgstr "Der Anmeldebildschirm von GNOME mit Bildschirmtastatur."
@@ -1221,6 +1329,12 @@ msgstr "2 Sekunden halten: sichern"
 msgid "Hold 2 seconds to confirm"
 msgstr "2 Sekunden halten: bestätigen"
 
+msgid "Hold 2 seconds to delete"
+msgstr "Zum Löschen 2 Sekunden halten"
+
+msgid "Hold 2 seconds to discard the plan"
+msgstr "2 Sekunden halten, um den Plan zu verwerfen"
+
 msgid "Hold 2 seconds to export"
 msgstr "2 Sekunden halten: exportieren"
 
@@ -1241,6 +1355,9 @@ msgstr "3 Sekunden halten: flashen"
 
 msgid "Hold 3 seconds to flash BOOT"
 msgstr "3 Sekunden halten: BOOT flashen"
+
+msgid "Hold 3 seconds to remove"
+msgstr "3 Sekunden halten zum Entfernen"
 
 msgid "Hold 3 seconds to restore"
 msgstr "3 Sekunden halten: wiederherstellen"
@@ -1287,6 +1404,9 @@ msgstr "Halten: schreiben"
 msgid "How one page gives way to the next."
 msgstr "Wie eine Seite der nächsten weicht."
 
+msgid "Identity"
+msgstr "Identität"
+
 msgid "Identity already matches this copy"
 msgstr "Die Identität stimmt bereits mit dieser Kopie überein"
 
@@ -1305,8 +1425,14 @@ msgstr "IMAGE"
 msgid "Image source"
 msgstr "Image-Quelle"
 
+msgid "Images in the phone's memory, no SD card needed"
+msgstr "Abbilder im Telefonspeicher, ohne SD-Karte"
+
 msgid "Import a system"
 msgstr "System importieren"
+
+msgid "In the phone's memory: they install without an SD card."
+msgstr "Im Telefonspeicher: Installation ohne SD-Karte."
 
 msgid "In the repositories of %s"
 msgstr "In den Paketquellen von %s"
@@ -1404,14 +1530,23 @@ msgstr "UNTERBROCHENER WECHSEL"
 msgid "It can read and change everything here."
 msgstr "Er kann hier alles lesen und ändern."
 
+msgid "It gets a root shell, copies files and can restart the phone."
+msgstr "Er erhält eine Root-Shell, kopiert Dateien und kann das Telefon neu starten."
+
 msgid "It is ready: recovery has installed the desktop, apps and account. Switch to it in Systems to start it."
 msgstr "Es ist bereit: Recovery hat Oberfläche, Apps und Konto installiert. Wechseln Sie in „Systeme“ dorthin, um es zu starten."
+
+msgid "It is removed from the phone's memory. Installed systems are not affected."
+msgstr "Es wird aus dem Telefonspeicher entfernt. Installierte Systeme bleiben unberührt."
 
 msgid "It starts ready: recovery has installed the desktop, apps and account."
 msgstr "Es startet fertig: Recovery hat Oberfläche, Apps und Konto installiert."
 
 msgid "Its first start sets up the account, network, desktop and apps, then restarts once."
 msgstr "Beim ersten Start richtet es Konto, Netzwerk, Desktop und Apps ein und startet dann einmal neu."
+
+msgid "Its root filesystem with its programs, /etc and /var is deleted. /home, the active system and BOOT stay. This cannot be undone."
+msgstr "Sein Wurzeldateisystem mit Programmen, /etc und /var wird gelöscht. /home, das aktive System und BOOT bleiben. Das lässt sich nicht rückgängig machen."
 
 msgid "January"
 msgstr "Januar"
@@ -1461,6 +1596,9 @@ msgstr "Kernel"
 msgid "Kernel and ramdisk"
 msgstr "Kernel und Ramdisk"
 
+msgid "KEY FINGERPRINT"
+msgstr "SCHLÜSSEL-FINGERABDRUCK"
+
 msgid "Keyboard"
 msgstr "Tastatur"
 
@@ -1505,6 +1643,9 @@ msgstr "LINKTEXT"
 
 msgid "Linux %.85s / %.24s"
 msgstr "Linux %.85s / %.24s"
+
+msgid "Linux %s  /  %s"
+msgstr "Linux %s  /  %s"
 
 msgid "Linux / boot + rootfs"
 msgstr "Linux / Boot + Rootfs"
@@ -1662,6 +1803,9 @@ msgstr "Userdata einhängen, um es zu lesen"
 msgid "Mount userdata with write access and refresh Systems before planning."
 msgstr "Hängen Sie Userdata beschreibbar ein und aktualisieren Sie die Systeme vor der Planung."
 
+msgid "Mount userdata with write access first: the images are kept there."
+msgstr "Hängen Sie zuerst userdata beschreibbar ein: Dort liegen die Abbilder."
+
 msgid "Mount userdata with write access first: the installer needs it to check the space."
 msgstr "Zuerst Userdata mit Schreibzugriff einhängen: der Installer prüft damit den Platz."
 
@@ -1773,6 +1917,9 @@ msgstr "Neben diesem Image wurde keine Prüfsumme gespeichert. Das Image wird be
 msgid "No completed backups"
 msgstr "Keine fertigen Sicherungen"
 
+msgid "No copy of Android partitions on this volume."
+msgstr "Auf diesem Datenträger gibt es keine Kopie von Android-Partitionen."
+
 msgid "No current executable plan is available for this operation."
 msgstr "Für diesen Vorgang ist kein aktueller ausführbarer Plan verfügbar."
 
@@ -1781,6 +1928,9 @@ msgstr "Kein Host-Schlüssel gemeldet."
 
 msgid "No identity copy on this volume."
 msgstr "Auf diesem Volume gibt es keine Identitätskopie."
+
+msgid "No images are saved yet. Download one from the catalog, or copy an image into the .a22x-images folder of userdata with USB files."
+msgstr "Noch keine Abbilder gespeichert. Laden Sie eines aus dem Katalog oder kopieren Sie es mit USB-Dateien in den Ordner .a22x-images von userdata."
 
 msgid "No installed system on userdata"
 msgstr "Kein installiertes System auf userdata"
@@ -1820,6 +1970,9 @@ msgstr "Es wird keine Wiederholung automatisch gestartet. Prüfen Sie das Backen
 
 msgid "No saved system slots yet. Import a prepared bundle to keep the current Linux alongside another system."
 msgstr "Noch keine gespeicherten System-Slots. Importieren Sie ein vorbereitetes Paket, um das aktuelle Linux neben einem anderen System zu behalten."
+
+msgid "No SD card is needed; the image stays saved after the installation."
+msgstr "Keine SD-Karte nötig; das Abbild bleibt nach der Installation gespeichert."
 
 msgid "No valid export reported"
 msgstr "Kein gültiger Export gemeldet"
@@ -1893,6 +2046,9 @@ msgstr "Für die Oberfläche wird nichts geladen."
 msgid "Nothing is downloaded."
 msgstr "Es wird nichts geladen."
 
+msgid "NOTHING IS ERASED"
+msgstr "NICHTS WIRD GELÖSCHT"
+
 msgid "Nothing is replaced: the new system becomes the only one on userdata."
 msgstr "Nichts wird ersetzt: das neue System wird das einzige auf Userdata."
 
@@ -1943,6 +2099,9 @@ msgstr "Ein: Laden zeigt den Akku"
 
 msgid "Only a freshly reviewed qualified Linux used-block plan can write these targets."
 msgstr "Nur ein frisch geprüfter, qualifizierter Linux-Plan für belegte Blöcke darf diese Ziele schreiben."
+
+msgid "Only systemd distributions are supported by the current device adapter"
+msgstr "Der aktuelle Geräteadapter unterstützt nur Distributionen mit systemd"
 
 msgid "Only this reviewed plan can be started."
 msgstr "Nur dieser geprüfte Plan kann gestartet werden."
@@ -2022,6 +2181,9 @@ msgstr "PAKETNAME"
 msgid "Packages come over the recovery's Wi-Fi: this takes 10-30 minutes. Keep the phone powered."
 msgstr "Pakete kommen über das WLAN des Recovery: das dauert 10–30 Minuten. Telefon eingeschaltet lassen."
 
+msgid "Packages, the account and the desktop are set up as you choose on the next pages."
+msgstr "Pakete, Konto und Desktop werden so eingerichtet, wie Sie es auf den nächsten Seiten wählen."
+
 msgid "Packages, the account and the desktop are set up as you choose on the next pages. The terminal stays available for installing by hand."
 msgstr "Pakete, Konto und Oberfläche werden nach Ihrer Wahl auf den nächsten Seiten eingerichtet. Das Terminal bleibt für die Installation von Hand."
 
@@ -2049,8 +2211,14 @@ msgstr "Partition wiederhergestellt"
 msgid "Partitions"
 msgstr "Partitionen"
 
+msgid "Partitions already match this copy"
+msgstr "Die Partitionen stimmen schon mit dieser Kopie überein"
+
 msgid "Partitions are unavailable."
 msgstr "Partitionen nicht verfügbar."
+
+msgid "Partitions to save"
+msgstr "Zu sichernde Partitionen"
 
 msgid "PASSWORD"
 msgstr "PASSWORT"
@@ -2088,6 +2256,9 @@ msgstr "Telefonidentität"
 msgid "Phone identity saved"
 msgstr "Telefonidentität gesichert"
 
+msgid "Phone partitions"
+msgstr "Partitionen des Telefons"
+
 msgid "Phone shell"
 msgstr "Telefon-Oberfläche"
 
@@ -2115,6 +2286,9 @@ msgstr "Plasma Mobile"
 msgid "PLATFORM CHECKPOINT"
 msgstr "PLATTFORM-PRÜFPUNKT"
 
+msgid "Platform file permissions or owner differ"
+msgstr "Rechte oder Eigentümer einer Plattformdatei weichen ab"
+
 msgid "Please wait"
 msgstr "Bitte warten"
 
@@ -2139,6 +2313,9 @@ msgstr "Telefon ausschalten?"
 msgid "Power options"
 msgstr "Energieoptionen"
 
+msgid "Prepare it again in the app, or discard it here."
+msgstr "Bereiten Sie ihn in der App neu vor oder verwerfen Sie ihn hier."
+
 msgid "Prepare userdata for Linux %s."
 msgstr "userdata vorbereiten: %s Linux."
 
@@ -2147,6 +2324,9 @@ msgstr "Vorbereitung"
 
 msgid "Preparing the new system"
 msgstr "Neues System wird vorbereitet"
+
+msgid "Preparing..."
+msgstr "Wird vorbereitet..."
 
 msgid "Previous"
 msgstr "Zurück"
@@ -2244,6 +2424,9 @@ msgstr "Partition wird zurückgelesen"
 msgid "Reading the phone..."
 msgstr "Telefon wird gelesen..."
 
+msgid "Reading the saved images..."
+msgstr "Gespeicherte Abbilder werden gelesen..."
+
 msgid "Reading USB status..."
 msgstr "USB-Status wird gelesen..."
 
@@ -2252,6 +2435,12 @@ msgstr "WLAN wird gelesen..."
 
 msgid "Reading..."
 msgstr "Wird gelesen..."
+
+msgid "Ready from the Android app: %s"
+msgstr "Bereit aus der Android-App: %s"
+
+msgid "Ready: %s"
+msgstr "Bereit: %s"
 
 msgid "Reboot recovery"
 msgstr "Recovery neu starten"
@@ -2388,6 +2577,12 @@ msgstr "Passwort entfernen"
 msgid "Remove safely"
 msgstr "Sicher entfernen"
 
+msgid "Remove system"
+msgstr "System entfernen"
+
+msgid "Remove this system"
+msgstr "Dieses System entfernen"
+
 msgid "Removed themes are back"
 msgstr "Entfernte Designs sind zurück"
 
@@ -2402,6 +2597,12 @@ msgstr "Passwort wiederholen"
 
 msgid "Replace this file only if its contents still match the version you opened."
 msgstr "Ersetzen Sie diese Datei nur, wenn ihr Inhalt noch der geöffneten Version entspricht."
+
+msgid "Required kernel, firmware or device adapter file differs"
+msgstr "Eine benötigte Kernel-, Firmware- oder Geräteadapter-Datei weicht ab"
+
+msgid "Required platform symlink differs"
+msgstr "Ein benötigter Plattform-Symlink weicht ab"
 
 msgid "Resolution"
 msgstr "Auflösung"
@@ -2441,6 +2642,9 @@ msgstr "Partitions-Image wiederherstellen"
 
 msgid "Restore admitted for regular-file fixtures"
 msgstr "Wiederherstellung für Testdateien zugelassen"
+
+msgid "Restore Android partitions"
+msgstr "Android-Partitionen wiederherstellen"
 
 msgid "Restore BOOT last"
 msgstr "BOOT zuletzt wiederherstellen"
@@ -2616,6 +2820,21 @@ msgstr "GESICHERT UND GEPRÜFT"
 msgid "Saved archive"
 msgstr "Gespeichertes Archiv"
 
+msgid "Saved images"
+msgstr "Gespeicherte Abbilder"
+
+msgid "Saved in the phone's memory and checked, for installing later."
+msgstr "Geprüft im Telefonspeicher abgelegt, zum späteren Installieren."
+
+msgid "SAVED ON THE PHONE"
+msgstr "AUF DEM TELEFON GESPEICHERT"
+
+msgid "Saved on the phone"
+msgstr "Auf dem Telefon gespeichert"
+
+msgid "Saved on the phone: %s"
+msgstr "Auf dem Telefon gespeichert: %s"
+
 msgid "Saved snapshot"
 msgstr "Gespeicherter Snapshot"
 
@@ -2736,6 +2955,12 @@ msgstr "Einrichtungsskripte müssen auf externem SD/USB-Speicher liegen"
 msgid "Share one mounted volume with this computer."
 msgstr "Ein eingehängtes Volume mit diesem Computer teilen."
 
+msgid "Shared files require the same group names and GIDs"
+msgstr "Gemeinsame Dateien brauchen dieselben Gruppennamen und GIDs"
+
+msgid "Shared home requires the same user name, UID, primary GID and home path"
+msgstr "Das gemeinsame /home braucht denselben Benutzernamen, dieselbe UID, primäre GID und denselben Home-Pfad"
+
 msgid "SHARED VOLUME"
 msgstr "GETEILTES VOLUME"
 
@@ -2756,6 +2981,9 @@ msgstr "Shift"
 
 msgid "Short press Power to turn the screen off or on."
 msgstr "Ein-/Aus-Taste schaltet den Bildschirm um."
+
+msgid "Sign-in"
+msgstr "Anmeldung"
 
 msgid "SIGN-IN SCREEN"
 msgstr "ANMELDEBILDSCHIRM"
@@ -2913,6 +3141,9 @@ msgstr "Sxmo und Lomiri gibt es nur für Debian und Ubuntu; andere Systeme erhal
 msgid "Symbolic link"
 msgstr "Symbolischer Link"
 
+msgid "SYSTEM"
+msgstr "SYSTEM"
+
 msgid "System image"
 msgstr "System-Image"
 
@@ -2924,6 +3155,9 @@ msgstr "Systemsprache"
 
 msgid "System monitor"
 msgstr "Systemmonitor"
+
+msgid "Systems could not be read."
+msgstr "Die Systeme konnten nicht gelesen werden."
 
 msgid "Systems from the internet"
 msgstr "Systeme aus dem Internet"
@@ -3075,6 +3309,9 @@ msgstr "Der aktuelle Inhalt wird zuerst auf %s gesichert."
 msgid "The current folder path is too long for this interface."
 msgstr "Der aktuelle Ordnerpfad ist für diese Oberfläche zu lang."
 
+msgid "The current Linux stays active until you switch to the new one."
+msgstr "Das aktuelle Linux bleibt aktiv, bis Sie zum neuen wechseln."
+
 msgid "The current Linux stays active. A separate review is required to switch. Existing BOOT and shared /home are retained."
 msgstr "Das aktuelle Linux bleibt aktiv. Für einen Wechsel ist eine separate Prüfung nötig. Vorhandenes BOOT und gemeinsames /home bleiben erhalten."
 
@@ -3165,9 +3402,6 @@ msgstr "Das Hilfsprogramm hat kein Ergebnis geliefert."
 msgid "The helper verified bytes. This does not prove that the selected system boots."
 msgstr "Das Hilfsprogramm hat die Bytes geprüft. Das beweist nicht, dass das gewählte System startet."
 
-msgid "The identity backup did not finish."
-msgstr "Die Identitätssicherung wurde nicht abgeschlossen."
-
 msgid "The identity backup helper is not configured."
 msgstr "Das Hilfsprogramm für die Identitätssicherung ist nicht eingerichtet."
 
@@ -3204,14 +3438,29 @@ msgstr "Das Image ist größer als jede Partition"
 msgid "The image is larger than the partition"
 msgstr "Das Image ist größer als die Partition"
 
+msgid "The image is not saved on the phone"
+msgstr "Das Abbild ist nicht auf dem Telefon gespeichert"
+
 msgid "The image or installation state changed since planning"
 msgstr "Das Image oder der Installationszustand hat sich seit der Planung geändert"
+
+msgid "The image store did not return a valid result."
+msgstr "Der Abbildspeicher lieferte kein gültiges Ergebnis."
+
+msgid "The image store on userdata is not a folder"
+msgstr "Der Abbildspeicher auf userdata ist kein Ordner"
+
+msgid "The image was deleted."
+msgstr "Das Abbild wurde gelöscht."
 
 msgid "The images match their servers."
 msgstr "Die Abbilder stimmen mit den Servern überein."
 
 msgid "The input acknowledgement did not match. Pending input was discarded and will not be replayed."
 msgstr "Die Eingabebestätigung stimmte nicht. Ausstehende Eingaben wurden verworfen und nicht wiederholt."
+
+msgid "The installation could not be planned."
+msgstr "Die Installation konnte nicht geplant werden."
 
 msgid "The installed root filesystem changes. /home stays shared; each system retains its own /etc and /var. BOOT is retained."
 msgstr "Das installierte Root-Dateisystem wechselt. /home bleibt gemeinsam; jedes System behält eigene /etc und /var. BOOT bleibt erhalten."
@@ -3261,6 +3510,9 @@ msgstr "Das neue System wird das einzige auf userdata."
 msgid "The new system is active."
 msgstr "Das neue System ist aktiv."
 
+msgid "The new system is saved beside the current one and is not activated. Switch to it in Systems."
+msgstr "Das neue System wird neben dem aktuellen gespeichert und nicht aktiviert. Wechseln Sie in „Systeme“ dorthin."
+
 msgid "The new system is saved beside the current one."
 msgstr "Das neue System ist neben dem aktuellen gespeichert."
 
@@ -3294,6 +3546,9 @@ msgstr "Die Seite wächst aus der Kachel, mit ihrem Symbol"
 msgid "The page grows while the one behind goes soft"
 msgstr "Die Seite wächst, die dahinter wird unscharf"
 
+msgid "The partition backup did not finish."
+msgstr "Die Sicherung der Partitionen wurde nicht abgeschlossen."
+
 msgid "The partition could not be read back"
 msgstr "Partition nicht rücklesbar"
 
@@ -3311,6 +3566,9 @@ msgstr "Passwort nicht geändert"
 
 msgid "The password is wrong."
 msgstr "Das Passwort ist falsch."
+
+msgid "The password was set in the Android app."
+msgstr "Das Passwort wurde in der Android-App festgelegt."
 
 msgid "The passwords do not match"
 msgstr "Die Passwörter stimmen nicht überein"
@@ -3345,11 +3603,29 @@ msgstr "Die Bilddaten müssen Text sein"
 msgid "The picture has the wrong size"
 msgstr "Das Bild hat die falsche Größe"
 
+msgid "THE PLAN CANNOT BE USED"
+msgstr "DER PLAN IST NICHT VERWENDBAR"
+
+msgid "The plan cannot be used"
+msgstr "Der Plan ist nicht verwendbar"
+
+msgid "The plan could not be deleted from cache."
+msgstr "Der Plan konnte nicht aus cache gelöscht werden."
+
+msgid "The plan from the Android app cannot be used."
+msgstr "Der Plan aus der Android-App ist nicht verwendbar."
+
 msgid "The plan is blocked. Read the reported blockers."
 msgstr "Der Plan ist blockiert. Lesen Sie die gemeldeten Hindernisse."
 
+msgid "The plan was discarded"
+msgstr "Der Plan wurde verworfen"
+
 msgid "The private RAM work directory is unavailable."
 msgstr "Das private RAM-Arbeitsverzeichnis ist nicht verfügbar."
+
+msgid "The removal was not confirmed. Refresh Systems."
+msgstr "Das Entfernen wurde nicht bestätigt. Systeme aktualisieren."
 
 msgid "The requested %u Hz mode was not confirmed by the subsequent status read. Reported mode: %u Hz."
 msgstr "Der angeforderte %u-Hz-Modus wurde vom folgenden Status nicht bestätigt. Gemeldeter Modus: %u Hz."
@@ -3417,6 +3693,9 @@ msgstr "Das Hilfsprogramm der Systemverwaltung ist nicht konfiguriert."
 msgid "The system transaction completed. Read the refreshed active system before restarting Linux."
 msgstr "Die Systemtransaktion ist abgeschlossen. Lesen Sie das aktualisierte aktive System, bevor Sie Linux neu starten."
 
+msgid "The system was removed. /home and the active system stay."
+msgstr "Das System wurde entfernt. /home und das aktive System bleiben."
+
 msgid "The terminal helper did not return a valid response."
 msgstr "Das Terminal-Hilfsprogramm hat keine gültige Antwort geliefert."
 
@@ -3464,6 +3743,9 @@ msgstr "Es gibt keinen automatischen Neustart."
 
 msgid "There is not enough space beside the retained system"
 msgstr "Neben dem beibehaltenen System ist nicht genug Platz"
+
+msgid "There is not enough space on userdata for this image"
+msgstr "Auf userdata ist nicht genug Platz für dieses Abbild"
 
 msgid "This action replaces the listed targets."
 msgstr "Diese Aktion ersetzt die aufgeführten Ziele."
@@ -3564,6 +3846,9 @@ msgstr "Dieser Plan ist abgelaufen. Gehen Sie zurück und prüfen Sie ihn erneut
 msgid "This recovery checks and repairs ext2, ext3 and ext4 only"
 msgstr "Dieses Recovery prüft und repariert nur ext2, ext3 und ext4"
 
+msgid "This recovery does not know every choice of the plan."
+msgstr "Dieses Recovery kennt nicht jede Auswahl des Plans."
+
 msgid "This recovery has no Wi-Fi driver."
 msgstr "Dieses Recovery hat keinen WLAN-Treiber."
 
@@ -3578,6 +3863,9 @@ msgstr "Dieser kleine Prüfpunkt ist von der vollständigen Sicherung von Linux-
 
 msgid "This step cannot be stopped safely."
 msgstr "Dieser Schritt ist nicht sicher stoppbar."
+
+msgid "This system cannot read the saved password of this account. Choose New user with the same name and enter the password again."
+msgstr "Dieses System kann das gespeicherte Passwort dieses Kontos nicht lesen. Wählen Sie „Neuer Benutzer“ mit demselben Namen und geben Sie das Passwort erneut ein."
 
 msgid "This uses a normal unmount. Busy filesystems are refused. The backup destination stays mounted and userdata remains offline until you choose to mount it again in Files."
 msgstr "Hier wird normal ausgehängt. Belegte Dateisysteme werden abgelehnt. Das Sicherungsziel bleibt eingehängt und Userdata offline, bis Sie es unter Dateien wieder einhängen."
@@ -3681,6 +3969,9 @@ msgstr "Von den Servern aktualisiert: %u"
 msgid "USB address unavailable"
 msgstr "USB-Adresse nicht verfügbar"
 
+msgid "USB debugging"
+msgstr "USB-Debugging"
+
 msgid "USB files"
 msgstr "USB-Dateien"
 
@@ -3726,6 +4017,9 @@ msgstr "Benutzername"
 msgid "userdata / Linux rootfs"
 msgstr "Userdata / Linux-Rootfs"
 
+msgid "Userdata and cache could not be prepared."
+msgstr "userdata und cache konnten nicht vorbereitet werden."
+
 msgid "Userdata and recovery stay unchanged. A valid BOOT header does not prove that this kernel or ramdisk boots on this phone."
 msgstr "Userdata und Recovery bleiben unverändert. Ein gültiger BOOT-Header beweist nicht, dass dieser Kernel oder diese Ramdisk auf diesem Telefon startet."
 
@@ -3750,6 +4044,9 @@ msgstr "userdata ist leer. Das installierte System wird das einzige – mit Desk
 msgid "USERDATA IS ERASED"
 msgstr "USERDATA WIRD GELÖSCHT"
 
+msgid "Userdata is erased first: Android's data, every Linux system and /home on it."
+msgstr "Zuerst wird userdata gelöscht: die Daten von Android, jedes Linux-System und /home darauf."
+
 msgid "Userdata is erased first: every Linux system and /home on it. The new system is active after installation."
 msgstr "Userdata wird zuerst gelöscht: alle Linux-Systeme und /home darauf. Das neue System ist nach der Installation aktiv."
 
@@ -3758,6 +4055,9 @@ msgstr "userdata wird für Android formatiert. Das löscht alle Linux-Systeme un
 
 msgid "Userdata is mounted with write access"
 msgstr "Userdata ist beschreibbar eingehängt"
+
+msgid "Userdata is not ready for an installation. Open Systems to see why."
+msgstr "userdata ist nicht für eine Installation bereit. Öffnen Sie Systeme, um den Grund zu sehen."
 
 msgid "Userdata is now an empty ext4 filesystem. Boot and the SD snapshot were preserved."
 msgstr "Userdata ist jetzt ein leeres ext4-Dateisystem. Boot und der SD-Snapshot blieben erhalten."
@@ -3843,6 +4143,9 @@ msgstr "Volume ausgehängt"
 msgid "VOLUMES"
 msgstr "VOLUMES"
 
+msgid "Wait for the current operation to finish."
+msgstr "Warten Sie, bis der aktuelle Vorgang endet."
+
 msgid "Waiting for backend"
 msgstr "Warten auf das Backend"
 
@@ -3909,6 +4212,9 @@ msgstr "Beschreibbar"
 msgid "Write a saved copy back to this phone."
 msgstr "Eine gesicherte Kopie zurück auf dieses Telefon schreiben."
 
+msgid "Write a saved copy back. A replaced BOOT starts Android instead of Linux."
+msgstr "Eine gesicherte Kopie zurückschreiben. Ein ersetzter BOOT startet Android statt Linux."
+
 msgid "Write access allows changes on this volume. Nothing is formatted."
 msgstr "Schreibzugriff erlaubt Änderungen auf diesem Volume. Es wird nichts formatiert."
 
@@ -3957,164 +4263,3 @@ msgstr "Zoom"
 msgid "Zoom with blur"
 msgstr "Zoom mit Unschärfe"
 
-msgid "GNOME locks its screen only when GDM signs in."
-msgstr "GNOME sperrt den Bildschirm nur, wenn GDM die Anmeldung übernimmt."
-
-msgid "Delete a saved system that is not running."
-msgstr "Ein gespeichertes System löschen, das gerade nicht läuft."
-
-msgid "Hold 3 seconds to remove"
-msgstr "3 Sekunden halten zum Entfernen"
-
-msgid "Its root filesystem with its programs, /etc and /var is deleted. /home, the active system and BOOT stay. This cannot be undone."
-msgstr "Sein Wurzeldateisystem mit Programmen, /etc und /var wird gelöscht. /home, das aktive System und BOOT bleiben. Das lässt sich nicht rückgängig machen."
-
-msgid "Remove system"
-msgstr "System entfernen"
-
-msgid "Remove this system"
-msgstr "Dieses System entfernen"
-
-msgid "SYSTEM"
-msgstr "SYSTEM"
-
-msgid "The removal was not confirmed. Refresh Systems."
-msgstr "Das Entfernen wurde nicht bestätigt. Systeme aktualisieren."
-
-msgid "The system was removed. /home and the active system stay."
-msgstr "Das System wurde entfernt. /home und das aktive System bleiben."
-
-msgid "Add a system"
-msgstr "System hinzufügen"
-
-msgid "Beside the installed systems: they and /home stay."
-msgstr "Neben den installierten Systemen: sie und /home bleiben."
-
-msgid "NOTHING IS ERASED"
-msgstr "NICHTS WIRD GELÖSCHT"
-
-msgid "Packages, the account and the desktop are set up as you choose on the next pages."
-msgstr "Pakete, Konto und Desktop werden so eingerichtet, wie Sie es auf den nächsten Seiten wählen."
-
-msgid "The new system is saved beside the current one and is not activated. Switch to it in Systems."
-msgstr "Das neue System wird neben dem aktuellen gespeichert und nicht aktiviert. Wechseln Sie in „Systeme“ dorthin."
-
-msgid "Platform file permissions or owner differ"
-msgstr "Rechte oder Eigentümer einer Plattformdatei weichen ab"
-
-msgid "Required kernel, firmware or device adapter file differs"
-msgstr "Eine benötigte Kernel-, Firmware- oder Geräteadapter-Datei weicht ab"
-
-msgid "Required platform symlink differs"
-msgstr "Ein benötigter Plattform-Symlink weicht ab"
-
-msgid "A required rootfs directory is missing or symlinked"
-msgstr "Ein benötigtes Verzeichnis des Wurzeldateisystems fehlt oder ist ein Symlink"
-
-msgid "Only systemd distributions are supported by the current device adapter"
-msgstr "Der aktuelle Geräteadapter unterstützt nur Distributionen mit systemd"
-
-msgid "This system cannot read the saved password of this account. Choose New user with the same name and enter the password again."
-msgstr "Dieses System kann das gespeicherte Passwort dieses Kontos nicht lesen. Wählen Sie „Neuer Benutzer“ mit demselben Namen und geben Sie das Passwort erneut ein."
-
-msgid "Shared files require the same group names and GIDs"
-msgstr "Gemeinsame Dateien brauchen dieselben Gruppennamen und GIDs"
-
-msgid "Shared home requires the same user name, UID, primary GID and home path"
-msgstr "Das gemeinsame /home braucht denselben Benutzernamen, dieselbe UID, primäre GID und denselben Home-Pfad"
-
-msgid "checked against the catalog"
-msgstr "mit dem Katalog geprüft"
-
-msgid "Choose an image of the store"
-msgstr "Wählen Sie ein gespeichertes Abbild"
-
-msgid "copied file"
-msgstr "kopierte Datei"
-
-msgid "Delete this image?"
-msgstr "Dieses Abbild löschen?"
-
-msgid "Download from the catalog"
-msgstr "Aus dem Katalog herunterladen"
-
-msgid "Download to the phone"
-msgstr "Auf das Telefon laden"
-
-msgid "Downloading %s..."
-msgstr "%s wird heruntergeladen..."
-
-msgid "Free on userdata: %s"
-msgstr "Frei auf userdata: %s"
-
-msgid "Hold 2 seconds to delete"
-msgstr "Zum Löschen 2 Sekunden halten"
-
-msgid "Images in the phone's memory, no SD card needed"
-msgstr "Abbilder im Telefonspeicher, ohne SD-Karte"
-
-msgid "In the phone's memory: they install without an SD card."
-msgstr "Im Telefonspeicher: Installation ohne SD-Karte."
-
-msgid "It is removed from the phone's memory. Installed systems are not affected."
-msgstr "Es wird aus dem Telefonspeicher entfernt. Installierte Systeme bleiben unberührt."
-
-msgid "Mount userdata with write access first: the images are kept there."
-msgstr "Hängen Sie zuerst userdata beschreibbar ein: Dort liegen die Abbilder."
-
-msgid "No images are saved yet. Download one from the catalog, or copy an image into the .a22x-images folder of userdata with USB files."
-msgstr "Noch keine Abbilder gespeichert. Laden Sie eines aus dem Katalog oder kopieren Sie es mit USB-Dateien in den Ordner .a22x-images von userdata."
-
-msgid "No SD card is needed; the image stays saved after the installation."
-msgstr "Keine SD-Karte nötig; das Abbild bleibt nach der Installation gespeichert."
-
-msgid "Reading the saved images..."
-msgstr "Gespeicherte Abbilder werden gelesen..."
-
-msgid "Saved images"
-msgstr "Gespeicherte Abbilder"
-
-msgid "Saved in the phone's memory and checked, for installing later."
-msgstr "Geprüft im Telefonspeicher abgelegt, zum späteren Installieren."
-
-msgid "SAVED ON THE PHONE"
-msgstr "AUF DEM TELEFON GESPEICHERT"
-
-msgid "Saved on the phone"
-msgstr "Auf dem Telefon gespeichert"
-
-msgid "Saved on the phone: %s"
-msgstr "Auf dem Telefon gespeichert: %s"
-
-msgid "The image is not saved on the phone"
-msgstr "Das Abbild ist nicht auf dem Telefon gespeichert"
-
-msgid "The image store did not return a valid result."
-msgstr "Der Abbildspeicher lieferte kein gültiges Ergebnis."
-
-msgid "The image store on userdata is not a folder"
-msgstr "Der Abbildspeicher auf userdata ist kein Ordner"
-
-msgid "The image was deleted."
-msgstr "Das Abbild wurde gelöscht."
-
-msgid "There is not enough space on userdata for this image"
-msgstr "Auf userdata ist nicht genug Platz für dieses Abbild"
-
-msgid "A computer is asking to use ADB with this recovery."
-msgstr "Ein Computer möchte ADB mit diesem Recovery verwenden."
-
-msgid "ADB connection"
-msgstr "ADB-Verbindung"
-
-msgid "An allowed computer is remembered. When the recovery has a password, it is asked as well."
-msgstr "Ein erlaubter Computer wird gespeichert. Hat das Recovery ein Passwort, wird es ebenfalls abgefragt."
-
-msgid "It gets a root shell, copies files and can restart the phone."
-msgstr "Er erhält eine Root-Shell, kopiert Dateien und kann das Telefon neu starten."
-
-msgid "KEY FINGERPRINT"
-msgstr "SCHLÜSSEL-FINGERABDRUCK"
-
-msgid "USB debugging"
-msgstr "USB-Debugging"

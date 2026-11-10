@@ -13,7 +13,7 @@ on-phone check: [docs/PROGRESS.md](docs/PROGRESS.md).
 
 | | |
 |---|---|
-| Recovery | 0.6.137, SHA-256 `0e8e24b181bdca3f5529f0117febbe57288de7ba821bbe378bc6a6b244435493` |
+| Recovery | 0.6.141, SHA-256 `ee84217f6177080f7a19a9f7f975040418d9ae06117b1e5e1ee0fb5de418272f` |
 | Recovery kernel | `7.2.0-a22x-recovery+ #123`: [linux-a22x](https://github.com/Dodaskot/linux-a22x) branch `a22x-recovery`, tag `a22x-recovery-kernel123` |
 | Tested with | BOOT v146 (`releases/v146`, kernel `#122`) and v145 (kernel `#121`), branch `a22x-boot` |
 | Image | not published: it contains firmware captured from the developer's phone and the developer's SSH key (see [Building](#building)) |
@@ -157,8 +157,12 @@ shared `/home`. Switching between them in every direction worked.
    happened 5 times in about 50 restarts. The preloader starts twice, the
    second run clears the restart markers in SRAM, and LK then boots the mode of
    the previous start. Where LK keeps that mode is not known; it is not in
-   `misc` or `para`, in RTC `PDN1`, or in WDT `NONRST_REG2`. Workaround: restart
-   again.
+   `misc` or `para`, in RTC `PDN1`, or in WDT `NONRST_REG2`. Since 0.6.141 the
+   recovery notices a restart into the system or Download that came straight
+   back (less than a minute later, and userdata's ext4 mount count unchanged,
+   so no system started) and restarts once more by itself. A restart from a
+   Linux system into the recovery that lands in Linux still needs another
+   restart.
 2. **Sleep with a computer attached.** With BOOT v146 (kernel #122) the USB
    link to a computer stays up during sleep, but the computer's traffic wakes
    the phone, so it does not stay in deep sleep while attached (the screen

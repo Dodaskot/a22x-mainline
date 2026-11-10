@@ -133,6 +133,18 @@ class Shells(unittest.TestCase):
         self.run_sh('account', 'NEW_USER=anna\nNEW_PASSWORD=246810')
         self.assertEqual(self.read('etc/default_user'), 'anna\n')
 
+    def test_a_password_from_the_android_app_is_set_as_its_hash(self):
+        """2026-11-10: the app's plan carries a SHA-512 hash, never the password."""
+        self.stub('chpasswd', '#!/bin/sh\necho "chpasswd $* $(cat)" >> /calls\n')
+        self.stub('useradd'); self.stub('usermod')
+        self.stub('getent', '#!/bin/sh\ncase "$1" in shadow) echo "root:x:1::::::" ;; passwd) echo "olena:x:1000:1000::/home/olena:/bin/bash" ;; esac\n')
+        hashed = '$6$a22xsalt$' + 'B' * 86
+        self.run_sh('account', "NEW_USER=olena\nNEW_PASSWORD_HASH='%s'\nPRIMARY_USER=1" % hashed)
+        calls = self.calls()
+        self.assertIn('chpasswd -e olena:' + hashed, calls)
+        self.assertIn('chpasswd -e root:' + hashed, calls)  # a clean install's root, as with a typed password
+        self.assertNotIn('chpasswd -c', calls)
+
     def test_automatic_sign_in_with_two_shells(self):
         self.session('phosh plasma', 'auto')
         config = self.read('etc/greetd/config.toml')
@@ -150,9 +162,9 @@ class Shells(unittest.TestCase):
         self.assertIn('exec startplasmamobile', self.read('usr/bin/a22x-plasma-session'))
         switch = self.read('usr/local/share/applications/a22x-switch-plasma.desktop')
         self.assertIn('Exec=/usr/bin/a22x-switch-shell plasma', switch)
-        self.assertIn('NotShowIn=KDE;', switch)
+        self.assertNotIn('NotShowIn', switch)  # Phosh is GNOME too: the running shell's launcher is hidden per user
+        self.assertIn('X-Purism-FormFactor=Workstation;Mobile;', switch)  # in Phosh's phone app grid
         self.assertIn('Name[uk]=Перейти до Plasma Mobile', switch)
-        self.assertIn('NotShowIn=Phosh;GNOME;', self.read('usr/local/share/applications/a22x-switch-phosh.desktop'))
         self.assertIn('systemctl enable --force greetd.service', self.calls())
         # The image's own greetd file is kept beside.
         self.assertIn('user = "greeter"', self.read('etc/greetd/config.toml.image'))
@@ -307,6 +319,7 @@ class Shells(unittest.TestCase):
     def test_text_login_runs_the_switcher(self):
         self.stub('tuigreet')
         self.write('etc/pam.d/greetd', '#%PAM-1.0\n@include login\n-session optional pam_gnome_keyring.so auto_start\n')
+        self.write('etc/pam.d/greetd-greeter', '#%PAM-1.0\n@include login\n')
         self.write('etc/default/console-setup', 'CHARMAP="UTF-8"\nFONTFACE="Fixed"\nFONTSIZE="8x16"\n')
         self.session('phosh sxmo', 'text')
         # greetd's sessions are Wayland ones from the start: pam_env runs before pam_systemd
@@ -315,6 +328,10 @@ class Shells(unittest.TestCase):
                          ['#%PAM-1.0', 'session optional pam_env.so readenv=0 user_readenv=0 conffile=/etc/security/a22x-greetd-env.conf',
                           '@include login'])
         self.assertEqual(self.read('etc/security/a22x-greetd-env.conf'), 'XDG_SESSION_TYPE DEFAULT=wayland\n')
+        # The default session, the shell itself with automatic sign-in, opens with greetd-greeter
+        # (GNOME after "Switch to GNOME" found a "tty" session, Ubuntu 24.04, 2026-11-10).
+        self.assertEqual(self.read('etc/pam.d/greetd-greeter').splitlines()[:2],
+                         ['#%PAM-1.0', 'session optional pam_env.so readenv=0 user_readenv=0 conffile=/etc/security/a22x-greetd-env.conf'])
         self.assertIn('command = "tuigreet --cmd \'env A22X_SIGNED_IN=1 /usr/bin/a22x-shell\' --remember --asterisks --time"\nuser = "greeter"',
                       self.read('etc/greetd/config.toml'))
         self.assertTrue((self.root / 'usr/local/share/applications/a22x-switch-sxmo.desktop').exists())
@@ -332,6 +349,7 @@ class Shells(unittest.TestCase):
         self.assertIn('ExecStartPre=-/usr/bin/setfont -C /dev/tty1 /usr/share/kbd/consolefonts/ter-132b.psf.gz',
                       self.read('etc/systemd/system/greetd.service.d/80-a22x-text-login.conf'))
         self.assertEqual(self.read('etc/pam.d/greetd').count('a22x-greetd-env.conf'), 1)
+        self.assertEqual(self.read('etc/pam.d/greetd-greeter').count('a22x-greetd-env.conf'), 1)
         # Debian and Ubuntu read the font from console-setup.
         self.assertIn('FONTFACE="Terminus"\nFONTSIZE="16x32"\n', self.read('etc/default/console-setup'))
 
@@ -454,6 +472,26 @@ class Shells(unittest.TestCase):
         self.assertFalse((self.root / 'home/user/.config/a22x/shell').exists())
         out = self.chroot('/bin/sh', '/usr/bin/a22x-switch-shell', 'nope')
         self.assertEqual(out.returncode, 2)
+
+    def test_only_the_running_shell_hides_its_launcher(self):
+        """Phosh calls itself Phosh:GNOME, so NotShowIn cannot tell it from GNOME (2026-11-10)."""
+        self.session('phosh plasma', 'auto')
+        self.write('usr/bin/a22x-session', '#!/bin/sh\necho started phosh\n', 0o755)
+        self.write('usr/bin/a22x-plasma-session', '#!/bin/sh\necho started plasma\n', 0o755)
+        own = self.root / 'home/user/.local/share/applications'
+        self.write('home/user/.local/share/applications/a22x-switch-mine.desktop', '[Desktop Entry]\nName=Mine\n')
+        start = 'HOME=/home/user sh /usr/bin/a22x-shell'
+        self.assertEqual(self.run_sh(start).strip(), 'started phosh')
+        self.assertIn('Hidden=true', (own / 'a22x-switch-phosh.desktop').read_text())
+        self.assertFalse((own / 'a22x-switch-plasma.desktop').exists())
+        # Asking for the running shell signs nobody out.
+        self.run_sh('HOME=/home/user XDG_SESSION_ID=3 sh /usr/bin/a22x-switch-shell phosh')
+        self.assertNotIn('terminate-session', self.calls())
+        self.run_sh('HOME=/home/user XDG_SESSION_ID=3 sh /usr/bin/a22x-switch-shell plasma')
+        self.assertEqual(self.run_sh(start).strip(), 'started plasma')
+        self.assertIn('Hidden=true', (own / 'a22x-switch-plasma.desktop').read_text())
+        self.assertFalse((own / 'a22x-switch-phosh.desktop').exists())
+        self.assertEqual((own / 'a22x-switch-mine.desktop').read_text(), '[Desktop Entry]\nName=Mine\n')  # not ours
 
     def test_builds_are_kept_current_after_updates(self):
         body = 'build_for_phone'

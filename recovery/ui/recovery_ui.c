@@ -98,7 +98,7 @@
 enum Screen { HOME, SPLASH, FLASH, FLASH_REVIEW, LANGUAGE, THEME, TERMINAL_THEME, ANIMATIONS, LOCKSCREEN, ACCESS_REQUEST, OS_MENU, SYSTEMS_SETUP, BACKUP, LIST, DETAIL, PLAN, PROGRESS, RESULT, STORAGE, SYSTEM, POWER, POWER_CONFIRM, POWER_MENU, TOOLS, TOOLS_EXPORT, DISPLAY_SETTINGS, PREPARE_FILESYSTEM, USB_FILES, TERMINAL, SYSTEMS, SYSTEMS_PLAN, SYSTEMS_RECOVER,
     INSTALL, INSTALL_PLAN, INSTALL_RESULT,
     FILE_VOLUMES, FILE_VOLUME, FILE_BROWSER, FILE_INFO, FILE_TEXT, FILE_EDIT, FILE_PROMPT, FILE_CONFIRM, FILE_DISCARD, SYSTEMS_EXTRAS, SYSTEMS_DONE, WIFI, SYSTEMS_NEW, SYSTEMS_CATALOG,
-    SYSTEMS_APP_LIST, SYSTEMS_SEARCH, IDENTITY, IDENTITY_RESTORE, SYSTEMS_SHELLS, SYSTEMS_LOCALE, SYSTEMS_TIMEZONE, SYSTEMS_REMOVE, SYSTEMS_IMAGES, ADB_REQUEST };
+    SYSTEMS_APP_LIST, SYSTEMS_SEARCH, IDENTITY, IDENTITY_RESTORE, SYSTEMS_SHELLS, SYSTEMS_LOCALE, SYSTEMS_TIMEZONE, SYSTEMS_REMOVE, SYSTEMS_IMAGES, ADB_REQUEST, APLAN };
 enum Action { A_BACK=1,A_BACKUP,A_RESTORE,A_VERIFY,A_STORAGE,A_SYSTEM,A_POWER,A_REVIEW_BACKUP,A_REVIEW_RESTORE,A_VERIFY_ONE,A_CONFIRM,A_DONE,A_LIST_PREV,A_LIST_NEXT,A_REBOOT,A_SHUTDOWN,A_POWER_CONFIRM,A_MOUNT,A_UMOUNT,A_REFRESH,
     A_FILES,A_FS_PREV,A_FS_NEXT,A_FS_OPEN,A_FS_MOUNT_RO,A_FS_MOUNT_RW,A_FS_UNMOUNT,A_FS_UP,A_FS_VOLUME,A_FS_REFRESH,
     A_FS_READ,A_FS_EDIT,A_FS_NEW_FILE,A_FS_MKDIR,A_FS_RENAME,A_FS_COPY,A_FS_DELETE,A_FS_PROMPT_NEXT,A_FS_CONFIRM,
@@ -117,13 +117,13 @@ enum Action { A_BACK=1,A_BACKUP,A_RESTORE,A_VERIFY,A_STORAGE,A_SYSTEM,A_POWER,A_
     A_APPS_OPEN=5830,A_PKG_OPEN,A_PKG_QUERY,A_PKG_PREV,A_PKG_NEXT,A_APPS_DONE,A_PKG_DONE,A_PKG_FAMILY=5840,A_PKG_RESULT=5850,A_IDENTITY=5950,A_ID_DEST_NEXT,A_ID_BACKUP,A_ID_RESTORE_OPEN,A_ID_RESTORE,A_ID_ITEM=5960,A_CHARGER_ON=5970,A_CHARGER_OFF,
     A_SHELL_ITEM=5980,A_GREETER_ITEM=5990,A_SHELLS_NEXT=6000,A_LOCALE_OPEN=6010,A_TZ_OPEN,A_TZ_RECOVERY,A_TZ_PICK,A_LOCALE_ITEM=6020,
     A_TZ_REGION=6040,A_TZ_ITEM=6100,
-    A_NEW_SAVED=7000,A_IMAGES_CATALOG,A_IMAGE_DELETE_CONFIRM,A_IMAGE_DELETE_CANCEL,A_IMAGE_ITEM=7010,A_IMAGE_DELETE=7030,A_ADB_ALLOW=7050,A_ADB_DENY };
+    A_NEW_SAVED=7000,A_IMAGES_CATALOG,A_IMAGE_DELETE_CONFIRM,A_IMAGE_DELETE_CANCEL,A_IMAGE_ITEM=7010,A_IMAGE_DELETE=7030,A_ADB_ALLOW=7050,A_ADB_DENY,A_ID_KIND=7100,A_ID_PART=7110,A_APLAN=7130,A_APLAN_REVIEW,A_APLAN_EDIT,A_APLAN_FORGET };
 enum JobKind { J_NONE,J_INVENTORY,J_LIST,J_BACKUP_PLAN,J_RESTORE_PLAN,J_BACKUP,J_VERIFY,J_RESTORE,J_STORAGE_INVENTORY,J_MOUNT,J_UMOUNT,
     J_FS_INVENTORY,J_FS_MOUNT,J_FS_UNMOUNT,J_FS_LIST,J_FS_READ,J_FS_WRITE,J_FS_MKDIR,J_FS_RENAME,J_FS_COPY,J_FS_DELETE,
     J_FS_STAT,J_FS_CHMOD,J_FS_CHOWN,J_FS_RESOLVE,J_FS_COPY_TREE,J_FS_FORMAT,J_FS_CHECK,J_FS_RESIZE,J_TOOLS_STATUS,J_TOOLS_EXPORT,J_DISPLAY_STATUS,J_DISPLAY_SET,J_WIPE_PLAN,J_WIPE,J_USB_STATUS,J_USB_START,J_USB_STOP,
     J_TERM_STATUS,J_TERM_START,J_TERM_READ,J_TERM_WRITE,J_TERM_RESIZE,J_TERM_STOP,J_SYS_STATUS,J_SYS_IMPORT_PLAN,J_SYS_SWITCH_PLAN,J_SYS_IMPORT,J_SYS_SWITCH,J_SYS_RECOVER,J_SYS_REMOVE,
     J_INSTALL_STATUS,J_INSTALL_BOOT_PLAN,J_INSTALL_STOCK_PLAN,J_INSTALL_RESUME_PLAN,J_INSTALL_EXECUTE,J_FLASH_TARGETS,J_FLASH_CHECK,J_FLASH_WRITE,J_USB_SYNC,J_USB_BACKUP,J_USB_EJECT,J_SYS_ACCOUNT_USER,J_SYS_ACCOUNT_PASS,J_SYS_WIFI_SSID,J_SYS_WIFI_PASS,J_LOCK_ENTER,J_LOCK_SET,J_LOCK_OLD,J_LOCK_CONFIRM,J_LOCK_ACCESS,J_SYSINFO,J_THEME_IMPORT,J_THEME_REMOVE,J_THEME_RESTORE,
-    J_WIFI_STATUS,J_WIFI_SCAN,J_WIFI_CONNECT,J_WIFI_DISCONNECT,J_WIFI_FORGET,J_WIFI_SSID,J_WIFI_PASS,J_CATALOG,J_CATALOG_CHECK,J_PKG_SEARCH,J_PKG_QUERY,J_ID_LIST,J_ID_BACKUP,J_ID_BACKUPS,J_ID_RESTORE,J_CHARGER,J_IMAGES,J_IMAGES_DOWNLOAD,J_IMAGES_DELETE };
+    J_WIFI_STATUS,J_WIFI_SCAN,J_WIFI_CONNECT,J_WIFI_DISCONNECT,J_WIFI_FORGET,J_WIFI_SSID,J_WIFI_PASS,J_CATALOG,J_CATALOG_CHECK,J_PKG_SEARCH,J_PKG_QUERY,J_ID_LIST,J_ID_BACKUP,J_ID_BACKUPS,J_ID_RESTORE,J_CHARGER,J_IMAGES,J_IMAGES_DOWNLOAD,J_IMAGES_DELETE,J_APLAN_SHOW,J_APLAN_PREPARE,J_APLAN_FORGET };
 enum ScrollSurface { SCROLL_NONE,SCROLL_FOLDER,SCROLL_VOLUMES,SCROLL_TEXT,SCROLL_PROMPT,SCROLL_TERMINAL,SCROLL_SYSTEMS,SCROLL_TOOLS,SCROLL_INSTALL_REVIEW,SCROLL_INSTALL_PENDING,SCROLL_PAGE };
 enum DisplayCommand { DC_NONE,DC_STATUS,DC_BRIGHTNESS,DC_BLANK,DC_WAKE,DC_TOGGLE };
 
@@ -212,7 +212,11 @@ typedef struct {
     unsigned int ssh_port,ssh_keys;
     int tools_volume_index;
     int charger_asked;bool charger_known,charger_off;char charger_note[200];
-    int id_volume_index;bool id_known,id_list_after;unsigned int id_count;uint64_t id_bytes,id_sizes[ID_PARTS];int id_pick;unsigned int id_backup_count;struct{char path[96],created[32],sha[72];unsigned int parts;uint64_t bytes;bool same;}id_backups[8];char id_labels[ID_PARTS][24],id_volume_id[96],id_volume_token[96],id_error[256],id_done[192],id_helper[PATH_LEN];
+    int id_volume_index,id_kind;uint32_t id_off;char id_labels_arg[256];bool id_known,id_list_after;
+    /* The installation prepared in the Android app (android_plan_ui.h, 2026-11-10). */
+    bool aplan_asked,aplan_known,aplan_present,aplan_valid,aplan_opened,aplan_pending,aplan_used,aplan_forget_after,aplan_script_present,aplan_erase,aplan_edit;
+    char aplan_sha[72],aplan_catalog[64],aplan_name[96],aplan_version[48],aplan_file[160],aplan_user[40],aplan_hash[140],aplan_script[72],aplan_locale[16],aplan_zone[64],aplan_desktop_id[16],aplan_greeter_id[16],aplan_source[72],aplan_error[320],aplan_helper[PATH_LEN],systems_password_hash[140];
+    uint64_t aplan_size,aplan_created;unsigned int aplan_shells,aplan_apps;unsigned int id_count;uint64_t id_bytes,id_sizes[ID_PARTS];int id_pick;unsigned int id_backup_count;struct{char path[96],created[32],sha[72];unsigned int parts;uint64_t bytes;bool same;}id_backups[8];char id_labels[ID_PARTS][24],id_volume_id[96],id_volume_token[96],id_error[256],id_done[192],id_helper[PATH_LEN];
     int64_t tools_scroll,page_scroll,page_content;
     enum Screen theme_pick,theme_return;uint8_t*theme_image;char theme_remove_code[24];int theme_armed;uint64_t theme_armed_until;
     SysRow sys_rows[SYS_ROWS],sys_summary[SYS_SUMMARY];char sys_titles[SYS_SECTIONS][40],sys_name[48],sys_model[24],sys_codename[24],sys_version[24];const char*sysinfo_root;
@@ -377,7 +381,7 @@ static void render_systems_plan(App*a);
 static void render_systems_recover(App*a);static void render_systems_remove(App*a);
 static void render_wifi(App*a);static void wifi_settings_row(App*a,int y,bool enabled);static bool wifi_action(App*a,int id);
 static bool images_job(int kind);static void render_systems_new(App*a);static void render_catalog(App*a);static void render_images(App*a);static bool images_action(App*a,int id);static void open_images(App*a);static void adb_poll(App*a);static void render_adb_request(App*a);static bool adb_action(App*a,int id);static bool start_images_job(App*a,int kind,const char*argument);static bool installer_action(App*a,int id);static bool start_catalog_job(App*a);
-static void complete_catalog_job(App*a,const Json*j,bool ok,bool check);static void render_package_prompt(App*a);static void render_systems_apps(App*a);static void render_package_search(App*a);static void render_apps_card(App*a,int y);static void complete_package_search(App*a,const Json*j,bool ok);static void render_identity(App*a);static void render_identity_restore(App*a);static int render_charger_card(App*a,int y,bool free_ui);static void identity_inventory(App*a);static void installer_card(App*a,Rect r,unsigned int tone,int glyph,const char*title,const char*note,int action,bool enabled);
+static void complete_catalog_job(App*a,const Json*j,bool ok,bool check);static void render_package_prompt(App*a);static void render_systems_apps(App*a);static void render_package_search(App*a);static void render_apps_card(App*a,int y);static void complete_package_search(App*a,const Json*j,bool ok);static void render_identity(App*a);static void render_identity_restore(App*a);static void render_aplan(App*a);static int render_aplan_card(App*a,int y);static void android_plan_tick(App*a);static int render_charger_card(App*a,int y,bool free_ui);static void identity_inventory(App*a);static void installer_card(App*a,Rect r,unsigned int tone,int glyph,const char*title,const char*note,int action,bool enabled);
 static void render_systems_shells(App*a);static int shells_append_args(const App*a,char**args,int n);static void shells_summary(const App*a,char*out,size_t size);static bool shells_offered(const App*a);static unsigned int shells_extra(const App*a);static int locale_append_args(const App*a,char**args,int n);static void locale_summary(const App*a,char*out,size_t size);static void render_locale_card(App*a,int y);static void render_systems_locale(App*a);static void render_systems_timezone(App*a);
 static void render_systems_manifest(App*a);static void render_systems_done(App*a);static void render_systems_extras(App*a);static void render_systems_script(App*a);static void systems_wifi_focus(App*a,int kind);
 static void render_systems_setup(App*a);
@@ -397,7 +401,7 @@ static bool install_job(int kind){return kind>=J_INSTALL_STATUS&&kind<=J_INSTALL
 static bool wifi_job(int kind){return kind>=J_WIFI_STATUS&&kind<=J_WIFI_FORGET;}
 /* These only read state. The page stays usable while they run: a tap waits for the
  * result instead of the whole page going grey. */
-static bool job_quiet(int kind){return wifi_job(kind)||kind==J_IMAGES||kind==J_CATALOG||kind==J_CATALOG_CHECK||kind==J_PKG_SEARCH||kind==J_ID_LIST||kind==J_ID_BACKUPS||kind==J_CHARGER||kind==J_SYSINFO||kind==J_TOOLS_STATUS||kind==J_DISPLAY_STATUS||kind==J_DISPLAY_SET||kind==J_USB_STATUS||kind==J_SYS_STATUS||kind==J_INSTALL_STATUS||kind==J_STORAGE_INVENTORY||kind==J_FS_INVENTORY||kind==J_FS_LIST||kind==J_LIST||kind==J_FLASH_TARGETS||kind==J_USB_SYNC||kind==J_TERM_STATUS||kind==J_TERM_STOP;}
+static bool job_quiet(int kind){return wifi_job(kind)||kind==J_APLAN_SHOW||kind==J_APLAN_PREPARE||kind==J_APLAN_FORGET||kind==J_IMAGES||kind==J_CATALOG||kind==J_CATALOG_CHECK||kind==J_PKG_SEARCH||kind==J_ID_LIST||kind==J_ID_BACKUPS||kind==J_CHARGER||kind==J_SYSINFO||kind==J_TOOLS_STATUS||kind==J_DISPLAY_STATUS||kind==J_DISPLAY_SET||kind==J_USB_STATUS||kind==J_SYS_STATUS||kind==J_INSTALL_STATUS||kind==J_STORAGE_INVENTORY||kind==J_FS_INVENTORY||kind==J_FS_LIST||kind==J_LIST||kind==J_FLASH_TARGETS||kind==J_USB_SYNC||kind==J_TERM_STATUS||kind==J_TERM_STOP;}
 enum { NAV_GESTURES,NAV_BUTTONS,NAV_OFF };
 enum { GESTURE_NONE,GESTURE_BACK,GESTURE_BOTTOM };
 static bool flash_job(int kind){return kind>=J_FLASH_TARGETS&&kind<=J_FLASH_WRITE;}
@@ -804,7 +808,10 @@ static void render_home_bento(App*a){
     a->clip_active=true;a->clip=hero;veil(a,(Rect){506,226,200,200},100,0xffffffu,24);veil(a,(Rect){470,342,140,140},70,0xffffffu,20);a->clip_active=false;
     if(pressed(a,A_OS))veil(a,hero,44,0,30);
     veil(a,(Rect){52,236,84,84},42,0xffffffu,46);icon(a,A_OS,68,252,52,ui_theme->hero_text);
-    {int font=text_width("Install",3)<=560?3:2;text(a,52,font==3?336:346,font,ui_theme->hero_text,"Install");}ellipsis(a,54,404,560,0,ui_theme->hero_sub,"Operating system, Android or a partition");icon(a,ICON_CHEVRON,634,316,40,ui_theme->hero_text);register_button(a,hero,A_OS,ui_free(a),0);button_glyph(a,A_OS,A_OS);
+    {int font=text_width("Install",3)<=560?3:2;text(a,52,font==3?336:346,font,ui_theme->hero_text,"Install");}
+    if(a->aplan_valid){char ready[160];snprintf(ready,sizeof(ready),T("Ready from the Android app: %s"),a->aplan_name);raw_text(true);ellipsis(a,54,404,560,0,ui_theme->hero_text,ready);raw_text(false);}
+    else ellipsis(a,54,404,560,0,ui_theme->hero_sub,"Operating system, Android or a partition");
+    icon(a,ICON_CHEVRON,634,316,40,ui_theme->hero_text);register_button(a,hero,A_OS,ui_free(a),0);button_glyph(a,A_OS,A_OS);
     bento_tile(a,(Rect){28,472,324,248},0,A_BACKUP,"Backup","Save a system snapshot",true);bento_tile(a,(Rect){368,472,324,248},1,A_FILES,"Files","Browse and edit files",true);
     bento_tile(a,(Rect){28,736,324,214},2,A_RESTORE,"Restore","Return to a saved state",false);bento_tile(a,(Rect){368,736,324,214},3,A_VERIFY,"Verify","Check backup integrity",false);
     home_grid(a,966,170,16);
@@ -813,7 +820,8 @@ static void render_home(App*a){
     if(ui_theme->bento){render_home_bento(a);return;}
     char now[16],date[96];clock_text(a,now,sizeof(now),date,sizeof(date));heading(a,"A22x Recovery",date,false);
     home_device(a);
-    os_card(a,214,150,A_OS,"Install","Operating system, Android or a partition",A_OS,ORANGE_DARK);
+    if(a->aplan_valid){char ready[160];snprintf(ready,sizeof(ready),T("Ready from the Android app: %s"),a->aplan_name);raw_text(true);os_card(a,214,150,A_OS,tr("Install"),ready,A_OS,ORANGE_DARK);raw_text(false);}
+    else os_card(a,214,150,A_OS,"Install","Operating system, Android or a partition",A_OS,ORANGE_DARK);
     const char*titles[]={"Backup","Files","Restore","Verify"};
     const char*subs[]={"Save a system snapshot","Browse and edit files","Return to a saved state","Check backup integrity"};
     int ids[]={A_BACKUP,A_FILES,A_RESTORE,A_VERIFY};
@@ -826,9 +834,10 @@ static void render_home(App*a){
 }
 static void render_os(App*a){
     heading(a,"Install","Choose what to install on this phone.",true);
-    os_card(a,242,150,ICON_LINUX,"Operating system","Linux from SD or USB stick, switch systems",A_SYSTEMS,PANEL);
-    os_card(a,408,150,ICON_PHONE,"Android","Install stock firmware",A_INSTALL,PANEL);
-    os_card(a,574,150,ICON_FLASH,"Flash a partition","BOOT, DTBO, vbmeta and other images",A_FLASH,PANEL);
+    int y=render_aplan_card(a,242);  /* A plan from the Android app comes first (2026-11-10). */
+    os_card(a,y,150,ICON_LINUX,"Operating system","Linux from SD or USB stick, switch systems",A_SYSTEMS,PANEL);
+    os_card(a,y+166,150,ICON_PHONE,"Android","Install stock firmware",A_INSTALL,PANEL);
+    os_card(a,y+332,150,ICON_FLASH,"Flash a partition","BOOT, DTBO, vbmeta and other images",A_FLASH,PANEL);
 }
 static void render_backup(App*a){
     heading(a,"Backup","Choose the system state to save.",true);
@@ -841,8 +850,8 @@ static void render_backup(App*a){
         vector_circle(a,646,r.y+43,13,2,selected?ORANGE:MUTED);if(selected)vector_circle(a,646,r.y+43,7,7,ORANGE);
         register_button(a,r,A_PROFILE+i,ui_free(a),0);
     }
-    {Rect r={28,650,664,120};rounded(a,r,24,PANEL);icon_tile(a,ICON_PHONE,46,r.y+20,56,ICON_FILL);text(a,120,r.y+18,1,TEXT,"Phone identity");
-     ellipsis(a,120,r.y+64,500,0,MUTED,"EFS, IMEI and modem data");icon(a,ICON_CHEVRON,640,r.y+44,32,MUTED);register_button(a,r,A_IDENTITY,ui_free(a),0);}
+    {Rect r={28,650,664,120};rounded(a,r,24,PANEL);icon_tile(a,ICON_PHONE,46,r.y+20,56,ICON_FILL);text(a,120,r.y+18,1,TEXT,"Phone partitions");
+     ellipsis(a,120,r.y+64,500,0,MUTED,"EFS and IMEI, or BOOT, super and others");icon(a,ICON_CHEVRON,640,r.y+44,32,MUTED);register_button(a,r,A_IDENTITY,ui_free(a),0);}
     wrapped(a,40,800,640,0,MUTED,"Linux backup saves allocated ext4 blocks with compression. The next screen reviews userdata before normal unmount.",3);
     destination(a,930);
     wrapped(a,40,1106,640,0,MUTED,!strcmp(a->profile,"linux")&&!a->linux_backup_available&&a->inventory_ok?"Compact Linux backup tools are unavailable in this recovery. Refresh system status to check availability.":"Planning measures the compressed size and checks free space on the destination. Userdata stays offline afterward.",5);
@@ -1980,7 +1989,7 @@ static void render(App*a){
     case POWER_CONFIRM:heading(a,"Power action",NULL,true);wrapped(a,40,350,640,2,TEXT,power_confirmation(a->power_intent),4);if(terminal_session_open(a)&&a->terminal_busy)wrapped(a,40,640,640,1,RED,"The command running in the terminal will be stopped.",3);button(a,(Rect){28,1220,664,110},"Hold 2 seconds to confirm",A_POWER_CONFIRM,a->allow_power&&!a->job.pid&&a->power_intent>=200&&a->power_intent<=203&&(a->power_intent!=200||(!a->systems_reboot_blocked&&!a->install.reboot_blocked)),true,2000);break;
     case TOOLS:render_tools(a);break;case TOOLS_EXPORT:render_tools_export(a);break;case DISPLAY_SETTINGS:render_display(a);break;case WIFI:render_wifi(a);break;case SYSTEMS_NEW:render_systems_new(a);break;case SYSTEMS_IMAGES:render_images(a);break;case ADB_REQUEST:render_adb_request(a);break;case SYSTEMS_CATALOG:render_catalog(a);break;
     case TERMINAL:render_terminal(a);break;
-    case SYSTEMS:render_systems(a);break;case SYSTEMS_EXTRAS:render_systems_extras(a);break;case SYSTEMS_SHELLS:render_systems_shells(a);break;case SYSTEMS_LOCALE:render_systems_locale(a);break;case SYSTEMS_TIMEZONE:render_systems_timezone(a);break;case SYSTEMS_APP_LIST:render_systems_apps(a);break;case SYSTEMS_SEARCH:render_package_search(a);break;case IDENTITY:render_identity(a);break;case IDENTITY_RESTORE:render_identity_restore(a);break;case SYSTEMS_DONE:render_systems_done(a);break;case SYSTEMS_PLAN:render_systems_plan(a);break;case SYSTEMS_RECOVER:render_systems_recover(a);break;case SYSTEMS_REMOVE:render_systems_remove(a);break;
+    case SYSTEMS:render_systems(a);break;case SYSTEMS_EXTRAS:render_systems_extras(a);break;case SYSTEMS_SHELLS:render_systems_shells(a);break;case SYSTEMS_LOCALE:render_systems_locale(a);break;case SYSTEMS_TIMEZONE:render_systems_timezone(a);break;case SYSTEMS_APP_LIST:render_systems_apps(a);break;case SYSTEMS_SEARCH:render_package_search(a);break;case IDENTITY:render_identity(a);break;case APLAN:render_aplan(a);break;case IDENTITY_RESTORE:render_identity_restore(a);break;case SYSTEMS_DONE:render_systems_done(a);break;case SYSTEMS_PLAN:render_systems_plan(a);break;case SYSTEMS_RECOVER:render_systems_recover(a);break;case SYSTEMS_REMOVE:render_systems_remove(a);break;
     case INSTALL:render_install(a);break;case INSTALL_PLAN:render_install_review(a,false);break;case INSTALL_RESULT:render_install_review(a,true);break;
     case FILE_VOLUMES:render_file_volumes(a);break;case FILE_VOLUME:render_file_volume(a);break;case FILE_BROWSER:render_file_browser(a);break;
     case FILE_INFO:render_file_info(a);break;case FILE_TEXT:render_file_text(a,false);break;case FILE_EDIT:render_file_text(a,true);break;
@@ -2008,6 +2017,9 @@ static void problem(App*a,const char*code,const char*message){
     copy(a->status,sizeof(a->status),code);copy(a->message,sizeof(a->message),message);a->successful=false;a->result_return=HOME;screen(a,RESULT);}
 
 static const char*job_name(int kind){
+    if(kind==J_APLAN_SHOW)return "android-plan-show";
+    if(kind==J_APLAN_PREPARE)return "android-plan-prepare";
+    if(kind==J_APLAN_FORGET)return "android-plan-forget";
     if(kind==J_IMAGES)return "systems-images";
     if(kind==J_IMAGES_DOWNLOAD)return "systems-images-download";
     if(kind==J_IMAGES_DELETE)return "systems-images-delete";
@@ -2056,7 +2068,7 @@ static bool launch_job(App*a,int kind,char*const*args){
     a->result_return=HOME;
     if(kind==J_FS_LIST){a->pressed_action=0;a->button_count=0;a->focus=-1;}
     else if(!terminal_background_job(kind))stop_inertia(a,"operation");
-    if(!terminal_job(kind)&&kind!=J_INSTALL_STATUS&&kind!=J_SYS_STATUS&&kind!=J_INVENTORY&&kind!=J_STORAGE_INVENTORY&&kind!=J_FS_INVENTORY&&kind!=J_FS_LIST&&kind!=J_TOOLS_STATUS&&kind!=J_DISPLAY_STATUS&&kind!=J_DISPLAY_SET&&kind!=J_USB_STATUS&&kind!=J_FLASH_TARGETS&&kind!=J_USB_SYNC&&kind!=J_USB_BACKUP&&kind!=J_USB_EJECT&&kind!=J_SYSINFO&&!wifi_job(kind)&&kind!=J_CATALOG&&kind!=J_CATALOG_CHECK&&kind!=J_PKG_SEARCH&&kind!=J_ID_LIST&&kind!=J_ID_BACKUPS&&kind!=J_CHARGER&&!images_job(kind))screen(a,PROGRESS);
+    if(!terminal_job(kind)&&kind!=J_INSTALL_STATUS&&kind!=J_SYS_STATUS&&kind!=J_INVENTORY&&kind!=J_STORAGE_INVENTORY&&kind!=J_FS_INVENTORY&&kind!=J_FS_LIST&&kind!=J_TOOLS_STATUS&&kind!=J_DISPLAY_STATUS&&kind!=J_DISPLAY_SET&&kind!=J_USB_STATUS&&kind!=J_FLASH_TARGETS&&kind!=J_USB_SYNC&&kind!=J_USB_BACKUP&&kind!=J_USB_EJECT&&kind!=J_SYSINFO&&!wifi_job(kind)&&kind!=J_CATALOG&&kind!=J_CATALOG_CHECK&&kind!=J_PKG_SEARCH&&kind!=J_ID_LIST&&kind!=J_ID_BACKUPS&&kind!=J_CHARGER&&!images_job(kind)&&kind!=J_APLAN_SHOW&&kind!=J_APLAN_PREPARE&&kind!=J_APLAN_FORGET)screen(a,PROGRESS);
     else if(kind==J_INVENTORY)copy(a->status,sizeof(a->status),"Reading device inventory...");
     if(!terminal_background_job(kind))a->dirty=true;
     return true;
@@ -2781,6 +2793,7 @@ static void theme_file_chosen(App*a){start_theme_job(a,J_THEME_IMPORT);}
 #include "charger_ui.h"
 #include "shells_ui.h"
 #include "locale_ui.h"
+#include "android_plan_ui.h"
 static void complete_job(App*a){
     Job*j=&a->job;int kind=j->kind,next_files_job=J_NONE;bool next_display_status=false,next_usb_status=false;JsonToken*tok=calloc(8192,sizeof(*tok));Json doc;bool parsed=tok&&j->output&&!j->overflow&&json_parse(&doc,j->output,tok,8192)>0&&tok[0].type==J_OBJECT;
     if(terminal_background_job(kind)){} /* Shell input/output never enter UI diagnostics. */
@@ -2803,6 +2816,9 @@ static void complete_job(App*a){
         if(kind==J_SYS_STATUS&&a->catalog_pending&&a->screen==SYSTEMS_CATALOG&&!a->job.pid){
             unsigned int n=a->catalog_pending-1;a->catalog_pending=0;
             if(n<a->catalog_count&&a->catalog[n].reachable&&systems_ready(a))catalog_choose(a,&a->catalog[n]);}
+        /* The plan from the Android app goes on once userdata is known (2026-11-10). */
+        if(kind==J_SYS_STATUS&&a->aplan_pending&&!a->job.pid)android_plan_after_status(a);
+        if(kind==J_SYS_IMPORT&&a->aplan_forget_after&&!a->job.pid)start_aplan_job(a,J_APLAN_FORGET);
         return;}
     /* The list starts the server check from its completion: that new job owns a->job, so this
        reply is taken off it first. Freeing j->output afterwards dropped the check's own buffer and
@@ -2810,6 +2826,9 @@ static void complete_job(App*a){
     if(kind==J_CATALOG||kind==J_CATALOG_CHECK){char*reply=j->output;j->output=NULL;complete_catalog_job(a,parsed?&doc:NULL,ok,kind==J_CATALOG_CHECK);free(tok);free(reply);return;}
     if(kind==J_CHARGER){complete_charger_job(a,parsed?&doc:NULL,ok);free(tok);free(j->output);j->output=NULL;return;}
     if(images_job(kind)){complete_images_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;return;}
+    /* Preparing a plan starts the status of Systems from its completion: that new job owns a->job,
+       so this reply is taken off it first, as for the catalog. */
+    if(aplan_job(kind)){char*reply=j->output;j->output=NULL;complete_aplan_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(reply);return;}
     if(kind==J_ID_LIST||kind==J_ID_BACKUP||kind==J_ID_BACKUPS||kind==J_ID_RESTORE){complete_identity_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;return;}
     if(kind==J_PKG_SEARCH){complete_package_search(a,parsed?&doc:NULL,ok);free(tok);free(j->output);j->output=NULL;return;}
     if(wifi_job(kind)){int next=complete_wifi_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;if(next)start_wifi_job(a,next);return;}
@@ -3246,6 +3265,7 @@ static void splash_takeover(App*a){
 }
 static void hotplug_tick(App*a){
     restore_display(a);
+    android_plan_tick(a);
     if(a->display_blank_known&&a->display_blanked&&a->screen!=SPLASH){
         if(a->screen==POWER_MENU&&a->locked&&!a->power_held){a->screen=a->menu_return;a->dirty=true;}
         if(a->lock_enabled&&a->lock_mode==2&&!a->locked)lock_show(a);
@@ -3464,6 +3484,7 @@ static void action(App*a,int id){
     if(id==A_BACK&&a->screen==IDENTITY&&!a->job.pid){screen(a,BACKUP);return;}
     if(id==A_BACK&&a->screen==IDENTITY_RESTORE&&!a->job.pid){screen(a,IDENTITY);return;}
     if(!a->job.pid&&identity_action(a,id))return;
+    if(android_plan_action(a,id))return;
     if((id==A_CHARGER_ON||id==A_CHARGER_OFF)&&!a->job.pid){start_charger_job(a,id==A_CHARGER_ON?1:2);return;}
     if(a->job.pid&&!(id==A_BACK&&(a->job.kind==J_DISPLAY_SET||a->job.kind==J_DISPLAY_STATUS)))return;
     if(theme_action(a,id))return;
@@ -4147,6 +4168,25 @@ static bool preview(App*a,const char*name){
         a->id_count=7;a->id_bytes=0;for(unsigned int n=0;n<7;n++){copy(a->id_labels[n],sizeof(a->id_labels[0]),labels[n]);a->id_sizes[n]=8u<<20;a->id_bytes+=8u<<20;}
         a->volumes[1].read_only=false;identity_select(a,1);
         if(!strcmp(name,"identity-saved"))copy(a->id_done,sizeof(a->id_done),"/A22xIdentityBackups/identity-20261108-221500");
+    }
+    else if(!strcmp(name,"android-plan")||!strcmp(name,"android-plan-bad")||!strcmp(name,"os-plan")||!strcmp(name,"home-plan")){
+        /* 2026-11-10: an installation prepared in the Android app, as install_plan.py shows it. */
+        a->aplan_known=a->aplan_present=true;a->aplan_valid=strcmp(name,"android-plan-bad")!=0;a->aplan_erase=true;
+        copy(a->aplan_name,sizeof(a->aplan_name),"Ubuntu Server");copy(a->aplan_version,sizeof(a->aplan_version),"24.04.3");a->aplan_size=216215656u;
+        copy(a->aplan_catalog,sizeof(a->aplan_catalog),"ubuntu-24.04");copy(a->aplan_file,sizeof(a->aplan_file),"ubuntu-24.04.3-preinstalled-server-arm64.img.xz");
+        copy(a->aplan_desktop_id,sizeof(a->aplan_desktop_id),"phosh");a->aplan_shells=1u<<3;copy(a->aplan_greeter_id,sizeof(a->aplan_greeter_id),"auto");
+        a->aplan_apps=(1u<<8)|(1u<<15);copy(a->aplan_user,sizeof(a->aplan_user),"user");copy(a->aplan_hash,sizeof(a->aplan_hash),"$6$preview$x");
+        copy(a->aplan_locale,sizeof(a->aplan_locale),"uk_UA");copy(a->aplan_zone,sizeof(a->aplan_zone),"Europe/Kyiv");copy(a->aplan_script,sizeof(a->aplan_script),"my-setup.sh");a->aplan_script_present=true;
+        copy(a->aplan_sha,sizeof(a->aplan_sha),"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+        if(!a->aplan_valid)copy(a->aplan_error,sizeof(a->aplan_error),"This recovery does not know the image windows-11");
+        a->screen=!strcmp(name,"os-plan")?OS_MENU:(!strcmp(name,"home-plan")?HOME:APLAN);
+    }
+    else if(!strcmp(name,"android-backup")){
+        /* 2026-11-10: the Android partitions of the same page, with dtbo left out. */
+        a->screen=IDENTITY;a->id_kind=1;a->id_known=true;static const char*const labels[]={"boot","dtbo","vbmeta","vbmeta_system","vbmeta_vendor","super","prism","optics"};
+        static const uint64_t sizes[]={64u<<20,8u<<20,8u<<20,8u<<20,8u<<20,8800ull<<20,1200ull<<20,400ull<<20};
+        a->id_count=8;a->id_bytes=0;for(unsigned int n=0;n<8;n++){copy(a->id_labels[n],sizeof(a->id_labels[0]),labels[n]);a->id_sizes[n]=sizes[n];a->id_bytes+=sizes[n];}
+        a->id_off=1u<<1;a->volumes[1].read_only=false;identity_select(a,1);
     }
     else if(!strcmp(name,"apps-page")||!strcmp(name,"package-search")){
         /* The apps page, and a search in the repositories of a Debian image from the catalog. */

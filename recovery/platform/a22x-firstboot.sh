@@ -58,16 +58,19 @@ account() {
         getent group "$group" >/dev/null && usermod -aG "$group" "$NEW_USER"
     done
     [ -z "${NEW_PASSWORD:-}" ] || set_password "$NEW_USER" "$NEW_PASSWORD" || return 1
+    # A password prepared in the Android app comes as a SHA-512 hash (2026-11-10).
+    [ -z "${NEW_PASSWORD_HASH:-}" ] || printf '%s:%s\n' "$NEW_USER" "$NEW_PASSWORD_HASH" | chpasswd -e || return 1
     # postmarketOS starts its phone shell as /etc/default_user (the recovery writes it for the
     # shared accounts); the account made here is the phone's user.
     if grep -qs /etc/default_user /usr/lib/systemd/system-generators/*; then
         printf '%s\n' "$NEW_USER" > /etc/default_user
     fi
-    [ -n "${PRIMARY_USER:-}" ] && [ -n "${NEW_PASSWORD:-}" ] || return 0
+    [ -n "${PRIMARY_USER:-}" ] && [ -n "${NEW_PASSWORD:-}${NEW_PASSWORD_HASH:-}" ] || return 0
     # An image's root password is a published default or empty; a locked one stays locked.
     case "$(getent shadow root | cut -d: -f2)" in
     '!'*|'*'*) ;;
-    *) set_password root "$NEW_PASSWORD" ;;
+    *) if [ -n "${NEW_PASSWORD:-}" ]; then set_password root "$NEW_PASSWORD"
+       else printf 'root:%s\n' "$NEW_PASSWORD_HASH" | chpasswd -e; fi ;;
     esac
 }
 
@@ -891,7 +894,7 @@ setup_script() {
     install_helper
     [ -z "$family" ] || refresh "$family" >> "$LOG" 2>&1 || say "package lists could not be refreshed"
     say "running the setup script (system $(os_value ID), packages ${family:-none})"
-    set -- env A22X_USER="${NEW_USER:-}" A22X_DESKTOP="$DESKTOP" A22X_SHELLS="${SHELLS:-}" A22X_GREETER="${GREETER:-}" A22X_OS_ID="$(os_value ID)" A22X_OS_LIKE="$(os_value ID_LIKE)" \
+    set -- env A22X_USER="${NEW_USER:-${PHONE_USER:-}}" A22X_DESKTOP="$DESKTOP" A22X_SHELLS="${SHELLS:-}" A22X_GREETER="${GREETER:-}" A22X_OS_ID="$(os_value ID)" A22X_OS_LIKE="$(os_value ID_LIKE)" \
         A22X_OS_VERSION="$(os_value VERSION_ID)" A22X_PACKAGE_MANAGER="$family" \
         PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     if [ "$(head -c 2 "$script")" = '#!' ]; then
@@ -1216,18 +1219,23 @@ unit_exists() {
 # (Ubuntu 24.04, text login, 2026-11-09). Every shell signed in through greetd is a Wayland one
 # (Xfce's Xorg does not mind), so greetd's sessions say "wayland" from the start: pam_env sets it
 # before pam_systemd opens the session, as the first session line of greetd's PAM service.
+# greetd 0.9 opens its default session, which is the shell itself with automatic sign-in, with
+# the greetd-greeter service where there is one: after "Switch to GNOME" that session was "tty"
+# again and GNOME gave up twice (Ubuntu 24.04, 2026-11-10), so that service gets the line too.
 greetd_session_type() {
-    pam=/etc/pam.d/greetd
-    [ -f "$pam" ] || return 0
+    [ -f /etc/pam.d/greetd ] || return 0
     mkdir -p /etc/security
     printf 'XDG_SESSION_TYPE DEFAULT=wayland\n' > /etc/security/a22x-greetd-env.conf
-    grep -q 'a22x-greetd-env.conf' "$pam" && return 0
     line='session optional pam_env.so readenv=0 user_readenv=0 conffile=/etc/security/a22x-greetd-env.conf'
-    if head -n 1 "$pam" | grep -q '^#%PAM'; then
-        sed -i "1a $line" "$pam"
-    else
-        sed -i "1i $line" "$pam"
-    fi
+    for pam in /etc/pam.d/greetd /etc/pam.d/greetd-greeter; do
+        [ -f "$pam" ] || continue
+        grep -q 'a22x-greetd-env.conf' "$pam" && continue
+        if head -n 1 "$pam" | grep -q '^#%PAM'; then
+            sed -i "1a $line" "$pam"
+        else
+            sed -i "1i $line" "$pam"
+        fi
+    done
 }
 
 greetd_write() {
@@ -1250,7 +1258,7 @@ greetd_write() {
 greeter_user() {
     for name in $(awk '/^\[/ {s=$0} s=="[default_session]" && /^user *=/ {gsub(/^user *= *"|".*$/, ""); print}' \
                       /etc/greetd/config.toml.image 2>/dev/null) greeter _greetd greetd; do
-        [ "$name" != "${NEW_USER:-}" ] && [ "$name" != root ] || continue
+        [ "$name" != "${NEW_USER:-}" ] && [ "$name" != "${PHONE_USER:-}" ] && [ "$name" != root ] || continue
         id "$name" >/dev/null 2>&1 && { echo "$name"; return 0; }
     done
     useradd -r -M -d /var/lib/a22x-greeter -s "$(command -v nologin || echo /bin/false)" greeter >/dev/null 2>&1 &&
@@ -1554,7 +1562,9 @@ greeter() {
 # picked shell that ends within 20 seconds twice in a row gives way to the main one, so a
 # broken shell cannot hold the phone in a loop. With automatic sign-in and the text login a
 # launcher per shell picks it and signs out; with a login screen that lists the shells, one
-# launcher signs out.
+# launcher signs out. The running shell's own launcher is hidden for the user at each start:
+# Phosh also calls itself GNOME, so NotShowIn hid "Switch to GNOME" in Phosh and "Switch to
+# Phosh" in GNOME, and neither could be reached (Ubuntu with Phosh and GNOME, 2026-11-10).
 shell_switch() {
     cat > /usr/bin/a22x-shell <<'S'
 #!/bin/sh
@@ -1580,7 +1590,18 @@ fi
 line=
 [ -z "$choice" ] || line=$(grep "^$choice|" "$list" | head -n 1)
 [ -n "$line" ] || line=$(head -n 1 "$list")
-echo "${line%%|*} $(date +%s) $fails" > "$mark"
+id=${line%%|*}
+echo "$id $(date +%s) $fails" > "$mark"
+apps=${XDG_DATA_HOME:-$HOME/.local/share}/applications
+for entry in /usr/local/share/applications/a22x-switch-*.desktop; do
+    [ -f "$entry" ] || continue
+    own=$apps/${entry##*/}
+    if [ "${entry##*/}" = "a22x-switch-$id.desktop" ]; then
+        mkdir -p "$apps" && printf '[Desktop Entry]\nType=Application\nName=%s\nExec=/usr/bin/a22x-switch-shell %s\nNoDisplay=true\nHidden=true\nX-A22x-Running-Shell=true\n' "$id" "$id" > "$own"
+    elif grep -q '^X-A22x-Running-Shell=true' "$own" 2>/dev/null; then
+        rm -f "$own"
+    fi
+done
 exec ${line##*|}
 S
     cat > /usr/bin/a22x-switch-shell <<'S'
@@ -1588,6 +1609,8 @@ S
 # a22x-switch-shell [ID]: start shell ID at the next sign-in, then sign out (A22x recovery).
 if [ -n "${1:-}" ]; then
     grep -q "^$1|" /usr/share/a22x/shells 2>/dev/null || { echo "a22x-switch-shell: no shell '$1'" >&2; exit 2; }
+    running=$(cut -d' ' -f1 "/tmp/a22x-shell-$(id -u)" 2>/dev/null)
+    [ "$1" != "$running" ] || exit 0  # Already this shell: nothing to sign out of.
     state=${XDG_CONFIG_HOME:-$HOME/.config}/a22x
     mkdir -p "$state" && printf '%s\n' "$1" > "$state/shell"
     rm -f "/tmp/a22x-shell-$(id -u)"
@@ -1615,7 +1638,6 @@ S
     case "$GREETER" in
     auto|text)
         while IFS='|' read -r id name command; do
-            names=$(sed -n 's/^DesktopNames=//p' "/usr/share/a22x/sessions/a22x-$id.desktop")
             cat > "/usr/local/share/applications/a22x-switch-$id.desktop" <<S
 [Desktop Entry]
 Type=Application
@@ -1631,7 +1653,7 @@ Exec=/usr/bin/a22x-switch-shell $id
 Icon=system-log-out
 Terminal=false
 Categories=System;
-NotShowIn=$names
+X-Purism-FormFactor=Workstation;Mobile;
 S
         done < /etc/a22x/shells ;;
     *)
@@ -1657,7 +1679,7 @@ S
 
 session() {
     home_shims
-    login=${NEW_USER:-user}
+    login=${NEW_USER:-${PHONE_USER:-user}}
     for group in video input render audio; do
         getent group "$group" >/dev/null && usermod -aG "$group" "$login"
     done

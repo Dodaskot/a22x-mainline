@@ -88,6 +88,8 @@ static void systems_forget_choices(App*a){
     memset(a->systems_wifi_ssid,0,sizeof(a->systems_wifi_ssid));memset(a->systems_wifi_password,0,sizeof(a->systems_wifi_password));a->systems_wifi_saved=false;
     a->systems_apps=0;a->systems_shells=0;a->systems_greeter=0;a->systems_locale=a->systems_tz=-1;a->systems_tz_region=0;a->systems_script_volume[0]=a->systems_script_token[0]=a->systems_script_path[0]=a->systems_script_name[0]=0;
     a->systems_package_count=0;a->pkg_count=0;a->pkg_query[0]=0;a->pkg_error[0]=0;a->pkg_known=false;
+    /* The plan from the Android app sets these again after this (android_plan_fill). */
+    memset(a->systems_password_hash,0,sizeof(a->systems_password_hash));a->aplan_used=false;
 }
 /* Empty userdata, or one the installer erases first: either way a clean install. */
 static bool systems_clean(const App*a){return a->systems_empty||a->systems_wipe;}
@@ -182,10 +184,11 @@ static void render_systems_setup(App*a){
     button(a,(Rect){372,822,296,84},"New user",A_SYS_ACCOUNT_NEW,ui_free(a),a->systems_new_account,0);
     char who[96];if(a->systems_new_account)snprintf(who,sizeof(who),T("New user: %s"),a->systems_username);else copy(who,sizeof(who),"Your accounts and /home settings stay available.");
     wrapped(a,52,926,610,0,MUTED,who,2);
-    if(a->systems_new_account&&!a->systems_password[0])wrapped(a,52,990,610,0,ORANGE,"Tap New user to enter the password.",2);
+    if(a->systems_new_account&&!a->systems_password[0]&&a->systems_password_hash[0])wrapped(a,52,990,610,0,GREEN,"The password was set in the Android app.",2);
+    else if(a->systems_new_account&&!a->systems_password[0])wrapped(a,52,990,610,0,ORANGE,"Tap New user to enter the password.",2);
     else wrapped(a,52,990,610,0,MUTED,systems_clean(a)?"A clean install needs a new account: userdata has none to keep.":"Make a backup first if you have not already.",2);
     render_locale_card(a,1076);
-    button(a,(Rect){28,1330,664,108},"Next",A_SYS_SETUP_NEXT,ui_free(a)&&(!a->systems_new_account||(a->systems_username[0]&&a->systems_password[0])),true,0);
+    button(a,(Rect){28,1330,664,108},"Next",A_SYS_SETUP_NEXT,ui_free(a)&&(!a->systems_new_account||(a->systems_username[0]&&(a->systems_password[0]||a->systems_password_hash[0]))),true,0);
 }
 static void render_systems_extras(App*a){
     heading(a,"Network and apps","Set up during the installation, or at the first start.",true);
@@ -337,12 +340,14 @@ static bool start_systems_job(App*a,int kind){
             if(!systems_manifest_name(a->systems_manifest)){
                 args[n++]="--desktop";args[n++]=(char*)systems_desktops[a->systems_desktop];args[n++]="--account";args[n++]=a->systems_new_account?"new":"keep";
                 if(a->systems_new_account){
+                    /* Typed here, or a SHA-512 hash from the Android app's plan (2026-11-10). */
+                    bool hashed=!a->systems_password[0]&&a->systems_password_hash[0];const char*secret=hashed?a->systems_password_hash:a->systems_password;
                     if(snprintf(a->systems_password_file,sizeof(a->systems_password_file),"%s/account-%ld",a->workdir,(long)getpid())>=(int)sizeof(a->systems_password_file))return false;
                     int fd=open(a->systems_password_file,O_WRONLY|O_CREAT|O_TRUNC|O_NOFOLLOW|O_CLOEXEC,0600);
                     if(fd<0)return false;
-                    bool written=write(fd,a->systems_password,strlen(a->systems_password))==(ssize_t)strlen(a->systems_password);close(fd);
+                    bool written=write(fd,secret,strlen(secret))==(ssize_t)strlen(secret);close(fd);
                     if(!written)return false;
-                    args[n++]="--username";args[n++]=a->systems_username;args[n++]="--password-file";args[n++]=a->systems_password_file;
+                    args[n++]="--username";args[n++]=a->systems_username;args[n++]=hashed?"--password-hash-file":"--password-file";args[n++]=a->systems_password_file;
                 }
                 if(a->systems_wifi_ssid[0]){
                     /* The network and its password go through a private RAM file, like the account password. */
@@ -359,7 +364,8 @@ static bool start_systems_job(App*a,int kind){
                 for(unsigned int i=0;i<a->systems_package_count;i++){args[n++]="--package";args[n++]=a->systems_packages[i];}
                 n=shells_append_args(a,args,n);
                 n=locale_append_args(a,args,n);
-                if(a->systems_script_path[0]){args[n++]="--script-volume";args[n++]=a->systems_script_volume;args[n++]="--script";args[n++]=a->systems_script_path;args[n++]="--expected-script-token";args[n++]=a->systems_script_token;}
+                if(a->systems_script_path[0]){args[n++]="--script-volume";args[n++]=a->systems_script_volume;args[n++]="--script";args[n++]=a->systems_script_path;
+                    if(a->systems_script_token[0]){args[n++]="--expected-script-token";args[n++]=a->systems_script_token;}}
             }
         }
         else{if(!systems_id(a->systems_plan_slot))return false;args[n++]="--slot";args[n++]=a->systems_plan_slot;}
@@ -439,7 +445,7 @@ static int complete_systems_job(App*a,const Json*j,int kind,bool ok){
         a->systems_review_recovery=false;a->systems_plan_valid=false;copy(a->systems_reason,sizeof(a->systems_reason),message);
         /* 2026-11-08: a refused status reopened the error page from its own Back button forever;
            the reason is shown on the Systems page instead, which can be left. */
-        if(kind==J_SYS_STATUS){a->systems_known=false;screen(a,SYSTEMS);return J_NONE;}
+        if(kind==J_SYS_STATUS){a->systems_known=false;if(a->screen!=APLAN)screen(a,SYSTEMS);else a->dirty=true;return J_NONE;}
         files_problem(a,code,message,SYSTEMS);return J_NONE;
     }
     if(!jequals(j,0,"mode",a->device?"device":"fixture")||!jequals(j,0,"operation",systems_operation(kind))){files_problem(a,"INVALID_SYSTEMS_RESULT","The operation or environment did not match the requested system action.",SYSTEMS);a->systems_known=a->systems_plan_valid=false;return J_NONE;}
@@ -449,7 +455,7 @@ static int complete_systems_job(App*a,const Json*j,int kind,bool ok){
         if(a->systems_review_recovery){a->systems_review_recovery=false;if(strcmp(a->systems_expected_transaction,a->systems_transaction)){files_problem(a,"TRANSACTION_CHANGED","The interrupted transaction changed. Review the refreshed Systems screen.",SYSTEMS);return J_NONE;}screen(a,SYSTEMS_RECOVER);}
         /* The refresh after a userdata mount from New system or the catalog keeps that page:
            it used to jump to Systems, so the mount there seemed to do nothing (2026-11-08, on the phone). */
-        else if(a->screen==SYSTEMS_NEW||a->screen==SYSTEMS_CATALOG)a->dirty=true;
+        else if(a->screen==SYSTEMS_NEW||a->screen==SYSTEMS_CATALOG||a->screen==APLAN)a->dirty=true;
         else screen(a,SYSTEMS);
         return J_NONE;
     }
@@ -477,6 +483,8 @@ static int complete_systems_job(App*a,const Json*j,int kind,bool ok){
          snprintf(a->systems_done_desktop,sizeof(a->systems_done_desktop),T("Desktop: %s  /  apps: %u"),label,apps);}
         snprintf(a->systems_done_network,sizeof(a->systems_done_network),T("Wi-Fi: %s  /  script: %s"),a->systems_wifi_ssid[0]?a->systems_wifi_ssid:"—",a->systems_script_name[0]?a->systems_script_name:"—");
         a->systems_done_clean=clean;a->systems_done_ready=json_bool(j,json_get(j,0,"provisioned"),0);
+        /* The plan from the Android app is done: deleted from cache right after (2026-11-10). */
+        if(a->aplan_used){a->aplan_used=false;a->aplan_forget_after=a->aplan_sha[0]!=0;}
         /* Why recovery left the setup to the first start, when it tried (2026-11-08). */
         a->systems_done_reason[0]=0;jstring(j,0,"provision_error",a->systems_done_reason,sizeof(a->systems_done_reason));
         if(!a->systems_done_ready&&!a->systems_done_reason[0]&&json_uint(j,json_get(j,0,"provision_status"),0)==3)copy(a->systems_done_reason,sizeof(a->systems_done_reason),"A package download failed in recovery.");
@@ -497,6 +505,7 @@ static void systems_account_focus(App*a,int kind){
 static void systems_account_prompt(App*a,int kind){a->fs_prompt_kind=0;systems_account_focus(a,kind);screen(a,FILE_PROMPT);}
 static void systems_account_close(App*a,bool keep){
     if(!keep&&!a->systems_new_account){memset(a->systems_username,0,sizeof(a->systems_username));memset(a->systems_password,0,sizeof(a->systems_password));}
+    if(keep&&a->systems_password[0])memset(a->systems_password_hash,0,sizeof(a->systems_password_hash));
     memset(a->fs_prompt,0,sizeof(a->fs_prompt));a->prompt_cursor=0;a->fs_prompt_kind=0;a->systems_new_account=a->systems_new_account||keep;screen(a,SYSTEMS_SETUP);
 }
 /* The Wi-Fi page works like the account page: one edit buffer, the other field kept aside. */
@@ -522,9 +531,9 @@ static bool systems_action(App*a,int id){
     }
     if(a->screen==SYSTEMS_SETUP){
         if(id>=A_SYS_DESKTOP&&id<A_SYS_DESKTOP+(int)SYSTEMS_DESKTOPS){unsigned int n=(unsigned int)(id-A_SYS_DESKTOP);if(systems_image_debian(a)||!systems_desktop_debian(n)){a->systems_desktop=n;a->dirty=true;}return true;}
-        if(id==A_SYS_ACCOUNT_KEEP){a->systems_new_account=false;a->systems_username[0]=a->systems_password[0]=0;a->dirty=true;return true;}
+        if(id==A_SYS_ACCOUNT_KEEP){a->systems_new_account=false;a->systems_username[0]=a->systems_password[0]=a->systems_password_hash[0]=0;a->dirty=true;return true;}
         if(id==A_SYS_ACCOUNT_NEW){systems_account_prompt(a,J_SYS_ACCOUNT_USER);return true;}
-        if(id==A_SYS_SETUP_NEXT){if(!a->systems_new_account||(a->systems_username[0]&&a->systems_password[0]))screen(a,shells_offered(a)?SYSTEMS_SHELLS:SYSTEMS_EXTRAS);return true;}
+        if(id==A_SYS_SETUP_NEXT){if(!a->systems_new_account||(a->systems_username[0]&&(a->systems_password[0]||a->systems_password_hash[0])))screen(a,shells_offered(a)?SYSTEMS_SHELLS:SYSTEMS_EXTRAS);return true;}
         if(id==A_BACK){screen(a,SYSTEMS);start_systems_job(a,J_SYS_STATUS);return true;}
     }
     if(a->screen==SYSTEMS_DONE){

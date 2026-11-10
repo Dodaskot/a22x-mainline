@@ -63,6 +63,16 @@ class TestHandoff(unittest.TestCase):
                              remember=lambda *a: None, load=dict, store=stored.append)
         self.assertEqual(stored, [])
 
+    def test_the_clock_only_moves_forward(self):
+        moved = []
+        record = {'schema': 'a22x.handoff.v1', 'time_utc': 1794306000}
+        self.assertEqual(handoff.advance_clock(record, now=1700000000, setter=moved.append), 1794306000)
+        self.assertIsNone(handoff.advance_clock(record, now=1794306000 - 60, setter=moved.append))  # close enough
+        self.assertIsNone(handoff.advance_clock(record, now=1794400000, setter=moved.append))  # never back
+        for strange in (True, '1794306000', 1000, 5000000000):
+            self.assertIsNone(handoff.advance_clock({'time_utc': strange}, now=0, setter=moved.append))
+        self.assertEqual(moved, [1794306000])
+
     def test_at_most_eight_networks(self):
         record = {'schema': 'a22x.handoff.v1', 'wifi': [{'ssid': 'Net %d' % i, 'password': 'password%d' % i} for i in range(12)]}
         remembered = []

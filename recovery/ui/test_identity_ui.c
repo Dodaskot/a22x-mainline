@@ -31,6 +31,21 @@ int main(int argc,char**argv){
     char saved[PATH_LEN*3];snprintf(saved,sizeof(saved),"%s/sd%s/efs.img",argv[1],a->id_done);
     FILE*x=fopen(part,"rb"),*y=fopen(saved,"rb");ICHECK(x&&y);int same=1,c1,c2;while((c1=fgetc(x))!=EOF){c2=fgetc(y);if(c1!=c2){same=0;break;}}fclose(x);fclose(y);ICHECK(same);
     action(a,A_BACK);ICHECK(a->screen==IDENTITY);
+    /* 2026-11-10: the Android partitions of the same page, one of them left out. */
+    render(a);ICHECK(test_press(a,A_ID_KIND+1,50)&&a->id_kind==1);
+    for(int n=0;n<4;n++)settle(a);
+    ICHECK(a->screen==IDENTITY&&a->id_known&&!a->id_error[0]&&a->id_count==3&&!strcmp(a->id_labels[1],"vbmeta")&&!strcmp(a->id_volume_id,"sdcard-p1"));
+    render(a);ICHECK(test_press(a,A_ID_PART+1,50)&&identity_chosen(a,NULL)==2);
+    /* userdata is skipped when choosing the next volume: Android's factory reset erases it. */
+    render(a);ICHECK(test_press(a,A_ID_DEST_NEXT,50)&&!strcmp(a->id_volume_id,"sdcard-p1"));
+    render(a);ICHECK(test_press(a,A_ID_BACKUP,2100));settle(a);
+    ICHECK(a->screen==IDENTITY&&!strncmp(a->id_done,"/A22xAndroidBackups/android-",28));
+    char folder[PATH_LEN*2];snprintf(folder,sizeof(folder),"%s/sd%s/boot.img",argv[1],a->id_done);ICHECK(access(folder,R_OK)==0);
+    snprintf(folder,sizeof(folder),"%s/sd%s/super.img",argv[1],a->id_done);ICHECK(access(folder,R_OK)==0);
+    snprintf(folder,sizeof(folder),"%s/sd%s/vbmeta.img",argv[1],a->id_done);ICHECK(access(folder,F_OK)!=0);
+    ICHECK(test_press(a,A_ID_RESTORE_OPEN,50)&&a->screen==IDENTITY_RESTORE);settle(a);
+    ICHECK(a->id_backup_count==1&&a->id_backups[0].same&&a->id_backups[0].parts==2);
+    action(a,A_BACK);ICHECK(a->screen==IDENTITY);
     action(a,A_BACK);ICHECK(a->screen==BACKUP);
     printf("{\"ok\":true,\"checks\":%u}\n",checks);free(a->pixels);free(a);return 0;
 }
