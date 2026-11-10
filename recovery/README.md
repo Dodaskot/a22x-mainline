@@ -13,7 +13,7 @@ on-phone check: [docs/PROGRESS.md](docs/PROGRESS.md).
 
 | | |
 |---|---|
-| Recovery | 0.6.149, SHA-256 `16a5721c18836428aa565e4f852832a040c7313864a92076eb4d1330e50a943c` |
+| Recovery | 0.6.150, SHA-256 `273ece792f9e0417b8982cf74511f024868d6eba297a8d9dc0479d94f27a9046` |
 | Recovery kernel | `7.2.0-a22x-recovery+ #123`: [linux-a22x](https://github.com/Dodaskot/linux-a22x) branch `a22x-recovery`, tag `a22x-recovery-kernel123` |
 | Tested with | BOOT v146 (`releases/v146`, kernel `#122`) and v145 (kernel `#121`), branch `a22x-boot` |
 | Image | not published: it contains firmware captured from the developer's phone and the developer's SSH key (see [Building](#building)) |
@@ -147,7 +147,7 @@ the recovery against test devices; the app itself has not run on Android yet.
 
 | Distribution | Source | Shells | Sign-in | Result |
 |---|---|---|---|---|
-| Debian 13 | catalog | Phosh, Plasma Mobile, Sxmo | Phrog, automatic | works |
+| Debian 13 | catalog | Phosh, GNOME, Plasma Mobile, Sxmo | Phrog, automatic, text | works; Phosh + GNOME with text login set up by the recovery, switching both ways checked (2026-11-10) |
 | Mobian 13 Phosh | catalog, file | Phosh, GNOME, Lomiri, Sxmo | Phrog, text | works |
 | Mobian 13 Plasma Mobile | catalog | Plasma Mobile, Lomiri, Sxmo | SDDM | works |
 | Ubuntu 26.04 | catalog, `root.tar.xz` | Plasma Mobile, Phosh, GNOME, Xfce, Sxmo | SDDM, automatic | works |

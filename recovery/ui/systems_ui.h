@@ -138,7 +138,8 @@ static void render_systems(App*a){
     rounded(a,(Rect){28,242,664,152},18,PANEL);
     text(a,52,262,0,ORANGE,a->systems_transaction[0]?"INTERRUPTED SWITCH":"CURRENT SYSTEM");
     ellipsis(a,52,304,systems_can_mount(a)?576:610,1,TEXT,a->systems_active[0]?a->systems_active:(a->systems_known?(a->systems_mounted?(a->systems_empty?"Empty userdata: ready for a clean install":"Existing Linux / not yet adopted"):"Mount userdata to inspect systems"):"Reading installed systems..."));
-    const char*access=!a->systems_known?"Status unavailable":(!a->systems_mounted?"Tap to mount userdata":(a->systems_read_only?"Read-only: tap to enable writes":"Userdata is mounted with write access"));
+    /* While the status is read (after a removal, for one) it says so, as Tools and USB files do. */
+    const char*access=!a->systems_known?(a->job.pid&&a->job.kind==J_SYS_STATUS?"Checking status...":"Status unavailable"):(!a->systems_mounted?"Tap to mount userdata":(a->systems_read_only?"Read-only: tap to enable writes":"Userdata is mounted with write access"));
     ellipsis(a,52,352,560,0,a->systems_mounted&&!a->systems_read_only?GREEN:(systems_can_mount(a)?ORANGE:MUTED),access);
     if(systems_can_mount(a)){icon(a,ICON_CHEVRON,644,300,32,ORANGE);register_button(a,(Rect){28,242,664,152},A_SYS_MOUNT,ui_free(a),0);}
     if(a->systems_transaction[0]){

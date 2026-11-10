@@ -462,9 +462,19 @@ int main(int argc,char**argv){
         snprintf(reply,sizeof(reply),"{\"ok\":true,\"operation\":\"write\",\"target\":{\"label\":\"userdata\"},\"sha256\":\"%s\",\"verified\":true,\"rollback\":null}",hex);
         DCHECK(json_parse(&j,reply,tok,256)>0);complete_flash_job(a,&j,J_FLASH_WRITE,true);
         DCHECK(a->screen==RESULT&&a->successful&&a->result_return==LIST&&strstr(a->message,"userdata")&&strstr(a->message,"BOOT"));
+        render(a);DCHECK(!test_button(a,A_REBOOT_RECOVERY)&&!test_button(a,A_REBOOT));  /* a restore offers no restart */
         /* Back from the review goes to Restore, and Flash a partition forgets the restore mode. */
         a->screen=FLASH_REVIEW;action(a,A_BACK);DCHECK(a->screen==LIST);
         a->flash_restore=true;flash_action(a,A_FLASH);DCHECK(!a->flash_restore&&a->screen==FLASH);a->job.pid=0;a->job.kind=J_NONE;
+        /* 2026-11-10: after a flash of the recovery the result offers its restart, through the usual hold. */
+        bool power=a->allow_power;a->allow_power=true;a->flash_target_count=1;a->flash_selected=0;
+        copy(a->flash_targets[0].label,sizeof(a->flash_targets[0].label),"recovery");copy(a->flash_sha,sizeof(a->flash_sha),hex);
+        snprintf(reply,sizeof(reply),"{\"ok\":true,\"operation\":\"write\",\"target\":{\"label\":\"recovery\"},\"sha256\":\"%s\",\"verified\":true,\"rollback\":null}",hex);
+        DCHECK(json_parse(&j,reply,tok,256)>0);complete_flash_job(a,&j,J_FLASH_WRITE,true);
+        DCHECK(a->screen==RESULT&&a->successful&&a->result_return==FLASH);render(a);
+        Button*restart=test_button(a,A_REBOOT_RECOVERY);DCHECK(restart&&restart->enabled&&!test_button(a,A_REBOOT));
+        action(a,A_REBOOT_RECOVERY);DCHECK(a->screen==POWER_CONFIRM&&a->power_intent==202&&a->running&&!a->exit_code);
+        a->allow_power=power;
         goto done;
     }
     if(!strcmp(which,"pad-round")){

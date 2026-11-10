@@ -13,7 +13,7 @@ English: [README.md](README.md). Історія до 0.6.124:
 
 | | |
 |---|---|
-| Recovery | 0.6.149, SHA-256 `16a5721c18836428aa565e4f852832a040c7313864a92076eb4d1330e50a943c` |
+| Recovery | 0.6.150, SHA-256 `273ece792f9e0417b8982cf74511f024868d6eba297a8d9dc0479d94f27a9046` |
 | Ядро recovery | `7.2.0-a22x-recovery+ #123`: [linux-a22x](https://github.com/Dodaskot/linux-a22x), гілка `a22x-recovery`, тег `a22x-recovery-kernel123` |
 | Перевірено разом із | BOOT v146 (`releases/v146`, ядро `#122`) і v145 (ядро `#121`), гілка `a22x-boot` |
 | Образ | не опубліковано: у ньому прошивка, знята з телефона розробника, і ключ SSH розробника (див. [Збирання](#збирання)) |
@@ -147,7 +147,7 @@ recovery на тестових пристроях; сам застосунок �
 
 | Дистрибутив | Звідки | Оболонки | Вхід | Результат |
 |---|---|---|---|---|
-| Debian 13 | каталог | Phosh, Plasma Mobile, Sxmo | Phrog, автоматичний | працює |
+| Debian 13 | каталог | Phosh, GNOME, Plasma Mobile, Sxmo | Phrog, автоматичний, текстовий | працює; Phosh + GNOME з текстовим входом налаштовує recovery, перемикання в обидва боки перевірено (10.11.2026) |
 | Mobian 13 Phosh | каталог, файл | Phosh, GNOME, Lomiri, Sxmo | Phrog, текстовий | працює |
 | Mobian 13 Plasma Mobile | каталог | Plasma Mobile, Lomiri, Sxmo | SDDM | працює |
 | Ubuntu 26.04 | каталог, `root.tar.xz` | Plasma Mobile, Phosh, GNOME, Xfce, Sxmo | SDDM, автоматичний | працює |
