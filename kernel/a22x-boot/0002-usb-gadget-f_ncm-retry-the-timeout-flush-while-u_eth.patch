@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 10 Nov 2026 06:17:00 +0100
+Subject: [PATCH 2/5] usb: gadget: f_ncm: retry the timeout flush while u_ether
+ is busy
+
+The TX timer flushes the NTB that is still being filled by calling
+ndo_start_xmit(NULL). When every IN request is still in flight, u_ether
+answers NETDEV_TX_BUSY before it wraps the data, and the flush was
+lost: the last NTB of a burst (up to 32 KiB) stayed queued until some
+other packet came. On the Galaxy A22 5G this stalled SSH transfers for
+tens of seconds.
+
+The data is still held in ncm->skb_tx_data, so restart the timer and
+try again a little later.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ drivers/usb/gadget/function/f_ncm.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/gadget/function/f_ncm.c b/drivers/usb/gadget/function/f_ncm.c
+index bf02545b3..b6d1ea545 100644
+--- a/drivers/usb/gadget/function/f_ncm.c
++++ b/drivers/usb/gadget/function/f_ncm.c
+@@ -1158,7 +1158,17 @@ static enum hrtimer_restart ncm_tx_timeout(struct hrtimer *data)
+ 		 *
+ 		 * This will call directly into u_ether's eth_start_xmit()
+ 		 */
+-		netdev->netdev_ops->ndo_start_xmit(NULL, netdev);
++		/* A22x: when every IN request is still in flight u_ether answers
++		 * NETDEV_TX_BUSY before wrapping, and the flush was lost: the last
++		 * NTB of a burst (up to 32 KiB) stayed queued until some other
++		 * packet came, which stalled SSH transfers for tens of seconds.
++		 * The data is still held here, so try again a little later.
++		 */
++		if (netdev->netdev_ops->ndo_start_xmit(NULL, netdev) == NETDEV_TX_BUSY &&
++		    READ_ONCE(ncm->skb_tx_data)) {
++			hrtimer_forward_now(data, TX_TIMEOUT_NSECS);
++			return HRTIMER_RESTART;
++		}
+ 	}
+ 	return HRTIMER_NORESTART;
+ }

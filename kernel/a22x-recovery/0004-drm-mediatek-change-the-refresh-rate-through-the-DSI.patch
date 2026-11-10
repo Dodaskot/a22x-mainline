@@ -1,0 +1,248 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Tue, 10 Nov 2026 06:17:01 +0100
+Subject: [PATCH 4/5] drm/mediatek: change the refresh rate through the DSI
+ front porch
+
+The Galaxy A22 5G panel runs at 60 and 90 Hz in video mode on a fixed
+link rate; the two modes differ only in the vertical front porch. The
+atomic helpers treated the switch as a full mode set, powered the panel
+down and up again, and left the screen dark for half a second.
+
+When only the front porch changes, keep the pipeline running: a new
+seamless_timing hook of the DDP components says whether the hardware
+can take the new porch, and the DSI writes it to DSI_VFP_NL, as the
+vendor kernel does for this panel, without a panel command or a PLL
+change. The write waits for a moment inside the active lines after a
+vblank so that the porch never changes while it is being counted.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ drivers/gpu/drm/mediatek/mtk_crtc.c     | 77 +++++++++++++++++++++++++
+ drivers/gpu/drm/mediatek/mtk_ddp_comp.c |  2 +
+ drivers/gpu/drm/mediatek/mtk_ddp_comp.h | 18 ++++++
+ drivers/gpu/drm/mediatek/mtk_disp_drv.h |  4 ++
+ drivers/gpu/drm/mediatek/mtk_dsi.c      | 23 ++++++++
+ 5 files changed, 124 insertions(+)
+
+diff --git a/drivers/gpu/drm/mediatek/mtk_crtc.c b/drivers/gpu/drm/mediatek/mtk_crtc.c
+index 97e3ff412..22409384c 100644
+--- a/drivers/gpu/drm/mediatek/mtk_crtc.c
++++ b/drivers/gpu/drm/mediatek/mtk_crtc.c
+@@ -5,6 +5,7 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/dma-mapping.h>
++#include <linux/delay.h>
+ #include <linux/mailbox_controller.h>
+ #include <linux/of.h>
+ #include <linux/pm_runtime.h>
+@@ -81,6 +82,7 @@ struct mtk_crtc_state {
+ 	unsigned int			pending_width;
+ 	unsigned int			pending_height;
+ 	unsigned int			pending_vrefresh;
++	bool				seamless_timing;
+ };
+ 
+ static inline struct mtk_crtc *to_mtk_crtc(struct drm_crtc *c)
+@@ -178,6 +180,7 @@ static struct drm_crtc_state *mtk_crtc_duplicate_state(struct drm_crtc *crtc)
+ 	WARN_ON(state->base.crtc != crtc);
+ 	state->base.crtc = crtc;
+ 	state->pending_config = false;
++	state->seamless_timing = false;
+ 
+ 	return &state->base;
+ }
+@@ -843,6 +846,77 @@ static void mtk_crtc_atomic_disable(struct drm_crtc *crtc,
+ 	mtk_crtc->enabled = false;
+ }
+ 
++/* Only the vertical front porch differs: same lines, same sync, same link. */
++static bool mtk_crtc_modes_differ_in_vfp(const struct drm_display_mode *a,
++					 const struct drm_display_mode *b)
++{
++	return a->hdisplay == b->hdisplay && a->hsync_start == b->hsync_start &&
++	       a->hsync_end == b->hsync_end && a->htotal == b->htotal &&
++	       a->vdisplay == b->vdisplay && a->flags == b->flags &&
++	       a->vsync_end - a->vsync_start == b->vsync_end - b->vsync_start &&
++	       a->vtotal - a->vsync_end == b->vtotal - b->vsync_end &&
++	       a->vsync_start != b->vsync_start;
++}
++
++/*
++ * Keep the pipeline running through such a mode change. Without this the helpers
++ * power the panel down and up again, which leaves the screen dark for 0.5 s.
++ */
++static int mtk_crtc_atomic_check(struct drm_crtc *crtc,
++				 struct drm_atomic_commit *state)
++{
++	struct drm_crtc_state *old = drm_atomic_get_old_crtc_state(state, crtc);
++	struct drm_crtc_state *new = drm_atomic_get_new_crtc_state(state, crtc);
++	struct mtk_crtc *mtk_crtc = to_mtk_crtc(crtc);
++	int i;
++
++	to_mtk_crtc_state(new)->seamless_timing = false;
++	if (!new->mode_changed || new->active_changed || new->connectors_changed ||
++	    !old->active || !new->active ||
++	    !mtk_crtc_modes_differ_in_vfp(&old->adjusted_mode, &new->adjusted_mode))
++		return 0;
++
++	for (i = 0; i < mtk_crtc->ddp_comp_nr; i++) {
++		if (mtk_ddp_comp_seamless_timing(mtk_crtc->ddp_comp[i],
++						 &new->adjusted_mode)) {
++			to_mtk_crtc_state(new)->seamless_timing = true;
++			new->mode_changed = false;
++			break;
++		}
++	}
++	return 0;
++}
++
++/*
++ * The porch must not change while it is being counted. The vblank event comes at
++ * one end of the blanking, whose length here is 0.5 to 6.1 ms, and the 10.6 ms of
++ * active lines follow: 8 to 10 ms after the event is inside them at either rate,
++ * wherever in the blanking the event fired.
++ */
++static void mtk_crtc_apply_seamless_timing(struct drm_crtc *crtc)
++{
++	const struct drm_display_mode *mode = &crtc->state->adjusted_mode;
++	struct mtk_crtc *mtk_crtc = to_mtk_crtc(crtc);
++	unsigned int tries;
++	int i;
++
++	for (tries = 0; tries < 8; tries++) {
++		ktime_t start;
++
++		drm_crtc_wait_one_vblank(crtc);
++		start = ktime_get();
++		usleep_range(8000, 8100);
++		if (ktime_ms_delta(ktime_get(), start) >= 10)
++			continue;
++		for (i = 0; i < mtk_crtc->ddp_comp_nr; i++)
++			mtk_ddp_comp_set_seamless_timing(mtk_crtc->ddp_comp[i], mode);
++		return;
++	}
++	drm_warn(crtc->dev, "no safe moment for the new refresh timing\n");
++	for (i = 0; i < mtk_crtc->ddp_comp_nr; i++)
++		mtk_ddp_comp_set_seamless_timing(mtk_crtc->ddp_comp[i], mode);
++}
++
+ static void mtk_crtc_atomic_begin(struct drm_crtc *crtc,
+ 				  struct drm_atomic_commit *state)
+ {
+@@ -879,6 +953,8 @@ static void mtk_crtc_atomic_flush(struct drm_crtc *crtc,
+ 			mtk_ddp_gamma_set(mtk_crtc->ddp_comp[i], crtc->state);
+ 			mtk_ddp_ctm_set(mtk_crtc->ddp_comp[i], crtc->state);
+ 		}
++	if (to_mtk_crtc_state(crtc->state)->seamless_timing)
++		mtk_crtc_apply_seamless_timing(crtc);
+ 	mtk_crtc_update_config(mtk_crtc, !!mtk_crtc->event);
+ }
+ 
+@@ -897,6 +973,7 @@ static const struct drm_crtc_helper_funcs mtk_crtc_helper_funcs = {
+ 	.mode_fixup	= mtk_crtc_mode_fixup,
+ 	.mode_set_nofb	= mtk_crtc_mode_set_nofb,
+ 	.mode_valid	= mtk_crtc_mode_valid,
++	.atomic_check	= mtk_crtc_atomic_check,
+ 	.atomic_begin	= mtk_crtc_atomic_begin,
+ 	.atomic_flush	= mtk_crtc_atomic_flush,
+ 	.atomic_enable	= mtk_crtc_atomic_enable,
+diff --git a/drivers/gpu/drm/mediatek/mtk_ddp_comp.c b/drivers/gpu/drm/mediatek/mtk_ddp_comp.c
+index 9672ea1f9..0cae682e4 100644
+--- a/drivers/gpu/drm/mediatek/mtk_ddp_comp.c
++++ b/drivers/gpu/drm/mediatek/mtk_ddp_comp.c
+@@ -319,6 +319,8 @@ static const struct mtk_ddp_comp_funcs ddp_dsc = {
+ static const struct mtk_ddp_comp_funcs ddp_dsi = {
+ 	.start = mtk_dsi_ddp_start,
+ 	.stop = mtk_dsi_ddp_stop,
++	.seamless_timing = mtk_dsi_ddp_seamless_timing,
++	.set_seamless_timing = mtk_dsi_ddp_set_seamless_timing,
+ 	.encoder_index = mtk_dsi_encoder_index,
+ };
+ 
+diff --git a/drivers/gpu/drm/mediatek/mtk_ddp_comp.h b/drivers/gpu/drm/mediatek/mtk_ddp_comp.h
+index 3f3d43f43..1e0562bd7 100644
+--- a/drivers/gpu/drm/mediatek/mtk_ddp_comp.h
++++ b/drivers/gpu/drm/mediatek/mtk_ddp_comp.h
+@@ -79,6 +79,10 @@ struct mtk_ddp_comp_funcs {
+ 	void (*bgclr_in_off)(struct device *dev);
+ 	void (*ctm_set)(struct device *dev,
+ 			struct drm_crtc_state *state);
++	bool (*seamless_timing)(struct device *dev,
++				const struct drm_display_mode *mode);
++	void (*set_seamless_timing)(struct device *dev,
++				    const struct drm_display_mode *mode);
+ 	struct device * (*dma_dev_get)(struct device *dev);
+ 	u32 (*get_blend_modes)(struct device *dev);
+ 	const u32 *(*get_formats)(struct device *dev);
+@@ -100,6 +104,20 @@ struct mtk_ddp_comp {
+ 	const struct mtk_ddp_comp_funcs *funcs;
+ };
+ 
++static inline bool mtk_ddp_comp_seamless_timing(struct mtk_ddp_comp *comp,
++						const struct drm_display_mode *mode)
++{
++	return comp->funcs && comp->funcs->seamless_timing &&
++	       comp->funcs->seamless_timing(comp->dev, mode);
++}
++
++static inline void mtk_ddp_comp_set_seamless_timing(struct mtk_ddp_comp *comp,
++						    const struct drm_display_mode *mode)
++{
++	if (comp->funcs && comp->funcs->set_seamless_timing)
++		comp->funcs->set_seamless_timing(comp->dev, mode);
++}
++
+ static inline int mtk_ddp_comp_power_on(struct mtk_ddp_comp *comp)
+ {
+ 	if (comp->funcs && comp->funcs->power_on)
+diff --git a/drivers/gpu/drm/mediatek/mtk_disp_drv.h b/drivers/gpu/drm/mediatek/mtk_disp_drv.h
+index 679d413bf..cf32c8c3d 100644
+--- a/drivers/gpu/drm/mediatek/mtk_disp_drv.h
++++ b/drivers/gpu/drm/mediatek/mtk_disp_drv.h
+@@ -49,6 +49,10 @@ unsigned int mtk_dpi_encoder_index(struct device *dev);
+ 
+ void mtk_dsi_ddp_start(struct device *dev);
+ void mtk_dsi_ddp_stop(struct device *dev);
++bool mtk_dsi_ddp_seamless_timing(struct device *dev,
++				 const struct drm_display_mode *mode);
++void mtk_dsi_ddp_set_seamless_timing(struct device *dev,
++				     const struct drm_display_mode *mode);
+ unsigned int mtk_dsi_encoder_index(struct device *dev);
+ 
+ int mtk_gamma_clk_enable(struct device *dev);
+diff --git a/drivers/gpu/drm/mediatek/mtk_dsi.c b/drivers/gpu/drm/mediatek/mtk_dsi.c
+index 61ec5dada..95d764217 100644
+--- a/drivers/gpu/drm/mediatek/mtk_dsi.c
++++ b/drivers/gpu/drm/mediatek/mtk_dsi.c
+@@ -1040,6 +1040,29 @@ void mtk_dsi_ddp_stop(struct device *dev)
+ 	mtk_dsi_poweroff(dsi);
+ }
+ 
++/*
++ * A video-mode panel on a fixed link rate changes refresh with the vertical
++ * front porch alone. The vendor kernel does this for the same panel: one write
++ * to DSI_VFP_NL, no panel command and no PLL change, so the panel stays lit.
++ */
++bool mtk_dsi_ddp_seamless_timing(struct device *dev,
++				 const struct drm_display_mode *mode)
++{
++	struct mtk_dsi *dsi = dev_get_drvdata(dev);
++
++	return dsi->enabled && dsi->hs_rate && dsi->driver_data->is_cphy &&
++	       (dsi->mode_flags & MIPI_DSI_MODE_VIDEO);
++}
++
++void mtk_dsi_ddp_set_seamless_timing(struct device *dev,
++				     const struct drm_display_mode *mode)
++{
++	struct mtk_dsi *dsi = dev_get_drvdata(dev);
++
++	drm_display_mode_to_videomode(mode, &dsi->vm);
++	writel(dsi->vm.vfront_porch, dsi->regs + DSI_VFP_NL);
++}
++
+ static int mtk_dsi_encoder_init(struct drm_device *drm, struct mtk_dsi *dsi)
+ {
+ 	int ret;

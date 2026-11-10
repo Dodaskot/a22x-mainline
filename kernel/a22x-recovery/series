@@ -1,0 +1,5 @@
+0001-usb-musb-gadget-keep-OUT-packets-that-arrive-before-.patch
+0002-usb-gadget-f_ncm-retry-the-timeout-flush-while-u_eth.patch
+0003-usb-musb-mediatek-re-attach-the-device-role-after-sy.patch
+0004-drm-mediatek-change-the-refresh-rate-through-the-DSI.patch
+0005-drm-mediatek-draw-the-A22x-recovery-boot-splash.patch
