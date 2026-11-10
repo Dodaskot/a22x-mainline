@@ -15,16 +15,35 @@ It boots from the stock Samsung LK bootloader as an ordinary `boot.img`:
 no bootloader, modem or other partition is replaced. The userspace used
 during development is Arch Linux ARM with Phosh.
 
-The latest release is **v144 (kernel build #107)**. It adds a minimal
-charging screen for power-off charging, keeps kernel logs on UART instead
-of the display, and carries the MT6359 power-off and normal-restart fixes.
-The [public kernel branch](https://github.com/Dodaskot/linux-a22x/tree/a22x)
-and this repository's **143-patch series** describe the same kernel source.
-See the [source and validation report](docs/KERNEL-SYNC-20261104.md),
-[charger implementation](boot/charger/README.md), and
-[prebuilt v144 boot.img](releases/v144/README.md).
+The latest release is **v145 (kernel build #121)**. It keeps USB networking
+alive after system sleep and during large uploads, changes between 60 and
+90 Hz without a dark flash, shows a boot splash from the first frame, and
+can skip the charging screen when the installed system asks for it. Kernel
+#121 is kernel #107 plus five commits: branch
+[`a22x-boot`](https://github.com/Dodaskot/linux-a22x/tree/a22x-boot) and
+[kernel/a22x-boot/](kernel/a22x-boot/). See the
+[prebuilt v145 boot.img](releases/v145/README.md).
 
-Earlier v135, v142 and v143 releases remain unchanged. v144 also retains
+**[A22x recovery](recovery/README.md)** ([українською](recovery/README.uk.md))
+is a Linux recovery for the RECOVERY partition, with its own kernel #120
+(branch [`a22x-recovery`](https://github.com/Dodaskot/linux-a22x/tree/a22x-recovery)).
+From its touch interface it installs Debian, Ubuntu, Fedora, Arch Linux ARM,
+Manjaro, Mobian or postmarketOS from a catalog or a file. You choose the
+desktop and extra shells (Phosh, GNOME, Plasma Mobile, Xfce, Sxmo, Lomiri), the
+sign-in screen, the language, the account and the apps. Several systems can
+stay side by side with a shared `/home` and switch in both directions. The
+recovery README lists what works and the known problems; Android installation
+is not ready yet.
+
+v144 (kernel #107) added the minimal charging screen, kept kernel logs on
+UART instead of the display, and carried the MT6359 power-off and
+normal-restart fixes. The
+[public kernel branch](https://github.com/Dodaskot/linux-a22x/tree/a22x) and
+this repository's **143-patch series** describe kernel #107. See the
+[source and validation report](docs/KERNEL-SYNC-20261104.md) and the
+[charger implementation](boot/charger/README.md).
+
+Earlier v135, v142, v143 and v144 releases remain unchanged. v144 also retains
 their USB-C/OTG and GPU watchdog fixes and the subsequent #102 Himax
 teardown fix. See [provenance](docs/PROVENANCE.md) for the release history.
 
@@ -37,14 +56,14 @@ teardown fix. See [provenance](docs/PROVENANCE.md) for the release history.
 | Area | State |
 |---|---|
 | Boot | stock LK, header-v2 boot.img with a 0x180000 shim, UART earlycon |
-| Display | native MT6833 DSI (C-PHY) + JDI HX83112F panel, DCS backlight, 60/90 Hz, full power-off; simpledrm fallback |
+| Display | native MT6833 DSI (C-PHY) + JDI HX83112F panel, DCS backlight, 60/90 Hz switched without a dark flash (v145), boot splash (v145), full power-off; simpledrm fallback |
 | Touch | Himax HX83112F zero-flash (stock firmware required) |
 | GPU | Mali-G57 via Panfrost, DVFS 390–955 MHz |
 | CPU / CCI | DVFS, little 2.0 GHz / big 2.203 GHz, CCI 1.131 GHz, PSCI CPU idle |
 | RAM | 3.44 GiB usable of 4 GiB (Android ZMC pool reclaimed), 4266 MT/s on both channels |
 | Thermal | LVTS sensors, CPU/GPU/SoC zones, restored after system sleep |
 | Storage | eMMC, microSD (SDR104) |
-| USB | NCM networking and USB-C OTG storage; both plug orientations and return to charging/NCM tested |
+| USB | NCM networking and USB-C OTG storage; both plug orientations and return to charging/NCM tested; v145 keeps large uploads and re-attaches after system sleep |
 | Audio | speaker (SIA8109), earpiece, headphones + jack detection, built-in microphone (ALSA UCM provided) |
 | Wi-Fi / Bluetooth | vendor gen4m Wi-Fi port and own HCI-over-STP Bluetooth driver (`conn/`) |
 | Battery | MT6359 fuel gauge (coulomb counter), MT6360 charger; v144 adds an initramfs-only power-off charging display |
@@ -100,17 +119,22 @@ for per-workload scores, driver changes and validation limits.
 ```
 kernel/patches/   143 patches on top of Linux v7.2 (git am), with series file
                   (same source as linux-a22x branch a22x / kernel #107)
-kernel/config/    a22x-v144.config (#107), historical v135 config + fragments
+kernel/a22x-boot/ 5 patches above #107: BOOT kernel #121 (branch a22x-boot)
+kernel/a22x-recovery/ 5 patches above #107: recovery kernel #120 (branch a22x-recovery)
+kernel/config/    a22x-boot-k121.config, a22x-recovery-k120.config, a22x-v144.config (#107),
+                  historical v135 config + fragments
 kernel/build.sh   clone v7.2, apply the series, build Image.gz/DTBs/modules
 kernel/update-patches.sh  regenerate kernel/patches from the kernel tree
 conn/             MediaTek connectivity drivers (WMT, BTIF, gen4m Wi-Fi, BT HCI)
                   ported out-of-tree from the Samsung GPL release, + systemd units
 boot/             mkboot.sh (boot.img for stock LK), initramfs init, flash.sh
 boot/charger/     static AArch64 minimal charger, host/ARM tests and build helper
+recovery/         A22x recovery 0.6: touch interface, Linux installer, tests (MIT)
 rootfs/           ALSA UCM profile, feedbackd theme
 tools/            bring-up helpers (memtool, clock/DT generators, smoke test)
 docs/             building/flashing guide, hardware notes, provenance
-releases/v144/    latest prebuilt boot.img, kernel #107 + minimal charger (Git LFS)
+releases/v145/    latest prebuilt boot.img, kernel #121 (Git LFS)
+releases/v144/    prebuilt boot.img, kernel #107 + minimal charger (Git LFS)
 releases/v143/    historical prebuilt boot.img, kernel #101 (Git LFS)
 releases/v142/    prebuilt v142 boot.img (Git LFS)
 releases/v135/    prebuilt v135 boot.img + matching conn modules (Git LFS)
@@ -126,11 +150,16 @@ OUT=$PWD/kernel/out boot/mkboot.sh local     # -> boot/images/boot-mainline-loca
 boot/flash.sh boot/images/boot-mainline-local.img  # phone in Download mode
 ```
 
+The prebuilt [v145 boot.img](releases/v145/README.md) contains kernel #121
+(patches 0001–0143 plus `kernel/a22x-boot/`) and the tested initramfs. It is
+the exact image used on the phone; no publication rebuild was substituted.
+The root filesystem is installed separately, most easily with the
+[A22x recovery](recovery/README.md).
+
 The prebuilt [v144 boot.img](releases/v144/README.md) contains patches
-0001–0143, kernel #107 and the tested minimal charger. It is the exact image
-tested on the phone; no publication rebuild was substituted. Build Wi-Fi/BT
+0001–0143, kernel #107 and the tested minimal charger. Build Wi-Fi/BT
 modules against kernel tag `a22x-v144` with `a22x-v144.config` and
-`conn/build.sh`. The root filesystem is installed separately.
+`conn/build.sh`.
 
 Historical [v143](releases/v143/README.md), [v142](releases/v142/README.md)
 and [v135](releases/v135/README.md) images retain their original contents.
@@ -142,11 +171,11 @@ Full instructions, the root filesystem layout and rollback:
 ## Proprietary firmware
 
 The source tree contains no Samsung/MediaTek firmware. The prebuilt images
-`releases/v144/boot.img`, `releases/v143/boot-a22x-v143.img`,
+`releases/v145/boot.img`, `releases/v144/boot.img`, `releases/v143/boot-a22x-v143.img`,
 `releases/v142/boot-a22x-v142.img` and `releases/v135/boot-a22x-v135.img`
 are the exception: their initramfs contains the stock touch firmware
 `Himax_firmware_fw_jdi.bin` (Samsung/Himax, proprietary), see
-[releases/v144](releases/v144/README.md), [releases/v143](releases/v143/README.md),
+[releases/v145](releases/v145/README.md), [releases/v144](releases/v144/README.md), [releases/v143](releases/v143/README.md),
 [releases/v142](releases/v142/README.md) and [releases/v135](releases/v135/README.md).
 
 For your own builds, obtain these **five binary firmware files** from the stock

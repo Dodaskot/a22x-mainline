@@ -1,0 +1,4024 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: fr\n"
+
+msgid "  /  skip-identical"
+msgstr "  /  ignorer les identiques"
+
+msgid " / preview truncated"
+msgstr " / aperçu tronqué"
+
+msgid " / tap text to move cursor"
+msgstr " / touchez le texte pour déplacer le curseur"
+
+msgid " / unsaved"
+msgstr " / non enregistré"
+
+msgid " and %u more"
+msgstr " et %u de plus"
+
+msgid " bytes"
+msgstr " octets"
+
+msgid " bytes skipped / %s"
+msgstr " octets ignorés / %s"
+
+msgid "%.120s / %.24s / %s free"
+msgstr "%.120s / %.24s / %s libres"
+
+msgid "%s / %u history rows / basic ANSI"
+msgstr "%s / %u lignes d'historique / ANSI de base"
+
+msgid "%s available"
+msgstr "%s disponibles"
+
+msgid "%s is not supported"
+msgstr "%s n’est pas pris en charge"
+
+msgid "%s was written and read back. Every byte matches the image.%s"
+msgstr "%s a été écrit et relu. Chaque octet correspond à l'image.%s"
+
+msgid "%s, %d %s"
+msgstr "%s %d %s"
+
+msgid "%u apps chosen"
+msgstr "%u applications choisies"
+
+msgid "%u Hz display mode is active."
+msgstr "Mode d'affichage %u Hz actif."
+
+msgid "%u partitions, %s"
+msgstr "%u partitions, %s"
+
+msgid "1 min"
+msgstr "1 min"
+
+msgid "10 min"
+msgstr "10 min"
+
+msgid "2 min"
+msgstr "2 min"
+
+msgid "30 s"
+msgstr "30 s"
+
+msgid "5 min"
+msgstr "5 min"
+
+msgid "A city keeps the clock right with summer time."
+msgstr "Une ville garde l'heure juste, heure d'été comprise."
+
+msgid "A clean install needs a new account: userdata has none to keep"
+msgstr "Une installation propre nécessite un nouveau compte : userdata n'en contient aucun à garder"
+
+msgid "A clean install needs a new account: userdata has none to keep."
+msgstr "Une installation propre nécessite un nouveau compte : userdata n'en contient aucun à garder."
+
+msgid "A clean installation, like the installer of a live disk."
+msgstr "Une installation propre, comme l’installateur d’un live CD."
+
+msgid "A command is running in the terminal and holds storage. Wait for it to end, or stop it in the terminal."
+msgstr "Une commande s'exécute dans le terminal et occupe le stockage. Attendez qu'elle se termine ou arrêtez-la dans le terminal."
+
+msgid "A completed manifest is published only after the archive and its decoded hash have been verified."
+msgstr "Un manifeste complet n'est publié qu'après vérification de l'archive et de son hachage décompressé."
+
+msgid "A computer is asking to use this phone."
+msgstr "Un ordinateur demande à utiliser ce téléphone."
+
+msgid "A network name has 1 to 32 bytes"
+msgstr "Un nom de réseau compte de 1 à 32 octets"
+
+msgid "A network name has at most 32 bytes."
+msgstr "Un nom de réseau compte au plus 32 octets."
+
+msgid "A new diagnostic archive will be written to this volume. Existing archives are retained."
+msgstr "Une nouvelle archive de diagnostic sera écrite sur ce volume. Les archives existantes sont conservées."
+
+msgid "A new folder A22xIdentityBackups is written with every partition and its checksum. Keep it off the phone too: no image or firmware download contains it."
+msgstr "Un nouveau dossier est écrit dans A22xIdentityBackups avec chaque partition et sa somme de contrôle. Gardez-le aussi hors du téléphone : aucune image ni aucun firmware ne le contient."
+
+msgid "A new theme always spreads as a circle, unless animations are off."
+msgstr "Un nouveau thème s'étend toujours en cercle, sauf si les animations sont désactivées."
+
+msgid "A package download failed in recovery."
+msgstr "Le téléchargement d’un paquet a échoué dans le recovery."
+
+msgid "A private RAM directory is required for this installation plan."
+msgstr "Ce plan d'installation nécessite un répertoire privé en RAM."
+
+msgid "A private RAM directory is required for this reviewed plan."
+msgstr "Ce plan vérifié nécessite un répertoire privé en RAM."
+
+msgid "A private runtime directory is required for reviewed plans."
+msgstr "Les plans vérifiés nécessitent un répertoire d'exécution privé."
+
+msgid "A qualified stock profile is not available in this recovery."
+msgstr "Aucun profil stock qualifié n'est disponible dans ce recovery."
+
+msgid "A running shell was not confirmed. No additional session was started."
+msgstr "Aucun shell actif n'a été confirmé. Aucune autre session n'a été lancée."
+
+msgid "A setup script can be at most 1 MiB"
+msgstr "Un script de configuration peut faire au plus 1 Mio"
+
+msgid "A setup script can be at most 1 MiB."
+msgstr "Un script de configuration peut faire au plus 1 Mio."
+
+msgid "A system image on a USB stick or SD card"
+msgstr "Une image système sur clé USB ou carte SD"
+
+msgid "A text login for a USB or Bluetooth keyboard. It starts the shell picked last."
+msgstr "Connexion en mode texte pour un clavier USB ou Bluetooth. Elle lance l'interface choisie en dernier."
+
+msgid "A touch login made of Phosh, with the on-screen keyboard and a list of the shells."
+msgstr "Connexion tactile basée sur Phosh, avec clavier à l'écran et liste des interfaces."
+
+msgid "A touch login made of Phosh, with the on-screen keyboard and a list of the shells. Arch builds it on the phone: 30-40 minutes more."
+msgstr "Connexion tactile basée sur Phosh, avec clavier à l'écran et liste des interfaces. Arch la compile sur le téléphone : 30-40 minutes de plus."
+
+msgid "A Wi-Fi password has 8 to 63 characters"
+msgstr "Un mot de passe Wi-Fi compte de 8 à 63 caractères"
+
+msgid "A Wi-Fi password has 8 to 63 characters."
+msgstr "Un mot de passe Wi-Fi compte de 8 à 63 caractères."
+
+msgid "About %u min left"
+msgstr "Encore environ %u min"
+
+msgid "About phone"
+msgstr "À propos du téléphone"
+
+msgid "ACCESS"
+msgstr "ACCÈS"
+
+msgid "Access stays open until the phone locks or restarts. The computer never sees the password."
+msgstr "L'accès reste ouvert jusqu'au verrouillage ou redémarrage. L'ordinateur ne voit jamais le mot de passe."
+
+msgid "ACCOUNT"
+msgstr "COMPTE"
+
+msgid "active"
+msgstr "actif"
+
+msgid "Add a new slot alongside the current Linux."
+msgstr "Ajouter un nouvel emplacement à côté du Linux actuel."
+
+msgid "Add a theme from a file"
+msgstr "Ajouter un thème depuis un fichier"
+
+msgid "Add colors from a file"
+msgstr "Ajouter des couleurs depuis un fichier"
+
+msgid "Add shells and choose how the phone signs in."
+msgstr "Ajoutez des interfaces et choisissez la connexion."
+
+msgid "Added"
+msgstr "Ajouté"
+
+msgid "Added until restart: no writable storage"
+msgstr "Ajouté jusqu'au redémarrage : aucun stockage inscriptible"
+
+msgid "Adding phone support"
+msgstr "Ajout de la prise en charge du téléphone"
+
+msgid "Address %s"
+msgstr "Adresse %s"
+
+msgid "Adjusting brightness."
+msgstr "Réglage de la luminosité."
+
+msgid "Africa"
+msgstr "Afrique"
+
+msgid "All"
+msgstr "Tout"
+
+msgid "Allow"
+msgstr "Autoriser"
+
+msgid "Allow this computer"
+msgstr "Autoriser cet ordinateur"
+
+msgid "Allow this computer only if you started this yourself."
+msgstr "N'autorisez que si vous l'avez lancé vous-même."
+
+msgid "Allow with password"
+msgstr "Autoriser avec le mot de passe"
+
+msgid "Already fills the partition: %s"
+msgstr "Occupe déjà toute la partition : %s"
+
+msgid "Already unmounted"
+msgstr "Déjà démonté"
+
+msgid "ALSO INSTALL"
+msgstr "INSTALLER AUSSI"
+
+msgid "Always"
+msgstr "Toujours"
+
+msgid "America"
+msgstr "Amérique"
+
+msgid "An ARM64 ISO, disk image (raw, qcow2, VHD), Vagrant box or rootfs archive."
+msgstr "Une ISO, une image disque (raw, qcow2, VHD), une box Vagrant ou une archive rootfs ARM64."
+
+msgid "An incomplete import remains in /.a22x-systems/staging for inspection. No automatic cleanup is performed."
+msgstr "Une importation incomplète reste dans /.a22x-systems/staging pour examen. Aucun nettoyage automatique n'est effectué."
+
+msgid "An installation is unfinished"
+msgstr "Une installation n'est pas terminée"
+
+msgid "An interrupted RECOVERY write can require Samsung Download mode and external recovery flashing."
+msgstr "Une écriture RECOVERY interrompue peut nécessiter le mode Samsung Download et un flash externe du recovery."
+
+msgid "An X11 login screen with an on-screen keyboard, made for Xfce."
+msgstr "Un écran de connexion X11 avec clavier à l'écran, conçu pour Xfce."
+
+msgid "Android archive"
+msgstr "Archive Android"
+
+msgid "Android boot image"
+msgstr "Image de démarrage Android"
+
+msgid "Android logical-partition container; mapping is not implemented"
+msgstr "Conteneur de partitions logiques Android ; le mappage n'est pas implémenté"
+
+msgid "Android state requires its matching retained system/vendor firmware."
+msgstr "L'état Android nécessite le firmware system/vendor correspondant conservé."
+
+msgid "Android super image"
+msgstr "Image super Android"
+
+msgid "Android system partitions"
+msgstr "Partitions système Android"
+
+msgid "Android verified filesystem; writes are not qualified"
+msgstr "Système de fichiers Android vérifié ; l'écriture n'est pas qualifiée"
+
+msgid "Animations"
+msgstr "Animations"
+
+msgid "Another phone"
+msgstr "Autre téléphone"
+
+msgid "Antarctica"
+msgstr "Antarctique"
+
+msgid "App store"
+msgstr "Logithèque"
+
+msgid "Applying and checking %u Hz..."
+msgstr "Application et vérification de %u Hz..."
+
+msgid "Applying display control and reading the result..."
+msgstr "Application du réglage de l'écran et lecture du résultat..."
+
+msgid "APPS"
+msgstr "APPLICATIONS"
+
+msgid "Apps"
+msgstr "Applications"
+
+msgid "April"
+msgstr "avril"
+
+msgid "Arch"
+msgstr "Arch"
+
+msgid "Architecture"
+msgstr "Architecture"
+
+msgid "Archive: %s\nSize: %s\nSHA-256: %s"
+msgstr "Archive : %s\nTaille : %s\nSHA-256 : %s"
+
+msgid "Arctic"
+msgstr "Arctique"
+
+msgid "arm64"
+msgstr "arm64"
+
+msgid "ARM64 root filesystems / shared /home / existing BOOT"
+msgstr "Systèmes racine ARM64 / /home partagé / BOOT existant"
+
+msgid "As in image"
+msgstr "Comme dans l'image"
+
+msgid "As in recovery (%s)"
+msgstr "Comme dans le recovery (%s)"
+
+msgid "Asia"
+msgstr "Asie"
+
+msgid "Asked at start and after the screen turns off"
+msgstr "Au démarrage et après l'extinction de l'écran"
+
+msgid "Asked when recovery starts"
+msgstr "Demandé au démarrage du recovery"
+
+msgid "At least 4 characters."
+msgstr "Au moins 4 caractères."
+
+msgid "At start"
+msgstr "Au démarrage"
+
+msgid "Atlantic"
+msgstr "Atlantique"
+
+msgid "August"
+msgstr "août"
+
+msgid "Aurora"
+msgstr "Aurore"
+
+msgid "Australia"
+msgstr "Australie"
+
+msgid "Authorization status unavailable"
+msgstr "État d'autorisation indisponible"
+
+msgid "Authorized keys: %u  /  key-only login"
+msgstr "Clés autorisées : %u  /  connexion par clé uniquement"
+
+msgid "Automatic sign-in"
+msgstr "Connexion automatique"
+
+msgid "Available memory"
+msgstr "Mémoire disponible"
+
+msgid "Available?"
+msgstr "Disponible ?"
+
+msgid "Back to display"
+msgstr "Retour à l'affichage"
+
+msgid "Back to files"
+msgstr "Retour aux fichiers"
+
+msgid "Back to preparation"
+msgstr "Retour à la préparation"
+
+msgid "Back to recovery"
+msgstr "Retour au recovery"
+
+msgid "Back to tools"
+msgstr "Retour aux réglages"
+
+msgid "Back to USB files"
+msgstr "Retour aux fichiers USB"
+
+msgid "Backend did not admit this operation."
+msgstr "Le backend n'a pas admis cette opération."
+
+msgid "Backend output exceeded the bounded result buffer."
+msgstr "La sortie du backend a dépassé le tampon de résultat limité."
+
+msgid "Background and text of the terminal."
+msgstr "Fond et texte du terminal."
+
+msgid "Backup"
+msgstr "Sauvegarde"
+
+msgid "backup"
+msgstr "sauvegarde"
+
+msgid "Backup completed and verified."
+msgstr "Sauvegarde créée et vérifiée."
+
+msgid "Backup completed and verified. Userdata remains offline."
+msgstr "Sauvegarde terminée et vérifiée. Userdata reste hors ligne."
+
+msgid "BACKUP DESTINATION"
+msgstr "DESTINATION DES SAUVEGARDES"
+
+msgid "BACKUP SOURCE"
+msgstr "SOURCE DE LA SAUVEGARDE"
+
+msgid "Backups will be saved to the USB stick"
+msgstr "Les sauvegardes iront sur la clé USB"
+
+msgid "Basic ANSI, UTF-8, history and completion. Full-screen programs may have limited display support."
+msgstr "ANSI de base, UTF-8, historique et complétion. Les programmes plein écran peuvent s'afficher de façon limitée."
+
+msgid "Battery"
+msgstr "Batterie"
+
+msgid "Beaver"
+msgstr "Castor"
+
+msgid "Blur dissolve"
+msgstr "Fondu flou"
+
+msgid "Board revision"
+msgstr "Révision de la carte"
+
+msgid "Boot + used ext4 blocks\nSave the Linux kernel and root filesystem offline."
+msgstr "Boot + blocs ext4 utilisés\nSauvegarder hors ligne le noyau Linux et le système racine."
+
+msgid "BOOT and allocated ext4 blocks are read and compressed. Existing files on the destination are retained."
+msgstr "BOOT et les blocs ext4 alloués sont lus et compressés. Les fichiers existants à destination sont conservés."
+
+msgid "BOOT identical / no BOOT write"
+msgstr "BOOT identique / aucune écriture de BOOT"
+
+msgid "BOOT image"
+msgstr "Image BOOT"
+
+msgid "BOOT IMAGE ON MICROSD"
+msgstr "IMAGE BOOT SUR MICROSD"
+
+msgid "BOOT installation"
+msgstr "Installation de BOOT"
+
+msgid "BOOT installation completed and independently verified."
+msgstr "Installation du BOOT terminée et vérifiée de façon indépendante."
+
+msgid "BOOT must be unmounted and unused. Userdata may remain mounted. Keep microSD mounted with write access. The installer verifies the stored Linux backup, source and phone identity."
+msgstr "BOOT doit être démonté et inutilisé. Userdata peut rester monté. Gardez la microSD montée en écriture. L'installateur vérifie la sauvegarde Linux enregistrée, la source et l'identité du téléphone."
+
+msgid "boot not yet tested"
+msgstr "démarrage pas encore testé"
+
+msgid "BOOT preserved / userdata becomes empty ext4"
+msgstr "BOOT conservé / userdata devient un ext4 vide"
+
+msgid "BOOT restored last, after userdata verification"
+msgstr "BOOT est restauré en dernier, après vérification de userdata"
+
+msgid "BOOT source"
+msgstr "Source de BOOT"
+
+msgid "BOOT, DTBO, vbmeta and other images"
+msgstr "BOOT, DTBO, vbmeta et autres images"
+
+msgid "Bootloader"
+msgstr "Chargeur d'amorçage"
+
+msgid "Bootloader lock"
+msgstr "Verrouillage du chargeur"
+
+msgid "BRIGHTNESS"
+msgstr "LUMINOSITÉ"
+
+msgid "Brightness %u%% confirmed. Power turns the screen off."
+msgstr "Luminosité %u%% confirmée. Le bouton marche/arrêt éteint l'écran."
+
+msgid "Brightness control is unavailable. Refresh to check again."
+msgstr "Le réglage de luminosité est indisponible. Actualisez pour vérifier à nouveau."
+
+msgid "Browse and edit files"
+msgstr "Parcourir et modifier"
+
+msgid "Browser"
+msgstr "Navigateur"
+
+msgid "Building for this phone"
+msgstr "Compilation pour ce téléphone"
+
+msgid "Buttons"
+msgstr "Boutons"
+
+msgid "By default the language of this recovery."
+msgstr "Par défaut, la langue de ce recovery."
+
+msgid "bytes"
+msgstr "octets"
+
+msgid "Cable"
+msgstr "Câble"
+
+msgid "Calculator"
+msgstr "Calculatrice"
+
+msgid "Calendar"
+msgstr "Agenda"
+
+msgid "Camera"
+msgstr "Caméra"
+
+msgid "Cancel"
+msgstr "Annuler"
+
+msgid "Cancel backup selection"
+msgstr "Annuler le choix de la sauvegarde"
+
+msgid "Cancel image selection"
+msgstr "Annuler le choix de l'image"
+
+msgid "Cancel selection"
+msgstr "Annuler la sélection"
+
+msgid "Cancelling..."
+msgstr "Annulation..."
+
+msgid "Catalog"
+msgstr "Catalogue"
+
+msgid "Change"
+msgstr "Modifier"
+
+msgid "Change only this exact entry if it still matches the version you inspected. This action is not recursive."
+msgstr "Ne modifiez que cette entrée précise si elle correspond encore à la version examinée. Cette action n'est pas récursive."
+
+msgid "Change password"
+msgstr "Changer le mot de passe"
+
+msgid "Changes only this entry. No recursive mode changes."
+msgstr "Modifie uniquement cette entrée. Aucun changement de mode récursif."
+
+msgid "Changes only this entry. The kernel may clear setuid, setgid or file capabilities when ownership changes."
+msgstr "Modifie uniquement cette entrée. Le noyau peut retirer setuid, setgid ou les capacités du fichier lors d'un changement de propriétaire."
+
+msgid "Charging"
+msgstr "En charge"
+
+msgid "Charging screen"
+msgstr "Écran de charge"
+
+msgid "Check and repair"
+msgstr "Vérification et réparation"
+
+msgid "Check and repair: ext4 only"
+msgstr "Vérifier et réparer : ext4 seulement"
+
+msgid "Check backup integrity"
+msgstr "Vérifier l'intégrité"
+
+msgid "Check: errors repaired"
+msgstr "Vérification : erreurs réparées"
+
+msgid "Check: no errors found"
+msgstr "Vérification : aucune erreur trouvée"
+
+msgid "Checking BOOT"
+msgstr "Vérification de BOOT"
+
+msgid "Checking restored data"
+msgstr "Vérification des données restaurées"
+
+msgid "Checking status..."
+msgstr "Vérification de l'état..."
+
+msgid "Checking the backup"
+msgstr "Vérification de la sauvegarde"
+
+msgid "Checking the filesystem"
+msgstr "Vérification du système de fichiers"
+
+msgid "Checking the firmware"
+msgstr "Vérification du firmware"
+
+msgid "Checking the image"
+msgstr "Vérification de l'image"
+
+msgid "Checking the new system"
+msgstr "Vérification du nouveau système"
+
+msgid "Checking the partition"
+msgstr "Vérification de la partition"
+
+msgid "Checking the servers for newer images..."
+msgstr "Recherche d’images plus récentes sur les serveurs..."
+
+msgid "Checking the source"
+msgstr "Vérification de la source"
+
+msgid "Checkpoint space: %s"
+msgstr "Espace du point de contrôle : %s"
+
+msgid "Chip"
+msgstr "Puce"
+
+msgid "Chip made"
+msgstr "Puce fabriquée"
+
+msgid "Choose a mounted volume again."
+msgstr "Choisissez à nouveau un volume monté."
+
+msgid "Choose a mounted writable volume again."
+msgstr "Choisissez à nouveau un volume monté inscriptible."
+
+msgid "Choose a network below"
+msgstr "Choisissez un réseau ci-dessous"
+
+msgid "Choose a regular .img file. The installer checks A22x BOOT geometry and writes only the BOOT partition after a separate reviewed hold."
+msgstr "Choisissez un fichier .img ordinaire. L'installateur vérifie la géométrie BOOT de l'A22x et n'écrit que la partition BOOT après un maintien vérifié séparé."
+
+msgid "Choose a regular file"
+msgstr "Choisissez un fichier normal"
+
+msgid "Choose a script"
+msgstr "Choisir un script"
+
+msgid "Choose a setup script"
+msgstr "Choisissez un script de configuration"
+
+msgid "Choose a shorter destination path."
+msgstr "Choisissez un chemin plus court."
+
+msgid "Choose a theme file"
+msgstr "Choisir un fichier de thème"
+
+msgid "Choose an already mounted writable volume."
+msgstr "Choisissez un volume déjà monté en écriture."
+
+msgid "Choose an image of userdata or BOOT"
+msgstr "Choisissez une image de userdata ou de BOOT"
+
+msgid "Choose an SD card or USB stick with backups, or restore a partition image."
+msgstr "Choisissez une carte SD ou une clé USB avec des sauvegardes, ou restaurez une image de partition."
+
+msgid "Choose an SD card or USB stick."
+msgstr "Choisissez une carte SD ou une clé USB."
+
+msgid "Choose another"
+msgstr "En choisir un autre"
+
+msgid "Choose apps"
+msgstr "Choisir des applications"
+
+msgid "Choose how recovery looks."
+msgstr "Choisissez l'apparence du recovery."
+
+msgid "Choose image"
+msgstr "Choisir l'image"
+
+msgid "Choose next volume"
+msgstr "Volume suivant"
+
+msgid "Choose storage"
+msgstr "Choisir le stockage"
+
+msgid "Choose storage first"
+msgstr "Choisissez d'abord un stockage"
+
+msgid "Choose system image"
+msgstr "Choisir l'image système"
+
+msgid "Choose the microSD card or USB stick with the image; one that is not mounted opens read-only."
+msgstr "Choisissez la carte microSD ou la clé USB avec l’image ; une non montée s’ouvre en lecture seule."
+
+msgid "Choose the next boot mode, then hold to confirm. Completed writes are synchronized and recovery mounts are unmounted by the supervisor."
+msgstr "Choisissez le prochain mode de démarrage, puis maintenez pour confirmer."
+
+msgid "Choose the next boot mode."
+msgstr "Choisissez le prochain mode de démarrage."
+
+msgid "Choose the system state to save."
+msgstr "Choisissez l'état système à enregistrer."
+
+msgid "Choose what to install on this phone."
+msgstr "Choisissez quoi installer."
+
+msgid "Choose what to set up in the new system."
+msgstr "Choisissez ce qu'il faut configurer dans le nouveau système."
+
+msgid "Choose where the image is stored."
+msgstr "Choisissez où se trouve l'image."
+
+msgid "Choose where the script is stored."
+msgstr "Choisissez où le script est enregistré."
+
+msgid "Choose where the theme file is stored."
+msgstr "Choisissez où se trouve le fichier de thème."
+
+msgid "Chromium"
+msgstr "Chromium"
+
+msgid "Clean install"
+msgstr "Installation propre"
+
+msgid "Clock"
+msgstr "Horloge"
+
+msgid "Close whatever is using the stick and try again."
+msgstr "Fermez ce qui utilise la clé USB et réessayez."
+
+msgid "Code name"
+msgstr "Nom de code"
+
+msgid "Colors removed"
+msgstr "Couleurs supprimées"
+
+msgid "Command running / it continues after you exit"
+msgstr "Commande en cours / continue après la sortie"
+
+msgid "Compact Linux backup tools are unavailable in this recovery. Refresh system status to check availability."
+msgstr "Les outils compacts de sauvegarde Linux sont indisponibles dans ce recovery. Actualisez l'état du système pour vérifier."
+
+msgid "Compare this fingerprint before accepting the SSH host key."
+msgstr "Comparez cette empreinte avant d'accepter la clé d'hôte SSH."
+
+msgid "Complete or roll back the pending system switch before booting Linux."
+msgstr "Terminez ou annulez le changement de système en attente avant de démarrer Linux."
+
+msgid "Complete: %s  /  verified: %s  /  same device: %s"
+msgstr "Complète : %s  /  vérifiée : %s  /  même appareil : %s"
+
+msgid "Completed"
+msgstr "Terminé"
+
+msgid "Compressing userdata"
+msgstr "Compression de userdata"
+
+msgid "Computer access"
+msgstr "Accès ordinateur"
+
+msgid "Computer access: ask on the phone"
+msgstr "Accès PC : demander sur le téléphone"
+
+msgid "Computer access: open"
+msgstr "Accès PC : ouvert"
+
+msgid "Confirm"
+msgstr "Confirmer"
+
+msgid "Connect"
+msgstr "Se connecter"
+
+msgid "Connect from the computer attached by USB."
+msgstr "Connectez-vous depuis l'ordinateur relié en USB."
+
+msgid "Connected"
+msgstr "Connecté"
+
+msgid "Connecting..."
+msgstr "Connexion..."
+
+msgid "CONNECTION"
+msgstr "CONNEXION"
+
+msgid "Contacts"
+msgstr "Contacts"
+
+msgid "Continue"
+msgstr "Continuer"
+
+msgid "Copy and rename require a new destination. Delete removes a regular file or an empty folder."
+msgstr "Copier et renommer exigent une nouvelle destination. Supprimer retire un fichier ordinaire ou un dossier vide."
+
+msgid "Copy file"
+msgstr "Copier le fichier"
+
+msgid "Copy folder"
+msgstr "Copier le dossier"
+
+msgid "Copying the system files"
+msgstr "Copie des fichiers système"
+
+msgid "Cores"
+msgstr "Cœurs"
+
+msgid "Could not launch the terminal client. No input will be retried automatically."
+msgstr "Impossible de lancer le client du terminal. Aucune saisie ne sera renvoyée automatiquement."
+
+msgid "Could not prepare the complete edited text in RAM."
+msgstr "Impossible de préparer en RAM le texte modifié complet."
+
+msgid "Could not start display control."
+msgstr "Impossible de lancer le contrôle d'affichage."
+
+msgid "Create empty ext4 filesystem"
+msgstr "Créer un ext4 vide"
+
+msgid "Create this text file. An existing file will not be overwritten."
+msgstr "Créer ce fichier texte. Un fichier existant ne sera pas écrasé."
+
+msgid "CURRENT DISPLAY MODE"
+msgstr "MODE D'AFFICHAGE ACTUEL"
+
+msgid "CURRENT FOLDER"
+msgstr "DOSSIER ACTUEL"
+
+msgid "Current password"
+msgstr "Mot de passe actuel"
+
+msgid "CURRENT SYSTEM"
+msgstr "SYSTÈME ACTUEL"
+
+msgid "Current userdata does not match the backup."
+msgstr "Le userdata actuel ne correspond pas à la sauvegarde."
+
+msgid "Current userdata matches the backup. BOOT is bound to the original transaction and checkpoint."
+msgstr "Le userdata actuel correspond à la sauvegarde. BOOT est lié à la transaction et au point de contrôle d'origine."
+
+msgid "Currently mounted"
+msgstr "Actuellement monté"
+
+msgid "Dark and calm, the classic look"
+msgstr "Sombre et calme, le style classique"
+
+msgid "Dark glass with northern lights"
+msgstr "Verre sombre et aurores boréales"
+
+msgid "Date and time"
+msgstr "Date et heure"
+
+msgid "Daylight"
+msgstr "Lumière du jour"
+
+msgid "Debian"
+msgstr "Debian"
+
+msgid "December"
+msgstr "décembre"
+
+msgid "Delete"
+msgstr "Supprimer"
+
+msgid "Deleted"
+msgstr "Supprimé"
+
+msgid "Deny"
+msgstr "Refuser"
+
+msgid "Design capacity"
+msgstr "Capacité nominale"
+
+msgid "DESKTOP"
+msgstr "BUREAU"
+
+msgid "Desktop: %s  /  apps: %u"
+msgstr "Bureau : %s  /  applications : %u"
+
+msgid "DESTINATION"
+msgstr "DESTINATION"
+
+msgid "DESTINATION VOLUME"
+msgstr "VOLUME DE DESTINATION"
+
+msgid "Device"
+msgstr "Appareil"
+
+msgid "Device inventory received"
+msgstr "Inventaire de l'appareil reçu"
+
+msgid "Device restore is not qualified in this build"
+msgstr "La restauration sur l'appareil n'est pas qualifiée dans cette version"
+
+msgid "Device tree overlays"
+msgstr "Superpositions du Device Tree"
+
+msgid "Diagnostic logs may include filenames, hardware identifiers and network details. Inspect the archive before sharing it."
+msgstr "Les journaux de diagnostic peuvent contenir des noms de fichiers, des identifiants matériels et des informations réseau. Examinez l'archive avant de la partager."
+
+msgid "Diagnostics cannot be exported now."
+msgstr "Le diagnostic ne peut pas être exporté maintenant."
+
+msgid "Diagnostics exported"
+msgstr "Diagnostic exporté"
+
+msgid "Discard edits?"
+msgstr "Abandonner les modifications ?"
+
+msgid "Discharging"
+msgstr "En décharge"
+
+msgid "Disconnect"
+msgstr "Déconnecter"
+
+msgid "Disconnecting..."
+msgstr "Déconnexion..."
+
+msgid "Display"
+msgstr "Affichage"
+
+msgid "Display outcome unknown. Press Power to request wake."
+msgstr "Résultat de l'écran inconnu. Appuyez sur le bouton marche/arrêt pour le réveiller."
+
+msgid "Display state is unavailable. Press Power to request wake."
+msgstr "État de l'écran indisponible. Appuyez sur le bouton marche/arrêt pour le réveiller."
+
+msgid "Display status is unavailable. Refresh to check again."
+msgstr "État de l'écran indisponible. Actualisez pour vérifier à nouveau."
+
+msgid "Do not unplug the phone or remove storage."
+msgstr "Ne débranchez pas le téléphone et ne retirez pas le stockage."
+
+msgid "Documents"
+msgstr "Documents"
+
+msgid "Done"
+msgstr "Terminé"
+
+msgid "Done: %u packages"
+msgstr "Terminé : %u paquets"
+
+msgid "Download %s over Wi-Fi, checked against the catalog"
+msgstr "Téléchargement de %s par Wi-Fi, vérifié avec le catalogue"
+
+msgid "Downloading the system image"
+msgstr "Téléchargement de l’image système"
+
+msgid "DURABLE JOURNAL"
+msgstr "JOURNAL DURABLE"
+
+msgid "Each shell is installed with its packages. Sxmo and Lomiri come from Debian and Ubuntu."
+msgstr "Chaque interface est installée avec ses paquets. Sxmo et Lomiri viennent de Debian et Ubuntu."
+
+msgid "Each shell is installed with its packages; the sign-in screen switches between them."
+msgstr "Chaque interface est installée avec ses paquets ; l'écran de connexion permet d'en changer."
+
+msgid "Each system keeps its own /etc and /var. Shared /home requires matching account IDs. A full Linux backup includes all slots."
+msgstr "Chaque système garde ses propres /etc et /var. Le /home partagé exige les mêmes ID de compte. Une sauvegarde Linux complète inclut tous les emplacements."
+
+msgid "Edit text"
+msgstr "Modifier le texte"
+
+msgid "Editing disabled: file exceeds the 64 KiB UI limit."
+msgstr "Modification désactivée : le fichier dépasse la limite de 64 Kio."
+
+msgid "Efficiency cores"
+msgstr "Cœurs basse consommation"
+
+msgid "EFS, IMEI and modem data"
+msgstr "EFS, IMEI et données du modem"
+
+msgid "EFS, IMEI and modem data of this phone."
+msgstr "EFS, IMEI et données du modem de ce téléphone."
+
+msgid "Elapsed %u:%02u"
+msgstr "Écoulé %u:%02u"
+
+msgid "Email"
+msgstr "Courriel"
+
+msgid "Empty userdata: ready for a clean install"
+msgstr "userdata vide : prête pour une installation propre"
+
+msgid "Enable write access"
+msgstr "Autoriser l’écriture"
+
+msgid "Enable writes"
+msgstr "Autoriser l'écriture"
+
+msgid "Enable writes in Volume before editing."
+msgstr "Activez l'écriture dans Volume avant de modifier."
+
+msgid "Enable writes on userdata in Files to change it"
+msgstr "Activez l’écriture sur userdata dans Fichiers pour le modifier"
+
+msgid "Encrypted"
+msgstr "Chiffré"
+
+msgid "Encrypted Android data needs a working decryption service. Raw boot images and firmware partitions cannot be browsed as folders."
+msgstr "Les données Android chiffrées nécessitent un service de déchiffrement fonctionnel. Les images de démarrage brutes et les partitions de firmware ne se parcourent pas comme des dossiers."
+
+msgid "Encrypted or unsupported filesystem"
+msgstr "Système de fichiers chiffré ou non pris en charge"
+
+msgid "End of installation receipt."
+msgstr "Fin du reçu d'installation."
+
+msgid "End of the exact reviewed plan."
+msgstr "Fin du plan vérifié exact."
+
+msgid "Enter"
+msgstr "Entrée"
+
+msgid "Enter a file or folder path without '.' or '..' components."
+msgstr "Saisissez un chemin de fichier ou de dossier sans « . » ni « .. »."
+
+msgid "Enter a path relative to the volume root."
+msgstr "Saisissez un chemin relatif à la racine du volume."
+
+msgid "Enter a Wi-Fi network: the desktop and apps are downloaded at the first start"
+msgstr "Indiquez un réseau Wi-Fi : le bureau et les applications sont téléchargés au premier démarrage"
+
+msgid "Enter a Wi-Fi network: the desktop and apps are downloaded at the first start."
+msgstr "Indiquez un réseau Wi-Fi : le bureau et les applications sont téléchargés au premier démarrage."
+
+msgid "Enter network"
+msgstr "Saisir le réseau"
+
+msgid "Enter numeric UID:GID for this entry."
+msgstr "Saisissez l'UID:GID numérique de cette entrée."
+
+msgid "Enter numeric UID:GID, for example 1000:1000. Each ID must be between 0 and 4294967294."
+msgstr "Saisissez un UID:GID numérique, par exemple 1000:1000. Chaque ID doit être compris entre 0 et 4294967294."
+
+msgid "Enter password"
+msgstr "Saisissez le mot de passe"
+
+msgid "Enter the recovery password."
+msgstr "Saisissez le mot de passe recovery."
+
+msgid "Enter the Unix mode as four octal digits."
+msgstr "Saisissez le mode Unix en quatre chiffres octaux."
+
+msgid "Erase userdata, then install from the internet or a file"
+msgstr "Effacer userdata, puis installer depuis Internet ou un fichier"
+
+msgid "Erasing userdata"
+msgstr "Effacement de userdata"
+
+msgid "Europe"
+msgstr "Europe"
+
+msgid "Everything on userdata is replaced by this image"
+msgstr "Tout le contenu de userdata est remplacé par cette image"
+
+msgid "EXACT WRITE TARGETS"
+msgstr "CIBLES D'ÉCRITURE EXACTES"
+
+msgid "Exact write targets"
+msgstr "Cibles d'écriture exactes"
+
+msgid "Executable"
+msgstr "Exécutable"
+
+msgid "Execution was not confirmed. Refresh installation status and inspect its journal. The old execute request will not be repeated."
+msgstr "Exécution non confirmée. Actualisez l'état de l'installation et consultez son journal. L'ancienne demande ne sera pas répétée."
+
+msgid "Existing Linux / not yet adopted"
+msgstr "Linux existant / pas encore adopté"
+
+msgid "Existing names are never overwritten by this action."
+msgstr "Cette action n'écrase jamais les noms existants."
+
+msgid "Exit terminal"
+msgstr "Quitter le terminal"
+
+msgid "Explicitly select a Linux v2 snapshot for this installation."
+msgstr "Choisissez explicitement un instantané Linux v2 pour cette installation."
+
+msgid "Export diagnostics"
+msgstr "Exporter le diagnostic"
+
+msgid "ext4 filesystem image"
+msgstr "Image de système de fichiers ext4"
+
+msgid "F2FS filesystem image"
+msgstr "Image de système de fichiers F2FS"
+
+msgid "Fade"
+msgstr "Fondu"
+
+msgid "February"
+msgstr "février"
+
+msgid "Fedora"
+msgstr "Fedora"
+
+msgid "File"
+msgstr "Fichier"
+
+msgid "File actions"
+msgstr "Actions sur le fichier"
+
+msgid "File browsing unavailable"
+msgstr "Navigation indisponible"
+
+msgid "File copied"
+msgstr "Fichier copié"
+
+msgid "File operation"
+msgstr "Opération sur fichier"
+
+msgid "FILE TRANSFER / MTP"
+msgstr "TRANSFERT DE FICHIERS / MTP"
+
+msgid "Files"
+msgstr "Fichiers"
+
+msgid "Files / mounts"
+msgstr "Fichiers / montage"
+
+msgid "FILESYSTEM"
+msgstr "SYSTÈME DE FICHIERS"
+
+msgid "Filesystem"
+msgstr "Système de fichiers"
+
+msgid "Filesystem encryption is enabled; file keys have not been unlocked"
+msgstr "Le chiffrement du système de fichiers est actif ; les clés n'ont pas été déverrouillées"
+
+msgid "Filesystem unavailable; Android data may require decryption"
+msgstr "Système de fichiers indisponible ; les données Android peuvent nécessiter un déchiffrement"
+
+msgid "Finish moving the reviewed root directories into place. Shared /home remains in place."
+msgstr "Terminer le déplacement des répertoires racine vérifiés. Le /home partagé reste en place."
+
+msgid "Finish the unfinished installation first"
+msgstr "Terminez d'abord l'installation inachevée"
+
+msgid "Finished"
+msgstr "Terminé"
+
+msgid "Finishing the installation"
+msgstr "Fin de l'installation"
+
+msgid "Firmware not reported"
+msgstr "Firmware non signalé"
+
+msgid "Firmware or service partition; file access is not admitted"
+msgstr "Partition de firmware ou de service ; l'accès aux fichiers n'est pas admis"
+
+msgid "Fixed offset (%s)"
+msgstr "Décalage fixe (%s)"
+
+msgid "Flash a partition"
+msgstr "Flasher une partition"
+
+msgid "Flash BOOT"
+msgstr "Flasher BOOT"
+
+msgid "Flash the selected BOOT image"
+msgstr "Flasher l'image BOOT choisie"
+
+msgid "Flatpak"
+msgstr "Flatpak"
+
+msgid "Folder"
+msgstr "Dossier"
+
+msgid "Folder created"
+msgstr "Dossier créé"
+
+msgid "Folder tree copied"
+msgstr "Arborescence copiée"
+
+msgid "For each, the package of the new system is installed."
+msgstr "Pour chacune, le paquet du nouveau système est installé."
+
+msgid "For the new system."
+msgstr "Pour le nouveau système."
+
+msgid "Forget"
+msgstr "Oublier"
+
+msgid "Formatted"
+msgstr "Formaté"
+
+msgid "Formatting erases every system and /home here. Android needs F2FS, Linux ext4."
+msgstr "Le formatage efface tous les systèmes et /home. Android requiert F2FS, Linux ext4."
+
+msgid "Formatting erases everything on this volume, including backups."
+msgstr "Le formatage efface tout sur ce volume, y compris les sauvegardes."
+
+msgid "Formatting userdata"
+msgstr "Formatage de userdata"
+
+msgid "Friday"
+msgstr "vendredi"
+
+msgid "FROM"
+msgstr "DE"
+
+msgid "From a file"
+msgstr "Depuis un fichier"
+
+msgid "From a theme file"
+msgstr "Depuis un fichier de thème"
+
+msgid "FROM THE CATALOG"
+msgstr "DEPUIS LE CATALOGUE"
+
+msgid "From the internet"
+msgstr "Depuis Internet"
+
+msgid "Full"
+msgstr "Pleine"
+
+msgid "GB"
+msgstr "Go"
+
+msgid "Gestures"
+msgstr "Gestes"
+
+msgid "GHz"
+msgstr "GHz"
+
+msgid "Git"
+msgstr "Git"
+
+msgid "GNOME's login screen with its on-screen keyboard."
+msgstr "L'écran de connexion de GNOME avec son clavier à l'écran."
+
+msgid "Graphite"
+msgstr "Graphite"
+
+msgid "Green"
+msgstr "Vert"
+
+msgid "Grow to fill"
+msgstr "Agrandir à la partition"
+
+msgid "Grown to %s"
+msgstr "Agrandi à %s"
+
+msgid "history"
+msgstr "historique"
+
+msgid "Hold 1 second to discard"
+msgstr "Maintenez 1 s pour abandonner"
+
+msgid "Hold 2 seconds to back up"
+msgstr "Maintenez 2 s pour sauvegarder"
+
+msgid "Hold 2 seconds to confirm"
+msgstr "Maintenez 2 s pour confirmer"
+
+msgid "Hold 2 seconds to export"
+msgstr "Maintenez 2 s pour exporter"
+
+msgid "Hold 2 seconds to install"
+msgstr "Maintenez 2 s pour installer"
+
+msgid "Hold 2 seconds to share read / write"
+msgstr "Maintenez 2 s : lecture/écriture"
+
+msgid "Hold 2 seconds to share read-only"
+msgstr "Maintenez 2 s : lecture seule"
+
+msgid "Hold 3 seconds to delete"
+msgstr "Maintenez 3 s pour supprimer"
+
+msgid "Hold 3 seconds to flash"
+msgstr "Maintenez 3 s pour flasher"
+
+msgid "Hold 3 seconds to flash BOOT"
+msgstr "Maintenez 3 s pour flasher BOOT"
+
+msgid "Hold 3 seconds to restore"
+msgstr "Maintenez 3 s pour restaurer"
+
+msgid "Hold 3 seconds to resume"
+msgstr "Maintenez 3 s pour reprendre"
+
+msgid "Hold 3 seconds to roll back"
+msgstr "Maintenez 3 s pour revenir en arrière"
+
+msgid "Hold 3 seconds to switch"
+msgstr "Maintenez 3 s pour basculer"
+
+msgid "Hold 3 seconds to wipe"
+msgstr "Maintenez 3 s pour effacer"
+
+msgid "Hold 5 seconds to install stock"
+msgstr "Maintenez 5 s pour installer le stock"
+
+msgid "Hold the button to save this exact snapshot. Moving outside cancels confirmation."
+msgstr "Maintenez le bouton pour enregistrer cet instantané précis. Sortir du bouton annule la confirmation."
+
+msgid "Hold to unmount and review"
+msgstr "Maintenez pour démonter et vérifier"
+
+msgid "Hold: check and repair"
+msgstr "Maintenir : vérifier et réparer"
+
+msgid "Hold: erase, ext4"
+msgstr "Maintenez : effacer, ext4"
+
+msgid "Hold: erase, F2FS"
+msgstr "Maintenez : effacer, F2FS"
+
+msgid "Hold: erase, FAT32"
+msgstr "Maintenez : effacer, FAT32"
+
+msgid "Hold: grow to fill the partition"
+msgstr "Maintenir : agrandir à toute la partition"
+
+msgid "Hold: write"
+msgstr "Maintenir : écrire"
+
+msgid "How one page gives way to the next."
+msgstr "Comment une page cède la place à la suivante."
+
+msgid "Identity already matches this copy"
+msgstr "L’identité correspond déjà à cette copie"
+
+msgid "Identity partitions"
+msgstr "Partitions d’identité"
+
+msgid "Identity restored and checked"
+msgstr "Identité restaurée et vérifiée"
+
+msgid "If the backup also has a BOOT image, restore it the same way before starting Linux."
+msgstr "Si la sauvegarde contient aussi une image BOOT, restaurez-la de la même façon avant de démarrer Linux."
+
+msgid "IMAGE"
+msgstr "IMAGE"
+
+msgid "Image source"
+msgstr "Source de l'image"
+
+msgid "Import a system"
+msgstr "Importer un système"
+
+msgid "In the repositories of %s"
+msgstr "Dans les dépôts de %s"
+
+msgid "Indian Ocean"
+msgstr "Océan Indien"
+
+msgid "Input delivery was not confirmed. Pending input was discarded and will not be replayed. Refresh to inspect the shell."
+msgstr "La livraison de la saisie n'a pas été confirmée. La saisie en attente a été abandonnée et ne sera pas renvoyée. Actualisez pour examiner le shell."
+
+msgid "Input queue is full. Wait for the shell before typing more."
+msgstr "La file de saisie est pleine. Attendez le shell avant de taper davantage."
+
+msgid "Insert a USB stick and it appears here by itself."
+msgstr "Insérez une clé USB, elle apparaîtra ici."
+
+msgid "Insert an ext4 microSD, then tap Mount microSD."
+msgstr "Insérez une microSD ext4 puis touchez Monter la microSD."
+
+msgid "Insert the USB stick again"
+msgstr "Réinsérez la clé USB"
+
+msgid "Inspect a supported entry on a writable volume before continuing."
+msgstr "Examinez une entrée prise en charge sur un volume inscriptible avant de continuer."
+
+msgid "Inspect before restoring."
+msgstr "Vérifiez avant de restaurer."
+
+msgid "Inspect the pending image installation in Settings before booting."
+msgstr "Examinez l'installation d'image en attente dans Réglages avant de démarrer."
+
+msgid "Inspect the selected entry again before continuing."
+msgstr "Examinez à nouveau l'entrée choisie avant de continuer."
+
+msgid "Install"
+msgstr "Installer"
+
+msgid "Install a new system"
+msgstr "Installer un nouveau système"
+
+msgid "Install a system"
+msgstr "Installer un système"
+
+msgid "Install Android"
+msgstr "Installer Android"
+
+msgid "Install options"
+msgstr "Options d'installation"
+
+msgid "Install status"
+msgstr "État de l'installation"
+
+msgid "Install stock firmware"
+msgstr "Installer le firmware stock"
+
+msgid "Install system"
+msgstr "Installer le système"
+
+msgid "Install the fixed stock Android profile"
+msgstr "Installer le profil Android stock fixe"
+
+msgid "Install the prepared stock Android. Userdata is formatted first and this recovery stays."
+msgstr "Installer l'Android stock préparé. Userdata est d'abord formaté et ce recovery est conservé."
+
+msgid "Installation complete"
+msgstr "Installation terminée"
+
+msgid "Installation completed. Select the new slot to review switching; it has not been boot-tested."
+msgstr "Installation terminée. Choisissez le nouvel emplacement pour examiner le changement ; son démarrage n'a pas encore été testé."
+
+msgid "Installation completed. The new system is active: restart into it from Power. Its first start sets up the account, network, desktop and apps."
+msgstr "Installation terminée. Le nouveau système est actif : redémarrez-le depuis Alimentation. Au premier démarrage, il configure le compte, le réseau, le bureau et les applications."
+
+msgid "INSTALLATION RECEIPT"
+msgstr "REÇU D'INSTALLATION"
+
+msgid "Installation result"
+msgstr "Résultat de l'installation"
+
+msgid "Installed over Wi-Fi: during the installation when recovery is connected, otherwise at the first start."
+msgstr "Installé par Wi-Fi : pendant l’installation si le recovery est connecté, sinon au premier démarrage."
+
+msgid "Installing apps"
+msgstr "Installation des applications"
+
+msgid "Installing the desktop"
+msgstr "Installation de l’environnement"
+
+msgid "Internal storage"
+msgstr "Stockage interne"
+
+msgid "INTERRUPTED SWITCH"
+msgstr "CHANGEMENT INTERROMPU"
+
+msgid "It can read and change everything here."
+msgstr "Il pourra tout lire et modifier ici."
+
+msgid "It is ready: recovery has installed the desktop, apps and account. Switch to it in Systems to start it."
+msgstr "Il est prêt : le recovery a installé l’environnement, les applications et le compte. Passez-y dans Systèmes pour le démarrer."
+
+msgid "It starts ready: recovery has installed the desktop, apps and account."
+msgstr "Il démarre prêt : le recovery a installé l’environnement, les applications et le compte."
+
+msgid "Its first start sets up the account, network, desktop and apps, then restarts once."
+msgstr "Au premier démarrage, il configure le compte, le réseau, le bureau et les applications, puis redémarre une fois."
+
+msgid "January"
+msgstr "janvier"
+
+msgid "Join a network"
+msgstr "Rejoindre un réseau"
+
+msgid "Joined the network, but it gave no address."
+msgstr "Réseau rejoint, mais aucune adresse n’a été attribuée."
+
+msgid "Journal step %u of %u"
+msgstr "Étape du journal %u sur %u"
+
+msgid "July"
+msgstr "juillet"
+
+msgid "June"
+msgstr "juin"
+
+msgid "KDE's login screen with Qt's virtual keyboard."
+msgstr "L'écran de connexion de KDE avec le clavier virtuel de Qt."
+
+msgid "Keep editing"
+msgstr "Continuer à modifier"
+
+msgid "Keep going"
+msgstr "Continuer"
+
+msgid "Keep mine"
+msgstr "Garder le mien"
+
+msgid "Keep the cable connected to flash from the computer."
+msgstr "Gardez le câble branché pour flasher depuis l'ordinateur."
+
+msgid "Keep the phone powered and storage connected."
+msgstr "Gardez le téléphone allumé et le stockage connecté."
+
+msgid "Keep the previous system available for rollback."
+msgstr "Garder le système précédent disponible pour un retour arrière."
+
+msgid "Keep the verified Linux backup on the microSD card: Restore brings Linux back."
+msgstr "Gardez la sauvegarde Linux vérifiée sur la microSD : Restaurer ramène Linux."
+
+msgid "Kernel"
+msgstr "Noyau"
+
+msgid "Kernel and ramdisk"
+msgstr "Noyau et ramdisk"
+
+msgid "Keyboard"
+msgstr "Clavier"
+
+msgid "Language"
+msgstr "Langue"
+
+msgid "LANGUAGE AND TIME"
+msgstr "LANGUE ET HEURE"
+
+msgid "Language, vibration, time and tools."
+msgstr "Langue, vibration, heure et outils."
+
+msgid "Language: %s  /  time zone: %s"
+msgstr "Langue : %s  /  fuseau : %s"
+
+msgid "Leave the password empty for an open network."
+msgstr "Laissez le mot de passe vide pour un réseau ouvert."
+
+msgid "Leave without saving these edits?"
+msgstr "Quitter sans enregistrer ?"
+
+msgid "Leaving the button cancels the hold."
+msgstr "Quitter le bouton annule le maintien."
+
+msgid "Less than a minute left"
+msgstr "Moins d'une minute"
+
+msgid "Letters, digits, + . _ or -; at least two."
+msgstr "Lettres, chiffres, + . _ ou - ; au moins deux."
+
+msgid "Level"
+msgstr "Niveau"
+
+msgid "Light"
+msgstr "Légère"
+
+msgid "Light glass on a soft gradient"
+msgstr "Verre clair sur un dégradé doux"
+
+msgid "LINK TEXT"
+msgstr "TEXTE DU LIEN"
+
+msgid "Linux %.85s / %.24s"
+msgstr "Linux %.85s / %.24s"
+
+msgid "Linux / boot + rootfs"
+msgstr "Linux / boot + rootfs"
+
+msgid "LINUX BACKUP"
+msgstr "SAUVEGARDE LINUX"
+
+msgid "Linux backup"
+msgstr "Sauvegarde Linux"
+
+msgid "Linux backup saves allocated ext4 blocks with compression. The next screen reviews userdata before normal unmount."
+msgstr "La sauvegarde Linux enregistre les blocs ext4 alloués avec compression. L'écran suivant vérifie userdata avant le démontage normal."
+
+msgid "Linux boot + rootfs"
+msgstr "Linux boot + rootfs"
+
+msgid "Linux from SD or USB stick, switch systems"
+msgstr "Linux depuis SD ou clé USB, changer de système"
+
+msgid "Linux restore awaits qualification"
+msgstr "La restauration Linux attend sa qualification"
+
+msgid "Linux systems"
+msgstr "Systèmes Linux"
+
+msgid "Linux used-block snapshot. Wipe empties userdata only and requires this backup to match its current contents. Boot and recovery are preserved."
+msgstr "Instantané des blocs utilisés de Linux. L'effacement vide uniquement userdata et exige que cette sauvegarde corresponde à son contenu actuel. Boot et recovery sont conservés."
+
+msgid "Live"
+msgstr "Direct"
+
+msgid "live"
+msgstr "direct"
+
+msgid "Live output"
+msgstr "Sortie en direct"
+
+msgid "Loading..."
+msgstr "Chargement..."
+
+msgid "LOCAL SHELL"
+msgstr "SHELL LOCAL"
+
+msgid "Local terminal / storage lease held"
+msgstr "Terminal local / stockage occupé"
+
+msgid "Lock screen"
+msgstr "Écran de verrouillage"
+
+msgid "Locked"
+msgstr "Verrouillé"
+
+msgid "mAh"
+msgstr "mAh"
+
+msgid "Main menu"
+msgstr "Menu principal"
+
+msgid "Main shell: %s"
+msgstr "Interface principale : %s"
+
+msgid "Make a backup first if you have not already."
+msgstr "Faites d'abord une sauvegarde si ce n'est pas déjà fait."
+
+msgid "Manjaro"
+msgstr "Manjaro"
+
+msgid "Maps"
+msgstr "Cartes"
+
+msgid "March"
+msgstr "mars"
+
+msgid "Match the theme"
+msgstr "Comme le thème"
+
+msgid "Matches the checksum saved with it: %s"
+msgstr "Correspond à la somme de contrôle enregistrée avec elle : %s"
+
+msgid "May"
+msgstr "mai"
+
+msgid "Measured archive"
+msgstr "Archive mesurée"
+
+msgid "Measuring the backup size"
+msgstr "Mesure de la taille de la sauvegarde"
+
+msgid "Medium"
+msgstr "Moyenne"
+
+msgid "Memory"
+msgstr "Mémoire"
+
+msgid "Memory and storage"
+msgstr "Mémoire et stockage"
+
+msgid "Memory card"
+msgstr "Carte mémoire"
+
+msgid "Menus and apps of the new system speak it."
+msgstr "Les menus et les applis du nouveau système la parlent."
+
+msgid "Menus and apps of the new system. A city also switches to summer time."
+msgstr "Menus et applis du nouveau système. Une ville passe aussi à l'heure d'été."
+
+msgid "Messages"
+msgstr "Messages"
+
+msgid "minimal"
+msgstr "minimal"
+
+msgid "Minimal images from the catalog, downloaded over Wi-Fi"
+msgstr "Images minimales du catalogue, téléchargées par Wi-Fi"
+
+msgid "Mobian"
+msgstr "Mobian"
+
+msgid "Mode for flashing from a computer"
+msgstr "Mode de flashage depuis un PC"
+
+msgid "Model"
+msgstr "Modèle"
+
+msgid "Monday"
+msgstr "lundi"
+
+msgid "Mount"
+msgstr "Monter"
+
+msgid "Mount a destination volume with write access before copying."
+msgstr "Montez un volume de destination en écriture avant de copier."
+
+msgid "Mount a volume above."
+msgstr "Montez un volume ci-dessus."
+
+msgid "Mount an SD card or USB drive with write access in Files, then come back."
+msgstr "Montez une carte SD ou une clé USB en écriture dans Fichiers, puis revenez."
+
+msgid "Mount read-only"
+msgstr "Monter en lecture seule"
+
+msgid "Mount userdata"
+msgstr "Monter userdata"
+
+msgid "Mount userdata in Files to see and change it"
+msgstr "Montez userdata dans Fichiers pour le voir et le modifier"
+
+msgid "Mount userdata to inspect systems"
+msgstr "Montez userdata pour voir les systèmes"
+
+msgid "Mount userdata to read it"
+msgstr "Montez userdata pour le lire"
+
+msgid "Mount userdata with write access and refresh Systems before planning."
+msgstr "Montez userdata en écriture et actualisez Systèmes avant de planifier."
+
+msgid "Mount userdata with write access first: the installer needs it to check the space."
+msgstr "Montez d’abord userdata en écriture : l’installateur en a besoin pour vérifier la place."
+
+msgid "Mount with write access"
+msgstr "Monter en écriture"
+
+msgid "mounted"
+msgstr "monté"
+
+msgid "Mounted outside the recovery filesystem manager"
+msgstr "Monté hors du gestionnaire de systèmes de fichiers du recovery"
+
+msgid "Mounted read-only"
+msgstr "Monté en lecture seule"
+
+msgid "Mounted with write access"
+msgstr "Monté en écriture"
+
+msgid "Mounted writable ext4 microSD required"
+msgstr "MicroSD ext4 montée en écriture requise"
+
+msgid "Music"
+msgstr "Musique"
+
+msgid "Name"
+msgstr "Nom"
+
+msgid "Name or part of it"
+msgstr "Nom ou une partie"
+
+msgid "Navigation"
+msgstr "Navigation"
+
+msgid "Needed %s  /  available %s"
+msgstr "Requis %s  /  disponible %s"
+
+msgid "Needed to change the protection."
+msgstr "Nécessaire pour changer la protection."
+
+msgid "Needs HTTPS"
+msgstr "HTTPS requis"
+
+msgid "Network and apps"
+msgstr "Réseau et applications"
+
+msgid "NETWORK NAME"
+msgstr "NOM DU RÉSEAU"
+
+msgid "Never"
+msgstr "Jamais"
+
+msgid "New account"
+msgstr "Nouveau compte"
+
+msgid "New files belong to root:root (0644; folders 0755). MTP has limited Linux metadata support. Stop sharing before mounting, editing in recovery, or making an offline snapshot."
+msgstr "Les nouveaux fichiers appartiennent à root:root (0644 ; dossiers 0755). MTP gère mal les métadonnées Linux. Arrêtez le partage avant de monter, de modifier dans le recovery ou de faire un instantané hors ligne."
+
+msgid "New folder"
+msgstr "Nouveau dossier"
+
+msgid "NEW MODE / OCTAL"
+msgstr "NOUVEAU MODE / OCTAL"
+
+msgid "NEW OWNER"
+msgstr "NOUVEAU PROPRIÉTAIRE"
+
+msgid "NEW OWNER / UID:GID"
+msgstr "NOUVEAU PROPRIÉTAIRE / UID:GID"
+
+msgid "New password"
+msgstr "Nouveau mot de passe"
+
+msgid "NEW PATH"
+msgstr "NOUVEAU CHEMIN"
+
+msgid "NEW SYSTEM"
+msgstr "NOUVEAU SYSTÈME"
+
+msgid "New system"
+msgstr "Nouveau système"
+
+msgid "New text file"
+msgstr "Nouveau fichier texte"
+
+msgid "New user"
+msgstr "Nouvel utilisateur"
+
+msgid "New user: %s"
+msgstr "Nouvel utilisateur : %s"
+
+msgid "Next"
+msgstr "Suivant"
+
+msgid "no"
+msgstr "non"
+
+msgid "No apps chosen"
+msgstr "Aucune application choisie"
+
+msgid "No automatic replay. Partial partition writes are not atomic."
+msgstr "Aucune reprise automatique. Les écritures partielles de partitions ne sont pas atomiques."
+
+msgid "No changed target is listed."
+msgstr "Aucune cible modifiée n'est listée."
+
+msgid "No checksum was saved next to this image. The image is checked again while it is written."
+msgstr "Aucune somme de contrôle n'a été enregistrée à côté de cette image. L'image est revérifiée pendant l'écriture."
+
+msgid "No completed backups"
+msgstr "Aucune sauvegarde terminée"
+
+msgid "No current executable plan is available for this operation."
+msgstr "Aucun plan exécutable actuel n'est disponible pour cette opération."
+
+msgid "No host key reported."
+msgstr "Aucune clé d'hôte signalée."
+
+msgid "No identity copy on this volume."
+msgstr "Aucune copie d’identité sur ce volume."
+
+msgid "No installed system on userdata"
+msgstr "Aucun système installé sur userdata"
+
+msgid "No link text returned"
+msgstr "Aucun texte de lien renvoyé"
+
+msgid "No longer on its server"
+msgstr "N’est plus sur son serveur"
+
+msgid "No mounted volume available"
+msgstr "Aucun volume monté"
+
+msgid "No mounted writable volume"
+msgstr "Aucun volume monté en écriture"
+
+msgid "No network"
+msgstr "Aucun réseau"
+
+msgid "No network for the check"
+msgstr "Pas de réseau pour la vérification"
+
+msgid "No networks found. Search again, or choose Other network for a hidden one."
+msgstr "Aucun réseau trouvé. Relancez la recherche ou choisissez Autre réseau pour un réseau masqué."
+
+msgid "No package with this name."
+msgstr "Aucun paquet de ce nom."
+
+msgid "No partition inventory received."
+msgstr "Aucun inventaire des partitions reçu."
+
+msgid "No power action selected."
+msgstr "Aucune action choisie."
+
+msgid "No retry is started automatically. Inspect the backend result before another operation."
+msgstr "Aucune nouvelle tentative n'est lancée automatiquement. Examinez le résultat du backend avant une autre opération."
+
+msgid "No saved system slots yet. Import a prepared bundle to keep the current Linux alongside another system."
+msgstr "Aucun emplacement système enregistré pour l'instant. Importez un paquet préparé pour garder le Linux actuel à côté d'un autre système."
+
+msgid "No valid export reported"
+msgstr "Aucun export valide signalé"
+
+msgid "No volume inventory received. Tap Refresh to try again."
+msgstr "Aucun inventaire des volumes reçu. Touchez Actualiser pour réessayer."
+
+msgid "No volumes"
+msgstr "Aucun volume"
+
+msgid "No Wi-Fi driver in this recovery"
+msgstr "Pas de pilote Wi-Fi dans ce recovery"
+
+msgid "No writable volume"
+msgstr "Aucun volume inscriptible"
+
+msgid "No writes required."
+msgstr "Aucune écriture nécessaire."
+
+msgid "None"
+msgstr "Aucun"
+
+msgid "none"
+msgstr "aucun"
+
+msgid "None found"
+msgstr "Aucune trouvée"
+
+msgid "None."
+msgstr "Aucun."
+
+msgid "Normal Linux boot is blocked"
+msgstr "Démarrage normal de Linux bloqué"
+
+msgid "Not available. Tap to choose storage"
+msgstr "Indisponible. Touchez pour choisir le stockage"
+
+msgid "Not charging"
+msgstr "Pas en charge"
+
+msgid "Not completed"
+msgstr "Non terminé"
+
+msgid "Not connected"
+msgstr "Non connecté"
+
+msgid "Not for arm64"
+msgstr "Pas pour arm64"
+
+msgid "Not mountable"
+msgstr "Non montable"
+
+msgid "Not mounted"
+msgstr "Non monté"
+
+msgid "Not mounted or not available"
+msgstr "Non monté ou indisponible"
+
+msgid "Not read yet"
+msgstr "Pas encore lu"
+
+msgid "not reported"
+msgstr "non signalé"
+
+msgid "Nothing has been written yet."
+msgstr "Rien n'a encore été écrit."
+
+msgid "Nothing is downloaded for the desktop."
+msgstr "Rien n’est téléchargé pour l’environnement."
+
+msgid "Nothing is downloaded."
+msgstr "Rien n’est téléchargé."
+
+msgid "Nothing is replaced: the new system becomes the only one on userdata."
+msgstr "Rien n’est remplacé : le nouveau système sera le seul sur userdata."
+
+msgid "November"
+msgstr "novembre"
+
+msgid "October"
+msgstr "octobre"
+
+msgid "Off"
+msgstr "Désactivée"
+
+msgid "off"
+msgstr "éteint"
+
+msgid "Off: a charger starts Linux"
+msgstr "Désactivé : la charge démarre Linux"
+
+msgid "Office"
+msgstr "Bureautique"
+
+msgid "Official images, downloaded and checked during the installation."
+msgstr "Images officielles, téléchargées et vérifiées pendant l’installation."
+
+msgid "offline"
+msgstr "hors ligne"
+
+msgid "Offline filesystem"
+msgstr "Système de fichiers hors ligne"
+
+msgid "Offline snapshot"
+msgstr "Instantané hors ligne"
+
+msgid "Offline used-block snapshot"
+msgstr "Instantané hors ligne des blocs utilisés"
+
+msgid "On"
+msgstr "Activé"
+
+msgid "on"
+msgstr "allumé"
+
+msgid "ON MICROSD"
+msgstr "SUR MICROSD"
+
+msgid "On: a charger shows the battery"
+msgstr "Activé : la charge affiche la batterie"
+
+msgid "Only a freshly reviewed qualified Linux used-block plan can write these targets."
+msgstr "Seul un plan Linux qualifié des blocs utilisés, fraîchement vérifié, peut écrire ces cibles."
+
+msgid "Only this reviewed plan can be started."
+msgstr "Seul ce plan vérifié peut être lancé."
+
+msgid "Open"
+msgstr "Ouvert"
+
+msgid "Open as text"
+msgstr "Ouvrir comme texte"
+
+msgid "Open files"
+msgstr "Ouvrir les fichiers"
+
+msgid "Open Files, select a supported volume and enable write access, then return here."
+msgstr "Ouvrez Fichiers, choisissez un volume pris en charge, activez l'écriture, puis revenez ici."
+
+msgid "Open folder"
+msgstr "Ouvrir le dossier"
+
+msgid "Open read-only to inspect files. Enable writes only when you want to make changes."
+msgstr "Ouvrez en lecture seule pour consulter les fichiers. N'activez l'écriture que pour faire des modifications."
+
+msgid "Open resolved target"
+msgstr "Ouvrir la cible résolue"
+
+msgid "Open Systems"
+msgstr "Ouvrir Systèmes"
+
+msgid "Open the phone in your computer's file manager."
+msgstr "Ouvrez le téléphone dans le gestionnaire de fichiers de l'ordinateur."
+
+msgid "Opening Samsung Download"
+msgstr "Ouverture de Samsung Download"
+
+msgid "openSUSE"
+msgstr "openSUSE"
+
+msgid "Operating system"
+msgstr "Système d'exploitation"
+
+msgid "Operating system, Android or a partition"
+msgstr "Système, Android ou partition"
+
+msgid "Operation cancelled"
+msgstr "Opération annulée"
+
+msgid "Operation in progress"
+msgstr "Opération en cours"
+
+msgid "Operation not available"
+msgstr "Opération indisponible"
+
+msgid "Orange"
+msgstr "Orange"
+
+msgid "Other network"
+msgstr "Autre réseau"
+
+msgid "Output sequence or encoding changed. Refresh the shell state; input has been paused."
+msgstr "La séquence ou l'encodage de la sortie a changé. Actualisez l'état du shell ; la saisie est en pause."
+
+msgid "Owner / group"
+msgstr "Propriétaire / groupe"
+
+msgid "Owner and group"
+msgstr "Propriétaire et groupe"
+
+msgid "Owner updated; actual permissions shown"
+msgstr "Propriétaire mis à jour ; permissions réelles affichées"
+
+msgid "Pacific"
+msgstr "Pacifique"
+
+msgid "PACKAGE NAME"
+msgstr "NOM DU PAQUET"
+
+msgid "Packages come over the recovery's Wi-Fi: this takes 10-30 minutes. Keep the phone powered."
+msgstr "Les paquets passent par le Wi-Fi du recovery : cela prend 10 à 30 minutes. Gardez le téléphone allumé."
+
+msgid "Packages, the account and the desktop are set up as you choose on the next pages. The terminal stays available for installing by hand."
+msgstr "Les paquets, le compte et l’environnement sont configurés selon vos choix aux pages suivantes. Le terminal reste disponible pour installer à la main."
+
+msgid "Packages: %s"
+msgstr "Paquets : %s"
+
+msgid "Pages change at once"
+msgstr "Les pages changent aussitôt"
+
+msgid "Pages melt into each other, without blur"
+msgstr "Les pages se fondent, sans flou"
+
+msgid "Pages slide sideways, without blur"
+msgstr "Les pages glissent de côté, sans flou"
+
+msgid "PARTITION"
+msgstr "PARTITION"
+
+msgid "Partition flashed"
+msgstr "Partition flashée"
+
+msgid "Partition restored"
+msgstr "Partition restaurée"
+
+msgid "Partitions"
+msgstr "Partitions"
+
+msgid "Partitions are unavailable."
+msgstr "Partitions indisponibles."
+
+msgid "PASSWORD"
+msgstr "MOT DE PASSE"
+
+msgid "Password"
+msgstr "Mot de passe"
+
+msgid "Password removed"
+msgstr "Mot de passe supprimé"
+
+msgid "Password saved"
+msgstr "Mot de passe enregistré"
+
+msgid "Passwords"
+msgstr "Mots de passe"
+
+msgid "PATH"
+msgstr "CHEMIN"
+
+msgid "Path %u / %u"
+msgstr "Chemin %u / %u"
+
+msgid "Performance cores"
+msgstr "Cœurs performants"
+
+msgid "Permissions"
+msgstr "Autorisations"
+
+msgid "Permissions updated"
+msgstr "Permissions mises à jour"
+
+msgid "Phone identity"
+msgstr "Identité du téléphone"
+
+msgid "Phone identity saved"
+msgstr "Identité du téléphone enregistrée"
+
+msgid "Phone shell"
+msgstr "Interface pour téléphone"
+
+msgid "Photos"
+msgstr "Photos"
+
+msgid "Pick a partition, then an image from SD, USB stick or phone storage."
+msgstr "Choisissez une partition, puis une image sur SD, clé USB ou téléphone."
+
+msgid "Plan %.20s"
+msgstr "Plan %.20s"
+
+msgid "PLAN BLOCKERS"
+msgstr "BLOCAGES DU PLAN"
+
+msgid "PLAN IS BLOCKED"
+msgstr "PLAN BLOQUÉ"
+
+msgid "Planning measures the compressed size and checks free space on the destination. Userdata stays offline afterward."
+msgstr "La planification mesure la taille compressée et vérifie l'espace libre à destination. Userdata reste ensuite hors ligne."
+
+msgid "Plasma Mobile"
+msgstr "Plasma Mobile"
+
+msgid "PLATFORM CHECKPOINT"
+msgstr "POINT DE CONTRÔLE PLATEFORME"
+
+msgid "Please wait"
+msgstr "Veuillez patienter"
+
+msgid "Podcasts"
+msgstr "Podcasts"
+
+msgid "Power"
+msgstr "Alimentation"
+
+msgid "Power action"
+msgstr "Action d'alimentation"
+
+msgid "Power actions are disabled in this build configuration."
+msgstr "Les actions d'alimentation sont désactivées dans cette configuration."
+
+msgid "Power off"
+msgstr "Éteindre"
+
+msgid "Power off the phone?"
+msgstr "Éteindre le téléphone ?"
+
+msgid "Power options"
+msgstr "Options d'alimentation"
+
+msgid "Prepare userdata for Linux %s."
+msgstr "Préparer userdata : %s Linux."
+
+msgid "Preparing"
+msgstr "Préparation"
+
+msgid "Preparing the new system"
+msgstr "Préparation du nouveau système"
+
+msgid "Previous"
+msgstr "Précédent"
+
+msgid "Processor"
+msgstr "Processeur"
+
+msgid "Profile unavailable"
+msgstr "Profil indisponible"
+
+msgid "raw"
+msgstr "brut"
+
+msgid "Raw image"
+msgstr "Image brute"
+
+msgid "Raw image; not a filesystem"
+msgstr "Image brute ; pas un système de fichiers"
+
+msgid "Raw partition"
+msgstr "Partition brute"
+
+msgid "Read"
+msgstr "Lecture"
+
+msgid "Read and write"
+msgstr "Lecture et écriture"
+
+msgid "Read and write access"
+msgstr "Accès en lecture et écriture"
+
+msgid "Read from this phone each time."
+msgstr "Lu sur ce téléphone à chaque fois."
+
+msgid "Read only"
+msgstr "Lecture seule"
+
+msgid "Read-only"
+msgstr "Lecture seule"
+
+msgid "Read-only access"
+msgstr "Accès en lecture seule"
+
+msgid "Read-only filesystem"
+msgstr "Système de fichiers en lecture seule"
+
+msgid "Read-only image"
+msgstr "Image en lecture seule"
+
+msgid "Read-only shows the installed systems. Write access also lets you install and switch. Nothing is formatted."
+msgstr "La lecture seule montre les systèmes installés. Avec l’écriture, vous pouvez aussi installer et basculer. Rien n’est formaté."
+
+msgid "Read-only volume. Enable writes in Volume."
+msgstr "Volume en lecture seule. Activez l'écriture dans Volume."
+
+msgid "Read-only: tap to enable writes"
+msgstr "Lecture seule : touchez pour autoriser l’écriture"
+
+msgid "Readback: screen %s, brightness %u%%. No command was repeated."
+msgstr "Relecture : écran %s, luminosité %u%%. Aucune commande n'a été répétée."
+
+msgid "Reading copies..."
+msgstr "Lecture des copies..."
+
+msgid "Reading current mount state..."
+msgstr "Lecture de l'état de montage actuel..."
+
+msgid "Reading device inventory..."
+msgstr "Lecture de l'inventaire de l'appareil..."
+
+msgid "Reading display..."
+msgstr "Lecture de l'écran..."
+
+msgid "Reading folder..."
+msgstr "Lecture du dossier..."
+
+msgid "Reading installed systems..."
+msgstr "Lecture des systèmes installés..."
+
+msgid "Reading partitions..."
+msgstr "Lecture des partitions..."
+
+msgid "Reading storage volumes..."
+msgstr "Lecture des volumes de stockage..."
+
+msgid "Reading terminal state..."
+msgstr "Lecture de l'état du terminal..."
+
+msgid "Reading the catalog..."
+msgstr "Lecture du catalogue..."
+
+msgid "Reading the partition back"
+msgstr "Relecture de la partition"
+
+msgid "Reading the phone..."
+msgstr "Lecture du téléphone..."
+
+msgid "Reading USB status..."
+msgstr "Lecture de l'état USB..."
+
+msgid "Reading Wi-Fi..."
+msgstr "Lecture du Wi-Fi..."
+
+msgid "Reading..."
+msgstr "Lecture..."
+
+msgid "Reboot recovery"
+msgstr "Redémarrer le recovery"
+
+msgid "Reboot system"
+msgstr "Redémarrer le système"
+
+msgid "Reboot to recovery?"
+msgstr "Redémarrer en recovery ?"
+
+msgid "Recovery"
+msgstr "Recovery"
+
+msgid "Recovery copies the script into the new system and does not run it. Read it first: it gets full control of the new system."
+msgstr "Le recovery copie le script dans le nouveau système sans l'exécuter. Lisez-le d'abord : il obtient le contrôle total du nouveau système."
+
+msgid "Recovery could not set it up: %s"
+msgstr "Le recovery n’a pas pu le configurer : %s"
+
+msgid "Recovery image"
+msgstr "Image recovery"
+
+msgid "Recovery is locked."
+msgstr "Le recovery est verrouillé."
+
+msgid "Recovery is not connected to Wi-Fi."
+msgstr "Le recovery n’est pas connecté au Wi-Fi."
+
+msgid "Recovery is on Wi-Fi: the desktop and apps are installed now, and the system starts ready."
+msgstr "Le recovery est en Wi-Fi : l’environnement et les applications sont installés maintenant, le système démarre prêt."
+
+msgid "Recovery joins it now. Nothing is saved."
+msgstr "Le recovery s’y connecte maintenant. Rien n’est enregistré."
+
+msgid "Recovery partition only\nKeep a copy of this independent recovery."
+msgstr "Partition recovery uniquement\nGarder une copie de ce recovery indépendant."
+
+msgid "Recovery password"
+msgstr "Mot de passe du recovery"
+
+msgid "Recovery RAM / root shell\nLinux: /mnt/volumes/userdata"
+msgstr "RAM du recovery / shell root\nLinux : /mnt/volumes/userdata"
+
+msgid "Recovery runs from RAM. Mounted Linux volumes can be maintained independently of the installed system. Encrypted volumes require their own unlock support."
+msgstr "Le recovery fonctionne depuis la RAM. Les volumes Linux montés peuvent être entretenus indépendamment du système installé. Les volumes chiffrés nécessitent leur propre déverrouillage."
+
+msgid "Recovery stays on the phone, so you can come back here and flash again."
+msgstr "Le recovery reste sur le téléphone : vous pouvez revenir ici et flasher à nouveau."
+
+msgid "Recovery time zone"
+msgstr "Fuseau horaire du recovery"
+
+msgid "Recovery was not connected to Wi-Fi."
+msgstr "Le recovery n’était pas connecté au Wi-Fi."
+
+msgid "Red"
+msgstr "Rouge"
+
+msgid "Refresh"
+msgstr "Actualiser"
+
+msgid "Refresh before choosing a system. The full status was not confirmed."
+msgstr "Actualisez avant de choisir un système. L'état complet n'a pas été confirmé."
+
+msgid "Refresh display status"
+msgstr "Actualiser l'état de l'écran"
+
+msgid "Refresh display status and choose a reported available mode."
+msgstr "Actualisez l'état de l'écran et choisissez un mode disponible signalé."
+
+msgid "Refresh installation status"
+msgstr "Actualiser l'état de l'installation"
+
+msgid "Refresh inventory"
+msgstr "Actualiser l'inventaire"
+
+msgid "Refresh mount state"
+msgstr "Actualiser l'état de montage"
+
+msgid "Refresh rate, screen timeout and brightness."
+msgstr "Fréquence, mise en veille de l'écran et luminosité."
+
+msgid "Refresh rate, timeout and brightness"
+msgstr "Fréquence, extinction, luminosité"
+
+msgid "Refresh status"
+msgstr "Actualiser l'état"
+
+msgid "Refresh systems"
+msgstr "Actualiser les systèmes"
+
+msgid "Refresh terminal status"
+msgstr "Actualiser l'état du terminal"
+
+msgid "Refresh the destination list and review a mounted writable volume."
+msgstr "Actualisez la liste des destinations et examinez un volume monté en écriture."
+
+msgid "Refresh the terminal state before continuing."
+msgstr "Actualisez l'état du terminal avant de continuer."
+
+msgid "Refresh the volume list before continuing."
+msgstr "Actualisez la liste des volumes avant de continuer."
+
+msgid "Refresh to inspect the export"
+msgstr "Actualisez pour voir l'export"
+
+msgid "Refresh to read installer status."
+msgstr "Actualisez pour lire l'état."
+
+msgid "Refresh to read the current service status."
+msgstr "Actualisez pour lire l'état actuel du service."
+
+msgid "Refresh USB status"
+msgstr "Actualiser l'état USB"
+
+msgid "Refresh volumes"
+msgstr "Actualiser les volumes"
+
+msgid "Region"
+msgstr "Région"
+
+msgid "Regular-file test environment"
+msgstr "Environnement de test avec fichiers ordinaires"
+
+msgid "Release after the hold bar is complete. Moving outside the button cancels confirmation."
+msgstr "Relâchez quand la barre est pleine. Sortir du bouton annule la confirmation."
+
+msgid "Remove"
+msgstr "Retirer"
+
+msgid "Remove password"
+msgstr "Supprimer le mot de passe"
+
+msgid "Remove safely"
+msgstr "Retirer en toute sécurité"
+
+msgid "Removed themes are back"
+msgstr "Les thèmes supprimés sont revenus"
+
+msgid "Rename"
+msgstr "Renommer"
+
+msgid "Renamed"
+msgstr "Renommé"
+
+msgid "Repeat the password"
+msgstr "Répétez le mot de passe"
+
+msgid "Replace this file only if its contents still match the version you opened."
+msgstr "Ne remplacez ce fichier que si son contenu correspond encore à la version ouverte."
+
+msgid "Resolution"
+msgstr "Résolution"
+
+msgid "Resolve before opening the target."
+msgstr "Résolvez avant d'ouvrir la cible."
+
+msgid "Resolve link"
+msgstr "Résoudre le lien"
+
+msgid "RESOLVED INSIDE THIS VOLUME"
+msgstr "RÉSOLU DANS CE VOLUME"
+
+msgid "Restart into Samsung Download mode?"
+msgstr "Redémarrer en Samsung Download ?"
+
+msgid "Restart into the installed system?"
+msgstr "Redémarrer dans le système installé ?"
+
+msgid "Restart into the new system"
+msgstr "Redémarrer dans le nouveau système"
+
+msgid "Restarting recovery"
+msgstr "Redémarrage du recovery"
+
+msgid "Restarting the system"
+msgstr "Redémarrage du système"
+
+msgid "Restore"
+msgstr "Restaurer"
+
+msgid "restore"
+msgstr "restauration"
+
+msgid "Restore a partition image"
+msgstr "Restaurer une image de partition"
+
+msgid "Restore admitted for regular-file fixtures"
+msgstr "Restauration admise pour les fichiers de test"
+
+msgid "Restore BOOT last"
+msgstr "Restaurer BOOT en dernier"
+
+msgid "Restore filesystem blocks"
+msgstr "Restaurer les blocs du système de fichiers"
+
+msgid "Restore from a copy"
+msgstr "Restaurer depuis une copie"
+
+msgid "Restore from an image"
+msgstr "Restaurer depuis une image"
+
+msgid "Restore identity"
+msgstr "Restaurer l’identité"
+
+msgid "Restore the previous root filesystem using the saved transaction. Shared /home remains in place."
+msgstr "Restaurer le système racine précédent à l'aide de la transaction enregistrée. Le /home partagé reste en place."
+
+msgid "Restoring BOOT"
+msgstr "Restauration de BOOT"
+
+msgid "Restoring userdata"
+msgstr "Restauration de userdata"
+
+msgid "Resume switch"
+msgstr "Reprendre le basculement"
+
+msgid "Return removed themes"
+msgstr "Rétablir les thèmes supprimés"
+
+msgid "Return to a saved state"
+msgstr "Revenir à un état enregistré"
+
+msgid "Review"
+msgstr "Vérifier"
+
+msgid "Review a fresh plan with userdata offline?"
+msgstr "Examiner un nouveau plan avec userdata hors ligne ?"
+
+msgid "Review backup"
+msgstr "Vérifier la sauvegarde"
+
+msgid "REVIEW EXACT IMAGE INSTALLATION"
+msgstr "VÉRIFIER L'INSTALLATION EXACTE DE L'IMAGE"
+
+msgid "Review exact plan"
+msgstr "Examiner le plan exact"
+
+msgid "REVIEW EXPLICIT RESUME"
+msgstr "VÉRIFIER LA REPRISE EXPLICITE"
+
+msgid "Review installation"
+msgstr "Vérifier l'installation"
+
+msgid "Review its current journal before doing anything else. New installations are blocked."
+msgstr "Consultez d'abord son journal actuel. Les nouvelles installations sont bloquées."
+
+msgid "Review offline plan"
+msgstr "Examiner le plan hors ligne"
+
+msgid "Review restore"
+msgstr "Vérifier la restauration"
+
+msgid "Review Resume"
+msgstr "Examiner la reprise"
+
+msgid "Review Rollback"
+msgstr "Examiner le retour arrière"
+
+msgid "Review save"
+msgstr "Examiner l'enregistrement"
+
+msgid "Review the archive, phone platform adapter and free space before installation. The installed root is validated before activation. Installation adds a separate system; it does not activate it."
+msgstr "Vérifiez l'archive, l'adaptateur de plateforme du téléphone et l'espace libre avant l'installation. La racine installée est validée avant activation. L'installation ajoute un système distinct sans l'activer."
+
+msgid "Review the archive, phone platform adapter and free space before installation. Userdata is erased first; the new system is checked and then becomes the active one."
+msgstr "Vérifiez l’archive, l’adaptateur de plateforme du téléphone et l’espace libre avant l’installation. Userdata est d’abord effacé ; le nouveau système est vérifié puis devient actif."
+
+msgid "Review the current interrupted transaction."
+msgstr "Examiner la transaction interrompue actuelle."
+
+msgid "Review the exact target before continuing."
+msgstr "Examinez la cible exacte avant de continuer."
+
+msgid "Review the full source path before choosing it."
+msgstr "Examinez le chemin source complet avant de le choisir."
+
+msgid "Review userdata wipe"
+msgstr "Vérifier l'effacement de userdata"
+
+msgid "Review wipe"
+msgstr "Vérifier l'effacement"
+
+msgid "Roll back switch"
+msgstr "Annuler le basculement"
+
+msgid "Run commands directly on this phone."
+msgstr "Exécutez des commandes sur ce téléphone."
+
+msgid "Running"
+msgstr "En cours"
+
+msgid "Running for"
+msgstr "En cours depuis"
+
+msgid "Running the setup script"
+msgstr "Exécution du script de configuration"
+
+msgid "Runs once as root after the desktop and apps: now if recovery is on Wi-Fi, else at the first start."
+msgstr "S’exécute une fois en root après l’environnement et les applications : maintenant si le recovery est en Wi-Fi, sinon au premier démarrage."
+
+msgid "Runs once as root at the first start of the new system."
+msgstr "S'exécute une fois en root au premier démarrage du nouveau système."
+
+msgid "Runtime plan path is too long."
+msgstr "Le chemin du plan d'exécution est trop long."
+
+msgid "Samsung carrier data"
+msgstr "Données opérateur Samsung"
+
+msgid "Samsung Download"
+msgstr "Samsung Download"
+
+msgid "Samsung region data"
+msgstr "Données régionales Samsung"
+
+msgid "Saturday"
+msgstr "samedi"
+
+msgid "Save a system snapshot"
+msgstr "Enregistrer un instantané"
+
+msgid "Save or discard the editor buffer before preparing an offline operation."
+msgstr "Enregistrez ou abandonnez le tampon de l'éditeur avant de préparer une opération hors ligne."
+
+msgid "Save or discard the file editor before starting this shell."
+msgstr "Enregistrez ou abandonnez l'éditeur de fichiers avant de lancer ce shell."
+
+msgid "Save or explicitly discard edited text before opening USB file sharing."
+msgstr "Enregistrez ou abandonnez explicitement le texte modifié avant d'ouvrir le partage de fichiers USB."
+
+msgid "Save or explicitly discard edited text before sharing this storage with the computer."
+msgstr "Enregistrez ou abandonnez explicitement le texte modifié avant de partager ce stockage avec l'ordinateur."
+
+msgid "Save or explicitly discard the edited text before leaving the editor."
+msgstr "Enregistrez ou abandonnez explicitement le texte modifié avant de quitter l'éditeur."
+
+msgid "Save or explicitly discard the edited text before opening a shell that can change storage."
+msgstr "Enregistrez ou abandonnez explicitement le texte modifié avant d'ouvrir un shell capable de modifier le stockage."
+
+msgid "Save or explicitly discard the edited text before preparing an offline operation."
+msgstr "Enregistrez ou abandonnez explicitement le texte modifié avant de préparer une opération hors ligne."
+
+msgid "Save or explicitly discard the text editor before changing installed systems."
+msgstr "Enregistrez ou abandonnez explicitement l'éditeur de texte avant de modifier les systèmes installés."
+
+msgid "Save or explicitly discard the text editor before opening image installation."
+msgstr "Enregistrez ou abandonnez explicitement l'éditeur de texte avant d'ouvrir l'installation d'image."
+
+msgid "Save text"
+msgstr "Enregistrer le texte"
+
+msgid "SAVE TO"
+msgstr "ENREGISTRER SUR"
+
+msgid "Saved"
+msgstr "Enregistré"
+
+msgid "SAVED AND CHECKED"
+msgstr "ENREGISTRÉ ET VÉRIFIÉ"
+
+msgid "Saved archive"
+msgstr "Archive enregistrée"
+
+msgid "Saved snapshot"
+msgstr "Instantané enregistré"
+
+msgid "saved system"
+msgstr "système enregistré"
+
+msgid "Saved until reboot: no writable storage"
+msgstr "Enregistré jusqu'au redémarrage : aucun stockage inscriptible"
+
+msgid "Saving BOOT"
+msgstr "Sauvegarde de BOOT"
+
+msgid "Saving the current partition"
+msgstr "Sauvegarde de la partition"
+
+msgid "Screen blanking is unavailable on this boot."
+msgstr "La mise en veille de l'écran est indisponible à ce démarrage."
+
+msgid "Screen blanking is unavailable; brightness controls remain separate."
+msgstr "La mise en veille de l'écran est indisponible ; le réglage de luminosité reste séparé."
+
+msgid "Screen is off. Short press Power to wake."
+msgstr "Écran éteint. Appuyez brièvement sur Marche."
+
+msgid "SCREEN TIMEOUT"
+msgstr "EXTINCTION DE L'ÉCRAN"
+
+msgid "Screenshot not saved"
+msgstr "Capture d’écran non enregistrée"
+
+msgid "Screenshot saved in RAM: no writable SD or USB"
+msgstr "Capture enregistrée en RAM : aucune SD ou USB inscriptible"
+
+msgid "Screenshot saved to A22xScreenshots"
+msgstr "Capture enregistrée dans A22xScreenshots"
+
+msgid "Scroll to the end before confirming."
+msgstr "Faites défiler jusqu'à la fin."
+
+msgid "Scrollback"
+msgstr "Historique"
+
+msgid "SD cards and USB sticks. Choose where backups go."
+msgstr "Cartes SD et clés USB. Choisissez où sauvegarder."
+
+msgid "SD free: %s   /   reserve: %s"
+msgstr "SD libre : %s   /   réserve : %s"
+
+msgid "Search"
+msgstr "Rechercher"
+
+msgid "Search packages"
+msgstr "Rechercher des paquets"
+
+msgid "Searching for networks..."
+msgstr "Recherche de réseaux..."
+
+msgid "Searching the repositories..."
+msgstr "Recherche dans les dépôts..."
+
+msgid "Select a completed snapshot."
+msgstr "Choisissez une sauvegarde terminée."
+
+msgid "Select a raw A22x BOOT v2 image. A header check does not prove that its kernel boots."
+msgstr "Choisissez une image BOOT v2 brute de l'A22x. La vérification de l'en-tête ne prouve pas que son noyau démarre."
+
+msgid "Select an external backup location"
+msgstr "Choisissez une destination externe"
+
+msgid "Select writable ext4 microSD. The source remains unchanged."
+msgstr "Choisissez une microSD ext4 inscriptible. La source reste inchangée."
+
+msgid "SELECTED ENTRY"
+msgstr "ÉLÉMENT SÉLECTIONNÉ"
+
+msgid "SELECTED VOLUME"
+msgstr "VOLUME SÉLECTIONNÉ"
+
+msgid "September"
+msgstr "septembre"
+
+msgid "Serial number"
+msgstr "Numéro de série"
+
+msgid "SERVER HOST KEY FINGERPRINT"
+msgstr "EMPREINTE DE LA CLÉ D'HÔTE"
+
+msgid "Set password"
+msgstr "Définir le mot de passe"
+
+msgid "Set up during the installation, or at the first start."
+msgstr "Configuré pendant l’installation ou au premier démarrage."
+
+msgid "Set, but the screen is not locked"
+msgstr "Défini, mais l'écran n'est pas verrouillé"
+
+msgid "Setting up the new system"
+msgstr "Configuration du nouveau système"
+
+msgid "Settings"
+msgstr "Réglages"
+
+msgid "Settings could not be read. Defaults are shown, and nothing is saved."
+msgstr "Les réglages n'ont pas pu être lus. Les valeurs par défaut sont affichées et rien n'est enregistré."
+
+msgid "SETUP SCRIPT"
+msgstr "SCRIPT DE CONFIGURATION"
+
+msgid "Setup script"
+msgstr "Script de configuration"
+
+msgid "Setup script source"
+msgstr "Source du script"
+
+msgid "Setup scripts must be on external SD/USB storage"
+msgstr "Les scripts de configuration doivent être sur un stockage externe SD/USB"
+
+msgid "Share one mounted volume with this computer."
+msgstr "Partager un volume monté avec cet ordinateur."
+
+msgid "SHARED VOLUME"
+msgstr "VOLUME PARTAGÉ"
+
+msgid "Sharing is active"
+msgstr "Partage actif"
+
+msgid "Sharing is stopped"
+msgstr "Partage arrêté"
+
+msgid "Shell exited (%d). Exit to release storage."
+msgstr "Le shell s'est terminé (%d). Quittez pour libérer le stockage."
+
+msgid "Shells and sign-in"
+msgstr "Interfaces et connexion"
+
+msgid "Shift"
+msgstr "Maj"
+
+msgid "Short press Power to turn the screen off or on."
+msgstr "Appuyez sur Marche pour éteindre ou allumer l'écran."
+
+msgid "SIGN-IN SCREEN"
+msgstr "ÉCRAN DE CONNEXION"
+
+msgid "Sign-in: %s  /  also: %s"
+msgstr "Connexion : %s  /  aussi : %s"
+
+msgid "signed"
+msgstr "signé"
+
+msgid "Size available during verification"
+msgstr "Taille disponible pendant la vérification"
+
+msgid "size in manifest"
+msgstr "taille dans le manifeste"
+
+msgid "size unknown"
+msgstr "taille inconnue"
+
+msgid "Slide"
+msgstr "Glissement"
+
+msgid "Software"
+msgstr "Logiciel"
+
+msgid "SOURCE FILE"
+msgstr "FICHIER SOURCE"
+
+msgid "SOURCE MANIFEST"
+msgstr "MANIFESTE SOURCE"
+
+msgid "SOURCE VOLUME"
+msgstr "VOLUME SOURCE"
+
+msgid "Space"
+msgstr "Espace"
+
+msgid "Special file / blocked"
+msgstr "Fichier spécial / bloqué"
+
+msgid "SSH connection"
+msgstr "Connexion SSH"
+
+msgid "SSH is running"
+msgstr "SSH actif"
+
+msgid "SSH is stopped"
+msgstr "SSH arrêté"
+
+msgid "SSH server"
+msgstr "Serveur SSH"
+
+msgid "SSH unavailable"
+msgstr "SSH indisponible"
+
+msgid "Start local shell"
+msgstr "Lancer le shell local"
+
+msgid "Start the active Linux system"
+msgstr "Démarrer le système Linux actif"
+
+msgid "Start this recovery again"
+msgstr "Redémarrer ce recovery"
+
+msgid "State"
+msgstr "État"
+
+msgid "Status unavailable"
+msgstr "État indisponible"
+
+msgid "Step %u of %u"
+msgstr "Étape %u sur %u"
+
+msgid "Stock Android"
+msgstr "Android stock"
+
+msgid "Stock firmware from a prepared bundle."
+msgstr "Firmware stock d'un paquet préparé."
+
+msgid "Stock installation"
+msgstr "Installation stock"
+
+msgid "Stock installation completed and independently verified."
+msgstr "Installation stock terminée et vérifiée de façon indépendante."
+
+msgid "Stock manifest"
+msgstr "Manifeste stock"
+
+msgid "STOCK MANIFEST ON MICROSD"
+msgstr "MANIFESTE STOCK SUR LA MICROSD"
+
+msgid "STOCK PROFILE"
+msgstr "PROFIL STOCK"
+
+msgid "Stop"
+msgstr "Arrêter"
+
+msgid "Stop sharing"
+msgstr "Arrêter le partage"
+
+msgid "Stop this operation?"
+msgstr "Arrêter cette opération ?"
+
+msgid "Stop USB file sharing before preparing an offline backup, wipe or restore."
+msgstr "Arrêtez le partage de fichiers USB avant de préparer une sauvegarde, un effacement ou une restauration hors ligne."
+
+msgid "Stop USB file sharing before starting the local shell."
+msgstr "Arrêtez le partage de fichiers USB avant de lancer le shell local."
+
+msgid "Storage"
+msgstr "Stockage"
+
+msgid "Storage chip"
+msgstr "Puce de stockage"
+
+msgid "Storage is busy: stop USB files, or wait for the running operation to finish"
+msgstr "Stockage occupé : arrêtez les fichiers USB ou attendez la fin de l'opération en cours"
+
+msgid "Storage size"
+msgstr "Taille du stockage"
+
+msgid "Storage wear"
+msgstr "Usure du stockage"
+
+msgid "Strong"
+msgstr "Forte"
+
+msgid "Sunday"
+msgstr "dimanche"
+
+msgid "Swipe through the full source, backup and target list."
+msgstr "Faites défiler la liste complète de la source, de la sauvegarde et des cibles."
+
+msgid "Swipe to browse volumes. Open read-only by default."
+msgstr "Balayez pour parcourir les volumes. Ouverture en lecture seule par défaut."
+
+msgid "Swipe to scroll"
+msgstr "Balayez pour faire défiler"
+
+msgid "Swipe up to unlock"
+msgstr "Balayez vers le haut pour déverrouiller"
+
+msgid "Switch system"
+msgstr "Changer de système"
+
+msgid "SWITCH TO"
+msgstr "BASCULER VERS"
+
+msgid "Switch to it in Systems to start it."
+msgstr "Basculez vers lui dans Systèmes pour le démarrer."
+
+msgid "Sxmo and Lomiri come from Debian and Ubuntu; other systems get Phosh."
+msgstr "Sxmo et Lomiri n’existent que pour Debian et Ubuntu ; les autres systèmes reçoivent Phosh."
+
+msgid "Symbolic link"
+msgstr "Lien symbolique"
+
+msgid "System image"
+msgstr "Image système"
+
+msgid "System image source"
+msgstr "Source de l'image système"
+
+msgid "System language"
+msgstr "Langue du système"
+
+msgid "System monitor"
+msgstr "Moniteur système"
+
+msgid "Systems from the internet"
+msgstr "Systèmes depuis Internet"
+
+msgid "Tap again to remove"
+msgstr "Touchez à nouveau pour supprimer"
+
+msgid "Tap destination to cycle mounted writable volumes."
+msgstr "Touchez la destination pour passer d'un volume monté en écriture à l'autre."
+
+msgid "Tap New user to enter the password."
+msgstr "Touchez « Nouvel utilisateur » pour saisir le mot de passe."
+
+msgid "Tap outside to close"
+msgstr "Touchez à l'extérieur pour fermer"
+
+msgid "Tap Search to turn Wi-Fi on."
+msgstr "Touchez Rechercher pour activer le Wi-Fi."
+
+msgid "Tap the card above to mount userdata. Systems are never mounted automatically."
+msgstr "Touchez la carte ci-dessus pour monter userdata. Les systèmes ne sont jamais montés automatiquement."
+
+msgid "Tap to choose a source file"
+msgstr "Touchez pour choisir un fichier"
+
+msgid "Tap to explicitly select a Linux v2 snapshot"
+msgstr "Touchez pour choisir explicitement un instantané Linux v2"
+
+msgid "Tap to mount userdata"
+msgstr "Touchez pour monter userdata"
+
+msgid "Tap to review a fresh Resume plan"
+msgstr "Touchez pour examiner un nouveau plan de reprise"
+
+msgid "Tap to type"
+msgstr "Touchez pour saisir"
+
+msgid "Tap to use for backups"
+msgstr "touchez pour sauvegarder ici"
+
+msgid "Target paths were not provided by the backend."
+msgstr "Le backend n'a pas fourni les chemins cibles."
+
+msgid "Targets to replace"
+msgstr "Cibles à remplacer"
+
+msgid "Telegram"
+msgstr "Telegram"
+
+msgid "Temperature"
+msgstr "Température"
+
+msgid "Terminal"
+msgstr "Terminal"
+
+msgid "Terminal colors"
+msgstr "Couleurs du terminal"
+
+msgid "Terminal colors added"
+msgstr "Couleurs du terminal ajoutées"
+
+msgid "Text editor"
+msgstr "Éditeur de texte"
+
+msgid "Text file"
+msgstr "Fichier texte"
+
+msgid "Text limit reached"
+msgstr "Limite de texte atteinte"
+
+msgid "Text login"
+msgstr "Connexion texte"
+
+msgid "Text saved. Reading the stored file."
+msgstr "Texte enregistré. Lecture du fichier."
+
+msgid "The action returned an incomplete or mismatched write receipt. Refresh installation status. Do not repeat the old plan."
+msgstr "L'action a renvoyé un reçu d'écriture incomplet ou incohérent. Actualisez l'état de l'installation. Ne répétez pas l'ancien plan."
+
+msgid "The action returned an incomplete receipt. Refresh and inspect the actual system state before another operation."
+msgstr "L'action a renvoyé un reçu incomplet. Actualisez et examinez l'état réel du système avant une autre opération."
+
+msgid "The active mode is read again after each change."
+msgstr "Le mode actif est relu après chaque changement."
+
+msgid "The archive is checked before the snapshot is marked complete. Moving outside the button cancels the hold."
+msgstr "L'archive est vérifiée avant que l'instantané soit marqué complet. Sortir du bouton annule le maintien."
+
+msgid "The audited phone platform profile is unavailable. Import and switching remain disabled."
+msgstr "Le profil de plateforme audité du téléphone est indisponible. L'importation et le changement restent désactivés."
+
+msgid "The backend did not admit this operation."
+msgstr "Le backend n'a pas admis cette opération."
+
+msgid "The backend did not report a successful result."
+msgstr "Le backend n'a pas signalé de réussite."
+
+msgid "The backend did not return a valid success result."
+msgstr "Le backend n'a pas renvoyé de résultat de réussite valide."
+
+msgid "The backend reported success."
+msgstr "Le backend a signalé une réussite."
+
+msgid "The backup does not fit on this storage. Choose one with more free space"
+msgstr "La sauvegarde ne tient pas sur ce stockage. Choisissez-en un avec plus d'espace libre"
+
+msgid "The backup does not match the current Linux state."
+msgstr "La sauvegarde ne correspond pas à l'état actuel de Linux."
+
+msgid "The backup matches the current Linux state."
+msgstr "La sauvegarde correspond à l'état actuel de Linux."
+
+msgid "The backup passed integrity verification."
+msgstr "La sauvegarde a passé la vérification d'intégrité."
+
+msgid "The block device was already read-only; this helper will not override it"
+msgstr "Le périphérique bloc était déjà en lecture seule ; cet outil ne le modifiera pas"
+
+msgid "The block-level read-only guard changed; remount is required"
+msgstr "La protection en lecture seule au niveau bloc a changé ; un remontage est nécessaire"
+
+msgid "The bootloader, modem and calibration data are not listed and cannot be flashed here."
+msgstr "Le chargeur d’amorçage, le modem et les données de calibrage ne sont pas listés et ne peuvent pas être flashés ici."
+
+msgid "The catalog is empty in this recovery."
+msgstr "Le catalogue de ce recovery est vide."
+
+msgid "The charging screen is back"
+msgstr "L’écran de charge est de retour"
+
+msgid "The check found errors it could not repair"
+msgstr "La vérification a trouvé des erreurs impossibles à réparer"
+
+msgid "The command running in the terminal will be stopped."
+msgstr "La commande en cours dans le terminal sera arrêtée."
+
+msgid "The complete file must be loaded before saving."
+msgstr "Le fichier complet doit être chargé avant l'enregistrement."
+
+msgid "The complete UTF-8 text and file hash were not returned. Editing is disabled."
+msgstr "Le texte UTF-8 complet et le hachage du fichier n'ont pas été renvoyés. La modification est désactivée."
+
+msgid "The compressed file is damaged"
+msgstr "Le fichier compressé est endommagé"
+
+msgid "The current content will be saved to %s first."
+msgstr "Le contenu actuel sera d'abord enregistré sur %s."
+
+msgid "The current folder path is too long for this interface."
+msgstr "Le chemin du dossier actuel est trop long pour cette interface."
+
+msgid "The current Linux stays active. A separate review is required to switch. Existing BOOT and shared /home are retained."
+msgstr "Le Linux actuel reste actif. Un examen séparé est nécessaire pour basculer. Le BOOT existant et le /home partagé sont conservés."
+
+msgid "The current partition could not be read"
+msgstr "La partition actuelle n'a pas pu être lue"
+
+msgid "The current partition will not be saved first"
+msgstr "La partition actuelle ne sera pas enregistrée"
+
+msgid "The desktop and apps are downloaded over this network at the first start."
+msgstr "Le bureau et les applications sont téléchargés par ce réseau au premier démarrage."
+
+msgid "The destination must be a new name. Existing files will not be replaced."
+msgstr "La destination doit être un nouveau nom. Les fichiers existants ne seront pas remplacés."
+
+msgid "The destination must be external to the partitions being saved or restored. Format volumes in Files."
+msgstr "La destination doit être hors des partitions sauvegardées ou restaurées. Les volumes se formatent dans Fichiers."
+
+msgid "The display helper did not return a complete status."
+msgstr "L'outil d'affichage n'a pas renvoyé d'état complet."
+
+msgid "The display helper is not configured."
+msgstr "L'outil d'affichage n'est pas configuré."
+
+msgid "The downloaded image differs from the catalog. Try again."
+msgstr "L’image téléchargée diffère du catalogue. Réessayez."
+
+msgid "The exact plan, source, backup, targets, journal or safety policy was not confirmed."
+msgstr "Le plan, la source, la sauvegarde, les cibles, le journal ou la politique de sécurité exacts n'ont pas été confirmés."
+
+msgid "The exact private plan file, source, target or preservation policy was not confirmed."
+msgstr "Le fichier de plan privé exact, la source, la cible ou la politique de conservation n'ont pas été confirmés."
+
+msgid "The existing shell has not become ready. Refresh or close this exact session; another shell is not started."
+msgstr "Le shell existant n'est pas devenu prêt. Actualisez ou fermez cette session précise ; aucun autre shell n'est lancé."
+
+msgid "The existing shell session is still starting..."
+msgstr "La session shell existante démarre encore..."
+
+msgid "The file changed after it was checked"
+msgstr "Le fichier a changé après sa vérification"
+
+msgid "The file changed during the write. Flash the partition again from a good image"
+msgstr "Le fichier a changé pendant l'écriture. Flashez à nouveau la partition depuis une bonne image"
+
+msgid "The file changed while it was read"
+msgstr "Le fichier a changé pendant sa lecture"
+
+msgid "The file has neither interface nor terminal colors"
+msgstr "Le fichier ne contient ni couleurs d'interface ni couleurs de terminal"
+
+msgid "The file on storage has not been changed."
+msgstr "Le fichier sur le stockage n'a pas été modifié."
+
+msgid "The file type could not be recognized"
+msgstr "Le type de fichier n'a pas été reconnu"
+
+msgid "The filesystem could not be checked"
+msgstr "Le système de fichiers n'a pas pu être vérifié"
+
+msgid "The filesystem could not be resized"
+msgstr "Le système de fichiers n'a pas pu être redimensionné"
+
+msgid "The filesystem helper is not configured."
+msgstr "L'outil du système de fichiers n'est pas configuré."
+
+msgid "The filesystem size could not be read"
+msgstr "La taille du système de fichiers est illisible"
+
+msgid "The fixed stock profile is not qualified for this phone. Stock installation is unavailable."
+msgstr "Le profil stock fixe n'est pas qualifié pour ce téléphone. L'installation stock est indisponible."
+
+msgid "The folder result was incomplete. Refresh before continuing."
+msgstr "Le résultat du dossier était incomplet. Actualisez avant de continuer."
+
+msgid "The full installer status was not confirmed. Refresh before choosing an operation."
+msgstr "L'état complet de l'installateur n'a pas été confirmé. Actualisez avant de choisir une opération."
+
+msgid "The header differs from the usual A22x boot layout"
+msgstr "L'en-tête diffère de la disposition de démarrage habituelle de l'A22x"
+
+msgid "The helper did not describe the image."
+msgstr "L'outil n'a pas décrit l'image."
+
+msgid "The helper did not return a result."
+msgstr "L'outil n'a renvoyé aucun résultat."
+
+msgid "The helper verified bytes. This does not prove that the selected system boots."
+msgstr "L'outil a vérifié les octets. Cela ne prouve pas que le système choisi démarre."
+
+msgid "The identity backup did not finish."
+msgstr "La sauvegarde de l’identité ne s’est pas terminée."
+
+msgid "The identity backup helper is not configured."
+msgstr "L’assistant de sauvegarde d’identité n’est pas configuré."
+
+msgid "The image changed on its server. The catalog now lists the new version: start the installation again."
+msgstr "L’image a changé sur son serveur. Le catalogue contient la nouvelle version : relancez l’installation."
+
+msgid "The image could not be downloaded. Check the Wi-Fi connection and try again."
+msgstr "Impossible de télécharger l’image. Vérifiez le Wi-Fi et réessayez."
+
+msgid "The image does not fit this partition"
+msgstr "L'image ne tient pas dans cette partition"
+
+msgid "The image does not match the checksum saved with it"
+msgstr "L'image ne correspond pas à la somme de contrôle enregistrée avec elle"
+
+msgid "The image ended early"
+msgstr "L'image se termine trop tôt"
+
+msgid "The image file is damaged or incomplete. Copy it again, then eject the stick safely before unplugging it."
+msgstr "Le fichier image est endommagé ou incomplet. Copiez-le à nouveau, puis éjectez la clé en toute sécurité avant de la débrancher."
+
+msgid "The image has extra data at its end"
+msgstr "L'image a des données en trop"
+
+msgid "The image installer did not return a valid result."
+msgstr "L'installateur d'images n'a pas renvoyé de résultat valide."
+
+msgid "The image installer helper is not configured."
+msgstr "L'outil de l'installateur d'images n'est pas configuré."
+
+msgid "The image is larger than any partition"
+msgstr "L'image est plus grande que toutes les partitions"
+
+msgid "The image is larger than the partition"
+msgstr "L'image est plus grande que la partition"
+
+msgid "The image or installation state changed since planning"
+msgstr "L'image ou l'état de l'installation a changé depuis la planification"
+
+msgid "The images match their servers."
+msgstr "Les images correspondent à leurs serveurs."
+
+msgid "The input acknowledgement did not match. Pending input was discarded and will not be replayed."
+msgstr "L'accusé de réception de la saisie ne correspondait pas. La saisie en attente a été abandonnée et ne sera pas renvoyée."
+
+msgid "The installed root filesystem changes. /home stays shared; each system retains its own /etc and /var. BOOT is retained."
+msgstr "Le système racine installé change. /home reste partagé ; chaque système garde ses propres /etc et /var. BOOT est conservé."
+
+msgid "The installer result did not match the requested environment or operation."
+msgstr "Le résultat de l'installateur ne correspondait pas à l'environnement ou à l'opération demandés."
+
+msgid "The interrupted transaction changed. Review the refreshed Systems screen."
+msgstr "La transaction interrompue a changé. Examinez l'écran Systèmes actualisé."
+
+msgid "The last installation completed with independent readback. Boot behavior still needs a deliberate test."
+msgstr "La dernière installation s'est terminée avec une relecture indépendante. Le démarrage nécessite encore un test délibéré."
+
+msgid "The link target was not returned. No target was opened."
+msgstr "La cible du lien n'a pas été renvoyée. Aucune cible n'a été ouverte."
+
+msgid "The local terminal helper is not configured."
+msgstr "L'outil du terminal local n'est pas configuré."
+
+msgid "The lz4 file is damaged"
+msgstr "Le fichier lz4 est endommagé"
+
+msgid "The main shell starts signed in; its lock screen asks for the password. Each shell gets a launcher to switch to it."
+msgstr "L'interface principale démarre connectée ; son écran de verrouillage demande le mot de passe. Chaque interface a un lanceur pour y passer."
+
+msgid "The management helper is not configured."
+msgstr "L'outil de gestion n'est pas configuré."
+
+msgid "The management helper returned an incomplete result."
+msgstr "L'outil de gestion a renvoyé un résultat incomplet."
+
+msgid "The name uses lowercase letters, digits, - and _. The password signs in and confirms sudo."
+msgstr "Le nom utilise des minuscules, des chiffres, - et _. Le mot de passe sert à la connexion et à sudo."
+
+msgid "The network did not answer in time."
+msgstr "Le réseau n’a pas répondu à temps."
+
+msgid "The network is not in range."
+msgstr "Le réseau est hors de portée."
+
+msgid "The new recovery starts at the next restart into recovery. If it does not start, flash a working one from a computer in Download Mode."
+msgstr "Le nouveau recovery démarre au prochain redémarrage en recovery. S’il ne démarre pas, flashez-en un qui fonctionne depuis un ordinateur en mode Download."
+
+msgid "The new system becomes the only one on userdata."
+msgstr "Le nouveau système sera le seul sur userdata."
+
+msgid "The new system is active."
+msgstr "Le nouveau système est actif."
+
+msgid "The new system is saved beside the current one."
+msgstr "Le nouveau système est enregistré à côté de l’actuel."
+
+msgid "The new system joins it at the first start."
+msgstr "Le nouveau système s'y connecte au premier démarrage."
+
+msgid "The offline plan rechecks partition identity and state."
+msgstr "Le plan hors ligne revérifie l'identité et l'état des partitions."
+
+msgid "The old content could not be saved"
+msgstr "Ancien contenu non enregistré"
+
+msgid "The old content was saved here:"
+msgstr "Ancien contenu enregistré ici :"
+
+msgid "The old page blurs away and the new one sharpens"
+msgstr "L'ancienne page se floute, la nouvelle devient nette"
+
+msgid "The operation or environment did not match the requested system action."
+msgstr "L'opération ou l'environnement ne correspondait pas à l'action système demandée."
+
+msgid "The operation was stopped."
+msgstr "L'opération a été arrêtée."
+
+msgid "The package site did not answer. Check Wi-Fi and try again."
+msgstr "Le site des paquets n’a pas répondu. Vérifiez le Wi-Fi et réessayez."
+
+msgid "The page grows out of the tile, with its icon"
+msgstr "La page grandit depuis la tuile, avec son icône"
+
+msgid "The page grows while the one behind goes soft"
+msgstr "La page grandit, celle derrière devient floue"
+
+msgid "The partition could not be read back"
+msgstr "Relecture impossible"
+
+msgid "The partition does not match the image after writing"
+msgstr "La partition ne correspond pas à l'image après l'écriture"
+
+msgid "The partition is mounted. Unmount it in Files before writing"
+msgstr "La partition est montée. Démontez-la dans Fichiers avant l'écriture"
+
+msgid "The partitions that differ are saved to a new copy first, then written and read back."
+msgstr "Les partitions différentes sont d’abord enregistrées dans une nouvelle copie, puis écrites et relues."
+
+msgid "The password could not be changed"
+msgstr "Mot de passe non modifié"
+
+msgid "The password is wrong."
+msgstr "Le mot de passe est incorrect."
+
+msgid "The passwords do not match"
+msgstr "Les mots de passe ne correspondent pas"
+
+msgid "The phone details are not available yet."
+msgstr "Les informations du téléphone ne sont pas encore disponibles."
+
+msgid "The phone starts Linux when charging"
+msgstr "Le téléphone démarre Linux pendant la charge"
+
+msgid "The phone stayed in recovery: a backup, restore or installation is still running. Wait until it finishes, then try again."
+msgstr "Le téléphone reste dans le recovery : une sauvegarde, une restauration ou une installation est en cours. Attendez la fin, puis réessayez."
+
+msgid "The phone stayed in recovery: a volume is still in use. Stop USB file sharing or the terminal, then try again."
+msgstr "Le téléphone reste dans le recovery : un volume est encore utilisé. Arrêtez le partage de fichiers USB ou le terminal, puis réessayez."
+
+msgid "The phone stayed in recovery: an image installation needs attention in Install images."
+msgstr "Le téléphone reste dans le recovery : une installation d’image demande votre attention dans Installer des images."
+
+msgid "The phone stayed in recovery: the power action was refused."
+msgstr "Le téléphone reste dans le recovery : l’action d’alimentation a été refusée."
+
+msgid "The phone stayed in recovery: there is no bootable system on userdata, or a system switch must be finished in Systems."
+msgstr "Le téléphone reste dans le recovery : aucun système démarrable sur userdata, ou un changement de système doit être terminé dans Systèmes."
+
+msgid "The picture cannot be read"
+msgstr "L'image ne peut pas être lue"
+
+msgid "The picture data must be text"
+msgstr "Les données de l'image doivent être du texte"
+
+msgid "The picture has the wrong size"
+msgstr "L'image n'a pas la bonne taille"
+
+msgid "The plan is blocked. Read the reported blockers."
+msgstr "Le plan est bloqué. Lisez les blocages signalés."
+
+msgid "The private RAM work directory is unavailable."
+msgstr "Le répertoire de travail privé en RAM est indisponible."
+
+msgid "The requested %u Hz mode was not confirmed by the subsequent status read. Reported mode: %u Hz."
+msgstr "Le mode %u Hz demandé n'a pas été confirmé par la lecture d'état suivante. Mode signalé : %u Hz."
+
+msgid "The requested terminal dimensions were not applied."
+msgstr "Les dimensions de terminal demandées n'ont pas été appliquées."
+
+msgid "The requested USB export or stop was not confirmed. Inspect and refresh the current state before continuing."
+msgstr "L'export USB ou l'arrêt demandé n'a pas été confirmé. Examinez et actualisez l'état actuel avant de continuer."
+
+msgid "The result of the write could not be confirmed."
+msgstr "Le résultat de l'écriture n'a pas pu être confirmé."
+
+msgid "The reviewed restore completed and was verified. Userdata remains offline."
+msgstr "La restauration vérifiée est terminée et contrôlée. Userdata reste hors ligne."
+
+msgid "The root directory switch was interrupted. Resume finishes it; Rollback restores the previous system. The shared /home stays in place. This is a journaled sequence, not one atomic rename."
+msgstr "Le changement du répertoire racine a été interrompu. Reprendre le termine ; Retour arrière restaure le système précédent. Le /home partagé reste en place. C'est une séquence journalisée, pas un renommage atomique unique."
+
+msgid "The saved refresh rate was not applied"
+msgstr "La fréquence d'affichage enregistrée n'a pas été appliquée"
+
+msgid "The screen goes dark when the phone is off."
+msgstr "L'écran s'éteindra une fois le téléphone éteint."
+
+msgid "The screen turns off when the phone is not touched. Press Power to wake it; operations keep running."
+msgstr "L'écran s'éteint sans contact. Les opérations continuent."
+
+msgid "The script gets A22X_OS_ID and A22X_PACKAGE_MANAGER (apt, dnf, pacman or zypper) and can install packages with a22x-install."
+msgstr "Le script reçoit A22X_OS_ID et A22X_PACKAGE_MANAGER (apt, dnf, pacman ou zypper) et peut installer des paquets avec a22x-install."
+
+msgid "The selected entry was not returned. Inspect it again before continuing."
+msgstr "L'entrée choisie n'a pas été renvoyée. Examinez-la à nouveau avant de continuer."
+
+msgid "The selected journal changed. Inspect the refreshed installation status."
+msgstr "Le journal choisi a changé. Examinez l'état de l'installation actualisé."
+
+msgid "The server no longer offers this image. Choose another one."
+msgstr "Le serveur ne propose plus cette image. Choisissez-en une autre."
+
+msgid "The servers did not answer; the saved versions are shown."
+msgstr "Les serveurs n’ont pas répondu ; les versions enregistrées sont affichées."
+
+msgid "The setup script changed since planning"
+msgstr "Le script de configuration a changé depuis la planification"
+
+msgid "The setup script must be a text file"
+msgstr "Le script de configuration doit être un fichier texte"
+
+msgid "The shell has not stopped completely. The terminal remains open."
+msgstr "Le shell ne s'est pas complètement arrêté. Le terminal reste ouvert."
+
+msgid "The starting root is recovery RAM. Mount Linux in Files first, then use /mnt/volumes/userdata. The microSD backup mount is /mnt/backup."
+msgstr "La racine de départ est la RAM du recovery. Montez d'abord Linux dans Fichiers, puis utilisez /mnt/volumes/userdata. La sauvegarde microSD est montée sur /mnt/backup."
+
+msgid "The switch is journaled, not fully atomic. If interrupted, return to Systems and choose Resume or Rollback. Linux boot remains blocked until the journal completes."
+msgstr "Le changement est journalisé mais pas totalement atomique. S'il est interrompu, revenez à Systèmes et choisissez Reprendre ou Retour arrière. Linux ne démarre pas tant que le journal n'est pas terminé."
+
+msgid "The system manager did not return a valid result."
+msgstr "Le gestionnaire de systèmes n'a pas renvoyé de résultat valide."
+
+msgid "The system manager helper is not configured."
+msgstr "L'outil du gestionnaire de systèmes n'est pas configuré."
+
+msgid "The system transaction completed. Read the refreshed active system before restarting Linux."
+msgstr "La transaction système est terminée. Consultez le système actif actualisé avant de redémarrer Linux."
+
+msgid "The terminal helper did not return a valid response."
+msgstr "L'outil du terminal n'a pas renvoyé de réponse valide."
+
+msgid "The terminal palette needs 16 colors"
+msgstr "La palette du terminal nécessite 16 couleurs"
+
+msgid "The terminal session, boot, operation or storage lease was not confirmed. Refresh before continuing."
+msgstr "La session du terminal, le démarrage, l'opération ou la réservation du stockage n'ont pas été confirmés. Actualisez avant de continuer."
+
+msgid "The terminal text would be too hard to read"
+msgstr "Le texte du terminal serait trop difficile à lire"
+
+msgid "The theme file is too large"
+msgstr "Le fichier de thème est trop volumineux"
+
+msgid "The theme helper did not return a valid result."
+msgstr "L'outil des thèmes n'a pas renvoyé de résultat valide."
+
+msgid "The USB file helper returned an incomplete state. Refresh before changing sharing."
+msgstr "L'outil des fichiers USB a renvoyé un état incomplet. Actualisez avant de modifier le partage."
+
+msgid "The USB file transfer helper is not configured."
+msgstr "L'outil de transfert de fichiers USB n'est pas configuré."
+
+msgid "The USB stick could not be opened for writing."
+msgstr "Impossible d'ouvrir la clé USB en écriture."
+
+msgid "The write receipt could not be displayed completely. Inspect installation status."
+msgstr "Le reçu d'écriture n'a pas pu être affiché en entier. Consultez l'état de l'installation."
+
+msgid "Theme"
+msgstr "Thème"
+
+msgid "Theme added"
+msgstr "Thème ajouté"
+
+msgid "Theme file"
+msgstr "Fichier de thème"
+
+msgid "Theme removed"
+msgstr "Thème supprimé"
+
+msgid "There is no automatic reboot."
+msgstr "Pas de redémarrage automatique."
+
+msgid "There is not enough space beside the retained system"
+msgstr "Il n'y a pas assez de place à côté du système conservé"
+
+msgid "This action replaces the listed targets."
+msgstr "Cette action remplace les cibles listées."
+
+msgid "This compression is not supported"
+msgstr "Cette compression n'est pas prise en charge"
+
+msgid "This creates an empty filesystem, not secure erasure. The saved snapshot remains on SD. Recovery does not reboot automatically."
+msgstr "Cela crée un système de fichiers vide, pas un effacement sécurisé. L'instantané enregistré reste sur la SD. Le recovery ne redémarre pas automatiquement."
+
+msgid "This deletes the selected file or empty folder. There is no undo."
+msgstr "Cela supprime le fichier choisi ou le dossier vide. Impossible d'annuler."
+
+msgid "This file has no terminal colors"
+msgstr "Ce fichier n'a pas de couleurs de terminal"
+
+msgid "This file is not a DTBO image"
+msgstr "Ce n'est pas une image DTBO"
+
+msgid "This file is not a filesystem image for userdata"
+msgstr "Ce fichier n'est pas une image de système de fichiers pour userdata"
+
+msgid "This file is not a recognised system image. Supported: ISO, raw or img disk images, qcow2, VHD, Vagrant box and tar archives, also compressed with xz, zstd, gzip or bzip2."
+msgstr "Ce fichier n’est pas une image système reconnue. Formats pris en charge : ISO, images disque raw ou img, qcow2, VHD, boîtes Vagrant et archives tar, aussi compressées en xz, zstd, gzip ou bzip2."
+
+msgid "This file is not a super image"
+msgstr "Ce n'est pas une image super"
+
+msgid "This file is not a vbmeta image"
+msgstr "Ce n'est pas une image vbmeta"
+
+msgid "This file is not an A22x recovery image"
+msgstr "Ce fichier n’est pas une image recovery A22x"
+
+msgid "This file is not an Android boot image"
+msgstr "Ce fichier n'est pas une image de démarrage Android"
+
+msgid "This folder is empty."
+msgstr "Ce dossier est vide."
+
+msgid "This image has no Wi-Fi program, so the desktop and apps cannot be downloaded at the first start. Choose Console without apps, or another image."
+msgstr "Cette image n'a pas de programme Wi-Fi : le bureau et les applications ne peuvent pas être téléchargés au premier démarrage. Choisissez Console sans applications, ou une autre image."
+
+msgid "This image is already on the partition. There is nothing to flash."
+msgstr "Cette image est déjà sur la partition. Rien à flasher."
+
+msgid "This image keeps its system on btrfs, which this recovery cannot read"
+msgstr "Cette image place son système sur btrfs, que ce recovery ne sait pas lire"
+
+msgid "This image keeps its system on xfs, which this recovery cannot read"
+msgstr "Cette image place son système sur xfs, que ce recovery ne sait pas lire"
+
+msgid "This is a recovery image, not a boot image"
+msgstr "C'est une image recovery, pas une image de démarrage"
+
+msgid "This is not a theme file"
+msgstr "Ce n'est pas un fichier de thème"
+
+msgid "This is not a theme name"
+msgstr "Ce n'est pas un nom de thème"
+
+msgid "This is the exact transaction read just before this review. If it changes, the backend refuses this action. The phone does not reboot automatically."
+msgstr "C'est la transaction exacte lue juste avant cet examen. Si elle change, le backend refuse l'action. Le téléphone ne redémarre pas automatiquement."
+
+msgid "This journal requires manual inspection"
+msgstr "Ce journal nécessite une inspection manuelle"
+
+msgid "This kernel has no driver for the detected filesystem"
+msgstr "Ce noyau n'a pas de pilote pour le système de fichiers détecté"
+
+msgid "This key is temporary and may change on the next recovery boot."
+msgstr "Cette clé est temporaire et peut changer au prochain démarrage du recovery."
+
+msgid "This mount is not owned by the recovery Files helper. Close its owner and unmount it before continuing."
+msgstr "Ce montage n'appartient pas à l'outil Fichiers du recovery. Fermez son propriétaire et démontez-le avant de continuer."
+
+msgid "This name belongs to a built-in theme"
+msgstr "Ce nom appartient à un thème intégré"
+
+msgid "This network is not saved."
+msgstr "Ce réseau n’est pas enregistré."
+
+msgid "This partition is already used by another block mapping"
+msgstr "Cette partition est déjà utilisée par un autre mappage de blocs"
+
+msgid "This partition is too large to save first"
+msgstr "Cette partition est trop grande pour être sauvegardée d'abord"
+
+msgid "This phone"
+msgstr "Ce téléphone"
+
+msgid "This plan expired. Return and review again."
+msgstr "Ce plan a expiré. Revenez et examinez à nouveau."
+
+msgid "This plan expired. Return and review it again."
+msgstr "Ce plan a expiré. Revenez et examinez-le à nouveau."
+
+msgid "This recovery checks and repairs ext2, ext3 and ext4 only"
+msgstr "Ce recovery vérifie et répare seulement ext2, ext3 et ext4"
+
+msgid "This recovery has no Wi-Fi driver."
+msgstr "Ce recovery n’a pas de pilote Wi-Fi."
+
+msgid "This recovery stays installed, so you can return to Linux from a backup."
+msgstr "Ce recovery reste installé, vous pouvez donc revenir à Linux depuis une sauvegarde."
+
+msgid "This recovery, from a new image"
+msgstr "Ce recovery, depuis une nouvelle image"
+
+msgid "This small checkpoint is separate from the full Linux BOOT and userdata backup."
+msgstr "Ce petit point de contrôle est distinct de la sauvegarde complète du BOOT et du userdata Linux."
+
+msgid "This step cannot be stopped safely."
+msgstr "Cette étape ne peut pas être arrêtée sans risque."
+
+msgid "This uses a normal unmount. Busy filesystems are refused. The backup destination stays mounted and userdata remains offline until you choose to mount it again in Files."
+msgstr "Un démontage normal est utilisé. Les systèmes de fichiers occupés sont refusés. La destination de sauvegarde reste montée et userdata hors ligne jusqu'à ce que vous le remontiez dans Fichiers."
+
+msgid "This volume is available for reading only."
+msgstr "Ce volume est disponible en lecture seule."
+
+msgid "This volume is no longer available. Return to Files and refresh the list."
+msgstr "Ce volume n'est plus disponible. Revenez à Fichiers et actualisez la liste."
+
+msgid "Thursday"
+msgstr "jeudi"
+
+msgid "Time zone"
+msgstr "Fuseau horaire"
+
+msgid "TO"
+msgstr "VERS"
+
+msgid "To: %.170s"
+msgstr "Vers : %.170s"
+
+msgid "Too many attempts. Try again in %u s"
+msgstr "Trop d'essais. Réessayez dans %u s"
+
+msgid "Touch panel"
+msgstr "Écran tactile"
+
+msgid "TRANSACTION"
+msgstr "TRANSACTION"
+
+msgid "Tuesday"
+msgstr "mardi"
+
+msgid "Turn the phone off"
+msgstr "Éteindre le téléphone"
+
+msgid "Turning off"
+msgstr "Extinction"
+
+msgid "Turning on Wi-Fi..."
+msgstr "Activation du Wi-Fi..."
+
+msgid "Type"
+msgstr "Type"
+
+msgid "Type it once more."
+msgstr "Saisissez-le encore une fois."
+
+msgid "UART console"
+msgstr "Console UART"
+
+msgid "Ubuntu"
+msgstr "Ubuntu"
+
+msgid "UID %s  /  GID %s"
+msgstr "UID %s  /  GID %s"
+
+msgid "Unavailable"
+msgstr "Indisponible"
+
+msgid "unavailable"
+msgstr "indisponible"
+
+msgid "unknown"
+msgstr "inconnu"
+
+msgid "Unknown phone"
+msgstr "Téléphone inconnu"
+
+msgid "Unlock"
+msgstr "Déverrouiller"
+
+msgid "Unlocked"
+msgstr "Déverrouillé"
+
+msgid "Unmount"
+msgstr "Démonter"
+
+msgid "Unmount the volume before checking it"
+msgstr "Démontez le volume avant de le vérifier"
+
+msgid "Unmount userdata normally in Files before planning stock. All target partitions must be offline. Keep microSD mounted with write access. The installer verifies the current Linux backup, source and phone identity."
+msgstr "Démontez normalement userdata dans Fichiers avant de planifier le stock. Toutes les partitions cibles doivent être hors ligne. Gardez la microSD montée en écriture. L'installateur vérifie la sauvegarde Linux actuelle, la source et l'identité du téléphone."
+
+msgid "Unmount userdata, then review a fresh plan?"
+msgstr "Démonter userdata puis examiner un nouveau plan ?"
+
+msgid "Unpacking the system image"
+msgstr "Décompression de l'image système"
+
+msgid "Unsupported"
+msgstr "Non pris en charge"
+
+msgid "Up"
+msgstr "Remonter"
+
+msgid "Updated from the servers: %u"
+msgstr "Mises à jour depuis les serveurs : %u"
+
+msgid "USB address unavailable"
+msgstr "Adresse USB indisponible"
+
+msgid "USB files"
+msgstr "Fichiers USB"
+
+msgid "USB files stopped: cable removed"
+msgstr "Fichiers USB arrêtés : câble retiré"
+
+msgid "USB stick"
+msgstr "Clé USB"
+
+msgid "USB stick connected"
+msgstr "Clé USB connectée"
+
+msgid "USB stick removed"
+msgstr "Clé USB retirée"
+
+msgid "Use 2 to 40 letters, digits, + . _ or -."
+msgstr "Utilisez 2 à 40 lettres, chiffres, + . _ ou -."
+
+msgid "Use at least 4 characters"
+msgstr "Utilisez au moins 4 caractères"
+
+msgid "Use exactly four octal digits, for example 0644 or 0755."
+msgstr "Utilisez exactement quatre chiffres octaux, par exemple 0644 ou 0755."
+
+msgid "Use this script"
+msgstr "Utiliser ce script"
+
+msgid "Use this source"
+msgstr "Utiliser cette source"
+
+msgid "Use this theme"
+msgstr "Utiliser ce thème"
+
+msgid "Used ext4 blocks: %s"
+msgstr "Blocs ext4 utilisés : %s"
+
+msgid "USER NAME"
+msgstr "NOM D'UTILISATEUR"
+
+msgid "User name"
+msgstr "Nom d'utilisateur"
+
+msgid "userdata / Linux rootfs"
+msgstr "userdata / rootfs Linux"
+
+msgid "Userdata and recovery stay unchanged. A valid BOOT header does not prove that this kernel or ramdisk boots on this phone."
+msgstr "Userdata et recovery restent inchangés. Un en-tête BOOT valide ne prouve pas que ce noyau ou ce ramdisk démarre sur ce téléphone."
+
+msgid "Userdata changed during installation"
+msgstr "userdata a changé pendant l'installation"
+
+msgid "Userdata changed since planning"
+msgstr "userdata a changé depuis la planification"
+
+msgid "Userdata holds files but no Linux system. Format it in Files for a clean install."
+msgstr "userdata contient des fichiers mais aucun système Linux. Formatez-la dans Fichiers pour une installation propre."
+
+msgid "USERDATA IS EMPTY"
+msgstr "USERDATA EST VIDE"
+
+msgid "Userdata is empty, so nothing is replaced. The new system is active after installation: restart into it from Power."
+msgstr "userdata est vide : rien n'est remplacé. Après l'installation, le nouveau système est actif : redémarrez-le depuis Alimentation."
+
+msgid "Userdata is empty. The system you install becomes the only one, with the desktop, account, Wi-Fi, apps and setup script you choose."
+msgstr "userdata est vide. Le système installé sera le seul, avec le bureau, le compte, le Wi-Fi, les applications et le script de configuration choisis."
+
+msgid "USERDATA IS ERASED"
+msgstr "USERDATA SERA EFFACÉ"
+
+msgid "Userdata is erased first: every Linux system and /home on it. The new system is active after installation."
+msgstr "Userdata est d’abord effacé : tous les systèmes Linux et /home. Le nouveau système est actif après l’installation."
+
+msgid "Userdata is formatted for Android. This erases every Linux system and /home on the phone."
+msgstr "Userdata est formaté pour Android. Cela efface tous les systèmes Linux et /home."
+
+msgid "Userdata is mounted with write access"
+msgstr "Userdata est monté en écriture"
+
+msgid "Userdata is now an empty ext4 filesystem. Boot and the SD snapshot were preserved."
+msgstr "Userdata est maintenant un système ext4 vide. Boot et l'instantané de la SD ont été conservés."
+
+msgid "Userdata is restored and checked first. Keep power and SD connected. Recovery does not reboot automatically."
+msgstr "Userdata est restauré et vérifié en premier. Gardez l'alimentation et la SD connectées. Le recovery ne redémarre pas automatiquement."
+
+msgid "Userdata is still mounted or changed. Review its current state before another attempt."
+msgstr "Userdata est encore monté ou a changé. Examinez son état actuel avant une autre tentative."
+
+msgid "Userdata stays unmounted after backup"
+msgstr "Userdata reste démonté après la sauvegarde"
+
+msgid "Userdata was not present in the fresh volume inventory. Refresh before continuing."
+msgstr "Userdata était absent du nouvel inventaire des volumes. Actualisez avant de continuer."
+
+msgid "V"
+msgstr "V"
+
+msgid "VALUE"
+msgstr "VALEUR"
+
+msgid "VERIFIED BACKUP SOURCE"
+msgstr "SOURCE DE SAUVEGARDE VÉRIFIÉE"
+
+msgid "Verified boot"
+msgstr "Démarrage vérifié"
+
+msgid "Verified boot data"
+msgstr "Données de démarrage vérifié"
+
+msgid "Verified boot data for system"
+msgstr "Données de démarrage vérifié pour system"
+
+msgid "Verified boot data for vendor"
+msgstr "Données de démarrage vérifié pour vendor"
+
+msgid "VERIFIED IDENTICAL / SKIPPED"
+msgstr "IDENTIQUE VÉRIFIÉ / IGNORÉ"
+
+msgid "Verified write receipt. No automatic reboot."
+msgstr "Reçu d'écriture vérifié. Aucun redémarrage automatique."
+
+msgid "Verify"
+msgstr "Vérifier"
+
+msgid "Verify backup"
+msgstr "Vérifier la sauvegarde"
+
+msgid "Verify this backup"
+msgstr "Vérifier cette sauvegarde"
+
+msgid "Vibration"
+msgstr "Vibration"
+
+msgid "Video player"
+msgstr "Lecteur vidéo"
+
+msgid "VISIBLE NETWORKS"
+msgstr "RÉSEAUX VISIBLES"
+
+msgid "Visible networks. Recovery stays connected until it restarts."
+msgstr "Réseaux visibles. Le recovery reste connecté jusqu’à son redémarrage."
+
+msgid "Voltage"
+msgstr "Tension"
+
+msgid "VOLUME"
+msgstr "VOLUME"
+
+msgid "Volume"
+msgstr "Volume"
+
+msgid "Volume settings"
+msgstr "Réglages du volume"
+
+msgid "Volume unavailable"
+msgstr "Volume indisponible"
+
+msgid "Volume unmounted"
+msgstr "Volume démonté"
+
+msgid "VOLUMES"
+msgstr "VOLUMES"
+
+msgid "Waiting for backend"
+msgstr "En attente du backend"
+
+msgid "Waiting for the terminal supervisor to exit..."
+msgstr "Attente de l'arrêt du superviseur du terminal..."
+
+msgid "Warm wood and a quiet river"
+msgstr "Bois chaleureux et rivière paisible"
+
+msgid "Weather"
+msgstr "Météo"
+
+msgid "Wednesday"
+msgstr "mercredi"
+
+msgid "WHAT HAPPENS NEXT"
+msgstr "ET ENSUITE"
+
+msgid "What this system lacks for the phone is built on it (Arch: Phosh's compositor fix and Phrog), up to 45 minutes. Keep the phone powered."
+msgstr "Ce qui manque à ce système pour le téléphone y est compilé (Arch : correctif du compositeur de Phosh et Phrog), jusqu'à 45 minutes. Gardez le téléphone allumé."
+
+msgid "When the installation starts, every Linux system and /home on userdata are erased. Make a backup first if you need them."
+msgstr "Au début de l’installation, tous les systèmes Linux et /home sur userdata sont effacés. Faites d’abord une sauvegarde si nécessaire."
+
+msgid "While the shell is open, other storage operations wait for this terminal to close."
+msgstr "Tant que le shell est ouvert, les autres opérations de stockage attendent la fermeture de ce terminal."
+
+msgid "WI-FI"
+msgstr "WI-FI"
+
+msgid "Wi-Fi"
+msgstr "Wi-Fi"
+
+msgid "Wi-Fi could not search for networks."
+msgstr "Le Wi-Fi n’a pas pu rechercher de réseaux."
+
+msgid "Wi-Fi did not start. Restart recovery and try again."
+msgstr "Le Wi-Fi n’a pas démarré. Redémarrez le recovery et réessayez."
+
+msgid "Wi-Fi failed."
+msgstr "Échec du Wi-Fi."
+
+msgid "Wi-Fi network"
+msgstr "Réseau Wi-Fi"
+
+msgid "Wi-Fi: %s  /  script: %s"
+msgstr "Wi-Fi : %s  /  script : %s"
+
+msgid "wipe"
+msgstr "effacement"
+
+msgid "Without a network here, the saved networks of installed systems are used."
+msgstr "Sans réseau ici, les réseaux enregistrés des systèmes installés sont utilisés."
+
+msgid "Working"
+msgstr "En cours"
+
+msgid "WPA"
+msgstr "WPA"
+
+msgid "Writable"
+msgstr "Inscriptible"
+
+msgid "Write a saved copy back to this phone."
+msgstr "Réécrire une copie enregistrée sur ce téléphone."
+
+msgid "Write access allows changes on this volume. Nothing is formatted."
+msgstr "L'accès en écriture permet des modifications sur ce volume. Rien n'est formaté."
+
+msgid "Write access enabled"
+msgstr "Écriture activée"
+
+msgid "Write access lets Systems install and switch systems. Nothing is formatted."
+msgstr "L’écriture permet d’installer et de basculer les systèmes. Rien n’est formaté."
+
+msgid "WRITE ORDER"
+msgstr "ORDRE D'ÉCRITURE"
+
+msgid "Write text"
+msgstr "Écrire le texte"
+
+msgid "Writes are not atomic. Keep power and microSD connected. If interrupted, inspect installation status and review Resume; do not repeat the old execute command."
+msgstr "Les écritures ne sont pas atomiques. Gardez l'alimentation et la microSD connectées. En cas d'interruption, consultez l'état de l'installation et examinez la reprise ; ne répétez pas l'ancienne commande d'exécution."
+
+msgid "Writing"
+msgstr "Écriture"
+
+msgid "Writing a partition must be confirmed"
+msgstr "L'écriture d'une partition doit être confirmée"
+
+msgid "WRITTEN TARGETS"
+msgstr "CIBLES ÉCRITES"
+
+msgid "Wrong password"
+msgstr "Mot de passe incorrect"
+
+msgid "Yellow"
+msgstr "Jaune"
+
+msgid "yes"
+msgstr "oui"
+
+msgid "You can remove the USB stick now"
+msgstr "Vous pouvez retirer la clé USB"
+
+msgid "Your accounts and /home settings stay available."
+msgstr "Vos comptes et réglages de /home restent disponibles."
+
+msgid "Zoom"
+msgstr "Zoom"
+
+msgid "Zoom with blur"
+msgstr "Zoom avec flou"
+
+msgid "GNOME locks its screen only when GDM signs in."
+msgstr "GNOME ne verrouille l'écran que si la connexion passe par GDM."
+
+msgid "Delete a saved system that is not running."
+msgstr "Supprimer un système enregistré qui ne tourne pas."
+
+msgid "Hold 3 seconds to remove"
+msgstr "Maintenez 3 s pour supprimer"
+
+msgid "Its root filesystem with its programs, /etc and /var is deleted. /home, the active system and BOOT stay. This cannot be undone."
+msgstr "Son système de fichiers racine, avec ses programmes, /etc et /var, est effacé. /home, le système actif et BOOT restent. C'est irréversible."
+
+msgid "Remove system"
+msgstr "Supprimer le système"
+
+msgid "Remove this system"
+msgstr "Supprimer ce système"
+
+msgid "SYSTEM"
+msgstr "SYSTÈME"
+
+msgid "The removal was not confirmed. Refresh Systems."
+msgstr "La suppression n'a pas été confirmée. Actualisez Systèmes."
+
+msgid "The system was removed. /home and the active system stay."
+msgstr "Le système a été supprimé. /home et le système actif restent."
+
+msgid "Add a system"
+msgstr "Ajouter un système"
+
+msgid "Beside the installed systems: they and /home stay."
+msgstr "À côté des systèmes installés : eux et /home restent."
+
+msgid "NOTHING IS ERASED"
+msgstr "RIEN N'EST EFFACÉ"
+
+msgid "Packages, the account and the desktop are set up as you choose on the next pages."
+msgstr "Les paquets, le compte et le bureau sont configurés selon vos choix sur les pages suivantes."
+
+msgid "The new system is saved beside the current one and is not activated. Switch to it in Systems."
+msgstr "Le nouveau système est enregistré à côté de l’actuel et n’est pas activé. Basculez vers lui dans Systèmes."
+
+msgid "Platform file permissions or owner differ"
+msgstr "Les droits ou le propriétaire d'un fichier de la plateforme diffèrent"
+
+msgid "Required kernel, firmware or device adapter file differs"
+msgstr "Un fichier requis du noyau, du micrologiciel ou de l'adaptateur diffère"
+
+msgid "Required platform symlink differs"
+msgstr "Un lien symbolique requis de la plateforme diffère"
+
+msgid "A required rootfs directory is missing or symlinked"
+msgstr "Un répertoire requis du système racine manque ou est un lien"
+
+msgid "Only systemd distributions are supported by the current device adapter"
+msgstr "L'adaptateur actuel ne prend en charge que les distributions avec systemd"
+
+msgid "This system cannot read the saved password of this account. Choose New user with the same name and enter the password again."
+msgstr "Ce système ne peut pas lire le mot de passe enregistré de ce compte. Choisissez « Nouvel utilisateur » avec le même nom et saisissez de nouveau le mot de passe."
+
+msgid "Shared files require the same group names and GIDs"
+msgstr "Les fichiers partagés exigent les mêmes noms et GID de groupe"
+
+msgid "Shared home requires the same user name, UID, primary GID and home path"
+msgstr "Le /home partagé exige le même nom, UID, GID principal et dossier de l'utilisateur"

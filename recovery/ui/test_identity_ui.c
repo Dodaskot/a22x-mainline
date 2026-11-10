@@ -1,0 +1,36 @@
+/* SPDX-License-Identifier: MIT — the Phone identity page with the real filesystem.py and
+   identity_backup.py on a fixture: volume list, partition list, hold to back up (2026-11-08). */
+#define main recovery_ui_program_main
+#include "recovery_ui.c"
+#undef main
+#define ICHECK(e) do{checks++;if(!(e)){fprintf(stderr,"identity-ui check %u line %d failed: %s; screen=%d status=%s message=%s\n",checks,__LINE__,#e,a->screen,a->status,a->message);return 1;}}while(0)
+static void settle(App*a){uint64_t d=milliseconds()+30000;while(a->job.pid&&milliseconds()<d){a->now=milliseconds();poll_job(a);struct timespec p={0,1000000};nanosleep(&p,NULL);}}
+int main(int argc,char**argv){
+    if(argc!=4)return 2;
+    unsigned checks=0;App*a=calloc(1,sizeof(*a));if(!a)return 2;initialize(a);
+    copy(a->fixture,sizeof(a->fixture),argv[1]);copy(a->python,sizeof(a->python),argv[3]);
+    snprintf(a->distro_helper,sizeof(a->distro_helper),"%s/distro.py",argv[2]);snprintf(a->filesystem_helper,sizeof(a->filesystem_helper),"%s/filesystem.py",argv[2]);
+    screen(a,BACKUP);render(a);ICHECK(test_button(a,A_IDENTITY));
+    action(a,A_IDENTITY);ICHECK(a->screen==IDENTITY);
+    for(int n=0;n<4;n++)settle(a);
+    ICHECK(a->screen==IDENTITY&&a->id_known&&!a->id_error[0]&&a->id_count==3&&identity_volume(a)&&!strcmp(a->id_volume_id,"sdcard-p1"));
+    render(a);Button*b=test_button(a,A_ID_BACKUP);ICHECK(b&&b->enabled);
+    ICHECK(!test_press(a,A_ID_BACKUP,1500)||!a->job.pid);ICHECK(!a->id_done[0]);
+    ICHECK(test_press(a,A_ID_BACKUP,2100));settle(a);
+    ICHECK(a->screen==IDENTITY&&!strncmp(a->id_done,"/A22xIdentityBackups/identity-",30));
+    char manifest[PATH_LEN*2];snprintf(manifest,sizeof(manifest),"%s/sd%s/manifest.json",argv[1],a->id_done);ICHECK(access(manifest,R_OK)==0);
+    /* The partition changes; the copy is written back from the restore page. */
+    char part[PATH_LEN*2];snprintf(part,sizeof(part),"%s/parts/efs",argv[1]);FILE*f=fopen(part,"r+b");ICHECK(f);fputs("broken",f);fclose(f);
+    ICHECK(test_press(a,A_ID_RESTORE_OPEN,50)&&a->screen==IDENTITY_RESTORE);settle(a);
+    ICHECK(a->id_backup_count==1&&a->id_backups[0].same&&a->id_backups[0].parts==3);
+    render(a);b=test_button(a,A_ID_RESTORE);ICHECK(b&&!b->enabled);
+    ICHECK(test_press(a,A_ID_ITEM+0,50)&&a->id_pick==0);
+    ICHECK(test_press(a,A_ID_RESTORE,2500)&&!a->job.pid);
+    ICHECK(test_press(a,A_ID_RESTORE,3100));settle(a);
+    ICHECK(a->screen==IDENTITY_RESTORE&&a->successful);
+    char saved[PATH_LEN*3];snprintf(saved,sizeof(saved),"%s/sd%s/efs.img",argv[1],a->id_done);
+    FILE*x=fopen(part,"rb"),*y=fopen(saved,"rb");ICHECK(x&&y);int same=1,c1,c2;while((c1=fgetc(x))!=EOF){c2=fgetc(y);if(c1!=c2){same=0;break;}}fclose(x);fclose(y);ICHECK(same);
+    action(a,A_BACK);ICHECK(a->screen==IDENTITY);
+    action(a,A_BACK);ICHECK(a->screen==BACKUP);
+    printf("{\"ok\":true,\"checks\":%u}\n",checks);free(a->pixels);free(a);return 0;
+}

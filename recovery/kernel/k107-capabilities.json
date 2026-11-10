@@ -1,0 +1,88 @@
+{
+  "schema": "a22x.recovery.kernel-capabilities.v1",
+  "kernel_release": "7.2.0-a22x+",
+  "kernel_build": "#107 SMP PREEMPT Wed Nov 04 20:39:09 UTC 2026",
+  "kernel_sha256": "ee0140c23f808ca482f846b0b97281ee938d6f263b81872977470cb629fed34c",
+  "config_sha256": "aca24ae1a7cd143127968006a6d9329e0eb7458a49016fe096bcb97327a52364",
+  "config_source": "extract-ikconfig from exact recovery kernel input; not generic defconfig",
+  "config": {
+    "CONFIG_IKCONFIG": "y",
+    "CONFIG_IKCONFIG_PROC": "y",
+    "CONFIG_FS_ENCRYPTION": "n",
+    "CONFIG_FS_ENCRYPTION_ALGS": "absent",
+    "CONFIG_FS_ENCRYPTION_INLINE_CRYPT": "absent",
+    "CONFIG_BLK_INLINE_ENCRYPTION": "y",
+    "CONFIG_BLK_INLINE_ENCRYPTION_FALLBACK": "n",
+    "CONFIG_BLK_DEV_DM": "y",
+    "CONFIG_DM_CRYPT": "y",
+    "CONFIG_DM_DEFAULT_KEY": "absent",
+    "CONFIG_DM_SNAPSHOT": "n",
+    "CONFIG_DM_VERITY": "y",
+    "CONFIG_BLK_DEV_LOOP": "y",
+    "CONFIG_EXT4_FS": "y",
+    "CONFIG_EXT4_FS_POSIX_ACL": "y",
+    "CONFIG_EXT4_FS_SECURITY": "y",
+    "CONFIG_F2FS_FS": "y",
+    "CONFIG_F2FS_FS_XATTR": "y",
+    "CONFIG_F2FS_FS_POSIX_ACL": "y",
+    "CONFIG_F2FS_FS_SECURITY": "n",
+    "CONFIG_F2FS_FS_COMPRESSION": "n",
+    "CONFIG_EROFS_FS": "y",
+    "CONFIG_EROFS_FS_SECURITY": "y",
+    "CONFIG_TEE": "y",
+    "CONFIG_TEE_DMABUF_HEAPS": "y",
+    "CONFIG_OPTEE": "y",
+    "CONFIG_TZDEV": "absent",
+    "CONFIG_TEEGRIS_TEE_SUPPORT": "absent",
+    "CONFIG_TEEGRIS_VERSION_STRING": "absent",
+    "CONFIG_ANDROID_BINDER_IPC": "y",
+    "CONFIG_ANDROID_BINDERFS": "n",
+    "CONFIG_ANDROID_BINDER_DEVICES": "\"binder\"",
+    "CONFIG_SECURITY_SELINUX": "absent",
+    "CONFIG_KEYS": "y",
+    "CONFIG_CRYPTO_AES": "y",
+    "CONFIG_CRYPTO_CTS": "y",
+    "CONFIG_CRYPTO_XTS": "y",
+    "CONFIG_CRYPTO_SHA256": "y",
+    "CONFIG_CRYPTO_SHA512": "y"
+  },
+  "source_has_symbol": {
+    "CONFIG_DM_DEFAULT_KEY": false,
+    "CONFIG_TZDEV": false,
+    "CONFIG_TEEGRIS_TEE_SUPPORT": false
+  },
+  "source_component_present": {
+    "drivers/md/dm-default-key.c": false,
+    "drivers/misc/tzdev": false,
+    "drivers/tee/optee": true
+  },
+  "android_fbe_ready": false,
+  "blockers": [
+    "FS_ENCRYPTION_DISABLED",
+    "DM_DEFAULT_KEY_IMPLEMENTATION_ABSENT",
+    "SAMSUNG_TEEGRIS_TRANSPORT_ABSENT"
+  ],
+  "evidence": {
+    "kernel_path": "<workspace>/artifacts/mainline-recovery-k107-20261105/inputs/working-boot/kernel",
+    "mainline_source_path": "<workspace>/worktrees/poweroff-clr-k107-20261104",
+    "extract_request_id": "recovery-teegris-audit-20261105-05",
+    "kconfig_validation_request_id": "recovery-teegris-kconfig-only-20261105-01"
+  },
+  "limits": [
+    "Only valid for an exact matching kernel SHA-256.",
+    "Config and source availability do not prove hardware or secure-world readiness.",
+    "A present /dev/tzdev node would not by itself prove a functioning TEEGRIS session.",
+    "No SMC, TEE ioctl, decrypt attempt, key-blob read, phone mutation, or kernel build was performed for this manifest.",
+    "dm-crypt is not treated as a substitute for dm-default-key.",
+    "Runtime modules and userspace must be observed separately; this manifest describes the pinned kernel and inspected source."
+  ],
+  "observed_date": "2026-11-05",
+  "runtime_requirements_unverified": [
+    "TZAR_ROOT_TASK_FOR_CURRENT_BOOT",
+    "TEEGRIS_DEVICE_TRANSPORT_AND_SERVICES",
+    "MATCHING_ANDROID_CRYPTO_USERSPACE",
+    "COHERENT_ANDROID_USERDATA_METADATA_AND_SECURE_STATE",
+    "CREDENTIALS_WHEN_REQUIRED",
+    "CE_KEY_INSTALLATION_AND_CONTROL_FILE_READ"
+  ]
+}

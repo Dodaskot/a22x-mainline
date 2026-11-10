@@ -1,0 +1,1340 @@
+  /  skip-identical
+ / preview truncated
+ / tap text to move cursor
+ / unsaved
+ and %u more
+ bytes
+ bytes skipped / %s
+%.120s / %.24s / %s free
+%s / %u history rows / basic ANSI
+%s available
+%s is not supported
+%s was written and read back. Every byte matches the image.%s
+%s, %d %s
+%u apps chosen
+%u Hz display mode is active.
+%u partitions, %s
+1 min
+10 min
+2 min
+30 s
+5 min
+A city keeps the clock right with summer time.
+A clean install needs a new account: userdata has none to keep
+A clean install needs a new account: userdata has none to keep.
+A clean installation, like the installer of a live disk.
+A command is running in the terminal and holds storage. Wait for it to end, or stop it in the terminal.
+A completed manifest is published only after the archive and its decoded hash have been verified.
+A computer is asking to use this phone.
+A network name has 1 to 32 bytes
+A network name has at most 32 bytes.
+A new diagnostic archive will be written to this volume. Existing archives are retained.
+A new folder A22xIdentityBackups is written with every partition and its checksum. Keep it off the phone too: no image or firmware download contains it.
+A new theme always spreads as a circle, unless animations are off.
+A package download failed in recovery.
+A private RAM directory is required for this installation plan.
+A private RAM directory is required for this reviewed plan.
+A private runtime directory is required for reviewed plans.
+A qualified stock profile is not available in this recovery.
+A required rootfs directory is missing or symlinked
+A running shell was not confirmed. No additional session was started.
+A setup script can be at most 1 MiB
+A setup script can be at most 1 MiB.
+A system image on a USB stick or SD card
+A text login for a USB or Bluetooth keyboard. It starts the shell picked last.
+A touch login made of Phosh, with the on-screen keyboard and a list of the shells.
+A touch login made of Phosh, with the on-screen keyboard and a list of the shells. Arch builds it on the phone: 30-40 minutes more.
+A Wi-Fi password has 8 to 63 characters
+A Wi-Fi password has 8 to 63 characters.
+About %u min left
+About phone
+ACCESS
+Access stays open until the phone locks or restarts. The computer never sees the password.
+ACCOUNT
+active
+Add a new slot alongside the current Linux.
+Add a system
+Add a theme from a file
+Add colors from a file
+Add shells and choose how the phone signs in.
+Added
+Added until restart: no writable storage
+Adding phone support
+Address %s
+Adjusting brightness.
+Africa
+All
+Allow
+Allow this computer
+Allow this computer only if you started this yourself.
+Allow with password
+Already fills the partition: %s
+Already unmounted
+ALSO INSTALL
+Always
+America
+An ARM64 ISO, disk image (raw, qcow2, VHD), Vagrant box or rootfs archive.
+An incomplete import remains in /.a22x-systems/staging for inspection. No automatic cleanup is performed.
+An installation is unfinished
+An interrupted RECOVERY write can require Samsung Download mode and external recovery flashing.
+An X11 login screen with an on-screen keyboard, made for Xfce.
+Android archive
+Android boot image
+Android logical-partition container; mapping is not implemented
+Android state requires its matching retained system/vendor firmware.
+Android super image
+Android system partitions
+Android verified filesystem; writes are not qualified
+Animations
+Another phone
+Antarctica
+App store
+Applying and checking %u Hz...
+Applying display control and reading the result...
+APPS
+Apps
+April
+Arch
+Architecture
+Archive: %s\nSize: %s\nSHA-256: %s
+Arctic
+arm64
+ARM64 root filesystems / shared /home / existing BOOT
+As in image
+As in recovery (%s)
+Asia
+Asked at start and after the screen turns off
+Asked when recovery starts
+At least 4 characters.
+At start
+Atlantic
+August
+Aurora
+Australia
+Authorization status unavailable
+Authorized keys: %u  /  key-only login
+Automatic sign-in
+Available memory
+Available?
+Back to display
+Back to files
+Back to preparation
+Back to recovery
+Back to tools
+Back to USB files
+Backend did not admit this operation.
+Backend output exceeded the bounded result buffer.
+Background and text of the terminal.
+Backup
+backup
+Backup completed and verified.
+Backup completed and verified. Userdata remains offline.
+BACKUP DESTINATION
+BACKUP SOURCE
+Backups will be saved to the USB stick
+Basic ANSI, UTF-8, history and completion. Full-screen programs may have limited display support.
+Battery
+Beaver
+Beside the installed systems: they and /home stay.
+Blur dissolve
+Board revision
+Boot + used ext4 blocks\nSave the Linux kernel and root filesystem offline.
+BOOT and allocated ext4 blocks are read and compressed. Existing files on the destination are retained.
+BOOT identical / no BOOT write
+BOOT image
+BOOT IMAGE ON MICROSD
+BOOT installation
+BOOT installation completed and independently verified.
+BOOT must be unmounted and unused. Userdata may remain mounted. Keep microSD mounted with write access. The installer verifies the stored Linux backup, source and phone identity.
+boot not yet tested
+BOOT preserved / userdata becomes empty ext4
+BOOT restored last, after userdata verification
+BOOT source
+BOOT, DTBO, vbmeta and other images
+Bootloader
+Bootloader lock
+BRIGHTNESS
+Brightness %u%% confirmed. Power turns the screen off.
+Brightness control is unavailable. Refresh to check again.
+Browse and edit files
+Browser
+Building for this phone
+Buttons
+By default the language of this recovery.
+bytes
+Cable
+Calculator
+Calendar
+Camera
+Cancel
+Cancel backup selection
+Cancel image selection
+Cancel selection
+Cancelling...
+Catalog
+Change
+Change only this exact entry if it still matches the version you inspected. This action is not recursive.
+Change password
+Changes only this entry. No recursive mode changes.
+Changes only this entry. The kernel may clear setuid, setgid or file capabilities when ownership changes.
+Charging
+Charging screen
+Check and repair
+Check and repair: ext4 only
+Check backup integrity
+Check: errors repaired
+Check: no errors found
+Checking BOOT
+Checking restored data
+Checking status...
+Checking the backup
+Checking the filesystem
+Checking the firmware
+Checking the image
+Checking the new system
+Checking the partition
+Checking the servers for newer images...
+Checking the source
+Checkpoint space: %s
+Chip
+Chip made
+Choose a mounted volume again.
+Choose a mounted writable volume again.
+Choose a network below
+Choose a regular .img file. The installer checks A22x BOOT geometry and writes only the BOOT partition after a separate reviewed hold.
+Choose a regular file
+Choose a script
+Choose a setup script
+Choose a shorter destination path.
+Choose a theme file
+Choose an already mounted writable volume.
+Choose an image of userdata or BOOT
+Choose an SD card or USB stick with backups, or restore a partition image.
+Choose an SD card or USB stick.
+Choose another
+Choose apps
+Choose how recovery looks.
+Choose image
+Choose next volume
+Choose storage
+Choose storage first
+Choose system image
+Choose the microSD card or USB stick with the image; one that is not mounted opens read-only.
+Choose the next boot mode, then hold to confirm. Completed writes are synchronized and recovery mounts are unmounted by the supervisor.
+Choose the next boot mode.
+Choose the system state to save.
+Choose what to install on this phone.
+Choose what to set up in the new system.
+Choose where the image is stored.
+Choose where the script is stored.
+Choose where the theme file is stored.
+Chromium
+Clean install
+Clock
+Close whatever is using the stick and try again.
+Code name
+Colors removed
+Command running / it continues after you exit
+Compact Linux backup tools are unavailable in this recovery. Refresh system status to check availability.
+Compare this fingerprint before accepting the SSH host key.
+Complete or roll back the pending system switch before booting Linux.
+Complete: %s  /  verified: %s  /  same device: %s
+Completed
+Compressing userdata
+Computer access
+Computer access: ask on the phone
+Computer access: open
+Confirm
+Connect
+Connect from the computer attached by USB.
+Connected
+Connecting...
+CONNECTION
+Contacts
+Continue
+Copy and rename require a new destination. Delete removes a regular file or an empty folder.
+Copy file
+Copy folder
+Copying the system files
+Cores
+Could not launch the terminal client. No input will be retried automatically.
+Could not prepare the complete edited text in RAM.
+Could not start display control.
+Create empty ext4 filesystem
+Create this text file. An existing file will not be overwritten.
+CURRENT DISPLAY MODE
+CURRENT FOLDER
+Current password
+CURRENT SYSTEM
+Current userdata does not match the backup.
+Current userdata matches the backup. BOOT is bound to the original transaction and checkpoint.
+Currently mounted
+Dark and calm, the classic look
+Dark glass with northern lights
+Date and time
+Daylight
+Debian
+December
+Delete
+Delete a saved system that is not running.
+Deleted
+Deny
+Design capacity
+DESKTOP
+Desktop: %s  /  apps: %u
+DESTINATION
+DESTINATION VOLUME
+Device
+Device inventory received
+Device restore is not qualified in this build
+Device tree overlays
+Diagnostic logs may include filenames, hardware identifiers and network details. Inspect the archive before sharing it.
+Diagnostics cannot be exported now.
+Diagnostics exported
+Discard edits?
+Discharging
+Disconnect
+Disconnecting...
+Display
+Display outcome unknown. Press Power to request wake.
+Display state is unavailable. Press Power to request wake.
+Display status is unavailable. Refresh to check again.
+Do not unplug the phone or remove storage.
+Documents
+Done
+Done: %u packages
+Download %s over Wi-Fi, checked against the catalog
+Downloading the system image
+DURABLE JOURNAL
+Each shell is installed with its packages. Sxmo and Lomiri come from Debian and Ubuntu.
+Each shell is installed with its packages; the sign-in screen switches between them.
+Each system keeps its own /etc and /var. Shared /home requires matching account IDs. A full Linux backup includes all slots.
+Edit text
+Editing disabled: file exceeds the 64 KiB UI limit.
+Efficiency cores
+EFS, IMEI and modem data
+EFS, IMEI and modem data of this phone.
+Elapsed %u:%02u
+Email
+Empty userdata: ready for a clean install
+Enable write access
+Enable writes
+Enable writes in Volume before editing.
+Enable writes on userdata in Files to change it
+Encrypted
+Encrypted Android data needs a working decryption service. Raw boot images and firmware partitions cannot be browsed as folders.
+Encrypted or unsupported filesystem
+End of installation receipt.
+End of the exact reviewed plan.
+Enter
+Enter a file or folder path without '.' or '..' components.
+Enter a path relative to the volume root.
+Enter a Wi-Fi network: the desktop and apps are downloaded at the first start
+Enter a Wi-Fi network: the desktop and apps are downloaded at the first start.
+Enter network
+Enter numeric UID:GID for this entry.
+Enter numeric UID:GID, for example 1000:1000. Each ID must be between 0 and 4294967294.
+Enter password
+Enter the recovery password.
+Enter the Unix mode as four octal digits.
+Erase userdata, then install from the internet or a file
+Erasing userdata
+Europe
+Everything on userdata is replaced by this image
+EXACT WRITE TARGETS
+Exact write targets
+Executable
+Execution was not confirmed. Refresh installation status and inspect its journal. The old execute request will not be repeated.
+Existing Linux / not yet adopted
+Existing names are never overwritten by this action.
+Exit terminal
+Explicitly select a Linux v2 snapshot for this installation.
+Export diagnostics
+ext4 filesystem image
+F2FS filesystem image
+Fade
+February
+Fedora
+File
+File actions
+File browsing unavailable
+File copied
+File operation
+FILE TRANSFER / MTP
+Files
+Files / mounts
+FILESYSTEM
+Filesystem
+Filesystem encryption is enabled; file keys have not been unlocked
+Filesystem unavailable; Android data may require decryption
+Finish moving the reviewed root directories into place. Shared /home remains in place.
+Finish the unfinished installation first
+Finished
+Finishing the installation
+Firmware not reported
+Firmware or service partition; file access is not admitted
+Fixed offset (%s)
+Flash a partition
+Flash BOOT
+Flash the selected BOOT image
+Flatpak
+Folder
+Folder created
+Folder tree copied
+For each, the package of the new system is installed.
+For the new system.
+Forget
+Formatted
+Formatting erases every system and /home here. Android needs F2FS, Linux ext4.
+Formatting erases everything on this volume, including backups.
+Formatting userdata
+Friday
+FROM
+From a file
+From a theme file
+FROM THE CATALOG
+From the internet
+Full
+GB
+Gestures
+GHz
+Git
+GNOME locks its screen only when GDM signs in.
+GNOME's login screen with its on-screen keyboard.
+Graphite
+Green
+Grow to fill
+Grown to %s
+history
+Hold 1 second to discard
+Hold 2 seconds to back up
+Hold 2 seconds to confirm
+Hold 2 seconds to export
+Hold 2 seconds to install
+Hold 2 seconds to share read / write
+Hold 2 seconds to share read-only
+Hold 3 seconds to delete
+Hold 3 seconds to flash
+Hold 3 seconds to flash BOOT
+Hold 3 seconds to remove
+Hold 3 seconds to restore
+Hold 3 seconds to resume
+Hold 3 seconds to roll back
+Hold 3 seconds to switch
+Hold 3 seconds to wipe
+Hold 5 seconds to install stock
+Hold the button to save this exact snapshot. Moving outside cancels confirmation.
+Hold to unmount and review
+Hold: check and repair
+Hold: erase, ext4
+Hold: erase, F2FS
+Hold: erase, FAT32
+Hold: grow to fill the partition
+Hold: write
+How one page gives way to the next.
+Identity already matches this copy
+Identity partitions
+Identity restored and checked
+If the backup also has a BOOT image, restore it the same way before starting Linux.
+IMAGE
+Image source
+Import a system
+In the repositories of %s
+Indian Ocean
+Input delivery was not confirmed. Pending input was discarded and will not be replayed. Refresh to inspect the shell.
+Input queue is full. Wait for the shell before typing more.
+Insert a USB stick and it appears here by itself.
+Insert an ext4 microSD, then tap Mount microSD.
+Insert the USB stick again
+Inspect a supported entry on a writable volume before continuing.
+Inspect before restoring.
+Inspect the pending image installation in Settings before booting.
+Inspect the selected entry again before continuing.
+Install
+Install a new system
+Install a system
+Install Android
+Install options
+Install status
+Install stock firmware
+Install system
+Install the fixed stock Android profile
+Install the prepared stock Android. Userdata is formatted first and this recovery stays.
+Installation complete
+Installation completed. Select the new slot to review switching; it has not been boot-tested.
+Installation completed. The new system is active: restart into it from Power. Its first start sets up the account, network, desktop and apps.
+INSTALLATION RECEIPT
+Installation result
+Installed over Wi-Fi: during the installation when recovery is connected, otherwise at the first start.
+Installing apps
+Installing the desktop
+Internal storage
+INTERRUPTED SWITCH
+It can read and change everything here.
+It is ready: recovery has installed the desktop, apps and account. Switch to it in Systems to start it.
+It starts ready: recovery has installed the desktop, apps and account.
+Its first start sets up the account, network, desktop and apps, then restarts once.
+Its root filesystem with its programs, /etc and /var is deleted. /home, the active system and BOOT stay. This cannot be undone.
+January
+Join a network
+Joined the network, but it gave no address.
+Journal step %u of %u
+July
+June
+KDE's login screen with Qt's virtual keyboard.
+Keep editing
+Keep going
+Keep mine
+Keep the cable connected to flash from the computer.
+Keep the phone powered and storage connected.
+Keep the previous system available for rollback.
+Keep the verified Linux backup on the microSD card: Restore brings Linux back.
+Kernel
+Kernel and ramdisk
+Keyboard
+Language
+LANGUAGE AND TIME
+Language, vibration, time and tools.
+Language: %s  /  time zone: %s
+Leave the password empty for an open network.
+Leave without saving these edits?
+Leaving the button cancels the hold.
+Less than a minute left
+Letters, digits, + . _ or -; at least two.
+Level
+Light
+Light glass on a soft gradient
+LINK TEXT
+Linux %.85s / %.24s
+Linux / boot + rootfs
+LINUX BACKUP
+Linux backup
+Linux backup saves allocated ext4 blocks with compression. The next screen reviews userdata before normal unmount.
+Linux boot + rootfs
+Linux from SD or USB stick, switch systems
+Linux restore awaits qualification
+Linux systems
+Linux used-block snapshot. Wipe empties userdata only and requires this backup to match its current contents. Boot and recovery are preserved.
+Live
+live
+Live output
+Loading...
+LOCAL SHELL
+Local terminal / storage lease held
+Lock screen
+Locked
+mAh
+Main menu
+Main shell: %s
+Make a backup first if you have not already.
+Manjaro
+Maps
+March
+Match the theme
+Matches the checksum saved with it: %s
+May
+Measured archive
+Measuring the backup size
+Medium
+Memory
+Memory and storage
+Memory card
+Menus and apps of the new system speak it.
+Menus and apps of the new system. A city also switches to summer time.
+Messages
+minimal
+Minimal images from the catalog, downloaded over Wi-Fi
+Mobian
+Mode for flashing from a computer
+Model
+Monday
+Mount
+Mount a destination volume with write access before copying.
+Mount a volume above.
+Mount an SD card or USB drive with write access in Files, then come back.
+Mount read-only
+Mount userdata
+Mount userdata in Files to see and change it
+Mount userdata to inspect systems
+Mount userdata to read it
+Mount userdata with write access and refresh Systems before planning.
+Mount userdata with write access first: the installer needs it to check the space.
+Mount with write access
+mounted
+Mounted outside the recovery filesystem manager
+Mounted read-only
+Mounted with write access
+Mounted writable ext4 microSD required
+Music
+Name
+Name or part of it
+Navigation
+Needed %s  /  available %s
+Needed to change the protection.
+Needs HTTPS
+Network and apps
+NETWORK NAME
+Never
+New account
+New files belong to root:root (0644; folders 0755). MTP has limited Linux metadata support. Stop sharing before mounting, editing in recovery, or making an offline snapshot.
+New folder
+NEW MODE / OCTAL
+NEW OWNER
+NEW OWNER / UID:GID
+New password
+NEW PATH
+NEW SYSTEM
+New system
+New text file
+New user
+New user: %s
+Next
+no
+No apps chosen
+No automatic replay. Partial partition writes are not atomic.
+No changed target is listed.
+No checksum was saved next to this image. The image is checked again while it is written.
+No completed backups
+No current executable plan is available for this operation.
+No host key reported.
+No identity copy on this volume.
+No installed system on userdata
+No link text returned
+No longer on its server
+No mounted volume available
+No mounted writable volume
+No network
+No network for the check
+No networks found. Search again, or choose Other network for a hidden one.
+No package with this name.
+No partition inventory received.
+No power action selected.
+No retry is started automatically. Inspect the backend result before another operation.
+No saved system slots yet. Import a prepared bundle to keep the current Linux alongside another system.
+No valid export reported
+No volume inventory received. Tap Refresh to try again.
+No volumes
+No Wi-Fi driver in this recovery
+No writable volume
+No writes required.
+None
+none
+None found
+None.
+Normal Linux boot is blocked
+Not available. Tap to choose storage
+Not charging
+Not completed
+Not connected
+Not for arm64
+Not mountable
+Not mounted
+Not mounted or not available
+Not read yet
+not reported
+Nothing has been written yet.
+Nothing is downloaded for the desktop.
+Nothing is downloaded.
+NOTHING IS ERASED
+Nothing is replaced: the new system becomes the only one on userdata.
+November
+October
+Off
+off
+Off: a charger starts Linux
+Office
+Official images, downloaded and checked during the installation.
+offline
+Offline filesystem
+Offline snapshot
+Offline used-block snapshot
+On
+on
+ON MICROSD
+On: a charger shows the battery
+Only a freshly reviewed qualified Linux used-block plan can write these targets.
+Only systemd distributions are supported by the current device adapter
+Only this reviewed plan can be started.
+Open
+Open as text
+Open files
+Open Files, select a supported volume and enable write access, then return here.
+Open folder
+Open read-only to inspect files. Enable writes only when you want to make changes.
+Open resolved target
+Open Systems
+Open the phone in your computer's file manager.
+Opening Samsung Download
+openSUSE
+Operating system
+Operating system, Android or a partition
+Operation cancelled
+Operation in progress
+Operation not available
+Orange
+Other network
+Output sequence or encoding changed. Refresh the shell state; input has been paused.
+Owner / group
+Owner and group
+Owner updated; actual permissions shown
+Pacific
+PACKAGE NAME
+Packages come over the recovery's Wi-Fi: this takes 10-30 minutes. Keep the phone powered.
+Packages, the account and the desktop are set up as you choose on the next pages.
+Packages, the account and the desktop are set up as you choose on the next pages. The terminal stays available for installing by hand.
+Packages: %s
+Pages change at once
+Pages melt into each other, without blur
+Pages slide sideways, without blur
+PARTITION
+Partition flashed
+Partition restored
+Partitions
+Partitions are unavailable.
+PASSWORD
+Password
+Password removed
+Password saved
+Passwords
+PATH
+Path %u / %u
+Performance cores
+Permissions
+Permissions updated
+Phone identity
+Phone identity saved
+Phone shell
+Photos
+Pick a partition, then an image from SD, USB stick or phone storage.
+Plan %.20s
+PLAN BLOCKERS
+PLAN IS BLOCKED
+Planning measures the compressed size and checks free space on the destination. Userdata stays offline afterward.
+Plasma Mobile
+PLATFORM CHECKPOINT
+Platform file permissions or owner differ
+Please wait
+Podcasts
+Power
+Power action
+Power actions are disabled in this build configuration.
+Power off
+Power off the phone?
+Power options
+Prepare userdata for Linux %s.
+Preparing
+Preparing the new system
+Previous
+Processor
+Profile unavailable
+raw
+Raw image
+Raw image; not a filesystem
+Raw partition
+Read
+Read and write
+Read and write access
+Read from this phone each time.
+Read only
+Read-only
+Read-only access
+Read-only filesystem
+Read-only image
+Read-only shows the installed systems. Write access also lets you install and switch. Nothing is formatted.
+Read-only volume. Enable writes in Volume.
+Read-only: tap to enable writes
+Readback: screen %s, brightness %u%%. No command was repeated.
+Reading copies...
+Reading current mount state...
+Reading device inventory...
+Reading display...
+Reading folder...
+Reading installed systems...
+Reading partitions...
+Reading storage volumes...
+Reading terminal state...
+Reading the catalog...
+Reading the partition back
+Reading the phone...
+Reading USB status...
+Reading Wi-Fi...
+Reading...
+Reboot recovery
+Reboot system
+Reboot to recovery?
+Recovery
+Recovery copies the script into the new system and does not run it. Read it first: it gets full control of the new system.
+Recovery could not set it up: %s
+Recovery image
+Recovery is locked.
+Recovery is not connected to Wi-Fi.
+Recovery is on Wi-Fi: the desktop and apps are installed now, and the system starts ready.
+Recovery joins it now. Nothing is saved.
+Recovery partition only\nKeep a copy of this independent recovery.
+Recovery password
+Recovery RAM / root shell\nLinux: /mnt/volumes/userdata
+Recovery runs from RAM. Mounted Linux volumes can be maintained independently of the installed system. Encrypted volumes require their own unlock support.
+Recovery stays on the phone, so you can come back here and flash again.
+Recovery time zone
+Recovery was not connected to Wi-Fi.
+Red
+Refresh
+Refresh before choosing a system. The full status was not confirmed.
+Refresh display status
+Refresh display status and choose a reported available mode.
+Refresh installation status
+Refresh inventory
+Refresh mount state
+Refresh rate, screen timeout and brightness.
+Refresh rate, timeout and brightness
+Refresh status
+Refresh systems
+Refresh terminal status
+Refresh the destination list and review a mounted writable volume.
+Refresh the terminal state before continuing.
+Refresh the volume list before continuing.
+Refresh to inspect the export
+Refresh to read installer status.
+Refresh to read the current service status.
+Refresh USB status
+Refresh volumes
+Region
+Regular-file test environment
+Release after the hold bar is complete. Moving outside the button cancels confirmation.
+Remove
+Remove password
+Remove safely
+Remove system
+Remove this system
+Removed themes are back
+Rename
+Renamed
+Repeat the password
+Replace this file only if its contents still match the version you opened.
+Required kernel, firmware or device adapter file differs
+Required platform symlink differs
+Resolution
+Resolve before opening the target.
+Resolve link
+RESOLVED INSIDE THIS VOLUME
+Restart into Samsung Download mode?
+Restart into the installed system?
+Restart into the new system
+Restarting recovery
+Restarting the system
+Restore
+restore
+Restore a partition image
+Restore admitted for regular-file fixtures
+Restore BOOT last
+Restore filesystem blocks
+Restore from a copy
+Restore from an image
+Restore identity
+Restore the previous root filesystem using the saved transaction. Shared /home remains in place.
+Restoring BOOT
+Restoring userdata
+Resume switch
+Return removed themes
+Return to a saved state
+Review
+Review a fresh plan with userdata offline?
+Review backup
+REVIEW EXACT IMAGE INSTALLATION
+Review exact plan
+REVIEW EXPLICIT RESUME
+Review installation
+Review its current journal before doing anything else. New installations are blocked.
+Review offline plan
+Review restore
+Review Resume
+Review Rollback
+Review save
+Review the archive, phone platform adapter and free space before installation. The installed root is validated before activation. Installation adds a separate system; it does not activate it.
+Review the archive, phone platform adapter and free space before installation. Userdata is erased first; the new system is checked and then becomes the active one.
+Review the current interrupted transaction.
+Review the exact target before continuing.
+Review the full source path before choosing it.
+Review userdata wipe
+Review wipe
+Roll back switch
+Run commands directly on this phone.
+Running
+Running for
+Running the setup script
+Runs once as root after the desktop and apps: now if recovery is on Wi-Fi, else at the first start.
+Runs once as root at the first start of the new system.
+Runtime plan path is too long.
+Samsung carrier data
+Samsung Download
+Samsung region data
+Saturday
+Save a system snapshot
+Save or discard the editor buffer before preparing an offline operation.
+Save or discard the file editor before starting this shell.
+Save or explicitly discard edited text before opening USB file sharing.
+Save or explicitly discard edited text before sharing this storage with the computer.
+Save or explicitly discard the edited text before leaving the editor.
+Save or explicitly discard the edited text before opening a shell that can change storage.
+Save or explicitly discard the edited text before preparing an offline operation.
+Save or explicitly discard the text editor before changing installed systems.
+Save or explicitly discard the text editor before opening image installation.
+Save text
+SAVE TO
+Saved
+SAVED AND CHECKED
+Saved archive
+Saved snapshot
+saved system
+Saved until reboot: no writable storage
+Saving BOOT
+Saving the current partition
+Screen blanking is unavailable on this boot.
+Screen blanking is unavailable; brightness controls remain separate.
+Screen is off. Short press Power to wake.
+SCREEN TIMEOUT
+Screenshot not saved
+Screenshot saved in RAM: no writable SD or USB
+Screenshot saved to A22xScreenshots
+Scroll to the end before confirming.
+Scrollback
+SD cards and USB sticks. Choose where backups go.
+SD free: %s   /   reserve: %s
+Search
+Search packages
+Searching for networks...
+Searching the repositories...
+Select a completed snapshot.
+Select a raw A22x BOOT v2 image. A header check does not prove that its kernel boots.
+Select an external backup location
+Select writable ext4 microSD. The source remains unchanged.
+SELECTED ENTRY
+SELECTED VOLUME
+September
+Serial number
+SERVER HOST KEY FINGERPRINT
+Set password
+Set up during the installation, or at the first start.
+Set, but the screen is not locked
+Setting up the new system
+Settings
+Settings could not be read. Defaults are shown, and nothing is saved.
+SETUP SCRIPT
+Setup script
+Setup script source
+Setup scripts must be on external SD/USB storage
+Share one mounted volume with this computer.
+Shared files require the same group names and GIDs
+Shared home requires the same user name, UID, primary GID and home path
+SHARED VOLUME
+Sharing is active
+Sharing is stopped
+Shell exited (%d). Exit to release storage.
+Shells and sign-in
+Shift
+Short press Power to turn the screen off or on.
+SIGN-IN SCREEN
+Sign-in: %s  /  also: %s
+signed
+Size available during verification
+size in manifest
+size unknown
+Slide
+Software
+SOURCE FILE
+SOURCE MANIFEST
+SOURCE VOLUME
+Space
+Special file / blocked
+SSH connection
+SSH is running
+SSH is stopped
+SSH server
+SSH unavailable
+Start local shell
+Start the active Linux system
+Start this recovery again
+State
+Status unavailable
+Step %u of %u
+Stock Android
+Stock firmware from a prepared bundle.
+Stock installation
+Stock installation completed and independently verified.
+Stock manifest
+STOCK MANIFEST ON MICROSD
+STOCK PROFILE
+Stop
+Stop sharing
+Stop this operation?
+Stop USB file sharing before preparing an offline backup, wipe or restore.
+Stop USB file sharing before starting the local shell.
+Storage
+Storage chip
+Storage is busy: stop USB files, or wait for the running operation to finish
+Storage size
+Storage wear
+Strong
+Sunday
+Swipe through the full source, backup and target list.
+Swipe to browse volumes. Open read-only by default.
+Swipe to scroll
+Swipe up to unlock
+Switch system
+SWITCH TO
+Switch to it in Systems to start it.
+Sxmo and Lomiri come from Debian and Ubuntu; other systems get Phosh.
+Symbolic link
+SYSTEM
+System image
+System image source
+System language
+System monitor
+Systems from the internet
+Tap again to remove
+Tap destination to cycle mounted writable volumes.
+Tap New user to enter the password.
+Tap outside to close
+Tap Search to turn Wi-Fi on.
+Tap the card above to mount userdata. Systems are never mounted automatically.
+Tap to choose a source file
+Tap to explicitly select a Linux v2 snapshot
+Tap to mount userdata
+Tap to review a fresh Resume plan
+Tap to type
+Tap to use for backups
+Target paths were not provided by the backend.
+Targets to replace
+Telegram
+Temperature
+Terminal
+Terminal colors
+Terminal colors added
+Text editor
+Text file
+Text limit reached
+Text login
+Text saved. Reading the stored file.
+The action returned an incomplete or mismatched write receipt. Refresh installation status. Do not repeat the old plan.
+The action returned an incomplete receipt. Refresh and inspect the actual system state before another operation.
+The active mode is read again after each change.
+The archive is checked before the snapshot is marked complete. Moving outside the button cancels the hold.
+The audited phone platform profile is unavailable. Import and switching remain disabled.
+The backend did not admit this operation.
+The backend did not report a successful result.
+The backend did not return a valid success result.
+The backend reported success.
+The backup does not fit on this storage. Choose one with more free space
+The backup does not match the current Linux state.
+The backup matches the current Linux state.
+The backup passed integrity verification.
+The block device was already read-only; this helper will not override it
+The block-level read-only guard changed; remount is required
+The bootloader, modem and calibration data are not listed and cannot be flashed here.
+The catalog is empty in this recovery.
+The charging screen is back
+The check found errors it could not repair
+The command running in the terminal will be stopped.
+The complete file must be loaded before saving.
+The complete UTF-8 text and file hash were not returned. Editing is disabled.
+The compressed file is damaged
+The current content will be saved to %s first.
+The current folder path is too long for this interface.
+The current Linux stays active. A separate review is required to switch. Existing BOOT and shared /home are retained.
+The current partition could not be read
+The current partition will not be saved first
+The desktop and apps are downloaded over this network at the first start.
+The destination must be a new name. Existing files will not be replaced.
+The destination must be external to the partitions being saved or restored. Format volumes in Files.
+The display helper did not return a complete status.
+The display helper is not configured.
+The downloaded image differs from the catalog. Try again.
+The exact plan, source, backup, targets, journal or safety policy was not confirmed.
+The exact private plan file, source, target or preservation policy was not confirmed.
+The existing shell has not become ready. Refresh or close this exact session; another shell is not started.
+The existing shell session is still starting...
+The file changed after it was checked
+The file changed during the write. Flash the partition again from a good image
+The file changed while it was read
+The file has neither interface nor terminal colors
+The file on storage has not been changed.
+The file type could not be recognized
+The filesystem could not be checked
+The filesystem could not be resized
+The filesystem helper is not configured.
+The filesystem size could not be read
+The fixed stock profile is not qualified for this phone. Stock installation is unavailable.
+The folder result was incomplete. Refresh before continuing.
+The full installer status was not confirmed. Refresh before choosing an operation.
+The header differs from the usual A22x boot layout
+The helper did not describe the image.
+The helper did not return a result.
+The helper verified bytes. This does not prove that the selected system boots.
+The identity backup did not finish.
+The identity backup helper is not configured.
+The image changed on its server. The catalog now lists the new version: start the installation again.
+The image could not be downloaded. Check the Wi-Fi connection and try again.
+The image does not fit this partition
+The image does not match the checksum saved with it
+The image ended early
+The image file is damaged or incomplete. Copy it again, then eject the stick safely before unplugging it.
+The image has extra data at its end
+The image installer did not return a valid result.
+The image installer helper is not configured.
+The image is larger than any partition
+The image is larger than the partition
+The image or installation state changed since planning
+The images match their servers.
+The input acknowledgement did not match. Pending input was discarded and will not be replayed.
+The installed root filesystem changes. /home stays shared; each system retains its own /etc and /var. BOOT is retained.
+The installer result did not match the requested environment or operation.
+The interrupted transaction changed. Review the refreshed Systems screen.
+The last installation completed with independent readback. Boot behavior still needs a deliberate test.
+The link target was not returned. No target was opened.
+The local terminal helper is not configured.
+The lz4 file is damaged
+The main shell starts signed in; its lock screen asks for the password. Each shell gets a launcher to switch to it.
+The management helper is not configured.
+The management helper returned an incomplete result.
+The name uses lowercase letters, digits, - and _. The password signs in and confirms sudo.
+The network did not answer in time.
+The network is not in range.
+The new recovery starts at the next restart into recovery. If it does not start, flash a working one from a computer in Download Mode.
+The new system becomes the only one on userdata.
+The new system is active.
+The new system is saved beside the current one and is not activated. Switch to it in Systems.
+The new system is saved beside the current one.
+The new system joins it at the first start.
+The offline plan rechecks partition identity and state.
+The old content could not be saved
+The old content was saved here:
+The old page blurs away and the new one sharpens
+The operation or environment did not match the requested system action.
+The operation was stopped.
+The package site did not answer. Check Wi-Fi and try again.
+The page grows out of the tile, with its icon
+The page grows while the one behind goes soft
+The partition could not be read back
+The partition does not match the image after writing
+The partition is mounted. Unmount it in Files before writing
+The partitions that differ are saved to a new copy first, then written and read back.
+The password could not be changed
+The password is wrong.
+The passwords do not match
+The phone details are not available yet.
+The phone starts Linux when charging
+The phone stayed in recovery: a backup, restore or installation is still running. Wait until it finishes, then try again.
+The phone stayed in recovery: a volume is still in use. Stop USB file sharing or the terminal, then try again.
+The phone stayed in recovery: an image installation needs attention in Install images.
+The phone stayed in recovery: the power action was refused.
+The phone stayed in recovery: there is no bootable system on userdata, or a system switch must be finished in Systems.
+The picture cannot be read
+The picture data must be text
+The picture has the wrong size
+The plan is blocked. Read the reported blockers.
+The private RAM work directory is unavailable.
+The removal was not confirmed. Refresh Systems.
+The requested %u Hz mode was not confirmed by the subsequent status read. Reported mode: %u Hz.
+The requested terminal dimensions were not applied.
+The requested USB export or stop was not confirmed. Inspect and refresh the current state before continuing.
+The result of the write could not be confirmed.
+The reviewed restore completed and was verified. Userdata remains offline.
+The root directory switch was interrupted. Resume finishes it; Rollback restores the previous system. The shared /home stays in place. This is a journaled sequence, not one atomic rename.
+The saved refresh rate was not applied
+The screen goes dark when the phone is off.
+The screen turns off when the phone is not touched. Press Power to wake it; operations keep running.
+The script gets A22X_OS_ID and A22X_PACKAGE_MANAGER (apt, dnf, pacman or zypper) and can install packages with a22x-install.
+The selected entry was not returned. Inspect it again before continuing.
+The selected journal changed. Inspect the refreshed installation status.
+The server no longer offers this image. Choose another one.
+The servers did not answer; the saved versions are shown.
+The setup script changed since planning
+The setup script must be a text file
+The shell has not stopped completely. The terminal remains open.
+The starting root is recovery RAM. Mount Linux in Files first, then use /mnt/volumes/userdata. The microSD backup mount is /mnt/backup.
+The switch is journaled, not fully atomic. If interrupted, return to Systems and choose Resume or Rollback. Linux boot remains blocked until the journal completes.
+The system manager did not return a valid result.
+The system manager helper is not configured.
+The system transaction completed. Read the refreshed active system before restarting Linux.
+The system was removed. /home and the active system stay.
+The terminal helper did not return a valid response.
+The terminal palette needs 16 colors
+The terminal session, boot, operation or storage lease was not confirmed. Refresh before continuing.
+The terminal text would be too hard to read
+The theme file is too large
+The theme helper did not return a valid result.
+The USB file helper returned an incomplete state. Refresh before changing sharing.
+The USB file transfer helper is not configured.
+The USB stick could not be opened for writing.
+The write receipt could not be displayed completely. Inspect installation status.
+Theme
+Theme added
+Theme file
+Theme removed
+There is no automatic reboot.
+There is not enough space beside the retained system
+This action replaces the listed targets.
+This compression is not supported
+This creates an empty filesystem, not secure erasure. The saved snapshot remains on SD. Recovery does not reboot automatically.
+This deletes the selected file or empty folder. There is no undo.
+This file has no terminal colors
+This file is not a DTBO image
+This file is not a filesystem image for userdata
+This file is not a recognised system image. Supported: ISO, raw or img disk images, qcow2, VHD, Vagrant box and tar archives, also compressed with xz, zstd, gzip or bzip2.
+This file is not a super image
+This file is not a vbmeta image
+This file is not an A22x recovery image
+This file is not an Android boot image
+This folder is empty.
+This image has no Wi-Fi program, so the desktop and apps cannot be downloaded at the first start. Choose Console without apps, or another image.
+This image is already on the partition. There is nothing to flash.
+This image keeps its system on btrfs, which this recovery cannot read
+This image keeps its system on xfs, which this recovery cannot read
+This is a recovery image, not a boot image
+This is not a theme file
+This is not a theme name
+This is the exact transaction read just before this review. If it changes, the backend refuses this action. The phone does not reboot automatically.
+This journal requires manual inspection
+This kernel has no driver for the detected filesystem
+This key is temporary and may change on the next recovery boot.
+This mount is not owned by the recovery Files helper. Close its owner and unmount it before continuing.
+This name belongs to a built-in theme
+This network is not saved.
+This partition is already used by another block mapping
+This partition is too large to save first
+This phone
+This plan expired. Return and review again.
+This plan expired. Return and review it again.
+This recovery checks and repairs ext2, ext3 and ext4 only
+This recovery has no Wi-Fi driver.
+This recovery stays installed, so you can return to Linux from a backup.
+This recovery, from a new image
+This small checkpoint is separate from the full Linux BOOT and userdata backup.
+This step cannot be stopped safely.
+This system cannot read the saved password of this account. Choose New user with the same name and enter the password again.
+This uses a normal unmount. Busy filesystems are refused. The backup destination stays mounted and userdata remains offline until you choose to mount it again in Files.
+This volume is available for reading only.
+This volume is no longer available. Return to Files and refresh the list.
+Thursday
+Time zone
+TO
+To: %.170s
+Too many attempts. Try again in %u s
+Touch panel
+TRANSACTION
+Tuesday
+Turn the phone off
+Turning off
+Turning on Wi-Fi...
+Type
+Type it once more.
+UART console
+Ubuntu
+UID %s  /  GID %s
+Unavailable
+unavailable
+unknown
+Unknown phone
+Unlock
+Unlocked
+Unmount
+Unmount the volume before checking it
+Unmount userdata normally in Files before planning stock. All target partitions must be offline. Keep microSD mounted with write access. The installer verifies the current Linux backup, source and phone identity.
+Unmount userdata, then review a fresh plan?
+Unpacking the system image
+Unsupported
+Up
+Updated from the servers: %u
+USB address unavailable
+USB files
+USB files stopped: cable removed
+USB stick
+USB stick connected
+USB stick removed
+Use 2 to 40 letters, digits, + . _ or -.
+Use at least 4 characters
+Use exactly four octal digits, for example 0644 or 0755.
+Use this script
+Use this source
+Use this theme
+Used ext4 blocks: %s
+USER NAME
+User name
+userdata / Linux rootfs
+Userdata and recovery stay unchanged. A valid BOOT header does not prove that this kernel or ramdisk boots on this phone.
+Userdata changed during installation
+Userdata changed since planning
+Userdata holds files but no Linux system. Format it in Files for a clean install.
+USERDATA IS EMPTY
+Userdata is empty, so nothing is replaced. The new system is active after installation: restart into it from Power.
+Userdata is empty. The system you install becomes the only one, with the desktop, account, Wi-Fi, apps and setup script you choose.
+USERDATA IS ERASED
+Userdata is erased first: every Linux system and /home on it. The new system is active after installation.
+Userdata is formatted for Android. This erases every Linux system and /home on the phone.
+Userdata is mounted with write access
+Userdata is now an empty ext4 filesystem. Boot and the SD snapshot were preserved.
+Userdata is restored and checked first. Keep power and SD connected. Recovery does not reboot automatically.
+Userdata is still mounted or changed. Review its current state before another attempt.
+Userdata stays unmounted after backup
+Userdata was not present in the fresh volume inventory. Refresh before continuing.
+V
+VALUE
+VERIFIED BACKUP SOURCE
+Verified boot
+Verified boot data
+Verified boot data for system
+Verified boot data for vendor
+VERIFIED IDENTICAL / SKIPPED
+Verified write receipt. No automatic reboot.
+Verify
+Verify backup
+Verify this backup
+Vibration
+Video player
+VISIBLE NETWORKS
+Visible networks. Recovery stays connected until it restarts.
+Voltage
+VOLUME
+Volume
+Volume settings
+Volume unavailable
+Volume unmounted
+VOLUMES
+Waiting for backend
+Waiting for the terminal supervisor to exit...
+Warm wood and a quiet river
+Weather
+Wednesday
+WHAT HAPPENS NEXT
+What this system lacks for the phone is built on it (Arch: Phosh's compositor fix and Phrog), up to 45 minutes. Keep the phone powered.
+When the installation starts, every Linux system and /home on userdata are erased. Make a backup first if you need them.
+While the shell is open, other storage operations wait for this terminal to close.
+WI-FI
+Wi-Fi
+Wi-Fi could not search for networks.
+Wi-Fi did not start. Restart recovery and try again.
+Wi-Fi failed.
+Wi-Fi network
+Wi-Fi: %s  /  script: %s
+wipe
+Without a network here, the saved networks of installed systems are used.
+Working
+WPA
+Writable
+Write a saved copy back to this phone.
+Write access allows changes on this volume. Nothing is formatted.
+Write access enabled
+Write access lets Systems install and switch systems. Nothing is formatted.
+WRITE ORDER
+Write text
+Writes are not atomic. Keep power and microSD connected. If interrupted, inspect installation status and review Resume; do not repeat the old execute command.
+Writing
+Writing a partition must be confirmed
+WRITTEN TARGETS
+Wrong password
+Yellow
+yes
+You can remove the USB stick now
+Your accounts and /home settings stay available.
+Zoom
+Zoom with blur

@@ -1,0 +1,99 @@
+/* SPDX-License-Identifier: MIT — actual UI + actual directory-only system backend. */
+#define main recovery_ui_program_main
+#include "recovery_ui.c"
+#undef main
+#define SCHECK(expr) do{checks++;if(!(expr)){fprintf(stderr,"systems-ui check %u line %d failed: %s; screen=%d status=%s message=%s\n",checks,__LINE__,#expr,a->screen,a->status,a->message);free(a->pixels);free(a);return 1;}}while(0)
+static bool systems_settle(App*a){uint64_t deadline=milliseconds()+30000;while(a->job.pid&&milliseconds()<deadline){a->now=milliseconds();poll_job(a);struct timespec pause={0,1000000};nanosleep(&pause,NULL);}return !a->job.pid;}
+int main(int argc,char**argv){
+    if(argc!=5)return 2;
+    unsigned checks=0;const char*which=argv[3];App*a=calloc(1,sizeof(*a));if(!a)return 2;initialize(a);
+    copy(a->fixture,sizeof(a->fixture),argv[1]);copy(a->distro_helper,sizeof(a->distro_helper),argv[2]);copy(a->python,sizeof(a->python),argv[4]);
+    char*slash=strrchr(a->distro_helper,'/');if(!slash)return 2;size_t root_length=(size_t)(slash-a->distro_helper);
+    if(root_length+15>=sizeof(a->filesystem_helper))return 2;
+    memcpy(a->filesystem_helper,a->distro_helper,root_length);copy(a->filesystem_helper+root_length,sizeof(a->filesystem_helper)-root_length,"/filesystem.py");
+    SCHECK(snprintf(a->workdir,sizeof(a->workdir),"%s/privateplans",argv[1])<(int)sizeof(a->workdir)&&private_workdir(a->workdir));
+    a->fs_dirty=true;copy(a->fs_text,sizeof(a->fs_text),"unsaved system editor ґ");screen(a,OS_MENU);
+    SCHECK(test_press(a,A_SYSTEMS,50)&&a->screen==RESULT&&a->result_return==FILE_EDIT&&!a->job.pid&&!strcmp(a->fs_text,"unsaved system editor ґ"));
+    a->fs_dirty=false;screen(a,OS_MENU);SCHECK(test_press(a,A_SYSTEMS,50)&&systems_settle(a)&&a->screen==SYSTEMS&&a->systems_known);
+    if(!strcmp(which,"unmounted")||!strcmp(which,"readonly")||!strcmp(which,"no-profile")){
+        SCHECK(!systems_ready(a)&&!test_press(a,A_SYS_IMPORT,50)&&!a->job.pid);
+        if(!strcmp(which,"unmounted")){
+            /* 2026-11-08, found by tapping on the phone: mounting from New system must stay there. */
+            screen(a,SYSTEMS_NEW);SCHECK(test_press(a,A_SYS_MOUNT,50)&&a->systems_mount_sheet);
+            SCHECK(test_press(a,A_SYS_MOUNT_RW,50)&&systems_settle(a)&&systems_settle(a));
+            for(int n=0;n<5&&a->job.pid;n++)systems_settle(a);
+            SCHECK(a->screen==SYSTEMS_NEW&&a->systems_known&&a->systems_mounted&&!a->systems_read_only);
+        }
+        goto finished;
+    }
+    if(!strcmp(which,"resume")||!strcmp(which,"rollback")){
+        SCHECK(a->systems_transaction[0]&&a->systems_reboot_blocked&&a->systems_step<=a->systems_total);
+        a->allow_power=true;screen(a,POWER);SCHECK(!test_press(a,A_REBOOT,50));action(a,A_REBOOT);SCHECK(a->screen==POWER&&a->running);
+        a->power_intent=200;screen(a,POWER_CONFIRM);SCHECK(!test_press(a,A_POWER_CONFIRM,2100));action(a,A_POWER_CONFIRM);SCHECK(a->running&&a->exit_code==0);
+        screen(a,SYSTEMS);SCHECK(test_press(a,!strcmp(which,"rollback")?A_SYS_ROLLBACK:A_SYS_RESUME,50)&&a->job.kind==J_SYS_STATUS&&systems_settle(a)&&a->screen==SYSTEMS_RECOVER);
+        SCHECK(!strcmp(a->systems_expected_transaction,a->systems_transaction));
+        SCHECK(test_press(a,A_SYS_RECOVER_CONFIRM,100)&&!a->job.pid&&a->screen==SYSTEMS_RECOVER);
+        SCHECK(test_press(a,A_SYS_RECOVER_CONFIRM,3100)&&systems_settle(a)&&a->screen==SYSTEMS&&!a->systems_transaction[0]&&!a->systems_reboot_blocked);
+        SCHECK(!strcmp(a->systems_active,!strcmp(which,"rollback")?"original":"new-linux"));goto finished;
+    }
+    SCHECK(systems_ready(a)&&!a->systems_initialized);
+    /* 2026-11-09: Import opens the adding page (catalog or file); nothing is erased from there. */
+    SCHECK(test_press(a,A_SYS_IMPORT,50)&&a->screen==SYSTEMS_NEW&&a->systems_adding&&!a->systems_wipe);
+    SCHECK(test_press(a,A_NEW_FILE,50)&&systems_settle(a)&&a->screen==FILE_VOLUMES&&a->systems_pick_manifest&&!a->systems_wipe);
+    int sd=-1,user=-1;for(int n=0;n<a->volume_count;n++){if(!strcmp(a->volumes[n].id,"sdcard-p1"))sd=n;if(!strcmp(a->volumes[n].id,"userdata"))user=n;}
+    SCHECK(sd>=0&&user>=0&&!test_press(a,A_FS_VOLUME_ITEM+user,50)&&!a->job.pid);
+    SCHECK(test_press(a,A_FS_VOLUME_ITEM+sd,50)&&systems_settle(a)&&a->screen==FILE_BROWSER);
+    int manifest=-1,archive=-1,odd=-1,sum=-1;
+    for(int n=0;n<a->file_count;n++){
+        const char*name=a->files[n].name;
+        if(!strcmp(name,"bundle.json"))manifest=n;
+        if(!strcmp(name,"rootfs.tar.gz"))archive=n;
+        if(!strcmp(name,"Fedora-Cloud.qcow2.man"))odd=n;
+        if(!strcmp(name,"rootfs.tar.gz.sha256"))sum=n;
+    }
+    SCHECK(manifest>=0&&archive>=0&&odd>=0&&sum>=0);
+    /* An image with a suffix left by the download is offered; a small checksum file is not. */
+    SCHECK(test_press(a,A_FS_ENTRY+odd,50)&&systems_settle(a)&&a->screen==FILE_INFO&&systems_manifest_selected(a));
+    SCHECK(test_press(a,A_BACK,50)&&systems_settle(a)&&a->screen==FILE_BROWSER);
+    SCHECK(test_press(a,A_FS_ENTRY+sum,50)&&systems_settle(a)&&a->screen==FILE_INFO&&!systems_manifest_selected(a));
+    SCHECK(test_press(a,A_BACK,50)&&systems_settle(a)&&a->screen==FILE_BROWSER);
+    SCHECK(test_press(a,A_FS_ENTRY+archive,50)&&systems_settle(a)&&a->screen==FILE_INFO&&systems_manifest_selected(a));
+    SCHECK(test_press(a,A_BACK,50)&&systems_settle(a)&&a->screen==FILE_BROWSER);
+    SCHECK(test_press(a,A_FS_ENTRY+manifest,50)&&systems_settle(a)&&a->screen==FILE_INFO&&systems_manifest_selected(a));
+    SCHECK(!test_press(a,A_FS_DELETE,3100)&&!test_press(a,A_FS_EDIT,50));
+    SCHECK(test_press(a,A_SYS_USE_MANIFEST,50)&&systems_settle(a)&&a->screen==SYSTEMS_PLAN&&a->systems_plan_valid&&a->systems_plan_kind==J_SYS_IMPORT_PLAN);
+    SCHECK(test_press(a,A_SYS_PLAN_CONFIRM,100)&&!a->job.pid&&a->systems_plan_valid);
+    SCHECK(test_press(a,A_SYS_PLAN_CONFIRM,2100)&&systems_settle(a));
+    if(!strcmp(which,"accounts")){SCHECK(a->screen==RESULT&&!strcmp(a->status,"HOME_ACCOUNT_MISMATCH")&&!a->systems_plan_valid);goto finished;}
+    /* 2026-11-08: the receipt opens the completion page; a system saved beside opens Systems from there. */
+    SCHECK(a->screen==SYSTEMS_DONE&&!a->systems_done_clean&&test_press(a,A_SYS_DONE_SYSTEMS,50)&&systems_settle(a));
+    SCHECK(a->screen==SYSTEMS&&a->systems_slot_count==2&&!strcmp(a->systems_active,"original")&&!a->systems_reboot_blocked);
+    int target=-1;for(int n=0;n<a->systems_slot_count;n++)if(!strcmp(a->systems_slots[n].id,"new-linux"))target=n;SCHECK(target>=0);
+    SCHECK(test_press(a,A_SYS_SLOT+target,50)&&systems_settle(a));
+    SCHECK(a->screen==SYSTEMS_PLAN&&a->systems_plan_valid&&a->systems_plan_kind==J_SYS_SWITCH_PLAN);
+    if(!strcmp(which,"tamper")){
+        int fd=open(a->systems_plan_path,O_WRONLY|O_APPEND|O_NOFOLLOW|O_CLOEXEC);SCHECK(fd>=0);ssize_t written=write(fd," ",1);int rc=close(fd);SCHECK(written==1&&rc==0);
+        SCHECK(test_press(a,A_SYS_PLAN_CONFIRM,3100)&&systems_settle(a)&&a->screen==RESULT&&!strcmp(a->status,"PLAN_FILE_CHANGED"));
+        SCHECK(test_press(a,A_DONE,50)&&systems_settle(a)&&a->screen==SYSTEMS&&!strcmp(a->systems_active,"original")&&!a->systems_reboot_blocked);goto finished;
+    }
+    SCHECK(test_press(a,A_SYS_PLAN_CONFIRM,2000)&&!a->job.pid&&a->systems_plan_valid);
+    SCHECK(test_press(a,A_SYS_PLAN_CONFIRM,3100)&&systems_settle(a)&&a->screen==SYSTEMS&&!strcmp(a->systems_active,"new-linux")&&!a->systems_reboot_blocked);
+    int original=-1;for(int n=0;n<a->systems_slot_count;n++)if(!strcmp(a->systems_slots[n].id,"original"))original=n;SCHECK(original>=0);
+    SCHECK(test_press(a,A_SYS_SLOT+original,50)&&systems_settle(a)&&a->screen==SYSTEMS_PLAN&&a->systems_plan_valid);
+    SCHECK(test_press(a,A_SYS_PLAN_CONFIRM,3100)&&systems_settle(a)&&a->screen==SYSTEMS&&!strcmp(a->systems_active,"original"));
+    /* 2026-11-09: a saved system that is not running is removed from its review (backend remove-slot). */
+    target=-1;for(int n=0;n<a->systems_slot_count;n++)if(!strcmp(a->systems_slots[n].id,"new-linux"))target=n;SCHECK(target>=0);
+    SCHECK(test_press(a,A_SYS_SLOT+target,50)&&systems_settle(a)&&a->screen==SYSTEMS_PLAN&&a->systems_plan_kind==J_SYS_SWITCH_PLAN);
+    SCHECK(test_press(a,A_SYS_REMOVE,50)&&a->screen==SYSTEMS_REMOVE&&!a->systems_plan_valid&&!strcmp(a->systems_plan_slot,"new-linux"));
+    SCHECK(test_press(a,A_SYS_REMOVE_CONFIRM,2000)&&!a->job.pid&&a->screen==SYSTEMS_REMOVE);
+    SCHECK(test_press(a,A_SYS_REMOVE_CONFIRM,3100)&&systems_settle(a)&&systems_settle(a)&&a->screen==SYSTEMS&&strstr(a->systems_note,"removed"));
+    SCHECK(a->systems_known&&a->systems_slot_count==1&&!strcmp(a->systems_active,"original"));
+    /* Existing slots are pixel-scrollable, with bounded inertia and stop-tap suppression. */
+    a->preview=true;a->systems_slot_count=16;for(int n=0;n<16;n++){snprintf(a->systems_slots[n].id,sizeof(a->systems_slots[n].id),"slot-%02d",n);copy(a->systems_slots[n].name,sizeof(a->systems_slots[n].name),"A long prepared ARM64 system");a->systems_slots[n].active=n==0;}
+    uint64_t at=milliseconds();workflow_swipe(a,250,960,460,at);SCHECK(a->systems_scroll==500&&a->kinetic.active&&a->motion_surface==SCROLL_SYSTEMS&&!a->job.pid);
+    tick_inertia(a,at+120);SCHECK(a->systems_scroll>500&&a->systems_scroll<=systems_max_scroll(a));int64_t offset=a->systems_scroll;render(a);pointer(a,true,250,650,at+130);pointer(a,false,250,650,at+160);SCHECK(!a->kinetic.active&&a->systems_scroll==offset&&!a->job.pid&&a->screen==SYSTEMS);
+    systems_scroll_to(a,INT64_MAX);SCHECK(a->systems_scroll==systems_max_scroll(a));systems_scroll_to(a,-1);SCHECK(a->systems_scroll==0);
+finished:
+    SCHECK(!strcmp(a->fs_text,"unsaved system editor ґ")&&!a->fs_dirty);
+    systems_forget_plan(a);free(a->pixels);free(a);printf("{\"ok\":true,\"case\":\"%s\",\"checks\":%u,\"actual_backend\":true,\"directory_fixture\":true,\"device_io\":false}\n",which,checks);return 0;
+}

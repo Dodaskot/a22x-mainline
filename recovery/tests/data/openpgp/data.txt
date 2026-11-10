@@ -1,0 +1,3 @@
+fixture image data
+second line  
+- dash line

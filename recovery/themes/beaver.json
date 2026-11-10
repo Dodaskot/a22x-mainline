@@ -1,0 +1,25 @@
+{
+  "format": 1,
+  "code": "beaver",
+  "name": "Beaver",
+  "note": "Warm wood and a quiet river",
+  "dark": true,
+  "layout": "tiles",
+  "glass": {"surface_alpha": 176, "edge_alpha": 84, "shadow_strength": 84},
+  "colors": {
+    "bg": "#1b120c", "panel": "#2d1f15", "panel2": "#4a3423", "line": "#5a4430", "edge": "#6f5740",
+    "text": "#f8f0e5", "muted": "#d2bea8", "accent": "#f2a53c", "on_accent": "#2a1603",
+    "container": "#4c3019", "container_edge": "#6e4726", "icon_fill": "#4a3019", "knob": "#f8f0e5",
+    "green": "#8fd6a4", "red": "#ff9c8a", "blue": "#a3cfec", "purple": "#dcbbf2", "danger": "#4d2620",
+    "toast_fill": "#f8f0e5", "toast_text": "#1b120c",
+    "hero_top": "#b4641c", "hero_bottom": "#6e3a12", "hero_text": "#ffffff", "hero_sub": "#f8e0c4",
+    "tile_fill": ["#5a4026", "#73501a", "#1d4a45", "#5a3d2e", "#1b4750", "#6e3127"],
+    "tile_ink": ["#f4cd96", "#fbd783", "#8fe3cc", "#efcbab", "#99e1ee", "#ffb8a6"],
+    "terminal_bg": "#17100b", "terminal_fg": "#eee2d2"
+  },
+  "terminal": {
+    "background": "#17100b", "foreground": "#eee2d2",
+    "palette": ["#3a2a1e", "#e4806a", "#94c484", "#ebb955", "#78aecb", "#cb97b6", "#6cc3b4", "#dccdb9",
+                "#75634f", "#f4977f", "#add99f", "#f6cd70", "#94c5df", "#dcadcb", "#8bd8ca", "#f8f0e5"]
+  }
+}

@@ -1,0 +1,4079 @@
+state.Loopback {
+	control.1 {
+		iface PCM
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.2 {
+		iface PCM
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.3 {
+		iface PCM
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.4 {
+		iface PCM
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.5 {
+		iface PCM
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.6 {
+		iface PCM
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.7 {
+		iface PCM
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.8 {
+		iface PCM
+		subdevice 1
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.9 {
+		iface PCM
+		subdevice 1
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.10 {
+		iface PCM
+		subdevice 1
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.11 {
+		iface PCM
+		subdevice 1
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.12 {
+		iface PCM
+		subdevice 1
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.13 {
+		iface PCM
+		subdevice 1
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.14 {
+		iface PCM
+		subdevice 1
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.15 {
+		iface PCM
+		subdevice 2
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.16 {
+		iface PCM
+		subdevice 2
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.17 {
+		iface PCM
+		subdevice 2
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.18 {
+		iface PCM
+		subdevice 2
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.19 {
+		iface PCM
+		subdevice 2
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.20 {
+		iface PCM
+		subdevice 2
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.21 {
+		iface PCM
+		subdevice 2
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.22 {
+		iface PCM
+		subdevice 3
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.23 {
+		iface PCM
+		subdevice 3
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.24 {
+		iface PCM
+		subdevice 3
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.25 {
+		iface PCM
+		subdevice 3
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.26 {
+		iface PCM
+		subdevice 3
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.27 {
+		iface PCM
+		subdevice 3
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.28 {
+		iface PCM
+		subdevice 3
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.29 {
+		iface PCM
+		subdevice 4
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.30 {
+		iface PCM
+		subdevice 4
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.31 {
+		iface PCM
+		subdevice 4
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.32 {
+		iface PCM
+		subdevice 4
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.33 {
+		iface PCM
+		subdevice 4
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.34 {
+		iface PCM
+		subdevice 4
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.35 {
+		iface PCM
+		subdevice 4
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.36 {
+		iface PCM
+		subdevice 5
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.37 {
+		iface PCM
+		subdevice 5
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.38 {
+		iface PCM
+		subdevice 5
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.39 {
+		iface PCM
+		subdevice 5
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.40 {
+		iface PCM
+		subdevice 5
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.41 {
+		iface PCM
+		subdevice 5
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.42 {
+		iface PCM
+		subdevice 5
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.43 {
+		iface PCM
+		subdevice 6
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.44 {
+		iface PCM
+		subdevice 6
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.45 {
+		iface PCM
+		subdevice 6
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.46 {
+		iface PCM
+		subdevice 6
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.47 {
+		iface PCM
+		subdevice 6
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.48 {
+		iface PCM
+		subdevice 6
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.49 {
+		iface PCM
+		subdevice 6
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.50 {
+		iface PCM
+		subdevice 7
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.51 {
+		iface PCM
+		subdevice 7
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.52 {
+		iface PCM
+		subdevice 7
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.53 {
+		iface PCM
+		subdevice 7
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.54 {
+		iface PCM
+		subdevice 7
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.55 {
+		iface PCM
+		subdevice 7
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.56 {
+		iface PCM
+		subdevice 7
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.57 {
+		iface PCM
+		device 1
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.58 {
+		iface PCM
+		device 1
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.59 {
+		iface PCM
+		device 1
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.60 {
+		iface PCM
+		device 1
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.61 {
+		iface PCM
+		device 1
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.62 {
+		iface PCM
+		device 1
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.63 {
+		iface PCM
+		device 1
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.64 {
+		iface PCM
+		device 1
+		subdevice 1
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.65 {
+		iface PCM
+		device 1
+		subdevice 1
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.66 {
+		iface PCM
+		device 1
+		subdevice 1
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.67 {
+		iface PCM
+		device 1
+		subdevice 1
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.68 {
+		iface PCM
+		device 1
+		subdevice 1
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.69 {
+		iface PCM
+		device 1
+		subdevice 1
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.70 {
+		iface PCM
+		device 1
+		subdevice 1
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.71 {
+		iface PCM
+		device 1
+		subdevice 2
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.72 {
+		iface PCM
+		device 1
+		subdevice 2
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.73 {
+		iface PCM
+		device 1
+		subdevice 2
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.74 {
+		iface PCM
+		device 1
+		subdevice 2
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.75 {
+		iface PCM
+		device 1
+		subdevice 2
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.76 {
+		iface PCM
+		device 1
+		subdevice 2
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.77 {
+		iface PCM
+		device 1
+		subdevice 2
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.78 {
+		iface PCM
+		device 1
+		subdevice 3
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.79 {
+		iface PCM
+		device 1
+		subdevice 3
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.80 {
+		iface PCM
+		device 1
+		subdevice 3
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.81 {
+		iface PCM
+		device 1
+		subdevice 3
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.82 {
+		iface PCM
+		device 1
+		subdevice 3
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.83 {
+		iface PCM
+		device 1
+		subdevice 3
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.84 {
+		iface PCM
+		device 1
+		subdevice 3
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.85 {
+		iface PCM
+		device 1
+		subdevice 4
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.86 {
+		iface PCM
+		device 1
+		subdevice 4
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.87 {
+		iface PCM
+		device 1
+		subdevice 4
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.88 {
+		iface PCM
+		device 1
+		subdevice 4
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.89 {
+		iface PCM
+		device 1
+		subdevice 4
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.90 {
+		iface PCM
+		device 1
+		subdevice 4
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.91 {
+		iface PCM
+		device 1
+		subdevice 4
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.92 {
+		iface PCM
+		device 1
+		subdevice 5
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.93 {
+		iface PCM
+		device 1
+		subdevice 5
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.94 {
+		iface PCM
+		device 1
+		subdevice 5
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.95 {
+		iface PCM
+		device 1
+		subdevice 5
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.96 {
+		iface PCM
+		device 1
+		subdevice 5
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.97 {
+		iface PCM
+		device 1
+		subdevice 5
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.98 {
+		iface PCM
+		device 1
+		subdevice 5
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.99 {
+		iface PCM
+		device 1
+		subdevice 6
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.100 {
+		iface PCM
+		device 1
+		subdevice 6
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.101 {
+		iface PCM
+		device 1
+		subdevice 6
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.102 {
+		iface PCM
+		device 1
+		subdevice 6
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.103 {
+		iface PCM
+		device 1
+		subdevice 6
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.104 {
+		iface PCM
+		device 1
+		subdevice 6
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.105 {
+		iface PCM
+		device 1
+		subdevice 6
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.106 {
+		iface PCM
+		device 1
+		subdevice 7
+		name 'PCM Rate Shift 100000'
+		value 100000
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '80000 - 120000 (step 1)'
+		}
+	}
+	control.107 {
+		iface PCM
+		device 1
+		subdevice 7
+		name 'PCM Notify'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.108 {
+		iface PCM
+		device 1
+		subdevice 7
+		name 'PCM Slave Active'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.109 {
+		iface PCM
+		device 1
+		subdevice 7
+		name 'PCM Slave Format'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 52 (step 1)'
+		}
+	}
+	control.110 {
+		iface PCM
+		device 1
+		subdevice 7
+		name 'PCM Slave Rate'
+		value 48000
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '0 - 192000 (step 1)'
+		}
+	}
+	control.111 {
+		iface PCM
+		device 1
+		subdevice 7
+		name 'PCM Slave Channels'
+		value 2
+		comment {
+			access read
+			type INTEGER
+			count 1
+			range '1 - 1024 (step 1)'
+		}
+	}
+	control.112 {
+		iface PCM
+		device 1
+		subdevice 7
+		name 'PCM Slave Access Mode'
+		value Interleaved
+		comment {
+			access read
+			type ENUMERATED
+			count 1
+			item.0 Interleaved
+			item.1 Non-interleaved
+		}
+	}
+	control.113 {
+		iface MIXER
+		name 'PCM Playback Volume'
+		value.0 136
+		value.1 136
+		comment {
+			access 'read write user'
+			type INTEGER
+			count 2
+			range '0 - 255'
+			tlv '0000000100000008ffffec1400000014'
+			dbmin -5100
+			dbmax 0
+			dbvalue.0 -2380
+			dbvalue.1 -2380
+		}
+	}
+}
+state.mt6833mt6359 {
+	control.1 {
+		iface MIXER
+		name I2S0_HD_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Low_Jitter
+		}
+	}
+	control.2 {
+		iface MIXER
+		name I2S1_HD_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Low_Jitter
+		}
+	}
+	control.3 {
+		iface MIXER
+		name I2S2_HD_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Low_Jitter
+		}
+	}
+	control.4 {
+		iface MIXER
+		name I2S3_HD_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Low_Jitter
+		}
+	}
+	control.5 {
+		iface MIXER
+		name I2S5_HD_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Low_Jitter
+		}
+	}
+	control.6 {
+		iface MIXER
+		name I2S6_HD_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Low_Jitter
+		}
+	}
+	control.7 {
+		iface MIXER
+		name I2S7_HD_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Low_Jitter
+		}
+	}
+	control.8 {
+		iface MIXER
+		name I2S8_HD_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Low_Jitter
+		}
+	}
+	control.9 {
+		iface MIXER
+		name I2S9_HD_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Low_Jitter
+		}
+	}
+	control.10 {
+		iface MIXER
+		name Sidetone_Gain
+		value 0
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 65535'
+		}
+	}
+	control.11 {
+		iface MIXER
+		name Sidetone_Positive_Gain_dB
+		value 0
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 24'
+		}
+	}
+	control.12 {
+		iface MIXER
+		name ADDA_DL_GAIN
+		value 63311
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 65535'
+		}
+	}
+	control.13 {
+		iface MIXER
+		name 'MTKAIF_DMIC Switch'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.14 {
+		iface MIXER
+		name 'MTKAIF_ADDA6_ONLY Switch'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.15 {
+		iface MIXER
+		name 'UL1_CH1 ADDA_UL_CH1'
+		value true
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.16 {
+		iface MIXER
+		name 'UL1_CH1 ADDA_UL_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.17 {
+		iface MIXER
+		name 'UL1_CH1 ADDA_UL_CH3'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.18 {
+		iface MIXER
+		name 'UL1_CH2 ADDA_UL_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.19 {
+		iface MIXER
+		name 'UL1_CH2 ADDA_UL_CH2'
+		value true
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.20 {
+		iface MIXER
+		name 'UL1_CH2 ADDA_UL_CH3'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.21 {
+		iface MIXER
+		name 'UL1_CH2 ADDA_UL_CH4'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.22 {
+		iface MIXER
+		name 'UL1_CH3 ADDA_UL_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.23 {
+		iface MIXER
+		name 'UL1_CH3 ADDA_UL_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.24 {
+		iface MIXER
+		name 'UL1_CH3 ADDA_UL_CH3'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.25 {
+		iface MIXER
+		name 'UL1_CH4 ADDA_UL_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.26 {
+		iface MIXER
+		name 'UL1_CH4 ADDA_UL_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.27 {
+		iface MIXER
+		name 'UL1_CH4 ADDA_UL_CH3'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.28 {
+		iface MIXER
+		name 'UL1_CH4 ADDA_UL_CH4'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.29 {
+		iface MIXER
+		name 'UL2_CH1 I2S0_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.30 {
+		iface MIXER
+		name 'UL2_CH1 PCM_1_CAP_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.31 {
+		iface MIXER
+		name 'UL2_CH1 PCM_2_CAP_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.32 {
+		iface MIXER
+		name 'UL2_CH1 I2S2_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.33 {
+		iface MIXER
+		name 'UL2_CH1 I2S6_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.34 {
+		iface MIXER
+		name 'UL2_CH1 I2S8_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.35 {
+		iface MIXER
+		name 'UL2_CH1 CONNSYS_I2S_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.36 {
+		iface MIXER
+		name 'UL2_CH2 I2S0_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.37 {
+		iface MIXER
+		name 'UL2_CH2 PCM_1_CAP_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.38 {
+		iface MIXER
+		name 'UL2_CH2 PCM_2_CAP_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.39 {
+		iface MIXER
+		name 'UL2_CH2 I2S2_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.40 {
+		iface MIXER
+		name 'UL2_CH2 I2S6_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.41 {
+		iface MIXER
+		name 'UL2_CH2 I2S8_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.42 {
+		iface MIXER
+		name 'UL2_CH2 CONNSYS_I2S_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.43 {
+		iface MIXER
+		name 'UL3_CH1 CONNSYS_I2S_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.44 {
+		iface MIXER
+		name 'UL3_CH2 CONNSYS_I2S_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.45 {
+		iface MIXER
+		name 'UL4_CH1 ADDA_UL_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.46 {
+		iface MIXER
+		name 'UL4_CH1 I2S0_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.47 {
+		iface MIXER
+		name 'UL4_CH2 ADDA_UL_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.48 {
+		iface MIXER
+		name 'UL4_CH2 I2S0_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.49 {
+		iface MIXER
+		name UL4_TINYCONN_CH1_MUX
+		value NONE
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 NONE
+			item.1 I2S0_CH1
+			item.2 I2S0_CH2
+			item.3 I2S6_CH1
+			item.4 I2S6_CH2
+			item.5 I2S8_CH1
+			item.6 I2S8_CH2
+		}
+	}
+	control.50 {
+		iface MIXER
+		name UL4_TINYCONN_CH2_MUX
+		value NONE
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 NONE
+			item.1 I2S0_CH1
+			item.2 I2S0_CH2
+			item.3 I2S6_CH1
+			item.4 I2S6_CH2
+			item.5 I2S8_CH1
+			item.6 I2S8_CH2
+		}
+	}
+	control.51 {
+		iface MIXER
+		name 'UL5_CH1 ADDA_UL_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.52 {
+		iface MIXER
+		name 'UL5_CH2 ADDA_UL_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.53 {
+		iface MIXER
+		name 'UL6_CH1 ADDA_UL_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.54 {
+		iface MIXER
+		name 'UL6_CH1 PCM_1_CAP_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.55 {
+		iface MIXER
+		name 'UL6_CH1 PCM_2_CAP_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.56 {
+		iface MIXER
+		name 'UL6_CH2 ADDA_UL_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.57 {
+		iface MIXER
+		name 'UL6_CH2 PCM_1_CAP_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.58 {
+		iface MIXER
+		name 'UL6_CH2 PCM_2_CAP_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.59 {
+		iface MIXER
+		name 'UL7_CH1 ADDA_UL_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.60 {
+		iface MIXER
+		name 'UL7_CH2 ADDA_UL_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.61 {
+		iface MIXER
+		name 'UL8_CH1 ADDA_UL_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.62 {
+		iface MIXER
+		name 'UL8_CH2 ADDA_UL_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.63 {
+		iface MIXER
+		name 'UL_MONO_1_CH1 PCM_1_CAP_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.64 {
+		iface MIXER
+		name 'UL_MONO_1_CH1 PCM_2_CAP_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.65 {
+		iface MIXER
+		name 'UL_MONO_2_CH1 ADDA_UL_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.66 {
+		iface MIXER
+		name 'UL_MONO_3_CH1 ADDA_UL_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.67 {
+		iface MIXER
+		name HDMI_CH0_MUX
+		value CH0
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 CH0
+			item.1 CH1
+			item.2 CH2
+			item.3 CH3
+			item.4 CH4
+			item.5 CH5
+			item.6 CH6
+			item.7 CH7
+		}
+	}
+	control.68 {
+		iface MIXER
+		name HDMI_CH1_MUX
+		value CH0
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 CH0
+			item.1 CH1
+			item.2 CH2
+			item.3 CH3
+			item.4 CH4
+			item.5 CH5
+			item.6 CH6
+			item.7 CH7
+		}
+	}
+	control.69 {
+		iface MIXER
+		name HDMI_CH2_MUX
+		value CH0
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 CH0
+			item.1 CH1
+			item.2 CH2
+			item.3 CH3
+			item.4 CH4
+			item.5 CH5
+			item.6 CH6
+			item.7 CH7
+		}
+	}
+	control.70 {
+		iface MIXER
+		name HDMI_CH3_MUX
+		value CH0
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 CH0
+			item.1 CH1
+			item.2 CH2
+			item.3 CH3
+			item.4 CH4
+			item.5 CH5
+			item.6 CH6
+			item.7 CH7
+		}
+	}
+	control.71 {
+		iface MIXER
+		name HDMI_CH4_MUX
+		value CH0
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 CH0
+			item.1 CH1
+			item.2 CH2
+			item.3 CH3
+			item.4 CH4
+			item.5 CH5
+			item.6 CH6
+			item.7 CH7
+		}
+	}
+	control.72 {
+		iface MIXER
+		name HDMI_CH5_MUX
+		value CH0
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 CH0
+			item.1 CH1
+			item.2 CH2
+			item.3 CH3
+			item.4 CH4
+			item.5 CH5
+			item.6 CH6
+			item.7 CH7
+		}
+	}
+	control.73 {
+		iface MIXER
+		name HDMI_CH6_MUX
+		value CH0
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 CH0
+			item.1 CH1
+			item.2 CH2
+			item.3 CH3
+			item.4 CH4
+			item.5 CH5
+			item.6 CH6
+			item.7 CH7
+		}
+	}
+	control.74 {
+		iface MIXER
+		name HDMI_CH7_MUX
+		value CH0
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 CH0
+			item.1 CH1
+			item.2 CH2
+			item.3 CH3
+			item.4 CH4
+			item.5 CH5
+			item.6 CH6
+			item.7 CH7
+		}
+	}
+	control.75 {
+		iface MIXER
+		name 'PCM_1_PB_CH1 DL2_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.76 {
+		iface MIXER
+		name 'PCM_1_PB_CH1 DL4_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.77 {
+		iface MIXER
+		name 'PCM_1_PB_CH2 DL2_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.78 {
+		iface MIXER
+		name 'PCM_1_PB_CH2 DL4_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.79 {
+		iface MIXER
+		name 'PCM_1_PB_CH4 I2S0_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.80 {
+		iface MIXER
+		name 'PCM_1_PB_CH4 DL1_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.81 {
+		iface MIXER
+		name 'PCM_1_PB_CH4 DL4_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.82 {
+		iface MIXER
+		name 'PCM_2_PB_CH1 DL2_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.83 {
+		iface MIXER
+		name 'PCM_2_PB_CH1 DL4_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.84 {
+		iface MIXER
+		name 'PCM_2_PB_CH2 DL2_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.85 {
+		iface MIXER
+		name 'PCM_2_PB_CH2 DL4_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.86 {
+		iface MIXER
+		name 'PCM_2_PB_CH4 DL1_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.87 {
+		iface MIXER
+		name 'PCM_2_PB_CH4 I2S2_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.88 {
+		iface MIXER
+		name 'PCM_2_PB_CH4 DL4_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.89 {
+		iface MIXER
+		name 'PCM_2_PB_CH5 I2S0_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.90 {
+		iface MIXER
+		name 'PCM_2_PB_CH5 DL1_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.91 {
+		iface MIXER
+		name 'PCM_2_PB_CH5 I2S2_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.92 {
+		iface MIXER
+		name 'PCM_2_PB_CH5 DL4_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.93 {
+		iface MIXER
+		name 'I2S1_CH1 DL1_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.94 {
+		iface MIXER
+		name 'I2S1_CH1 DL2_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.95 {
+		iface MIXER
+		name 'I2S1_CH1 DL3_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.96 {
+		iface MIXER
+		name 'I2S1_CH1 DL12_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.97 {
+		iface MIXER
+		name 'I2S1_CH1 DL6_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.98 {
+		iface MIXER
+		name 'I2S1_CH1 DL4_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.99 {
+		iface MIXER
+		name 'I2S1_CH1 DL5_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.100 {
+		iface MIXER
+		name 'I2S1_CH1 DL8_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.101 {
+		iface MIXER
+		name 'I2S1_CH2 DL1_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.102 {
+		iface MIXER
+		name 'I2S1_CH2 DL2_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.103 {
+		iface MIXER
+		name 'I2S1_CH2 DL3_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.104 {
+		iface MIXER
+		name 'I2S1_CH2 DL12_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.105 {
+		iface MIXER
+		name 'I2S1_CH2 DL6_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.106 {
+		iface MIXER
+		name 'I2S1_CH2 DL4_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.107 {
+		iface MIXER
+		name 'I2S1_CH2 DL5_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.108 {
+		iface MIXER
+		name 'I2S1_CH2 DL8_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.109 {
+		iface MIXER
+		name 'I2S3_CH1 DL1_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.110 {
+		iface MIXER
+		name 'I2S3_CH1 DL2_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.111 {
+		iface MIXER
+		name 'I2S3_CH1 DL3_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.112 {
+		iface MIXER
+		name 'I2S3_CH1 DL12_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.113 {
+		iface MIXER
+		name 'I2S3_CH1 DL6_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.114 {
+		iface MIXER
+		name 'I2S3_CH1 DL4_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.115 {
+		iface MIXER
+		name 'I2S3_CH1 DL5_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.116 {
+		iface MIXER
+		name 'I2S3_CH1 DL8_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.117 {
+		iface MIXER
+		name 'I2S3_CH2 DL1_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.118 {
+		iface MIXER
+		name 'I2S3_CH2 DL2_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.119 {
+		iface MIXER
+		name 'I2S3_CH2 DL3_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.120 {
+		iface MIXER
+		name 'I2S3_CH2 DL12_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.121 {
+		iface MIXER
+		name 'I2S3_CH2 DL6_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.122 {
+		iface MIXER
+		name 'I2S3_CH2 DL4_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.123 {
+		iface MIXER
+		name 'I2S3_CH2 DL5_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.124 {
+		iface MIXER
+		name 'I2S3_CH2 DL8_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.125 {
+		iface MIXER
+		name 'I2S5_CH1 DL1_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.126 {
+		iface MIXER
+		name 'I2S5_CH1 DL2_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.127 {
+		iface MIXER
+		name 'I2S5_CH1 DL3_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.128 {
+		iface MIXER
+		name 'I2S5_CH1 DL12_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.129 {
+		iface MIXER
+		name 'I2S5_CH1 DL6_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.130 {
+		iface MIXER
+		name 'I2S5_CH1 DL4_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.131 {
+		iface MIXER
+		name 'I2S5_CH1 DL5_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.132 {
+		iface MIXER
+		name 'I2S5_CH1 DL8_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.133 {
+		iface MIXER
+		name 'I2S5_CH2 DL1_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.134 {
+		iface MIXER
+		name 'I2S5_CH2 DL2_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.135 {
+		iface MIXER
+		name 'I2S5_CH2 DL3_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.136 {
+		iface MIXER
+		name 'I2S5_CH2 DL12_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.137 {
+		iface MIXER
+		name 'I2S5_CH2 DL6_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.138 {
+		iface MIXER
+		name 'I2S5_CH2 DL4_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.139 {
+		iface MIXER
+		name 'I2S5_CH2 DL5_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.140 {
+		iface MIXER
+		name 'I2S5_CH2 DL8_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.141 {
+		iface MIXER
+		name 'I2S9_CH1 DL1_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.142 {
+		iface MIXER
+		name 'I2S9_CH1 DL2_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.143 {
+		iface MIXER
+		name 'I2S9_CH1 DL3_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.144 {
+		iface MIXER
+		name 'I2S9_CH1 DL12_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.145 {
+		iface MIXER
+		name 'I2S9_CH1 DL6_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.146 {
+		iface MIXER
+		name 'I2S9_CH1 DL4_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.147 {
+		iface MIXER
+		name 'I2S9_CH1 DL5_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.148 {
+		iface MIXER
+		name 'I2S9_CH1 DL8_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.149 {
+		iface MIXER
+		name 'I2S9_CH1 DL9_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.150 {
+		iface MIXER
+		name 'I2S9_CH2 DL1_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.151 {
+		iface MIXER
+		name 'I2S9_CH2 DL2_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.152 {
+		iface MIXER
+		name 'I2S9_CH2 DL3_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.153 {
+		iface MIXER
+		name 'I2S9_CH2 DL12_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.154 {
+		iface MIXER
+		name 'I2S9_CH2 DL6_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.155 {
+		iface MIXER
+		name 'I2S9_CH2 DL4_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.156 {
+		iface MIXER
+		name 'I2S9_CH2 DL5_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.157 {
+		iface MIXER
+		name 'I2S9_CH2 DL8_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.158 {
+		iface MIXER
+		name 'I2S9_CH2 DL9_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.159 {
+		iface MIXER
+		name I2S1_TINYCONN_CH1_MUX
+		value DL1_CH1
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 NONE
+			item.1 DL1_CH1
+			item.2 DL1_CH2
+			item.3 DL12_CH1
+			item.4 DL12_CH2
+			item.5 DL2_CH1
+			item.6 DL2_CH2
+			item.7 DL3_CH1
+			item.8 DL3_CH2
+		}
+	}
+	control.160 {
+		iface MIXER
+		name I2S1_TINYCONN_CH2_MUX
+		value DL1_CH1
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 NONE
+			item.1 DL1_CH1
+			item.2 DL1_CH2
+			item.3 DL12_CH1
+			item.4 DL12_CH2
+			item.5 DL2_CH1
+			item.6 DL2_CH2
+			item.7 DL3_CH1
+			item.8 DL3_CH2
+		}
+	}
+	control.161 {
+		iface MIXER
+		name I2S3_TINYCONN_CH1_MUX
+		value DL1_CH1
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 NONE
+			item.1 DL1_CH1
+			item.2 DL1_CH2
+			item.3 DL12_CH1
+			item.4 DL12_CH2
+			item.5 DL2_CH1
+			item.6 DL2_CH2
+			item.7 DL3_CH1
+			item.8 DL3_CH2
+		}
+	}
+	control.162 {
+		iface MIXER
+		name I2S3_TINYCONN_CH2_MUX
+		value DL1_CH1
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 NONE
+			item.1 DL1_CH1
+			item.2 DL1_CH2
+			item.3 DL12_CH1
+			item.4 DL12_CH2
+			item.5 DL2_CH1
+			item.6 DL2_CH2
+			item.7 DL3_CH1
+			item.8 DL3_CH2
+		}
+	}
+	control.163 {
+		iface MIXER
+		name I2S1_Out_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Dummy_Widget
+		}
+	}
+	control.164 {
+		iface MIXER
+		name I2S3_Out_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Dummy_Widget
+		}
+	}
+	control.165 {
+		iface MIXER
+		name I2S5_Out_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Dummy_Widget
+		}
+	}
+	control.166 {
+		iface MIXER
+		name I2S7_Out_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Dummy_Widget
+		}
+	}
+	control.167 {
+		iface MIXER
+		name I2S9_Out_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Dummy_Widget
+		}
+	}
+	control.168 {
+		iface MIXER
+		name I2S0_In_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Dummy_Widget
+		}
+	}
+	control.169 {
+		iface MIXER
+		name I2S8_In_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Dummy_Widget
+		}
+	}
+	control.170 {
+		iface MIXER
+		name I2S0_Lpbk_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Lpbk
+		}
+	}
+	control.171 {
+		iface MIXER
+		name I2S2_Lpbk_Mux
+		value Normal
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Normal
+			item.1 Lpbk
+		}
+	}
+	control.172 {
+		iface MIXER
+		name 'ADDA_DL_CH1 DL1_CH1'
+		value true
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.173 {
+		iface MIXER
+		name 'ADDA_DL_CH1 DL12_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.174 {
+		iface MIXER
+		name 'ADDA_DL_CH1 DL2_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.175 {
+		iface MIXER
+		name 'ADDA_DL_CH1 DL3_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.176 {
+		iface MIXER
+		name 'ADDA_DL_CH1 DL4_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.177 {
+		iface MIXER
+		name 'ADDA_DL_CH1 DL5_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.178 {
+		iface MIXER
+		name 'ADDA_DL_CH1 DL6_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.179 {
+		iface MIXER
+		name 'ADDA_DL_CH1 DL8_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.180 {
+		iface MIXER
+		name 'ADDA_DL_CH2 DL1_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.181 {
+		iface MIXER
+		name 'ADDA_DL_CH2 DL1_CH2'
+		value true
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.182 {
+		iface MIXER
+		name 'ADDA_DL_CH2 DL12_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.183 {
+		iface MIXER
+		name 'ADDA_DL_CH2 DL2_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.184 {
+		iface MIXER
+		name 'ADDA_DL_CH2 DL2_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.185 {
+		iface MIXER
+		name 'ADDA_DL_CH2 DL3_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.186 {
+		iface MIXER
+		name 'ADDA_DL_CH2 DL3_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.187 {
+		iface MIXER
+		name 'ADDA_DL_CH2 DL4_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.188 {
+		iface MIXER
+		name 'ADDA_DL_CH2 DL5_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.189 {
+		iface MIXER
+		name 'ADDA_DL_CH2 DL6_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.190 {
+		iface MIXER
+		name 'ADDA_DL_CH2 DL8_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.191 {
+		iface MIXER
+		name 'ADDA_DL_CH3 DL1_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.192 {
+		iface MIXER
+		name 'ADDA_DL_CH3 DL12_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.193 {
+		iface MIXER
+		name 'ADDA_DL_CH3 DL2_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.194 {
+		iface MIXER
+		name 'ADDA_DL_CH3 DL3_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.195 {
+		iface MIXER
+		name 'ADDA_DL_CH3 DL4_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.196 {
+		iface MIXER
+		name 'ADDA_DL_CH3 DL5_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.197 {
+		iface MIXER
+		name 'ADDA_DL_CH3 DL6_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.198 {
+		iface MIXER
+		name 'ADDA_DL_CH4 DL1_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.199 {
+		iface MIXER
+		name 'ADDA_DL_CH4 DL1_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.200 {
+		iface MIXER
+		name 'ADDA_DL_CH4 DL12_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.201 {
+		iface MIXER
+		name 'ADDA_DL_CH4 DL2_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.202 {
+		iface MIXER
+		name 'ADDA_DL_CH4 DL2_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.203 {
+		iface MIXER
+		name 'ADDA_DL_CH4 DL3_CH1'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.204 {
+		iface MIXER
+		name 'ADDA_DL_CH4 DL3_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.205 {
+		iface MIXER
+		name 'ADDA_DL_CH4 DL4_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.206 {
+		iface MIXER
+		name 'ADDA_DL_CH4 DL5_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.207 {
+		iface MIXER
+		name 'ADDA_DL_CH4 DL6_CH2'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.208 {
+		iface MIXER
+		name ADDA_UL_Mux
+		value MTKAIF
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 MTKAIF
+			item.1 AP_DMIC
+		}
+	}
+	control.209 {
+		iface MIXER
+		name ADDA_CH34_UL_Mux
+		value MTKAIF
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 MTKAIF
+			item.1 AP_DMIC
+		}
+	}
+	control.210 {
+		iface MIXER
+		name 'Sidetone Filter Switch'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.211 {
+		iface MIXER
+		name STF_O19O20_MUX
+		value ADDA_ADDA6
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 ADDA_ADDA6
+			item.1 O19O20
+		}
+	}
+	control.212 {
+		iface MIXER
+		name STF_ADDA_MUX
+		value ADDA
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 ADDA
+			item.1 ADDA6
+		}
+	}
+	control.213 {
+		iface MIXER
+		name 'Headset Volume'
+		value.0 10
+		value.1 10
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 18'
+			dbmin -1000
+			dbmax 800
+			dbvalue.0 0
+			dbvalue.1 0
+		}
+	}
+	control.214 {
+		iface MIXER
+		name 'Lineout Volume'
+		value.0 14
+		value.1 14
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 18'
+			dbmin -1000
+			dbmax 800
+			dbvalue.0 400
+			dbvalue.1 400
+		}
+	}
+	control.215 {
+		iface MIXER
+		name 'Handset Volume'
+		value 12
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 18'
+			dbmin -1000
+			dbmax 800
+			dbvalue.0 200
+		}
+	}
+	control.216 {
+		iface MIXER
+		name 'PGA1 Volume'
+		value 3
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 4'
+			dbmin 0
+			dbmax 2400
+			dbvalue.0 1800
+		}
+	}
+	control.217 {
+		iface MIXER
+		name 'PGA2 Volume'
+		value 3
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 4'
+			dbmin 0
+			dbmax 2400
+			dbvalue.0 1800
+		}
+	}
+	control.218 {
+		iface MIXER
+		name 'PGA3 Volume'
+		value 0
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 4'
+			dbmin 0
+			dbmax 2400
+			dbvalue.0 0
+		}
+	}
+	control.219 {
+		iface CARD
+		name 'Headphone Jack'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.220 {
+		iface CARD
+		name 'Headset Mic Jack'
+		value false
+		comment {
+			access read
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.221 {
+		iface MIXER
+		name 'Speaker Switch'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.222 {
+		iface MIXER
+		name 'Headphone Switch'
+		value true
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.223 {
+		iface MIXER
+		name 'Headset Mic Switch'
+		value false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 1
+		}
+	}
+	control.224 {
+		iface MIXER
+		name 'DAC In Mux'
+		value 'Normal Path'
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 'Normal Path'
+			item.1 Sgen
+		}
+	}
+	control.225 {
+		iface MIXER
+		name 'HP Mux'
+		value Open
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Open
+			item.1 'LoudSPK Playback'
+			item.2 'Audio Playback'
+			item.3 'Test Mode'
+			item.4 'HP Impedance'
+		}
+	}
+	control.226 {
+		iface MIXER
+		name 'RCV Mux'
+		value Open
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Open
+			item.1 Mute
+			item.2 'Voice Playback'
+			item.3 'Test Mode'
+		}
+	}
+	control.227 {
+		iface MIXER
+		name 'LOL Mux'
+		value Open
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Open
+			item.1 Playback_L_DAC
+			item.2 Playback
+			item.3 'Test Mode'
+		}
+	}
+	control.228 {
+		iface MIXER
+		name 'AIF Out Mux'
+		value 'Normal Path'
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 'Normal Path'
+			item.1 Sgen
+		}
+	}
+	control.229 {
+		iface MIXER
+		name 'AIF2 Out Mux'
+		value 'Normal Path'
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 'Normal Path'
+			item.1 Sgen
+		}
+	}
+	control.230 {
+		iface MIXER
+		name MISO0_MUX
+		value UL1_CH1
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 UL1_CH1
+			item.1 UL1_CH2
+			item.2 UL2_CH1
+			item.3 UL2_CH2
+		}
+	}
+	control.231 {
+		iface MIXER
+		name MISO1_MUX
+		value UL1_CH2
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 UL1_CH1
+			item.1 UL1_CH2
+			item.2 UL2_CH1
+			item.3 UL2_CH2
+		}
+	}
+	control.232 {
+		iface MIXER
+		name MISO2_MUX
+		value UL2_CH1
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 UL1_CH1
+			item.1 UL1_CH2
+			item.2 UL2_CH1
+			item.3 UL2_CH2
+		}
+	}
+	control.233 {
+		iface MIXER
+		name UL_SRC_MUX
+		value AMIC
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 AMIC
+			item.1 DMIC
+		}
+	}
+	control.234 {
+		iface MIXER
+		name UL2_SRC_MUX
+		value AMIC
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 AMIC
+			item.1 DMIC
+		}
+	}
+	control.235 {
+		iface MIXER
+		name DMIC0_MUX
+		value DMIC_DATA0
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 DMIC_DATA0
+			item.1 DMIC_DATA1_L
+			item.2 DMIC_DATA1_L_1
+			item.3 DMIC_DATA1_R
+		}
+	}
+	control.236 {
+		iface MIXER
+		name DMIC1_MUX
+		value DMIC_DATA1_L_1
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 DMIC_DATA0
+			item.1 DMIC_DATA1_L
+			item.2 DMIC_DATA1_L_1
+			item.3 DMIC_DATA1_R
+		}
+	}
+	control.237 {
+		iface MIXER
+		name DMIC2_MUX
+		value DMIC_DATA1_L
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 DMIC_DATA0
+			item.1 DMIC_DATA1_L
+			item.2 DMIC_DATA1_L_1
+			item.3 DMIC_DATA1_R
+		}
+	}
+	control.238 {
+		iface MIXER
+		name ADC_L_Mux
+		value Idle
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Idle
+			item.1 AIN0
+			item.2 'Left Preamplifier'
+			item.3 Idle_1
+		}
+	}
+	control.239 {
+		iface MIXER
+		name ADC_R_Mux
+		value Idle
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Idle
+			item.1 AIN0
+			item.2 'Right Preamplifier'
+			item.3 Idle_1
+		}
+	}
+	control.240 {
+		iface MIXER
+		name ADC_3_Mux
+		value Idle
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 Idle
+			item.1 AIN0
+			item.2 Preamplifier
+			item.3 Idle_1
+		}
+	}
+	control.241 {
+		iface MIXER
+		name PGA_L_Mux
+		value None
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 None
+			item.1 AIN0
+			item.2 AIN1
+		}
+	}
+	control.242 {
+		iface MIXER
+		name PGA_R_Mux
+		value None
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 None
+			item.1 AIN2
+			item.2 AIN3
+			item.3 AIN0
+		}
+	}
+	control.243 {
+		iface MIXER
+		name PGA_3_Mux
+		value None
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 None
+			item.1 AIN3
+			item.2 AIN2
+		}
+	}
+}

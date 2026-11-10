@@ -1,0 +1,202 @@
+#!/bin/busybox sh
+# SPDX-License-Identifier: MIT
+# Dedicated RECOVERY PID 1. RAM root; filesystem mounts require an explicit UI action.
+/bin/busybox --install -s /bin
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONHOME=/usr
+export LD_LIBRARY_PATH=/usr/lib
+umask 077
+mkdir -p /dev /proc /sys /run /tmp /mnt/backup /mnt/volumes
+mount -t devtmpfs dev /dev 2>/dev/null
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+mount -t tmpfs -o mode=0755,size=64m tmpfs /run
+mount -t tmpfs -o mode=1777,size=128m tmpfs /tmp
+mkdir -p /dev/pts /run/lock /run/a22x-recovery/ui /run/a22x-recovery/plans/ui
+mount -t devpts -o mode=0620 devpts /dev/pts
+mount -t configfs configfs /sys/kernel/config 2>/dev/null
+
+msg() {
+    echo "a22x-recovery: $*" > /dev/kmsg
+    echo "a22x-recovery: $*" > /dev/console
+}
+
+# A refused power action: the reason is logged and shown by the next interface start.
+power_refused() {
+    msg "$1"
+    echo "$1" > /run/a22x-recovery/power-message
+}
+msg "RAM recovery reached on $(uname -r); internal filesystems remain unmounted"
+
+# Export GPT names from kernel-owned sysfs. Do not infer labels from partition order.
+mkdir -p /dev/disk/by-partlabel
+for n in 1 2 3 4 5; do
+    [ -b /dev/mmcblk0 ] && break
+    sleep 1
+done
+mdev -s
+for p in /sys/class/block/*; do
+    [ -f "$p/partition" ] || continue
+    name=
+    while IFS='=' read -r key value; do
+        [ "$key" = PARTNAME ] && name=$value
+    done < "$p/uevent"
+    case "$name" in ''|*[!a-zA-Z0-9_-]*) continue ;; esac
+    [ -b "/dev/${p##*/}" ] || continue
+    ln -s "/dev/${p##*/}" "/dev/disk/by-partlabel/$name" 2>/dev/null
+done
+
+# Boot identity is separate from the exact Linux workflow qualification capsule.
+boot_id=$(cat /proc/sys/kernel/random/boot_id)
+printf '{"schema":"a22x.recovery.boot.v1","boot_id":"%s"}\n' "$boot_id" \
+    > /run/a22x-recovery/boot.json
+
+# Reuse the working kernel's NCM gadget; SSH authenticates the staged public key.
+udc=$(ls /sys/class/udc 2>/dev/null | head -n 1)
+if [ -n "$udc" ]; then
+    g=/sys/kernel/config/usb_gadget/a22x_recovery
+    mkdir -p "$g/strings/0x409" "$g/configs/c.1/strings/0x409" "$g/functions/ncm.usb0"
+    echo 0x18d1 > "$g/idVendor"
+    echo 0xd001 > "$g/idProduct"
+    echo Samsung > "$g/strings/0x409/manufacturer"
+    echo 'SM-A226B RAM Recovery' > "$g/strings/0x409/product"
+    echo a22x-recovery > "$g/strings/0x409/serialnumber"
+    echo NCM > "$g/configs/c.1/strings/0x409/configuration"
+    ln -s "$g/functions/ncm.usb0" "$g/configs/c.1/"
+    echo "$udc" > "$g/UDC"
+    sleep 1
+    ifconfig usb0 172.16.42.1 netmask 255.255.255.0 up
+    printf 'start 172.16.42.2\nend 172.16.42.2\ninterface usb0\noption subnet 255.255.255.0\nlease_file /run/udhcpd.leases\n' > /run/udhcpd.conf
+    touch /run/udhcpd.leases
+    udhcpd /run/udhcpd.conf
+    /usr/bin/python3 /opt/a22x-recovery/diagnostics.py \
+        > /run/a22x-recovery/diagnostics.log 2>&1 &
+    /usr/bin/python3 /opt/a22x-recovery/ssh_service.py start \
+        > /run/a22x-recovery/ssh-start.log 2>&1
+    msg "USB NCM: diagnostics 172.16.42.1:8081; key-only SSH on port 22"
+fi
+
+# Engineering recovery retains the existing physical UART console.
+if [ -c /dev/ttyS0 ]; then
+    (
+        while true; do
+            setsid sh -c 'exec /usr/bin/python3 -B /opt/a22x-recovery/access_gate.py --console </dev/ttyS0 >/dev/ttyS0 2>&1'
+            sleep 2
+        done
+    ) &
+fi
+
+# Recovery has no GPU or sound driver to switch those blocks off, and the kernel keeps
+# them on while it waits for one. Tell it no driver is coming. No newline: it wants "1".
+(
+    sleep 20
+    printf 1 > '/sys/devices/platform/10006000.syscon/10006000.syscon:power-controller/state_synced'
+) 2>/dev/null &
+
+display_service_pid=
+while true; do
+    # The touch firmware probe can complete after /init has started.
+    for n in 1 2 3 4 5 6 7 8 9 10; do
+        if [ -c /dev/fb0 ] && grep -qs '^himax-touchscreen$' /sys/class/input/event*/device/name; then
+            break
+        fi
+        sleep 1
+    done
+    # Keep a DRM owner alive: closing the last DRM FD restores fbdev's 60 Hz mode.
+    # The display service starts at the existing mode; only an explicit UI action
+    # selects an enumerated 60/90 Hz mode. Storage operations use a separate lease.
+    if [ -c /dev/fb0 ] && { [ -z "$display_service_pid" ] || ! kill -0 "$display_service_pid" 2>/dev/null; }; then
+        /usr/bin/python3 /opt/a22x-recovery/display.py serve \
+            >> /run/a22x-recovery/display.log 2>&1 &
+        display_service_pid=$!
+        for n in 1 2 3 4 5 6 7 8 9 10; do
+            [ -S /run/a22x-recovery/display.sock ] && break
+            sleep 0.1
+        done
+    fi
+    /usr/bin/python3 /opt/a22x-recovery/management.py --device rotate-logs \
+        >> /run/a22x-recovery/maintenance.log 2>&1
+    # Remembered Wi-Fi networks: recovery joins the strongest one in the background, once per start.
+    if [ ! -e /run/a22x-recovery/wifi-auto.started ] && [ -f /opt/a22x-recovery/wifi.py ]; then
+        : > /run/a22x-recovery/wifi-auto.started
+        /usr/bin/python3 /opt/a22x-recovery/wifi.py auto > /run/a22x-recovery/wifi-auto.json 2>&1 &
+    fi
+    msg "starting native recovery UI"
+    /bin/recovery-ui --device \
+        --backend /opt/a22x-recovery/backend/recoveryctl.py \
+        --python /usr/bin/python3 \
+        --repository /mnt/backup/A22xBackups \
+        --workdir /run/a22x-recovery/plans/ui \
+        --storage-helper /opt/a22x-recovery/storage.py \
+        --filesystem-helper /opt/a22x-recovery/filesystem.py \
+        --management-helper /opt/a22x-recovery/management.py \
+        --display-helper /opt/a22x-recovery/display.py \
+        --usb-files-helper /opt/a22x-recovery/usb_files.py \
+        --terminal-helper /opt/a22x-recovery/terminal.py \
+        --distro-helper /opt/a22x-recovery/distro.py \
+        --install-helper /opt/a22x-recovery/install.py \
+        --profile-render \
+        --allow-power-actions \
+        > /run/a22x-recovery/ui.stdout 2> /run/a22x-recovery/ui.log
+    rc=$?
+    case "$rc" in
+        200|201|202|203)
+            # A confirmed power action ends a terminal left running in the background:
+            # its storage lease would refuse the checks and the unmount below.
+            terminal_token=$(/usr/bin/python3 /opt/a22x-recovery/terminal.py --mode device status 2>/dev/null |
+                sed -n 's/.*"session_token": *"\([^"]*\)".*/\1/p')
+            [ -z "$terminal_token" ] || /usr/bin/python3 /opt/a22x-recovery/terminal.py --mode device stop \
+                --expected-session-token "$terminal_token" >/dev/null 2>&1
+            # An explicit normal boot also checks interrupted image installation.
+            # Recovery/Download stay usable to repair an incomplete image write.
+            if [ "$rc" = 200 ] && ! /usr/bin/python3 /opt/a22x-recovery/install.py --mode device boot-check \
+                > /run/a22x-recovery/power-install.json 2>&1; then
+                power_refused "The phone stayed in recovery: an image installation needs attention in Install images."
+                sleep 3
+                continue
+            fi
+            # A normal Linux boot explicitly checks the durable rootfs-switch
+            # journal. The helper temporarily uses a guarded RO mount if needed.
+            # Recovery and Download remain available for an interrupted switch.
+            if [ "$rc" = 200 ] && ! /usr/bin/python3 /opt/a22x-recovery/distro.py --device boot-check \
+                > /run/a22x-recovery/power-systems.json 2>&1; then
+                power_refused "The phone stayed in recovery: there is no bootable system on userdata, or a system switch must be finished in Systems."
+                sleep 3
+                continue
+            fi
+            # A confirmed power action ends USB file sharing, which holds the storage lease.
+            usb_token=$(/usr/bin/python3 /opt/a22x-recovery/usb_files.py --mode device status 2>/dev/null |
+                sed -n 's/.*"session_token": *"\([^"]*\)".*/\1/p')
+            [ -z "$usb_token" ] || /usr/bin/python3 /opt/a22x-recovery/usb_files.py --mode device stop \
+                --expected-session-token "$usb_token" >/dev/null 2>&1
+            # Ordinary unmount fails if an operation or terminal still owns a volume.
+            if /usr/bin/python3 /opt/a22x-recovery/filesystem.py --device unmount-all \
+                > /run/a22x-recovery/power-volumes.json 2>&1 && \
+               /usr/bin/python3 /opt/a22x-recovery/storage.py umount \
+                > /run/a22x-recovery/power-storage.json 2>&1; then
+                sync
+                case "$rc" in
+                    200) target=normal ;;
+                    201) target=poweroff ;;
+                    202) target=recovery ;;
+                    203) target=download ;;
+                esac
+                /bin/recovery-power "$target" 2> /run/a22x-recovery/power-result.txt
+                # Only a refusal returns here; the reason goes on screen, not only into a RAM log.
+                case "$(cat /run/a22x-recovery/power-result.txt 2>/dev/null)" in
+                    *"operation is still running"*) power_refused "The phone stayed in recovery: a backup, restore or installation is still running. Wait until it finishes, then try again." ;;
+                    *"still mounted"*) power_refused "The phone stayed in recovery: a volume is still in use. Stop USB file sharing or the terminal, then try again." ;;
+                    *"needs recovery"*) power_refused "The phone stayed in recovery: there is no bootable system on userdata, or a system switch must be finished in Systems." ;;
+                    *) power_refused "The phone stayed in recovery: the power action was refused." ;;
+                esac
+            elif grep -qs OPERATION_BUSY /run/a22x-recovery/power-volumes.json /run/a22x-recovery/power-storage.json; then
+                power_refused "The phone stayed in recovery: a backup, restore or installation is still running. Wait until it finishes, then try again."
+            else
+                power_refused "The phone stayed in recovery: a volume is still in use. Stop USB file sharing or the terminal, then try again."
+            fi
+            ;;
+        *) msg "UI exited rc=$rc; logs retained in RAM; restarting in 3 seconds" ;;
+    esac
+    sleep 3
+done

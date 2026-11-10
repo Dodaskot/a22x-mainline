@@ -1,0 +1,25 @@
+Port 22
+ListenAddress 172.16.42.1
+HostKey /run/a22x-recovery/ssh/ssh_host_ed25519_key
+PidFile /run/a22x-recovery/ssh/sshd.pid
+AuthorizedKeysFile /etc/a22x-recovery/authorized_keys
+StrictModes yes
+PermitRootLogin prohibit-password
+AuthenticationMethods publickey
+PubkeyAuthentication yes
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitEmptyPasswords no
+AllowUsers root
+DisableForwarding yes
+PermitUserRC no
+PermitUserEnvironment no
+X11Forwarding no
+UseDNS no
+LoginGraceTime 30
+MaxAuthTries 3
+MaxSessions 2
+LogLevel INFO
+PrintMotd no
+ForceCommand /opt/a22x-recovery/admin_session.py
+Subsystem sftp /usr/lib/ssh/sftp-server

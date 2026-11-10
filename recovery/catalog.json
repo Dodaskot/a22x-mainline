@@ -1,0 +1,217 @@
+{
+ "schema": "a22x.catalog.v1",
+ "pinned": 1794139200,
+ "images": [
+  {
+   "id": "debian-13",
+   "name": "Debian",
+   "version": "13 trixie",
+   "family": "debian",
+   "minimal": true,
+   "format": "qcow2",
+   "factor": 6,
+   "url": "https://cloud.debian.org/images/cloud/trixie/20261103-2651/debian-13-genericcloud-arm64-20261103-2651.qcow2",
+   "file": "debian-13-genericcloud-arm64-20261103-2651.qcow2",
+   "size": 337641472,
+   "sha512": "5d3ecec46fd29605db4084388a1e2eb82fd19a80202898f962840ea73793261de721e505e3877c829ae86c37fdd2f6c205b0b3b1337a89d0d4b98d9081adc0c2",
+   "source": {
+    "index": "https://cloud.debian.org/images/cloud/trixie/",
+    "dir": "\\d{8}-\\d+/",
+    "file": "debian-13-genericcloud-arm64-\\d{8}-\\d+\\.qcow2",
+    "sums": "SHA512SUMS"
+   }
+  },
+  {
+   "id": "ubuntu-26.04",
+   "name": "Ubuntu Server",
+   "version": "26.04 LTS",
+   "family": "ubuntu",
+   "minimal": true,
+   "format": "tar",
+   "compression": "xz",
+   "factor": 5,
+   "url": "https://cloud-images.ubuntu.com/releases/resolute/release-20261016/ubuntu-26.04-server-cloudimg-arm64-root.tar.xz",
+   "file": "ubuntu-26.04-server-cloudimg-arm64-root.tar.xz",
+   "size": 248069160,
+   "sha256": "482791c2480b396ca8f879b4bba0f49a1414086f1a5d318ccdf4e33d7d364134",
+   "source": {
+    "index": "https://cloud-images.ubuntu.com/releases/resolute/",
+    "dir": "release-\\d{8}(?:\\.\\d+)?/",
+    "file": "ubuntu-26\\.04-server-cloudimg-arm64-root\\.tar\\.xz",
+    "sums": "SHA256SUMS",
+    "key": "ubuntu-cloud.asc",
+    "sums_sig": "SHA256SUMS.gpg"
+   }
+  },
+  {
+   "id": "ubuntu-24.04",
+   "name": "Ubuntu Server",
+   "version": "24.04 LTS",
+   "family": "ubuntu",
+   "minimal": true,
+   "format": "tar",
+   "compression": "xz",
+   "factor": 5,
+   "url": "https://cloud-images.ubuntu.com/releases/noble/release-20261017/ubuntu-24.04-server-cloudimg-arm64-root.tar.xz",
+   "file": "ubuntu-24.04-server-cloudimg-arm64-root.tar.xz",
+   "size": 216215656,
+   "sha256": "b68ef0444ca56ce4f00ae7e8ccfb0c553ffbc92e4a1b14ed7dd8aa18c6d68652",
+   "source": {
+    "index": "https://cloud-images.ubuntu.com/releases/noble/",
+    "dir": "release-\\d{8}(?:\\.\\d+)?/",
+    "file": "ubuntu-24\\.04-server-cloudimg-arm64-root\\.tar\\.xz",
+    "sums": "SHA256SUMS",
+    "key": "ubuntu-cloud.asc",
+    "sums_sig": "SHA256SUMS.gpg"
+   }
+  },
+  {
+   "id": "fedora-45",
+   "name": "Fedora Cloud Base",
+   "version": "45",
+   "family": "fedora",
+   "minimal": true,
+   "format": "qcow2",
+   "factor": 6,
+   "url": "https://dl.fedoraproject.org/pub/fedora/linux/releases/45/Cloud/aarch64/images/Fedora-Cloud-Base-Generic-45-1.4.aarch64.qcow2",
+   "file": "Fedora-Cloud-Base-Generic-45-1.4.aarch64.qcow2",
+   "size": 596705280,
+   "sha256": "1632acc8bc14d45b6c9596a0acc71b070d3748d1abdcf1a519be5c983bb0286c",
+   "source": {
+    "index": "https://dl.fedoraproject.org/pub/fedora/linux/releases/45/Cloud/aarch64/images/",
+    "file": "Fedora-Cloud-Base-Generic-45-[0-9.]+\\.aarch64\\.qcow2",
+    "sums": "Fedora-Cloud-45-[0-9.]+-aarch64-CHECKSUM",
+    "key": "fedora.gpg",
+    "clearsigned": true
+   }
+  },
+  {
+   "id": "archlinuxarm",
+   "name": "Arch Linux ARM",
+   "version": "aarch64",
+   "family": "arch",
+   "minimal": true,
+   "format": "tar",
+   "compression": "gzip",
+   "factor": 4,
+   "url": "http://os.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz",
+   "file": "ArchLinuxARM-aarch64-latest.tar.gz",
+   "size": 829367415,
+   "signature_url": "http://os.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz.sig",
+   "signature_sha256": "0157d8cd6261c85205931c766b754d6d56112b28800666fb64add1de192ebe11",
+   "source": {
+    "kind": "signed-file",
+    "url": "http://os.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz",
+    "signature": "http://os.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz.sig",
+    "file": "ArchLinuxARM-aarch64-latest.tar.gz",
+    "key": "archlinuxarm.asc"
+   }
+  },
+  {
+   "id": "manjaro-minimal",
+   "name": "Manjaro ARM Minimal",
+   "version": "20261012",
+   "family": "manjaro",
+   "minimal": true,
+   "format": "compressed-image",
+   "compression": "xz",
+   "factor": 6,
+   "url": "https://github.com/manjaro-arm/generic-efi-images/releases/download/20261012/Manjaro-ARM-minimal-generic-efi-20261012.img.xz",
+   "file": "Manjaro-ARM-minimal-generic-efi-20261012.img.xz",
+   "size": 588345368,
+   "sha256": "bf1c9c2976e7450130cda47e3b8fb0a6610a785a9ab7c92c3ac6ffa51db792fb",
+   "source": {
+    "kind": "github",
+    "repo": "manjaro-arm/generic-efi-images",
+    "file": "Manjaro-ARM-minimal-generic-efi-\\d+\\.img\\.xz",
+    "prerelease": true
+   }
+  },
+  {
+   "id": "manjaro-phosh",
+   "name": "Manjaro ARM Phosh",
+   "version": "beta37",
+   "family": "manjaro",
+   "minimal": false,
+   "notes": "Phone shell",
+   "desktop": "image",
+   "format": "compressed-image",
+   "compression": "xz",
+   "factor": 6,
+   "url": "https://github.com/manjaro-pinephone/phosh/releases/download/beta37/Manjaro-ARM-phosh-pinephone-beta37.img.xz",
+   "file": "Manjaro-ARM-phosh-pinephone-beta37.img.xz",
+   "size": 1080329468,
+   "sha256": "1780bb0f14f6e7d44e5d3ef1612c26d9fe302c57b37b7c50b3cd5a38aa73b0e5",
+   "source": {
+    "kind": "github",
+    "repo": "manjaro-pinephone/phosh",
+    "file": "Manjaro-ARM-phosh-pinephone-beta\\d+\\.img\\.xz",
+    "prerelease": true
+   }
+  },
+  {
+   "id": "manjaro-plasma",
+   "name": "Manjaro ARM Plasma Mobile",
+   "version": "beta16",
+   "family": "manjaro",
+   "minimal": false,
+   "notes": "Phone shell",
+   "desktop": "image",
+   "format": "compressed-image",
+   "compression": "xz",
+   "factor": 6,
+   "url": "https://github.com/manjaro-pinephone/plasma-mobile/releases/download/beta16/Manjaro-ARM-plasma-mobile-pinephone-beta16.img.xz",
+   "file": "Manjaro-ARM-plasma-mobile-pinephone-beta16.img.xz",
+   "size": 1174567912,
+   "sha256": "3a49b4a8fb43f6524570351e5c1f1eed3631cb8c2bc73098e93ad5582c33e91d",
+   "source": {
+    "kind": "github",
+    "repo": "manjaro-pinephone/plasma-mobile",
+    "file": "Manjaro-ARM-plasma-mobile-pinephone-beta\\d+\\.img\\.xz",
+    "prerelease": true
+   }
+  },
+  {
+   "id": "mobian-phosh",
+   "name": "Mobian",
+   "version": "13 Phosh",
+   "family": "mobian",
+   "minimal": false,
+   "desktop": "image",
+   "format": "compressed-image",
+   "compression": "xz",
+   "factor": 6,
+   "url": "https://images.mobian.org/rockchip/mobian-rockchip-phosh-13.0.img.xz",
+   "file": "mobian-rockchip-phosh-13.0.img.xz",
+   "size": 1026326552,
+   "sha256": "a5bcca00e326dfd8bef09b3bd6b03dc283d1293c898db69c9b44747cdd5ed47c",
+   "source": {
+    "index": "https://images.mobian.org/rockchip/",
+    "file": "mobian-rockchip-phosh-[0-9.]+\\.img\\.xz",
+    "sums": "mobian-rockchip-phosh-[0-9.]+\\.sha256sums"
+   },
+   "notes": "Phone shell"
+  },
+  {
+   "id": "mobian-plasma",
+   "name": "Mobian",
+   "version": "13 Plasma Mobile",
+   "family": "mobian",
+   "minimal": false,
+   "desktop": "image",
+   "format": "compressed-image",
+   "compression": "xz",
+   "factor": 6,
+   "url": "https://images.mobian.org/rockchip/mobian-rockchip-plasma-mobile-13.0.img.xz",
+   "file": "mobian-rockchip-plasma-mobile-13.0.img.xz",
+   "size": 1032426688,
+   "sha256": "fed293bd14bd360350c325f2727b535daf43554fce354ee2e58f9bc69dc50646",
+   "source": {
+    "index": "https://images.mobian.org/rockchip/",
+    "file": "mobian-rockchip-plasma-mobile-[0-9.]+\\.img\\.xz",
+    "sums": "mobian-rockchip-plasma-mobile-[0-9.]+\\.sha256sums"
+   },
+   "notes": "Phone shell"
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "a22x.device.v1",
+  "model": "SM-A226B",
+  "partitions": {
+    "boot": {"number": 41, "size_bytes": 33554432},
+    "recovery": {"number": 42, "size_bytes": 41943040},
+    "metadata": {"number": 31, "size_bytes": 33554432},
+    "userdata": {"number": 54, "size_bytes": 53393489920}
+  },
+  "firmware": {"fingerprint": null},
+  "retained_partitions": {},
+  "notes": "Geometry is the observed 64GB A226B. Android backup planning observes/hashes super,tee1,tzar,dtbo,vbmeta from kernel GPT labels on the same eMMC, without mounting or writing them. Fingerprint text is optional/informational. Device restore is disabled in code; changing this file does not enable it."
+}
