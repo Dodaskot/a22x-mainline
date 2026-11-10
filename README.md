@@ -27,7 +27,7 @@ system asks for it. Kernel #122 is kernel #107 plus six commits: branch
 ([v145](releases/v145/README.md)).
 
 **[A22x recovery](recovery/README.md)** ([українською](recovery/README.uk.md))
-is a Linux recovery for the RECOVERY partition, with its own kernel #120
+is a Linux recovery for the RECOVERY partition, with its own kernel #123
 (branch [`a22x-recovery`](https://github.com/Dodaskot/linux-a22x/tree/a22x-recovery)).
 From its touch interface it installs Debian, Ubuntu, Fedora, Arch Linux ARM,
 Manjaro, Mobian or postmarketOS from a catalog or a file. You choose the
@@ -121,8 +121,8 @@ for per-workload scores, driver changes and validation limits.
 ```
 kernel/patches/   143 patches on top of Linux v7.2 (git am), with series file
                   (same source as linux-a22x branch a22x / kernel #107)
-kernel/a22x-boot/ 5 patches above #107: BOOT kernel #121 (branch a22x-boot)
-kernel/a22x-recovery/ 5 patches above #107: recovery kernel #120 (branch a22x-recovery)
+kernel/a22x-boot/ 6 patches above #107: BOOT kernel #122 (branch a22x-boot)
+kernel/a22x-recovery/ 6 patches above #107: recovery kernel #123 (branch a22x-recovery)
 kernel/config/    a22x-boot-k121.config, a22x-recovery-k120.config, a22x-v144.config (#107),
                   historical v135 config + fragments
 kernel/build.sh   clone v7.2, apply the series, build Image.gz/DTBs/modules
