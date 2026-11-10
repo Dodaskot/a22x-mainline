@@ -1894,8 +1894,9 @@ static void render_toast(App*a){
     Rect r={x,1420,width,68};canvas_rounded(a->pixels,canvas_bounds(a),nx(r.x),nx(r.y),nx(r.x+r.w),nx(r.y+r.h),51.f,TOAST_FILL,TOAST_FILL,255);
     icon(a,a->toast_icon,x+22,1436,36,ORANGE);ellipsis(a,x+68,1442,width-90,0,TOAST_TEXT,a->toast);
 }
-/* The kernel draws this same picture from tools/generate_boot_splash.py, so it must stay plain:
- * the theme is not known yet, and the bar simply carries on from where the kernel left it. */
+/* The kernel draws this same picture from tools/generate_boot_splash.py, one per built-in theme, so it
+ * stays plain and flat; /init tells the kernel and this interface the saved theme (2026-11-10), and the
+ * bar carries on from where the kernel left it. */
 #define SPLASH_BAR_X 180
 #define SPLASH_BAR_Y 980
 #define SPLASH_BAR_W 360
@@ -1910,11 +1911,17 @@ static void render_splash(App*a){
 static const char*farewell_text(int intent){
     return intent==200?"Restarting the system":(intent==201?"Turning off":(intent==202?"Restarting recovery":"Opening Samsung Download"));
 }
+/* A built-in theme for the boot splash and the farewell: a theme from a file falls back to Graphite,
+   as /init does for the kernel's picture. */
+static const Theme*splash_theme(void){
+    for(unsigned int n=0;n<THEME_COUNT;n++)if(ui_theme==&themes[n])return ui_theme;
+    return &themes[0];
+}
 static void render_farewell(App*a,int intent){
-    /* The same dark look as the boot logo, whatever the theme: it closes what the logo opened. */
-    const Theme*chosen=ui_theme;ui_theme=&themes[0];
+    /* The look of the boot splash, in the same theme: it closes what the splash opened. */
+    const Theme*chosen=ui_theme;ui_theme=splash_theme();
     a->clip_active=false;a->button_count=0;
-    if(ui_theme->backdrop&&a->backdrop)memcpy(a->pixels,a->backdrop,(size_t)NW*NH*sizeof(uint32_t));else rectangle(a,(Rect){0,0,CW,CH},BG);
+    rectangle(a,(Rect){0,0,CW,CH},BG);
     icon_tile(a,intent==201?A_POWER:A_OS,CW/2-88,560,176,ICON_FILL);
     centered(a,(Rect){0,772,CW,70},3,TEXT,"A22x Recovery");
     centered(a,(Rect){28,860,664,60},2,TEXT,farewell_text(intent));
@@ -1961,8 +1968,9 @@ static void render_nav(App*a){
     }
 }
 static void render(App*a){
-    a->clip_active=false;a->button_count=0;a->kb_drawn=false;const Theme*chosen=ui_theme;if(a->screen==SPLASH)ui_theme=&themes[0];
-    if(a->screen==POWER_MENU&&a->menu_backdrop)memcpy(a->pixels,a->menu_backdrop,(size_t)NW*NH*sizeof(uint32_t));
+    a->clip_active=false;a->button_count=0;a->kb_drawn=false;const Theme*chosen=ui_theme;if(a->screen==SPLASH)ui_theme=splash_theme();
+    if(a->screen==SPLASH)rectangle(a,(Rect){0,0,CW,CH},BG);
+    else if(a->screen==POWER_MENU&&a->menu_backdrop)memcpy(a->pixels,a->menu_backdrop,(size_t)NW*NH*sizeof(uint32_t));
     else if(a->locked&&a->lock_backdrop&&a->screen!=SPLASH)memcpy(a->pixels,a->lock_backdrop,(size_t)NW*NH*sizeof(uint32_t));
     else if(ui_theme->backdrop&&a->backdrop)memcpy(a->pixels,a->backdrop,(size_t)NW*NH*sizeof(uint32_t));else rectangle(a,(Rect){0,0,CW,CH},BG);
     switch(a->screen){
@@ -4754,7 +4762,12 @@ int main(int argc,char**argv){
     if(workflow_name){int rc=workflow(a,workflow_name,render_path);free(a->pixels);free(a);return rc;}
     if(render_path){usage(stderr);return 2;}
     Display display;if(!open_display(&display,a->fb_path)){perror("framebuffer");return 1;}
-    if(a->device)splash_takeover(a);
+    if(a->device){
+        /* The saved theme from the first frame on: /init read it for the kernel's splash. */
+        char code[24]={0};int fd=open("/run/a22x-recovery/boot-theme",O_RDONLY|O_CLOEXEC);
+        if(fd>=0){ssize_t n=read(fd,code,sizeof(code)-1);close(fd);if(n>0){code[strcspn(code,"\n")]=0;(void)theme_select(a,code);}}
+        splash_takeover(a);
+    }
     if(a->device){a->tr.from=malloc((size_t)NW*NH*sizeof(uint32_t));a->tr.to=malloc((size_t)NW*NH*sizeof(uint32_t));a->animate=a->tr.from&&a->tr.to;}
     fprintf(stderr,"[recovery-ui] framebuffer=%s visible=%ux%u bpp=%u stride=%u\n",a->fb_path,display.v.xres,display.v.yres,display.v.bits_per_pixel,display.f.line_length);
     Input inputs[MAX_INPUTS];int count=0;

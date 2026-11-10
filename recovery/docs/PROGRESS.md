@@ -1,7 +1,7 @@
 # A22x Recovery 0.6: development log
 
 This is the English version of the recovery's working journal, from the first
-0.6 build (2026-11-06) to 0.6.136 (2026-11-10). It keeps only what concerns
+0.6 build (2026-11-06) to 0.6.137 (2026-11-10). It keeps only what concerns
 the recovery: its builds, the checks done on the phone, the problems found and
 how they were fixed. Kernel notes are kept where they decide what the recovery
 can do (USB after sleep, BOOT images). Test accounts, network names,
@@ -1089,3 +1089,34 @@ written back. 528 Python tests, interface self-test 95, display 53 workflows /
 addresses in the interface's preview pages and a comment in the first-boot
 script were replaced with neutral examples, so the published tree carries no
 private network data.
+
+## 2026-11-10 evening: the Android installer app and themed splash screens (build 137)
+
+**The installer app (`apk/`).** Built without the Android SDK (aapt2, d8 and apksig
+from Google's Maven repository, API stubs from Maven Central, framework resources
+from Debian), signed with v2 and v3 schemes. It checks compatibility from the
+Samsung bootloader (its version starts with the model and no ROM replaces it), the
+model, the code name and the chip, never from a serial number; a computer-side test
+covers stock Android, a custom ROM, a GSI and the SM-A226BR (all pass), and another
+Samsung renamed as an A22, an A32 and another MT6833 phone (all refused). It installs
+the recovery, the Linux BOOT or both: the old partition is copied first, and the
+partition is read back after writing; nothing more is written after a failure. Its
+root scripts were run in the recovery against loop devices in RAM: a wrong checksum
+and an image larger than the partition were refused before writing, a real write kept
+the old content and read back correctly, and the hand-over was written to a test
+`cache` filesystem (0600, valid JSON, the private mount removed). The app also hands
+Wi-Fi networks typed by the user, the language, the time zone and the clock to the
+recovery, keeps them in sync when Android's language, zone or time change, saves
+setup scripts, and restarts into the recovery. Graphite, Daylight and Aurora change
+its colours, its launcher icon (three launcher entries, one enabled) and its Android
+12+ start screen. It has not run on Android yet: the phone runs Linux.
+
+**Splash screens in the chosen theme (build 137, recovery kernel #123).** The
+kernel's splash now has the logo of all three themes. `/init` reads the saved theme
+from `cache` at the very start (read-only, without replaying the journal) and passes
+it to the kernel, which waits up to 400 ms for it before the first picture; the
+interface starts in the same theme, and the screen before a restart or power-off
+follows the theme too (it used to be dark always). **On the phone:** the kernel
+logged "boot splash: daylight theme" 1.8 s after boot, and a screenshot of
+"Restarting recovery" shows the Daylight theme. Recovery 137 was flashed from
+recovery 136 with "Flash a partition".

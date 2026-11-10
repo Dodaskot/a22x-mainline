@@ -47,6 +47,20 @@ for p in /sys/class/block/*; do
     ln -s "/dev/${p##*/}" "/dev/disk/by-partlabel/$name" 2>/dev/null
 done
 
+# The boot splash in the user's theme (2026-11-10): the kernel waits a moment for it before the
+# first picture, and the interface starts in it. Read-only, without replaying the journal; a theme
+# from a file falls back to Graphite, which the kernel also shows when nothing arrives.
+boot_theme=graphite
+if [ -b /dev/disk/by-partlabel/cache ] && mkdir -p /run/a22x-theme &&
+        mount -t ext4 -o ro,noload,nosuid,nodev,noexec /dev/disk/by-partlabel/cache /run/a22x-theme 2>/dev/null; then
+    saved=$(sed -n 's/.*"theme": *"\([a-z]*\)".*/\1/p' /run/a22x-theme/a22x-recovery/settings.json 2>/dev/null | head -n 1)
+    umount /run/a22x-theme
+    case "$saved" in graphite|daylight|aurora) boot_theme=$saved ;; esac
+fi
+rmdir /run/a22x-theme 2>/dev/null
+echo "$boot_theme" > /sys/module/mediatek_drm/parameters/boot_splash_theme 2>/dev/null
+echo "$boot_theme" > /run/a22x-recovery/boot-theme
+
 # Boot identity is separate from the exact Linux workflow qualification capsule.
 boot_id=$(cat /proc/sys/kernel/random/boot_id)
 printf '{"schema":"a22x.recovery.boot.v1","boot_id":"%s"}\n' "$boot_id" \

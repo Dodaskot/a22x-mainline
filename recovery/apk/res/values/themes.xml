@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The recovery's three themes (ui/theme.h there). Each launcher entry uses one, so the icon, the
+     window and the Android 12+ splash screen match the theme chosen in the app. -->
+<resources>
+    <color name="graphite_bg">#ff0e1013</color>
+    <color name="daylight_bg">#fff7f4fd</color>
+    <color name="aurora_bg">#ff080f1f</color>
+    <style name="Theme.A22x.Graphite" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/graphite_bg</item>
+        <item name="android:statusBarColor">@color/graphite_bg</item>
+        <item name="android:navigationBarColor">@color/graphite_bg</item>
+        <item name="android:colorAccent">#ffff9a4b</item>
+        <item name="android:windowSplashScreenBackground">@color/graphite_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_graphite</item>
+    </style>
+    <style name="Theme.A22x.Daylight" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/daylight_bg</item>
+        <item name="android:statusBarColor">@color/daylight_bg</item>
+        <item name="android:navigationBarColor">@color/daylight_bg</item>
+        <item name="android:colorAccent">#ff4a41e4</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowSplashScreenBackground">@color/daylight_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_daylight</item>
+    </style>
+    <style name="Theme.A22x.Aurora" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/aurora_bg</item>
+        <item name="android:statusBarColor">@color/aurora_bg</item>
+        <item name="android:navigationBarColor">@color/aurora_bg</item>
+        <item name="android:colorAccent">#ff4ae6d6</item>
+        <item name="android:windowSplashScreenBackground">@color/aurora_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_aurora</item>
+    </style>
+</resources>

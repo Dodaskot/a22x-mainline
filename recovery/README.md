@@ -13,8 +13,8 @@ on-phone check: [docs/PROGRESS.md](docs/PROGRESS.md).
 
 | | |
 |---|---|
-| Recovery | 0.6.136, SHA-256 `4eea5ee30ea833dc4d32b6a2199b30e88e854de019b86a3dff62cb4b5ebe801a` |
-| Recovery kernel | `7.2.0-a22x-recovery+ #120`: [linux-a22x](https://github.com/Dodaskot/linux-a22x) branch `a22x-recovery`, tag `a22x-recovery-kernel120` |
+| Recovery | 0.6.137, SHA-256 `0e8e24b181bdca3f5529f0117febbe57288de7ba821bbe378bc6a6b244435493` |
+| Recovery kernel | `7.2.0-a22x-recovery+ #123`: [linux-a22x](https://github.com/Dodaskot/linux-a22x) branch `a22x-recovery`, tag `a22x-recovery-kernel123` |
 | Tested with | BOOT v146 (`releases/v146`, kernel `#122`) and v145 (kernel `#121`), branch `a22x-boot` |
 | Image | not published: it contains firmware captured from the developer's phone and the developer's SSH key (see [Building](#building)) |
 
@@ -32,6 +32,8 @@ networks are not part of this repository.
 - Status bar with Wi-Fi, charging, battery and clock. The Power key turns the
   screen off and on. The brightness slider and the screen-off work; the
   recovery blanks the screen but does not suspend, so jobs keep running.
+- The start screen and the screen before a restart or power-off follow the
+  chosen theme, from the first frame of the kernel's splash on.
 
 ### Files and storage
 
@@ -113,6 +115,21 @@ networks are not part of this repository.
 ### Power
 
 Restart into the system, the recovery or Samsung Download, and power off.
+
+### Android app (`apk/`)
+
+An installer app for a rooted Android on this phone. It carries a recovery
+image and a Linux BOOT image, checks that the phone is a Galaxy A22 5G (from
+the Samsung bootloader, the model, the code name and the chip — never a serial
+number, so a custom ROM or a GSI passes), and installs the recovery, the BOOT
+or both, saving the old partition first and reading it back. It also hands
+Wi-Fi networks, the language, the time zone and the clock to the recovery
+(`cache:/a22x-recovery/handoff.json`), saves setup scripts the recovery offers,
+and restarts into the recovery. Graphite, Daylight and Aurora change its
+colours, its launcher icon and its Android 12+ start screen. `apk/build.sh`
+builds it without the Android SDK. No APK is published: the images inside it
+are built with files from the developer's phone. Its root scripts were run in
+the recovery against test devices; the app itself has not run on Android yet.
 
 ## Distributions tested on the phone
 

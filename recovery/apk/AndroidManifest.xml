@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.a22x.installer">
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Three launcher entries, one per theme; the app enables only the one of the chosen theme,
+         so the home screen shows that theme's icon and Android 12+ its splash screen. -->
+    <application
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher_daylight"
+        android:allowBackup="false">
+        <activity
+            android:name=".Launcher$Daylight"
+            android:icon="@mipmap/ic_launcher_daylight"
+            android:theme="@style/Theme.A22x.Daylight"
+            android:exported="true"
+            android:enabled="true"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".Launcher$Graphite"
+            android:icon="@mipmap/ic_launcher_graphite"
+            android:theme="@style/Theme.A22x.Graphite"
+            android:exported="true"
+            android:enabled="false"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".Launcher$Aurora"
+            android:icon="@mipmap/ic_launcher_aurora"
+            android:theme="@style/Theme.A22x.Aurora"
+            android:exported="true"
+            android:enabled="false"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <receiver android:name=".SyncReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
