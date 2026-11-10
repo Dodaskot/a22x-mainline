@@ -35,6 +35,7 @@ BACKEND_TEXT = {'There was not enough free space on userdata for the packages.',
                 'Storage is busy: stop USB files, or wait for the running operation to finish',
                 'A computer is connected over SSH or SFTP: close that session, then try again',
                 'Only cache is wiped this way. Erase other volumes in Files',  # filesystem.py wipe (2026-11-10)
+                'This system was set up for another kernel and firmware. Install it again, or remove it',  # distro.py switch
                 # filesystem.py reason_text: shown under a volume that cannot be opened.
                 'Android logical-partition container; mapping is not implemented', 'Raw image; not a filesystem',
                 'Firmware or service partition; file access is not admitted', 'This partition is already used by another block mapping',

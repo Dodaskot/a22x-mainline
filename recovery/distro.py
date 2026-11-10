@@ -3569,7 +3569,7 @@ def switch_binding(context, live, slot, profile):
     require(slot in available, 'SLOT_UNAVAILABLE', 'The selected installed system is unavailable')
     meta = live.json(MANAGER + '/slots/' + slot + '/slot.json', sealed=True)
     require(meta['platform_profile_sha256'] == digest(profile), 'PLATFORM_PROFILE_MISMATCH',
-            'The selected system requires another platform profile')
+            'This system was set up for another kernel and firmware. Install it again, or remove it')
     with Tree(live.pin, MANAGER + '/slots/' + slot + '/root') as target, \
             Tree(live.pin, MANAGER + '/slots/' + state['active'] + '/root') as current:
         require(set(current.list()) <= {'home'}, 'ACTIVE_SLOT_NOT_EMPTY',

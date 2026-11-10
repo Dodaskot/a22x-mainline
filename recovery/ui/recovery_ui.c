@@ -251,7 +251,7 @@ typedef struct {
     uint64_t terminal_typed,terminal_seq,terminal_read_after,terminal_next_poll,terminal_lost,terminal_pending_after,terminal_stop_deadline,terminal_start_deadline;
     int64_t terminal_scroll;
     unsigned char terminal_input[TERMINAL_INPUT_LIMIT];size_t terminal_input_length,terminal_sent;
-    bool systems_known,systems_mounted,systems_read_only,systems_initialized,systems_platform,systems_reboot_blocked,systems_pick_manifest,systems_plan_valid;
+    bool systems_remove_offer,systems_known,systems_mounted,systems_read_only,systems_initialized,systems_platform,systems_reboot_blocked,systems_pick_manifest,systems_plan_valid;
     bool systems_resume_allowed,systems_rollback_allowed,systems_review_recovery;
     char systems_active[80],systems_volume_token[256],systems_transaction[80],systems_source[80],systems_target[80],systems_direction[16],systems_expected_transaction[80];
     unsigned int systems_desktop,systems_shells,systems_greeter,systems_tz_region;int systems_locale,systems_tz,recovery_tz;bool tz_for_recovery;bool systems_new_account,systems_done_ready;char systems_username[40],systems_password[130],systems_password_file[PATH_LEN];
@@ -383,7 +383,7 @@ static void render_systems_plan(App*a);
 static void render_systems_recover(App*a);static void render_systems_remove(App*a);
 static void render_wifi(App*a);static void wifi_settings_row(App*a,int y,bool enabled);static bool wifi_action(App*a,int id);
 static bool images_job(int kind);static void render_systems_new(App*a);static void render_catalog(App*a);static void render_images(App*a);static bool images_action(App*a,int id);static void open_images(App*a);static void adb_poll(App*a);static void render_adb_request(App*a);static bool adb_action(App*a,int id);static bool start_images_job(App*a,int kind,const char*argument);static bool installer_action(App*a,int id);static bool start_catalog_job(App*a);
-static void complete_catalog_job(App*a,const Json*j,bool ok,bool check);static void render_package_prompt(App*a);static void render_systems_apps(App*a);static void render_package_search(App*a);static void render_apps_card(App*a,int y);static void complete_package_search(App*a,const Json*j,bool ok);static void render_identity(App*a);static void render_identity_restore(App*a);static void render_aplan(App*a);static void render_wipe(App*a);static void render_wipe_review(App*a);static int render_aplan_card(App*a,int y);static void render_flash_super(App*a);static void render_icon_sheet(App*a);static void android_plan_tick(App*a);static int render_charger_card(App*a,int y,bool free_ui);static void identity_inventory(App*a);static void installer_card(App*a,Rect r,unsigned int tone,int glyph,const char*title,const char*note,int action,bool enabled);
+static void complete_catalog_job(App*a,const Json*j,bool ok,bool check);static void render_package_prompt(App*a);static void render_systems_apps(App*a);static void render_package_search(App*a);static void render_apps_card(App*a,int y);static void complete_package_search(App*a,const Json*j,bool ok);static void render_identity(App*a);static void render_identity_restore(App*a);static void render_aplan(App*a);static void render_wipe(App*a);static void render_wipe_review(App*a);static bool systems_ready(const App*a);static int render_aplan_card(App*a,int y);static void render_flash_super(App*a);static void render_icon_sheet(App*a);static void android_plan_tick(App*a);static int render_charger_card(App*a,int y,bool free_ui);static void identity_inventory(App*a);static void installer_card(App*a,Rect r,unsigned int tone,int glyph,const char*title,const char*note,int action,bool enabled);
 static void render_systems_shells(App*a);static int shells_append_args(const App*a,char**args,int n);static void shells_summary(const App*a,char*out,size_t size);static bool shells_offered(const App*a);static unsigned int shells_extra(const App*a);static int locale_append_args(const App*a,char**args,int n);static void locale_summary(const App*a,char*out,size_t size);static void render_locale_card(App*a,int y);static void render_systems_locale(App*a);static void render_systems_timezone(App*a);
 static void render_systems_manifest(App*a);static void render_systems_done(App*a);static void render_systems_extras(App*a);static void render_systems_script(App*a);static void systems_wifi_focus(App*a,int kind);
 static void render_systems_setup(App*a);
@@ -995,6 +995,9 @@ static void render_result(App*a){
        image, and the pages listed after them (Wi-Fi, systems, backups of identity...), say "Back". */
     bool files=a->result_return>=FILE_VOLUMES&&a->result_return<=FILE_DISCARD,picking=a->flash_pick||a->install.pick_source||a->theme_pick||a->systems_pick_manifest;
     /* "Back to recovery" only where it goes home: after a flash it goes back to Flash a partition. */
+    /* A system the switch refuses can still be removed (2026-11-10: old slots made for another
+       platform profile could not be removed at all, the Remove button sat on the switch page). */
+    if(!a->successful&&a->systems_remove_offer)button(a,(Rect){28,1206,664,96},"Remove this system",A_SYS_REMOVE,ui_free(a)&&systems_ready(a),false,0);
     button(a,(Rect){28,1320,664,102},files&&!picking?"Back to files":(a->result_return==USB_FILES?"Back to USB files":(a->result_return==PREPARE_FILESYSTEM?"Back to preparation":(a->result_return==DISPLAY_SETTINGS?"Back to display":(a->result_return==TOOLS||a->result_return==TOOLS_EXPORT?"Back to tools":(a->result_return==HOME?"Back to recovery":"Back"))))),A_DONE,true,true,0);
 }
 static bool repository_needs_setup(const App*a,int index){return a->repository_volume[index][0]&&(a->repository_read_only[index]||access(a->repositories[index],F_OK));}
@@ -3544,7 +3547,7 @@ static void action(App*a,int id){
         break;
     case A_VERIFY_ONE:start_job(a,J_VERIFY);break;
     case A_CONFIRM:if(a->plan_can_execute)start_job(a,a->plan_wipe?J_WIPE:(a->plan_restore?J_RESTORE:J_BACKUP));break;
-    case A_DONE:screen(a,a->result_return);if(a->result_return==DISPLAY_SETTINGS){a->display_note[0]=0;start_display_job(a,J_DISPLAY_STATUS);}else if(a->result_return==PREPARE_FILESYSTEM){a->prepare_known=false;a->fs_inventory_destination=PREPARE_FILESYSTEM;start_files_job(a,J_FS_INVENTORY);}else if(a->result_return==USB_FILES)start_usb_job(a,J_USB_STATUS);break;
+    case A_DONE:a->systems_remove_offer=false;screen(a,a->result_return);if(a->result_return==DISPLAY_SETTINGS){a->display_note[0]=0;start_display_job(a,J_DISPLAY_STATUS);}else if(a->result_return==PREPARE_FILESYSTEM){a->prepare_known=false;a->fs_inventory_destination=PREPARE_FILESYSTEM;start_files_job(a,J_FS_INVENTORY);}else if(a->result_return==USB_FILES)start_usb_job(a,J_USB_STATUS);break;
     case A_USB_FILES:case A_USB_REFRESH:
         if(id==A_USB_FILES)a->page_scroll=0;
         a->usb_volumes_known=false;

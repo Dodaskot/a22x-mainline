@@ -4367,3 +4367,6 @@ msgstr "Borrar"
 
 msgid "Wipe cache"
 msgstr "Borrar la caché"
+
+msgid "This system was set up for another kernel and firmware. Install it again, or remove it"
+msgstr "Este sistema se instaló para otro kernel y otro firmware. Instálalo de nuevo o elimínalo"

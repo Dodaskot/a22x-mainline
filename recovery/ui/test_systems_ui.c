@@ -91,6 +91,24 @@ int main(int argc,char**argv){
     SCHECK(a->screen==SYSTEMS_DONE&&!a->systems_done_clean&&test_press(a,A_SYS_DONE_SYSTEMS,50)&&systems_settle(a));
     SCHECK(a->screen==SYSTEMS&&a->systems_slot_count==2&&!strcmp(a->systems_active,"original")&&!a->systems_reboot_blocked);
     int target=-1;for(int n=0;n<a->systems_slot_count;n++)if(!strcmp(a->systems_slots[n].id,"new-linux"))target=n;SCHECK(target>=0);
+    if(!strcmp(which,"remove-refused")){
+        /* 2026-11-10, on the phone: a switch refused for another platform profile still offers
+           removal, and the removal page names the tapped system, not a name left from a plan. */
+        a->systems_selected=target;copy(a->systems_plan_slot,sizeof(a->systems_plan_slot),a->systems_slots[target].id);
+        copy(a->systems_plan_name,sizeof(a->systems_plan_name),"name left from an earlier plan");
+        static const char reply[]="{\"ok\":false,\"operation\":\"switch-plan\",\"error\":{\"code\":\"PLATFORM_PROFILE_MISMATCH\",\"message\":\"x\",\"details\":{}}}";
+        JsonToken tokens[32];Json doc;SCHECK(json_parse(&doc,reply,tokens,32)>0);
+        complete_systems_job(a,&doc,J_SYS_SWITCH_PLAN,false);
+        SCHECK(a->screen==RESULT&&a->systems_remove_offer&&!strcmp(a->status,"PLATFORM_PROFILE_MISMATCH"));
+        SCHECK(test_press(a,A_SYS_REMOVE,50)&&a->screen==SYSTEMS_REMOVE&&!a->systems_remove_offer&&!strcmp(a->systems_plan_name,a->systems_slots[target].name));
+        SCHECK(test_press(a,A_SYS_REMOVE_CONFIRM,3100)&&systems_settle(a)&&a->screen==SYSTEMS&&a->systems_known&&a->systems_slot_count==1&&!strcmp(a->systems_active,"original"));
+        /* A refusal for the running system offers nothing to remove. */
+        complete_systems_job(a,&doc,J_SYS_SWITCH_PLAN,false);a->systems_plan_slot[0]=0;
+        static const char active[]="{\"ok\":false,\"operation\":\"switch-plan\",\"error\":{\"code\":\"ALREADY_ACTIVE\",\"message\":\"x\",\"details\":{}}}";
+        SCHECK(json_parse(&doc,active,tokens,32)>0);copy(a->systems_plan_slot,sizeof(a->systems_plan_slot),"original");
+        complete_systems_job(a,&doc,J_SYS_SWITCH_PLAN,false);SCHECK(a->screen==RESULT&&!a->systems_remove_offer);
+        SCHECK(test_press(a,A_DONE,50)&&a->screen==SYSTEMS);goto finished;
+    }
     SCHECK(test_press(a,A_SYS_SLOT+target,50)&&systems_settle(a));
     SCHECK(a->screen==SYSTEMS_PLAN&&a->systems_plan_valid&&a->systems_plan_kind==J_SYS_SWITCH_PLAN);
     if(!strcmp(which,"tamper")){

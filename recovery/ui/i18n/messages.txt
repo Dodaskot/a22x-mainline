@@ -1317,6 +1317,7 @@ This recovery, from a new image
 This small checkpoint is separate from the full Linux BOOT and userdata backup.
 This step cannot be stopped safely.
 This system cannot read the saved password of this account. Choose New user with the same name and enter the password again.
+This system was set up for another kernel and firmware. Install it again, or remove it
 This uses a normal unmount. Busy filesystems are refused. The backup destination stays mounted and userdata remains offline until you choose to mount it again in Files.
 This volume is available for reading only.
 This volume is no longer available. Return to Files and refresh the list.

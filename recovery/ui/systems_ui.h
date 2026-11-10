@@ -446,6 +446,8 @@ static int complete_systems_job(App*a,const Json*j,int kind,bool ok){
         /* 2026-11-08: a refused status reopened the error page from its own Back button forever;
            the reason is shown on the Systems page instead, which can be left. */
         if(kind==J_SYS_STATUS){a->systems_known=false;if(a->screen!=APLAN)screen(a,SYSTEMS);else a->dirty=true;return J_NONE;}
+        /* A system that cannot be switched to can still be removed, unless it is the running one. */
+        a->systems_remove_offer=kind==J_SYS_SWITCH_PLAN&&systems_id(a->systems_plan_slot)&&strcmp(code,"ALREADY_ACTIVE")&&strcmp(code,"SWITCH_PENDING")&&strcmp(code,"SLOT_UNAVAILABLE");
         files_problem(a,code,message,SYSTEMS);return J_NONE;
     }
     if(!jequals(j,0,"mode",a->device?"device":"fixture")||!jequals(j,0,"operation",systems_operation(kind))){files_problem(a,"INVALID_SYSTEMS_RESULT","The operation or environment did not match the requested system action.",SYSTEMS);a->systems_known=a->systems_plan_valid=false;return J_NONE;}
@@ -628,6 +630,13 @@ static bool systems_action(App*a,int id){
     if(id==A_SYS_PLAN_CONFIRM&&a->screen==SYSTEMS_PLAN){if(a->systems_plan_valid&&a->systems_plan_page+1>=systems_plan_pages(a)&&(uint64_t)time(NULL)<=a->systems_plan_expires)start_systems_job(a,a->systems_plan_kind==J_SYS_IMPORT_PLAN?J_SYS_IMPORT:J_SYS_SWITCH);return true;}
     if(id==A_SYS_RECOVER_CONFIRM&&a->screen==SYSTEMS_RECOVER){start_systems_job(a,J_SYS_RECOVER);return true;}
     if(id==A_SYS_REMOVE&&a->screen==SYSTEMS_PLAN&&a->systems_plan_kind==J_SYS_SWITCH_PLAN){systems_forget_plan(a);screen(a,SYSTEMS_REMOVE);return true;}
+    if(id==A_SYS_REMOVE&&a->screen==RESULT&&a->systems_remove_offer){
+        /* The page names the system tapped in the list, never a name left from an earlier plan. */
+        a->systems_remove_offer=false;a->systems_plan_name[0]=0;
+        if(a->systems_selected>=0&&a->systems_selected<(int)a->systems_slot_count&&!strcmp(a->systems_slots[a->systems_selected].id,a->systems_plan_slot))
+            copy(a->systems_plan_name,sizeof(a->systems_plan_name),a->systems_slots[a->systems_selected].name);
+        systems_forget_plan(a);screen(a,SYSTEMS_REMOVE);return true;
+    }
     if(id==A_SYS_REMOVE_CONFIRM&&a->screen==SYSTEMS_REMOVE){start_systems_job(a,J_SYS_REMOVE);return true;}
     if(a->screen==SYSTEMS_PLAN&&(id==A_SYS_PLAN_PREV||id==A_SYS_PLAN_NEXT)){if(id==A_SYS_PLAN_PREV&&a->systems_plan_page)a->systems_plan_page--;if(id==A_SYS_PLAN_NEXT&&a->systems_plan_page+1<systems_plan_pages(a))a->systems_plan_page++;a->dirty=true;return true;}
     if(id==A_BACK&&(a->screen==SYSTEMS||a->screen==SYSTEMS_PLAN||a->screen==SYSTEMS_RECOVER||a->screen==SYSTEMS_REMOVE)){enum Screen from=a->screen;systems_forget_plan(a);a->systems_review_recovery=false;screen(a,from==SYSTEMS?OS_MENU:SYSTEMS);if(from!=SYSTEMS)start_systems_job(a,J_SYS_STATUS);return true;}

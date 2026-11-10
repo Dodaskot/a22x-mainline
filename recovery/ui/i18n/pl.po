@@ -4367,3 +4367,6 @@ msgstr "Czyszczenie"
 
 msgid "Wipe cache"
 msgstr "Wyczyść cache"
+
+msgid "This system was set up for another kernel and firmware. Install it again, or remove it"
+msgstr "Ten system zainstalowano dla innego jądra i oprogramowania układowego. Zainstaluj go ponownie albo usuń"

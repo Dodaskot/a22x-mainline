@@ -4,7 +4,7 @@
 #define LANGUAGE_COUNT 6
 static const char*const language_codes[LANGUAGE_COUNT]={"en","uk","de","es","fr","pl"};
 static const char*const language_names[LANGUAGE_COUNT]={"English","Українська","Deutsch","Español","Français","Polski"};
-#define MESSAGE_COUNT 1455
+#define MESSAGE_COUNT 1456
 static const char*const message_ids[MESSAGE_COUNT]={
 "  /  skip-identical",
 " / preview truncated",
@@ -1299,6 +1299,7 @@ static const char*const message_ids[MESSAGE_COUNT]={
 "This small checkpoint is separate from the full Linux BOOT and userdata backup.",
 "This step cannot be stopped safely.",
 "This system cannot read the saved password of this account. Choose New user with the same name and enter the password again.",
+"This system was set up for another kernel and firmware. Install it again, or remove it",
 "This uses a normal unmount. Busy filesystems are refused. The backup destination stays mounted and userdata remains offline until you choose to mount it again in Files.",
 "This volume is available for reading only.",
 "This volume is no longer available. Return to Files and refresh the list.",
@@ -2757,6 +2758,7 @@ static const char*const message_text[LANGUAGE_COUNT-1][MESSAGE_COUNT]={
 "Ця невелика контрольна точка окрема від повної копії BOOT і userdata Linux.",
 "Цей крок не можна безпечно зупинити.",
 "Ця система не може прочитати збережений пароль цього облікового запису. Оберіть «Новий користувач» з тим самим ім'ям і введіть пароль ще раз.",
+"Цю систему встановлено для іншого ядра й прошивок. Встановіть її знову або видаліть",
 "Використовується звичайне розмонтування. Зайняті ФС відхиляються. Місце для копій лишається змонтованим, а userdata — розмонтованим, поки ви знову не змонтуєте його у Файлах.",
 "Цей том доступний лише для читання.",
 "Цей том більше недоступний. Поверніться до Файлів і оновіть список.",
@@ -4214,6 +4216,7 @@ static const char*const message_text[LANGUAGE_COUNT-1][MESSAGE_COUNT]={
 "Dieser kleine Prüfpunkt ist von der vollständigen Sicherung von Linux-BOOT und Userdata getrennt.",
 "Dieser Schritt ist nicht sicher stoppbar.",
 "Dieses System kann das gespeicherte Passwort dieses Kontos nicht lesen. Wählen Sie „Neuer Benutzer“ mit demselben Namen und geben Sie das Passwort erneut ein.",
+"Dieses System wurde für einen anderen Kernel und andere Firmware eingerichtet. Neu installieren oder entfernen",
 "Hier wird normal ausgehängt. Belegte Dateisysteme werden abgelehnt. Das Sicherungsziel bleibt eingehängt und Userdata offline, bis Sie es unter Dateien wieder einhängen.",
 "Dieses Volume ist nur zum Lesen verfügbar.",
 "Dieses Volume ist nicht mehr verfügbar. Gehen Sie zu Dateien zurück und aktualisieren Sie die Liste.",
@@ -5671,6 +5674,7 @@ static const char*const message_text[LANGUAGE_COUNT-1][MESSAGE_COUNT]={
 "Este pequeño punto de control es independiente de la copia completa de BOOT y userdata de Linux.",
 "Este paso no se puede detener con seguridad.",
 "Este sistema no puede leer la contraseña guardada de esta cuenta. Elige «Nuevo usuario» con el mismo nombre y vuelve a escribir la contraseña.",
+"Este sistema se instaló para otro kernel y otro firmware. Instálalo de nuevo o elimínalo",
 "Se usa un desmontaje normal. Los sistemas de archivos ocupados se rechazan. El destino de la copia sigue montado y userdata sin conexión hasta que lo vuelvas a montar en Archivos.",
 "Este volumen solo está disponible para lectura.",
 "Este volumen ya no está disponible. Vuelve a Archivos y actualiza la lista.",
@@ -7128,6 +7132,7 @@ static const char*const message_text[LANGUAGE_COUNT-1][MESSAGE_COUNT]={
 "Ce petit point de contrôle est distinct de la sauvegarde complète du BOOT et du userdata Linux.",
 "Cette étape ne peut pas être arrêtée sans risque.",
 "Ce système ne peut pas lire le mot de passe enregistré de ce compte. Choisissez « Nouvel utilisateur » avec le même nom et saisissez de nouveau le mot de passe.",
+"Ce système a été installé pour un autre noyau et d’autres micrologiciels. Réinstallez-le ou supprimez-le",
 "Un démontage normal est utilisé. Les systèmes de fichiers occupés sont refusés. La destination de sauvegarde reste montée et userdata hors ligne jusqu'à ce que vous le remontiez dans Fichiers.",
 "Ce volume est disponible en lecture seule.",
 "Ce volume n'est plus disponible. Revenez à Fichiers et actualisez la liste.",
@@ -8585,6 +8590,7 @@ static const char*const message_text[LANGUAGE_COUNT-1][MESSAGE_COUNT]={
 "Ten mały punkt kontrolny jest oddzielony od pełnej kopii BOOT i userdata Linuksa.",
 "Tego kroku nie można bezpiecznie zatrzymać.",
 "Ten system nie może odczytać zapisanego hasła tego konta. Wybierz „Nowy użytkownik” z tą samą nazwą i wpisz hasło ponownie.",
+"Ten system zainstalowano dla innego jądra i oprogramowania układowego. Zainstaluj go ponownie albo usuń",
 "Używane jest zwykłe odmontowanie. Zajęte systemy plików są odrzucane. Miejsce kopii pozostaje zamontowane, a userdata offline, dopóki nie zamontujesz go ponownie w Plikach.",
 "Ten wolumin jest dostępny tylko do odczytu.",
 "Ten wolumin nie jest już dostępny. Wróć do Plików i odśwież listę.",

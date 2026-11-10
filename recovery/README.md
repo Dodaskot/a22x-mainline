@@ -13,7 +13,7 @@ on-phone check: [docs/PROGRESS.md](docs/PROGRESS.md).
 
 | | |
 |---|---|
-| Recovery | 0.6.148, SHA-256 `d32df642dcea44bfc91e7ed8907943cbd87f0dca24fc940c17f5587c3daa0042` |
+| Recovery | 0.6.149, SHA-256 `16a5721c18836428aa565e4f852832a040c7313864a92076eb4d1330e50a943c` |
 | Recovery kernel | `7.2.0-a22x-recovery+ #123`: [linux-a22x](https://github.com/Dodaskot/linux-a22x) branch `a22x-recovery`, tag `a22x-recovery-kernel123` |
 | Tested with | BOOT v146 (`releases/v146`, kernel `#122`) and v145 (kernel `#121`), branch `a22x-boot` |
 | Image | not published: it contains firmware captured from the developer's phone and the developer's SSH key (see [Building](#building)) |

@@ -16,7 +16,7 @@ spec = importlib.util.spec_from_file_location('a22x_distro_fixture', ROOT/'tests
 fixture_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fixture_module)
 distro = fixture_module.d
-CASES = ('roundtrip', 'tamper', 'resume', 'rollback', 'accounts', 'unmounted', 'readonly', 'no-profile', 'android-plan')
+CASES = ('roundtrip', 'tamper', 'resume', 'rollback', 'accounts', 'unmounted', 'readonly', 'no-profile', 'android-plan', 'remove-refused')
 
 
 def main():

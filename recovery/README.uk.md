@@ -13,7 +13,7 @@ English: [README.md](README.md). Історія до 0.6.124:
 
 | | |
 |---|---|
-| Recovery | 0.6.148, SHA-256 `d32df642dcea44bfc91e7ed8907943cbd87f0dca24fc940c17f5587c3daa0042` |
+| Recovery | 0.6.149, SHA-256 `16a5721c18836428aa565e4f852832a040c7313864a92076eb4d1330e50a943c` |
 | Ядро recovery | `7.2.0-a22x-recovery+ #123`: [linux-a22x](https://github.com/Dodaskot/linux-a22x), гілка `a22x-recovery`, тег `a22x-recovery-kernel123` |
 | Перевірено разом із | BOOT v146 (`releases/v146`, ядро `#122`) і v145 (ядро `#121`), гілка `a22x-boot` |
 | Образ | не опубліковано: у ньому прошивка, знята з телефона розробника, і ключ SSH розробника (див. [Збирання](#збирання)) |

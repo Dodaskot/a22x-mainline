@@ -4367,3 +4367,6 @@ msgstr "Очищення"
 
 msgid "Wipe cache"
 msgstr "Очистити кеш"
+
+msgid "This system was set up for another kernel and firmware. Install it again, or remove it"
+msgstr "Цю систему встановлено для іншого ядра й прошивок. Встановіть її знову або видаліть"
