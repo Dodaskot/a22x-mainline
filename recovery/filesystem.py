@@ -335,6 +335,29 @@ def probe_magic(data):
     return out
 
 
+# admin_session.py marks each SSH or SFTP session that holds the recovery's lease (2026-11-10).
+SSH_SESSIONS = Path('/run/a22x-recovery/ssh')
+
+
+def ssh_session_active():
+    """Whether a computer's SSH or SFTP session holds the lease now: then storage is busy because
+    of that session, which the person can close, not because of USB files or an operation."""
+    try:
+        markers = list(SSH_SESSIONS.glob('session-*.json'))
+    except OSError:
+        return False
+    for marker in markers:
+        try:
+            pid = int(json.loads(marker.read_text())['pid'])
+            os.kill(pid, 0)
+            return True
+        except PermissionError:
+            return True
+        except (OSError, ValueError, TypeError, KeyError):
+            continue
+    return False
+
+
 def mount_options(fs_type, mode):
     if fs_type not in SUPPORTED_FS or mode not in ('ro', 'rw'):
         fail('UNSUPPORTED_FILESYSTEM', 'The filesystem is not admitted for mounting')
@@ -414,6 +437,8 @@ class BaseContext:
             try:
                 stack.enter_context(recovery_operation_lock(path, self.mode))
             except BlockingIOError:
+                if ssh_session_active():
+                    fail('OPERATION_BUSY', 'A computer is connected over SSH or SFTP: close that session, then try again')
                 fail('OPERATION_BUSY', 'Storage is busy: stop USB files, or wait for the running operation to finish')
             except OSError as exc:
                 fail('INVALID_LOCK', 'The recovery operation lock is unavailable or changed', errno=exc.errno)

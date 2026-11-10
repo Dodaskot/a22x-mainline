@@ -447,3 +447,135 @@ class Settings(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class FlashLogical(unittest.TestCase):
+    """Logical partitions inside super (2026-11-10): a GSI's system.img into super/system."""
+    MIB = 1 << 20
+
+    def setUp(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import test_lp_metadata as tl
+        self.root = Path(tempfile.mkdtemp(prefix='a22x-flash-lp-', dir=os.environ.get('TMPDIR')))
+        self.addCleanup(shutil.rmtree, self.root, True)
+        for name in ('usb', 'sd', 'targets'):
+            (self.root / name).mkdir()
+        tl.make_super(self.root / 'targets/super')
+        (self.root / 'install-fixture.json').write_text(json.dumps({
+            'schema': 'a22x.install.fixture.v1', 'device': {'model': 'SM-A226B', 'identity': 'fixture:test'},
+            'targets': {'super': {'path': 'targets/super', 'size_bytes': 64 * self.MIB}}}))
+        (self.root / 'filesystem-fixture.json').write_text(json.dumps({'schema': 'a22x.filesystem.fixture.v1', 'volumes': [
+            {'id': 'usb-p1', 'path': 'usb', 'fs_type': 'exfat', 'mounted': True, 'read_only': True},
+            {'id': 'sdcard-p1', 'path': 'sd', 'mounted': True, 'read_only': False}]}))
+
+    run_helper = Flash.run_helper
+    token = Flash.token
+    image = Flash.image
+    check = Flash.check
+
+    def write(self, target, path, result, image_bytes=None):
+        return self.run_helper('write', '--target', target, '--volume', 'usb-p1', '--volume-token', self.token(), '--path', path,
+                               '--expected-sha256', result['image']['sha256'], '--expected-identity', result['image']['identity'],
+                               '--confirm', *(('--image-bytes', str(image_bytes)) if image_bytes is not None else ()))
+
+    def partition(self, name):
+        import lp_metadata as lp
+        fd = os.open(self.root / 'targets/super', os.O_RDONLY)
+        self.addCleanup(os.close, fd)
+        s = lp.Super(fd)
+        return s, s.partition(name)
+
+    def test_targets_list_the_logical_partitions(self):
+        code, result, _ = self.run_helper('targets')
+        rows = {row['label']: row for row in result['targets']}
+        self.assertEqual(code, 0)
+        self.assertEqual(rows['super/system']['size_bytes'], 8 * self.MIB)
+        self.assertEqual(rows['super/product']['size_bytes'], 2 * self.MIB)
+        self.assertEqual(rows['super/vendor']['room_bytes'], 26 * self.MIB)  # the group of 40 MiB holds 14
+        self.assertTrue(rows['super/vendor']['logical'])
+        self.assertIn('super_free_bytes', result)
+
+    def test_a_smaller_image_fills_the_partition_with_zeros(self):
+        data = bytearray(os.urandom(3 * self.MIB))
+        struct.pack_into('<H', data, 1080, 0xEF53)
+        path = self.image(bytes(data), 'vendor.img')
+        code, result, _ = self.check('super/vendor', path)
+        self.assertEqual(code, 0, result)
+        self.assertEqual((result['target']['size_bytes'], result['target']['new_size_bytes']), (4 * self.MIB, 4 * self.MIB))
+        self.assertEqual(result['image']['kind'], 'ext4 file system image')
+        code, done, _ = self.write('super/vendor', path, result, result['image']['payload_bytes'])
+        self.assertEqual(code, 0, done)
+        self.assertTrue(done['verified'])
+        s, p = self.partition('vendor')
+        self.assertEqual(s.read_partition('vendor'), hashlib.sha256(bytes(data) + bytes(self.MIB)).hexdigest())
+        self.assertNotEqual(s.read_partition('system'), done['partition_sha256'])
+
+    def test_a_larger_sparse_gsi_grows_system(self):
+        payload = os.urandom(20 * self.MIB)
+        path = self.image(sparse(payload), 'system.img')
+        code, result, _ = self.check('super/system', path)
+        self.assertEqual(code, 0, result)
+        self.assertEqual(result['image']['format'], 'sparse')
+        grown = result['target']['new_size_bytes']
+        self.assertEqual(grown, 21 * self.MIB)  # 20 MiB + one fill block, rounded to 1 MiB
+        code, done, _ = self.write('super/system', path, result, result['image']['payload_bytes'])
+        self.assertEqual(code, 0, done)
+        self.assertEqual((done['target']['size_bytes'], done['target']['resized_from']), (21 * self.MIB, 8 * self.MIB))
+        s, p = self.partition('system')
+        self.assertEqual(s.size_of(p), 21 * self.MIB)
+        self.assertEqual(s.read_partition('system'), done['partition_sha256'])
+
+    def test_its_own_size_keeps_the_partition_and_the_old_content_is_saved(self):
+        """2026-11-10, on the phone: odm holds 4,349,952 bytes, not a whole MiB, and its own image
+        was shown "growing" to 5 MiB, with "too large to save first". An image that fits keeps
+        the size, the same content is recognised, and a small partition is saved before writing."""
+        import test_lp_metadata as tl
+        odm = 4349952
+        tl.make_super(self.root / 'targets/super', parts=(('system', 8 * self.MIB), ('odm', odm), ('vendor', 4 * self.MIB)))
+        s, _ = self.partition('odm')
+        current = b''.join(s.chunks('odm'))
+        self.assertEqual(len(current), odm)
+        code, result, _ = self.check('super/odm', self.image(current, 'odm.img'))
+        self.assertEqual(code, 0, result)
+        self.assertEqual((result['target']['size_bytes'], result['target']['new_size_bytes']), (odm, odm))
+        self.assertTrue(result['identical'])
+        self.assertEqual(result['warnings'], [])
+        changed = bytearray(current)
+        changed[100] ^= 0xff
+        path = self.image(bytes(changed), 'odm-changed.img')
+        code, result, _ = self.check('super/odm', path)
+        self.assertFalse(result['identical'])
+        self.assertEqual((result['rollback_volume'], result['target']['new_size_bytes']), ('sdcard-p1', odm))
+        code, done, progress = self.write('super/odm', path, result, result['image']['payload_bytes'])
+        self.assertEqual(code, 0, done)
+        self.assertEqual((done['target']['size_bytes'], done['target']['resized_from']), (odm, odm))
+        self.assertIn('Saving the current partition', progress)
+        saved = self.root / 'sd' / done['rollback']['path'].lstrip('/')
+        self.assertTrue(saved.name.startswith('super-odm-'), saved.name)
+        self.assertEqual(saved.read_bytes(), current)
+        s, _ = self.partition('odm')
+        self.assertEqual(b''.join(s.chunks('odm')), bytes(changed))
+        # A large one is not saved: system here stands in for the phone's 4.3 GiB.
+        with mock.patch.object(flash, 'ROLLBACK_LIMIT', 4 * self.MIB):
+            code, result, _ = self.check('super/system', self.image(bytes(self.MIB), 'small.img'))
+        self.assertEqual(result['warnings'][:1], ['This partition is too large to save first'])
+
+    def test_too_large_or_unchecked_is_refused(self):
+        path = self.image(bytes(30 * self.MIB), 'huge.img')
+        code, result, _ = self.check('super/system', path)  # 8 + 26 of room = 34 MiB would fit
+        self.assertEqual(code, 0, result)
+        path = self.image(bytes(36 * self.MIB), 'larger.img')
+        code, result, _ = self.check('super/system', path)
+        self.assertEqual((code, result['error']['code']), (2, 'IMAGE_TOO_LARGE'))
+        small = self.image(bytes(self.MIB), 'small.img')
+        code, result, _ = self.check('super/odm', small)
+        self.assertEqual((code, result['error']['code']), (2, 'NO_SUCH_PARTITION'))
+        code, result, _ = self.check('super/vendor', small)
+        code, done, _ = self.write('super/vendor', small, result)  # no --image-bytes
+        self.assertEqual((code, done['error']['code']), (2, 'INVALID_ARGUMENT'))
+        code, done, _ = self.write('super/vendor', small, result, 2 * self.MIB)  # not the checked size
+        self.assertEqual((code, done['error']['code']), (2, 'IMAGE_CHANGED'))
+        with self.assertRaises(SystemExit):
+            with contextlib.redirect_stderr(io.StringIO()):
+                flash.parser().parse_args(['--fixture', 'x', 'check', '--target', 'super/../boot', '--volume', 'v',
+                                           '--volume-token', 't', '--path', '/p'])

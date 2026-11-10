@@ -102,6 +102,9 @@ msgstr "Un ordenador pide usar ADB con este recovery."
 msgid "A computer is asking to use this phone."
 msgstr "Un ordenador pide usar este teléfono."
 
+msgid "A GSI's system.img goes into system. When the image is larger, the partition grows into the free space of super; the other partitions stay as they are."
+msgstr "El system.img de una GSI va a system. Si la imagen es mayor, la partición crece en el espacio libre de super; las demás quedan como están."
+
 msgid "A network name has 1 to 32 bytes"
 msgstr "Un nombre de red tiene de 1 a 32 bytes"
 
@@ -119,6 +122,9 @@ msgstr "Se escribe una carpeta nueva en A22xIdentityBackups con cada partición 
 
 msgid "A new theme always spreads as a circle, unless animations are off."
 msgstr "Un tema nuevo siempre se extiende en círculo, salvo con las animaciones desactivadas."
+
+msgid "A package download did not pass its check."
+msgstr "Un paquete descargado no superó su comprobación."
 
 msgid "A package download failed in recovery."
 msgstr "Falló la descarga de un paquete en el recovery."
@@ -557,6 +563,9 @@ msgstr "Calendario"
 
 msgid "Camera"
 msgstr "Cámara"
+
+msgid "Can grow by %s"
+msgstr "Puede crecer %s"
 
 msgid "Cancel"
 msgstr "Cancelar"
@@ -1260,6 +1269,9 @@ msgstr "Formatear borra todo en este volumen, incluidas las copias."
 msgid "Formatting userdata"
 msgstr "Formateando userdata"
 
+msgid "Free in super: %s"
+msgstr "Libre en super: %s"
+
 msgid "Free on userdata: %s"
 msgstr "Libre en userdata: %s"
 
@@ -1698,6 +1710,9 @@ msgstr "Pantalla de bloqueo"
 msgid "Locked"
 msgstr "Bloqueado"
 
+msgid "Logical partition in super"
+msgstr "Partición lógica en super"
+
 msgid "mAh"
 msgstr "mAh"
 
@@ -1835,6 +1850,9 @@ msgstr "Nombre"
 
 msgid "Name or part of it"
 msgstr "Nombre o parte de él"
+
+msgid "Name the partition to write"
+msgstr "Indique la partición que escribir"
 
 msgid "Navigation"
 msgstr "Navegación"
@@ -3114,6 +3132,9 @@ msgstr "Fuerte"
 msgid "Sunday"
 msgstr "domingo"
 
+msgid "super/"
+msgstr "super/"
+
 msgid "Swipe through the full source, backup and target list."
 msgstr "Desliza por la lista completa de origen, copia y destinos."
 
@@ -3423,6 +3444,12 @@ msgstr "La imagen terminó antes de tiempo"
 msgid "The image file is damaged or incomplete. Copy it again, then eject the stick safely before unplugging it."
 msgstr "El archivo de imagen está dañado o incompleto. Cópialo de nuevo y expulsa la memoria de forma segura antes de desconectarla."
 
+msgid "The image fills part of the %s partition; the rest is zeroed."
+msgstr "La imagen llena parte de la partición de %s; el resto se pone a cero."
+
+msgid "The image fills the whole %s partition."
+msgstr "La imagen llena toda la partición de %s."
+
 msgid "The image has extra data at its end"
 msgstr "La imagen tiene datos sobrantes"
 
@@ -3431,6 +3458,9 @@ msgstr "El instalador de imágenes no devolvió un resultado válido."
 
 msgid "The image installer helper is not configured."
 msgstr "La herramienta del instalador de imágenes no está configurada."
+
+msgid "The image is empty"
+msgstr "La imagen está vacía"
 
 msgid "The image is larger than any partition"
 msgstr "La imagen es mayor que cualquier partición"
@@ -3537,6 +3567,9 @@ msgstr "La operación o el entorno no coincidieron con la acción de sistema sol
 msgid "The operation was stopped."
 msgstr "La operación se detuvo."
 
+msgid "The package servers could not be reached."
+msgstr "No se pudo contactar con los servidores de paquetes."
+
 msgid "The package site did not answer. Check Wi-Fi and try again."
 msgstr "El sitio de paquetes no respondió. Comprueba el Wi-Fi e inténtalo de nuevo."
 
@@ -3554,6 +3587,9 @@ msgstr "No se pudo releer la partición"
 
 msgid "The partition does not match the image after writing"
 msgstr "La partición no coincide con la imagen tras escribir"
+
+msgid "The partition grows from %s to %s inside super."
+msgstr "La partición crece de %s a %s dentro de super."
 
 msgid "The partition is mounted. Unmount it in Files before writing"
 msgstr "La partición está montada. Desmóntala en Archivos antes de escribir"
@@ -3678,6 +3714,9 @@ msgstr "El script de configuración debe ser un archivo de texto"
 msgid "The shell has not stopped completely. The terminal remains open."
 msgstr "El shell no se detuvo por completo. El terminal sigue abierto."
 
+msgid "The size of the checked image is required"
+msgstr "Se necesita el tamaño de la imagen comprobada"
+
 msgid "The starting root is recovery RAM. Mount Linux in Files first, then use /mnt/volumes/userdata. The microSD backup mount is /mnt/backup."
 msgstr "La raíz inicial es la RAM del recovery. Monta Linux primero en Archivos y luego usa /mnt/volumes/userdata. La copia de la microSD se monta en /mnt/backup."
 
@@ -3723,6 +3762,12 @@ msgstr "La herramienta de transferencia de archivos USB no está configurada."
 msgid "The USB stick could not be opened for writing."
 msgstr "No se pudo abrir la memoria USB para escribir."
 
+msgid "The whole image of all of them"
+msgstr "La imagen entera de todas"
+
+msgid "The whole image, or one Android partition inside it."
+msgstr "La imagen entera o una partición de Android dentro."
+
 msgid "The write receipt could not be displayed completely. Inspect installation status."
 msgstr "No se pudo mostrar completo el comprobante de escritura. Revisa el estado de instalación."
 
@@ -3746,6 +3791,9 @@ msgstr "No hay espacio suficiente junto al sistema conservado"
 
 msgid "There is not enough space on userdata for this image"
 msgstr "No hay espacio suficiente en userdata para esta imagen"
+
+msgid "There was not enough free space on userdata for the packages."
+msgstr "No había suficiente espacio libre en userdata para los paquetes."
 
 msgid "This action replaces the listed targets."
 msgstr "Esta acción sustituye los destinos de la lista."
@@ -4263,3 +4311,8 @@ msgstr "Zoom"
 msgid "Zoom with blur"
 msgstr "Zoom con desenfoque"
 
+msgid "Back"
+msgstr "Atrás"
+
+msgid "A computer is connected over SSH or SFTP: close that session, then try again"
+msgstr "Hay un ordenador conectado por SSH o SFTP: cierre esa sesión y vuelva a intentarlo"

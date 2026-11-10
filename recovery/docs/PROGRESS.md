@@ -1193,3 +1193,87 @@ it disabled the launcher entry it was running from and restarted through another
 The page is now built again in place and the new theme grows from the tapped button as a
 circle, like in the recovery; the launcher entry (the icon) changes only when the app is
 left and no root work runs.
+
+## 2026-11-10 late night: flashing from the recovery itself, logical partitions, the app in the recovery's look (builds 142 and 143, app 0.6.142-r2)
+
+**The recovery flashed from the recovery.** Build 142 went onto the phone without Download
+Mode: the image was copied over ADB into the image store on userdata, chosen on
+"Flash a partition" → `recovery`, reviewed and written with a hold. The next start ran the
+new recovery (its partition read back with the image's hash, kernel #123), and the restart
+check found nothing to repeat.
+
+**Room for the shells of a new system.** A Debian 13 installation with two shells ran out
+of space during its first start: the temporary 4 GiB swap file took the room the packages
+needed. The swap now takes at most the free space minus 5 GiB (none below 512 MiB), a
+partial file is removed, and the room the chosen shells and apps need (Phosh 1.5 GiB,
+GNOME 2 GiB, Plasma 2.5 GiB, Xfce 1 GiB, Sxmo 0.5 GiB, Lomiri 2 GiB, 192 MiB per app) is
+added to the space an installation requires before it starts.
+
+**Logical partitions inside super (build 143).** `lp_metadata.py` reads and writes the
+metadata Android's liblp keeps at the start of `super`: the geometry, the primary and backup
+copy of every metadata slot, their SHA-256 checksums, headers 10.0 and 10.2. On the phone it
+read the real layout without writing: `system` 4361 MiB, `product` 1333 MiB, `vendor`
+1043 MiB and `odm` 4 MiB in the group `main` (6741 of 6900 MiB used), 162 MiB free.
+"Flash a partition" gets a `super` page listing the logical partitions. An image (sparse
+too) is written into one of them; the partition first grows or shrinks within its group and
+the free space, so a larger GSI fits into `system`; every copy of the metadata is rewritten
+and read back; only the image's own bytes count against the room and the rest of the
+partition is zeroed. Build 143 also tells why a first start failed, from the new system's
+`/var/log/a22x-firstboot.log`. It is built and tested on the computer, not yet on the phone.
+
+**The app in the recovery's look (0.6.142-r2).** The Android app now looks like the
+recovery: a home page of tiles (the "Install" hero, "Recovery and BOOT", "Compatibility",
+"Wi-Fi", "Language and time", and small cells for scripts, theme and restart), each opening
+a page of its own with a round back button and the recovery's zoom-and-fade change instead
+of one long scrolling page, tiles that sink while pressed, the recovery's own icons
+(rendered by the interface on an icon sheet and exported by `ui/tools/export_icons.py`),
+buttons that act only after a hold, and short messages at the bottom. Preparing an
+installation follows the recovery's own install pages: system, install options, shells and
+sign-in, network and apps, review. The app still does not install systems, flash partitions
+or make backups: those stay in the recovery. Every text is translated into the recovery's
+languages (Ukrainian, German, French, Polish, Spanish besides English), with the shells,
+sign-ins and apps named as the recovery's translations name them, and the clock and date on
+the home page follow the phone's language, date order, time zone and 12/24-hour setting.
+
+**The recovery's backdrop and surfaces in the app (0.6.142-r4).** The app now paints what
+the recovery paints. The Daylight and Aurora backdrops, the same 135 × 300 images exported
+from the recovery's theme assets by `ui/tools/export_backdrops.py`, are stretched over the
+whole window and behind Android's transparent bars by a Java port of the recovery's
+`canvas_backdrop()`: bilinear, with the same 8 × 8 ordered dither. A build-time test runs the
+recovery's C function next to it, and all 2,592,000 pixels of each backdrop match. Cards are
+drawn like the recovery's surfaces: a soft shadow in the theme's colour and strength, the
+lighter edge under a fill that lets the backdrop through, a dark veil while pressed. The
+"Install" hero runs top to bottom in the theme's two colours, with the recovery's two soft
+discs and a shadow in its lower colour, and the theme cards show the real backdrops. The home
+page adapts to the screen: tiles keep a minimum height and share any extra room, so the page
+fits a 360 × 800 dp screen, a OnePlus 15 and a 1.3 font scale without scrolling. The clock and
+the "Mainline Recovery" line left the top of the page. Every page was checked in an Android 14
+emulator, in three themes and three languages.
+
+## 2026-11-10 evening, on the phone: images over adb sideload, logical partitions written and restored (builds 144 to 147)
+
+**Flashed from the recovery, again.** Build 144 went onto the phone the way a person would do
+it: Files → userdata → allow writing, the image copied over ADB into the image store, then
+Install → Flash a partition → recovery, the review and a hold. The next start ran it. Build 146
+then came over `adb sideload`, which now keeps images of the phone's own partitions too (boot,
+recovery, vbmeta, dtbo, sparse and super images, named by what they are, as TWRP's Install
+Image takes them), and was flashed by 144 itself.
+
+**A computer's session named as such.** An SSH or SFTP session holds the recovery's lease, so
+the interface cannot change storage while it is open. The message said "stop USB files";
+it now says that a computer is connected over SSH or SFTP and that closing that session
+lets the operation run.
+
+**Logical partitions, tested on the real super.** Samsung's `odm` holds 4,349,952 bytes, not
+a whole MiB, and its own image was shown "growing" to 5 MiB; an image that fits now keeps the
+partition as it is. Partitions inside super now get what the others have: a small one's
+content is saved before it is written, and the very same image is recognised, with nothing
+to flash. On the phone, a copy of odm with one changed byte was sent over `adb sideload` and
+flashed into super; the old content was saved to the image store, the partition read back, and
+super's metadata stayed byte for byte as before. The saved copy then went back the same way,
+and choosing it once more showed that the image is already on the partition.
+
+**Smaller fixes found on the way.** `adb sideload` failed with nothing but "failed" on the
+computer when userdata was open read-only after choosing an image; it is now opened for
+writing during the transfer and read-only again after it. The result page offers "Back to
+recovery" only where it leads home, and "Back to files" only from the file pages themselves.

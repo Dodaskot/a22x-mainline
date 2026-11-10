@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bootimage
 import filesystem as fs
 import install
+import lp_metadata as lp
 from install import require
 from operation_lock import operation_lock
 
@@ -41,6 +42,23 @@ TARGETS = (('boot', 'Kernel and ramdisk'), ('dtbo', 'Device tree overlays'),
            # The recovery runs from RAM, so its own partition can be replaced while it runs.
            ('recovery', 'This recovery, from a new image'))
 LABELS = tuple(label for label, title in TARGETS)
+# A logical partition inside super, as super/NAME (2026-11-10): a GSI's or a ROM's system.img goes
+# into super/system, which grows in the free space of super when the image is larger.
+LOGICAL_PREFIX = 'super/'
+
+
+def logical_name(label):
+    """NAME for super/NAME, else None."""
+    if not isinstance(label, str) or not label.startswith(LOGICAL_PREFIX):
+        return None
+    name = label[len(LOGICAL_PREFIX):]
+    return name if 0 < len(name) < 36 and all(c.isascii() and (c.islower() or c.isdigit() or c == '_') for c in name) else None
+
+
+def target_choice(value):
+    if value in LABELS + ('userdata', 'auto') or logical_name(value):
+        return value
+    raise argparse.ArgumentTypeError('unknown partition')
 RESTORE_LABELS = ('userdata', 'boot')
 LZ4 = '/bin/lz4'
 ZSTD = '/usr/bin/zstd'
@@ -361,14 +379,24 @@ def rollback_folders(volume):
     return (ROLLBACK_FOLDER,)
 
 
-def save_rollback(context, target, progress):
+def save_rollback(context, target, progress, chunks=None):
+    """The current content of TARGET, kept before it is written. CHUNKS: its bytes in order, for a
+    partition inside super (2026-11-10); otherwise they are read from the target's own device."""
     if target['size_bytes'] > ROLLBACK_LIMIT:
         return None
     volume = rollback_volume(context, target['size_bytes'])
     if volume is None:
         return None
-    stamp = target['label'] + time.strftime('-%Y%m%d-%H%M%S', time.gmtime())
-    source = context.open_target(target)
+    stamp = target['label'].replace('/', '-') + time.strftime('-%Y%m%d-%H%M%S', time.gmtime())
+    source = context.open_target(target) if chunks is None else None
+
+    def own():
+        done = 0
+        while done < target['size_bytes']:
+            data = os.pread(source, min(install.CHUNK, target['size_bytes'] - done), done)
+            require(data, 'TARGET_READ_FAILED', 'The current partition could not be read')
+            done += len(data)
+            yield data
     try:
         with fs.PinnedVolume(context.fs, volume['id'], writing=True) as pin:
             parts = rollback_folders(volume)
@@ -391,20 +419,36 @@ def save_rollback(context, target, progress):
                     fs.fail('ROLLBACK_NAME_EXHAUSTED', 'The old content could not be saved')
                 try:
                     done = 0
-                    while done < target['size_bytes']:
-                        data = os.pread(source, min(install.CHUNK, target['size_bytes'] - done), done)
-                        require(data, 'TARGET_READ_FAILED', 'The current partition could not be read')
+                    for data in (own() if chunks is None else chunks):
                         install.write_all(out, data)
                         done += len(data)
                         progress('Saving the current partition', target, done)
+                    require(done == target['size_bytes'], 'TARGET_READ_FAILED', 'The current partition could not be read')
                     os.fsync(out)
+                except BaseException:
+                    # A copy cut short is not a copy: nothing half-saved stays behind.
+                    with contextlib.suppress(OSError):
+                        os.unlink(name, dir_fd=folder)
+                    raise
                 finally:
                     os.close(out)
             finally:
                 os.close(folder)
     finally:
-        os.close(source)
+        if source is not None:
+            os.close(source)
     return {'volume': volume.get('label') or volume['id'], 'path': '/' + '/'.join(parts) + '/' + name}
+
+
+def open_super(context, write=False):
+    """super's target, an open descriptor and its parsed metadata."""
+    target = context.target('super')
+    fd = context.open_target(target, write=write)
+    try:
+        return target, fd, lp.Super(fd)
+    except BaseException:
+        os.close(fd)
+        raise
 
 
 def targets(context):
@@ -414,7 +458,142 @@ def targets(context):
             rows.append({'label': label, 'title': title, 'size_bytes': context.target(label)['size_bytes']})
         except (OSError, fs.FilesystemError):
             continue
-    return {'targets': rows}
+    extra = {}
+    try:
+        _, fd, found = open_super(context)
+    except (OSError, fs.FilesystemError, lp.MetadataError):
+        found = None
+    if found is not None:
+        try:
+            for p in found.metadata['partitions']:
+                rows.append({'label': LOGICAL_PREFIX + p['name'], 'title': 'Logical partition in super',
+                             'size_bytes': found.size_of(p), 'logical': True, 'room_bytes': found.room(p)})
+            extra = {'super_free_bytes': found.describe()['free_bytes']}
+        finally:
+            os.close(fd)
+    return {'targets': rows, **extra}
+
+
+def image_kind(prefix):
+    """What a logical partition image holds, from its first bytes."""
+    if len(prefix) >= 1028 and struct.unpack_from('<I', prefix, 1024)[0] == 0xE0F5E1E2:
+        return 'EROFS file system image'
+    if len(prefix) >= 1082 and struct.unpack_from('<H', prefix, 1080)[0] == 0xEF53:
+        return 'ext4 file system image'
+    return 'Raw image'
+
+
+def check_logical(context, args, progress, name):
+    """An image for a logical partition: it may be smaller than the partition (the rest is
+    zeroed) or larger, when super and the partition's group have room for it to grow."""
+    with source_file(context, args.volume, args.volume_token, args.path) as fd:
+        size = os.fstat(fd).st_size
+        compression = container(fd)
+        super_target, sfd, found = open_super(context)
+        try:
+            p = found.partition(name)
+            current, room = found.size_of(p), found.room(p)
+            limit = current + room
+            image_format = layout(fd, compression, limit)
+            reader = open_reader(fd, compression, limit)
+            digest, prefix, count = hashlib.sha256(), bytearray(), 0
+            shown = {'label': args.target, 'size_bytes': limit}
+            try:
+                # The decoder adds zeros up to LIMIT after the image; the image ends where it
+                # has counted its own bytes (payload_bytes), and only that is checked.
+                for data in install.decode_image(reader, image_format, limit):
+                    if reader.payload_bytes is not None:
+                        break
+                    if len(prefix) < PREFIX:
+                        prefix.extend(data[:PREFIX - len(prefix)])
+                    digest.update(data)
+                    count += len(data)
+                    progress('Checking the image', shown, count)
+            finally:
+                close_reader(reader)
+            align = max(found.metadata['devices'][0]['alignment'], lp.SECTOR)
+            # An image that fits keeps the partition as it is; only a larger one makes it grow, to
+            # super's alignment (2026-11-10: odm of 4,349,952 bytes, not a whole MiB, and its own
+            # image would have been shown "growing" to 5 MiB).
+            grown = current if count <= current else -(-count // align) * align
+            require(count > 0, 'IMAGE_EMPTY', 'The image is empty')
+            # As for the partitions outside super: a small one is compared with the image (and
+            # the zeros after it), and its content is saved before it is written.
+            small = current <= ROLLBACK_LIMIT
+            identical = False
+            if small and count <= current:
+                padded, left = digest.copy(), current - count
+                while left:
+                    padded.update(bytes(min(left, 1 << 20)))
+                    left -= min(left, 1 << 20)
+                identical = found.read_partition(name) == padded.hexdigest()
+        finally:
+            os.close(sfd)
+        volume = rollback_volume(context, current) if small else None
+        warnings = []
+        if not identical and volume is None:
+            warnings.append('The current partition will not be saved first' if small else 'This partition is too large to save first')
+        try:
+            context.check_offline([super_target])
+            offline = True
+        except (OSError, fs.FilesystemError):
+            offline = False
+            warnings.append('The partition is mounted. Unmount it in Files before writing')
+        return {'target': {'label': args.target, 'size_bytes': current, 'new_size_bytes': grown, 'offline': offline, 'logical': True},
+                'image': {'name': Path(args.path).name[:200], 'kind': image_kind(prefix), 'compression': compression,
+                          'format': image_format, 'file_bytes': size, 'payload_bytes': count, 'sha256': digest.hexdigest(),
+                          'identity': identity(fd), 'checksum_file': None},
+                'identical': identical, 'warnings': warnings, 'contents': None,
+                'rollback_volume': (volume.get('label') or volume['id']) if volume else None}
+
+
+def write_logical(context, args, progress, name):
+    require(args.confirm, 'CONFIRMATION_REQUIRED', 'Writing a partition must be confirmed')
+    require(isinstance(args.image_bytes, int) and args.image_bytes > 0, 'INVALID_ARGUMENT', 'The size of the checked image is required')
+    with operation_lock(context.lock_path, context.mode):
+        require(not context.guard_path.exists(), 'INSTALL_PENDING', 'Finish the unfinished installation first')
+        super_target = context.target('super')
+        context.check_offline([super_target])
+        with source_file(context, args.volume, args.volume_token, args.path) as fd:
+            require(identity(fd) == args.expected_identity, 'IMAGE_CHANGED', 'The file changed after it was checked')
+            compression = container(fd)
+            _, sfd, found = open_super(context, write=True)
+            try:
+                current = found.size_of(found.partition(name))
+                # The old content first, before super's metadata or the partition changes.
+                rollback = save_rollback(context, {'label': args.target, 'size_bytes': current}, progress, found.chunks(name))
+                if args.image_bytes > current:
+                    found.resize(name, args.image_bytes)  # The metadata, every copy, read back.
+                total = found.size_of(found.partition(name))
+                image_format = layout(fd, compression, total)
+                reader = open_reader(fd, compression, total)
+                shown = {'label': args.target, 'size_bytes': total}
+                image, length = hashlib.sha256(), 0
+
+                def stream():
+                    nonlocal length
+                    for data in install.decode_image(reader, image_format, total):
+                        if reader.payload_bytes is None:  # The image itself; then the zeros to the end.
+                            image.update(data)
+                            length += len(data)
+                        yield data
+                try:
+                    _, _, whole_sha = found.write_chunks(name, stream(), lambda done, all_: progress('Writing', shown, done))
+                finally:
+                    close_reader(reader)
+                image_sha = image.hexdigest()
+                if context.mode == 'device':
+                    fcntl.ioctl(sfd, BLKFLSBUF)
+                if length != args.image_bytes or image_sha != args.expected_sha256:
+                    fs.fail('IMAGE_CHANGED', 'The file changed during the write. Flash the partition again from a good image',
+                            rollback=rollback)
+                observed = found.read_partition(name)
+                if observed != whole_sha:
+                    fs.fail('READBACK_MISMATCH', 'The partition does not match the image after writing', rollback=rollback)
+            finally:
+                os.close(sfd)
+        return {'target': {'label': args.target, 'size_bytes': total, 'logical': True, 'resized_from': current},
+                'sha256': image_sha, 'partition_sha256': observed, 'verified': True, 'rollback': rollback, 'recorded': False}
 
 
 def judge(label, data):
@@ -435,6 +614,9 @@ def judge(label, data):
 
 
 def check(context, args, progress):
+    name = logical_name(args.target)
+    if name:
+        return check_logical(context, args, progress, name)
     with source_file(context, args.volume, args.volume_token, args.path) as fd:
         size = os.fstat(fd).st_size
         compression = container(fd)
@@ -497,6 +679,10 @@ def read_back(context, target, progress):
 
 
 def write(context, args, progress):
+    require(args.target != 'auto', 'INVALID_ARGUMENT', 'Name the partition to write')
+    name = logical_name(args.target)
+    if name:
+        return write_logical(context, args, progress, name)
     require(args.confirm, 'CONFIRMATION_REQUIRED', 'Writing a partition must be confirmed')
     with operation_lock(context.lock_path, context.mode):
         require(not context.guard_path.exists(), 'INSTALL_PENDING', 'Finish the unfinished installation first')
@@ -543,7 +729,7 @@ def parser():
     commands.add_parser('targets')
     for name in ('check', 'write'):
         command = commands.add_parser(name)
-        command.add_argument('--target', choices=LABELS + ('userdata',) + (('auto',) if name == 'check' else ()), required=True)
+        command.add_argument('--target', type=target_choice, required=True)
         command.add_argument('--volume', required=True)
         command.add_argument('--volume-token', required=True)
         command.add_argument('--path', required=True)
@@ -551,6 +737,7 @@ def parser():
     write_command.add_argument('--expected-sha256', required=True)
     write_command.add_argument('--expected-identity', required=True)
     write_command.add_argument('--confirm', action='store_true')
+    write_command.add_argument('--image-bytes', type=int, help='A logical partition: the size of the checked image')
     return result
 
 

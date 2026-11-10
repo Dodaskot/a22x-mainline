@@ -31,12 +31,15 @@ A command is running in the terminal and holds storage. Wait for it to end, or s
 A completed manifest is published only after the archive and its decoded hash have been verified.
 A computer is asking to use ADB with this recovery.
 A computer is asking to use this phone.
+A computer is connected over SSH or SFTP: close that session, then try again
+A GSI's system.img goes into system. When the image is larger, the partition grows into the free space of super; the other partitions stay as they are.
 A network name has 1 to 32 bytes
 A network name has at most 32 bytes.
 A new diagnostic archive will be written to this volume. Existing archives are retained.
 A new folder A22xAndroidBackups gets each chosen partition and its checksum; empty space takes no room. userdata cannot hold it: a factory reset of Android erases it.
 A new folder A22xIdentityBackups is written with every partition and its checksum. Keep it off the phone too: no image or firmware download contains it.
 A new theme always spreads as a circle, unless animations are off.
+A package download did not pass its check.
 A package download failed in recovery.
 A private RAM directory is required for this installation plan.
 A private RAM directory is required for this reviewed plan.
@@ -131,6 +134,7 @@ Authorized keys: %u  /  key-only login
 Automatic sign-in
 Available memory
 Available?
+Back
 Back to display
 Back to files
 Back to preparation
@@ -183,6 +187,7 @@ Cable
 Calculator
 Calendar
 Camera
+Can grow by %s
 Cancel
 Cancel backup selection
 Cancel image selection
@@ -417,6 +422,7 @@ Formatted
 Formatting erases every system and /home here. Android needs F2FS, Linux ext4.
 Formatting erases everything on this volume, including backups.
 Formatting userdata
+Free in super: %s
 Free on userdata: %s
 Friday
 FROM
@@ -563,6 +569,7 @@ LOCAL SHELL
 Local terminal / storage lease held
 Lock screen
 Locked
+Logical partition in super
 mAh
 Main menu
 Main shell: %s
@@ -609,6 +616,7 @@ Mounted writable ext4 microSD required
 Music
 Name
 Name or part of it
+Name the partition to write
 Navigation
 Needed %s  /  available %s
 Needed to change the protection.
@@ -1035,6 +1043,7 @@ Storage size
 Storage wear
 Strong
 Sunday
+super/
 Swipe through the full source, backup and target list.
 Swipe to browse volumes. Open read-only by default.
 Swipe to scroll
@@ -1138,9 +1147,12 @@ The image does not fit this partition
 The image does not match the checksum saved with it
 The image ended early
 The image file is damaged or incomplete. Copy it again, then eject the stick safely before unplugging it.
+The image fills part of the %s partition; the rest is zeroed.
+The image fills the whole %s partition.
 The image has extra data at its end
 The image installer did not return a valid result.
 The image installer helper is not configured.
+The image is empty
 The image is larger than any partition
 The image is larger than the partition
 The image is not saved on the phone
@@ -1176,12 +1188,14 @@ The old content was saved here:
 The old page blurs away and the new one sharpens
 The operation or environment did not match the requested system action.
 The operation was stopped.
+The package servers could not be reached.
 The package site did not answer. Check Wi-Fi and try again.
 The page grows out of the tile, with its icon
 The page grows while the one behind goes soft
 The partition backup did not finish.
 The partition could not be read back
 The partition does not match the image after writing
+The partition grows from %s to %s inside super.
 The partition is mounted. Unmount it in Files before writing
 The partitions that differ are saved to a new copy first, then written and read back.
 The password could not be changed
@@ -1223,6 +1237,7 @@ The servers did not answer; the saved versions are shown.
 The setup script changed since planning
 The setup script must be a text file
 The shell has not stopped completely. The terminal remains open.
+The size of the checked image is required
 The starting root is recovery RAM. Mount Linux in Files first, then use /mnt/volumes/userdata. The microSD backup mount is /mnt/backup.
 The switch is journaled, not fully atomic. If interrupted, return to Systems and choose Resume or Rollback. Linux boot remains blocked until the journal completes.
 The system manager did not return a valid result.
@@ -1238,6 +1253,8 @@ The theme helper did not return a valid result.
 The USB file helper returned an incomplete state. Refresh before changing sharing.
 The USB file transfer helper is not configured.
 The USB stick could not be opened for writing.
+The whole image of all of them
+The whole image, or one Android partition inside it.
 The write receipt could not be displayed completely. Inspect installation status.
 Theme
 Theme added
@@ -1246,6 +1263,7 @@ Theme removed
 There is no automatic reboot.
 There is not enough space beside the retained system
 There is not enough space on userdata for this image
+There was not enough free space on userdata for the packages.
 This action replaces the listed targets.
 This compression is not supported
 This creates an empty filesystem, not secure erasure. The saved snapshot remains on SD. Recovery does not reboot automatically.

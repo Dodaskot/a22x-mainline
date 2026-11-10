@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.a22x.installer">
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Three launcher entries, one per theme; the app enables only the one of the chosen theme,
          so the home screen shows that theme's icon and Android 12+ its splash screen. -->
     <application

@@ -286,6 +286,25 @@ class FilesystemFixtureTest(FilesystemFixtureSupport):
             result = self.cli('mount', '--volume', 'userdata', '--mode', 'rw', '--confirm', ok=False)
         self.assertEqual(result['error']['code'], 'OPERATION_BUSY')
 
+    def test_a_computer_session_is_named_as_the_reason(self):
+        """2026-11-10: an SSH or SFTP session holds the lease; the message says so, not USB files."""
+        sessions = self.root / 'ssh-sessions'
+        sessions.mkdir()
+        (sessions / 'session-1.json').write_text(json.dumps({'pid': os.getpid(), 'kind': 'ssh-maintenance'}))
+        (sessions / 'session-2.json').write_text('not json')
+        with mock.patch.object(fs, 'SSH_SESSIONS', sessions):
+            self.assertTrue(fs.ssh_session_active())
+            with self.ctx.lock_path.open('a') as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                with self.assertRaises(fs.FilesystemError) as caught:
+                    with self.ctx.operation_lock():
+                        pass
+            self.assertEqual(caught.exception.code, 'OPERATION_BUSY')
+            self.assertIn('SSH or SFTP', str(caught.exception))
+            # A marker left by a session that ended does not count.
+            (sessions / 'session-1.json').write_text(json.dumps({'pid': 2 ** 22 + 7}))
+            self.assertFalse(fs.ssh_session_active())
+
     def test_paginated_listing_covers_every_file(self):
         for n in range(20):
             (self.data / f'file{n:02}').write_text('x')

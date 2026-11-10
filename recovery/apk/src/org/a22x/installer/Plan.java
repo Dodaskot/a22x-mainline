@@ -104,6 +104,48 @@ final class Plan {
         return Json.write(plan);
     }
 
+    /** One image of the recovery's catalog, as its install pages show it. */
+    static final class Image {
+        final String id, name, version, family, desktop;
+        final long size;
+        final boolean minimal;
+
+        Image(String id, String name, String version, String family, String desktop, long size, boolean minimal) {
+            this.id = id;
+            this.name = name;
+            this.version = version;
+            this.family = family;
+            this.desktop = desktop;
+            this.size = size;
+            this.minimal = minimal;
+        }
+
+        /** Sxmo and Lomiri are packaged by Debian and Ubuntu only, as on the recovery's pages. */
+        boolean debianLike() {
+            return family.equals("debian") || family.equals("ubuntu") || family.equals("mobian");
+        }
+    }
+
+    /** Every image of assets/catalog.json with an id and a name, in its order. */
+    @SuppressWarnings("unchecked")
+    static List<Image> images(String text) {
+        List<Image> found = new ArrayList<>();
+        Object parsed = Json.parse(text);
+        if (!(parsed instanceof Map)) return found;
+        Object list = ((Map<String, Object>) parsed).get("images");
+        if (!(list instanceof List)) return found;
+        for (Object item : (List<Object>) list) {
+            if (!(item instanceof Map)) continue;
+            Map<String, Object> m = (Map<String, Object>) item;
+            if (!(m.get("id") instanceof String) || !(m.get("name") instanceof String)) continue;
+            Object size = m.get("size");
+            found.add(new Image((String) m.get("id"), (String) m.get("name"), m.get("version") instanceof String ? (String) m.get("version") : "",
+                    m.get("family") instanceof String ? (String) m.get("family") : "", m.get("desktop") instanceof String ? (String) m.get("desktop") : "",
+                    size instanceof Number ? ((Number) size).longValue() : 0L, Boolean.TRUE.equals(m.get("minimal"))));
+        }
+        return found;
+    }
+
     /** The images of the recovery's catalog (assets/catalog.json): id → "name version". */
     @SuppressWarnings("unchecked")
     static Map<String, String> catalog(String text) {

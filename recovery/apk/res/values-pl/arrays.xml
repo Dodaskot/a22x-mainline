@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- The recovery's own labels and their translations there (ui/i18n), generated 2026-11-10. -->
+<resources>
+    <string-array name="plan_desktops">
+        <item>Phosh</item>
+        <item>GNOME</item>
+        <item>Plasma Mobile</item>
+        <item>Xfce</item>
+        <item>Sxmo</item>
+        <item>Lomiri</item>
+        <item>Console</item>
+        <item>Jak w obrazie</item>
+    </string-array>
+    <string-array name="plan_greeters">
+        <item>Automatyczne logowanie</item>
+        <item>Phrog</item>
+        <item>Logowanie tekstowe</item>
+        <item>GDM</item>
+        <item>SDDM</item>
+        <item>LightDM</item>
+    </string-array>
+    <string-array name="plan_apps">
+        <item>Przeglądarka</item>
+        <item>Ustawienia</item>
+        <item>Pliki</item>
+        <item>Terminal</item>
+        <item>Edytor tekstu</item>
+        <item>Sklep</item>
+        <item>Klawiatura</item>
+        <item>Telegram</item>
+        <item>Serwer SSH</item>
+        <item>Poczta</item>
+        <item>Muzyka</item>
+        <item>Odtwarzacz wideo</item>
+        <item>Zdjęcia</item>
+        <item>Dokumenty</item>
+        <item>Biuro</item>
+        <item>Kalkulator</item>
+        <item>Zegar</item>
+        <item>Pogoda</item>
+        <item>Mapy</item>
+        <item>Aparat</item>
+        <item>Kontakty</item>
+        <item>Kalendarz</item>
+        <item>Hasła</item>
+        <item>Flatpak</item>
+        <item>Chromium</item>
+        <item>Podcasty</item>
+        <item>Wiadomości</item>
+        <item>Git</item>
+        <item>Monitor systemu</item>
+    </string-array>
+</resources>

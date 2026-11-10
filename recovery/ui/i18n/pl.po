@@ -102,6 +102,9 @@ msgstr "Komputer prosi o dostęp ADB do tego recovery."
 msgid "A computer is asking to use this phone."
 msgstr "Komputer prosi o dostęp do tego telefonu."
 
+msgid "A GSI's system.img goes into system. When the image is larger, the partition grows into the free space of super; the other partitions stay as they are."
+msgstr "system.img z GSI trafia do system. Gdy obraz jest większy, partycja rośnie w wolnym miejscu super; pozostałe zostają bez zmian."
+
 msgid "A network name has 1 to 32 bytes"
 msgstr "Nazwa sieci ma od 1 do 32 bajtów"
 
@@ -119,6 +122,9 @@ msgstr "Zostanie zapisany nowy folder w A22xIdentityBackups z każdą partycją 
 
 msgid "A new theme always spreads as a circle, unless animations are off."
 msgstr "Nowy motyw zawsze rozchodzi się kołem, chyba że animacje są wyłączone."
+
+msgid "A package download did not pass its check."
+msgstr "Pobrany pakiet nie przeszedł weryfikacji."
 
 msgid "A package download failed in recovery."
 msgstr "Pobieranie pakietu w recovery nie powiodło się."
@@ -557,6 +563,9 @@ msgstr "Kalendarz"
 
 msgid "Camera"
 msgstr "Aparat"
+
+msgid "Can grow by %s"
+msgstr "Może urosnąć o %s"
 
 msgid "Cancel"
 msgstr "Anuluj"
@@ -1260,6 +1269,9 @@ msgstr "Formatowanie usuwa wszystko z tego woluminu, także kopie."
 msgid "Formatting userdata"
 msgstr "Formatowanie userdata"
 
+msgid "Free in super: %s"
+msgstr "Wolne w super: %s"
+
 msgid "Free on userdata: %s"
 msgstr "Wolne na userdata: %s"
 
@@ -1698,6 +1710,9 @@ msgstr "Ekran blokady"
 msgid "Locked"
 msgstr "Zablokowany"
 
+msgid "Logical partition in super"
+msgstr "Partycja logiczna w super"
+
 msgid "mAh"
 msgstr "mAh"
 
@@ -1835,6 +1850,9 @@ msgstr "Nazwa"
 
 msgid "Name or part of it"
 msgstr "Nazwa lub jej część"
+
+msgid "Name the partition to write"
+msgstr "Wskaż partycję do zapisu"
 
 msgid "Navigation"
 msgstr "Nawigacja"
@@ -3114,6 +3132,9 @@ msgstr "Mocne"
 msgid "Sunday"
 msgstr "niedziela"
 
+msgid "super/"
+msgstr "super/"
+
 msgid "Swipe through the full source, backup and target list."
 msgstr "Przewiń pełną listę źródła, kopii i celów."
 
@@ -3423,6 +3444,12 @@ msgstr "Obraz skończył się za wcześnie"
 msgid "The image file is damaged or incomplete. Copy it again, then eject the stick safely before unplugging it."
 msgstr "Plik obrazu jest uszkodzony lub niekompletny. Skopiuj go ponownie i bezpiecznie wysuń pendrive przed odłączeniem."
 
+msgid "The image fills part of the %s partition; the rest is zeroed."
+msgstr "Obraz wypełni część partycji %s; reszta zostanie wyzerowana."
+
+msgid "The image fills the whole %s partition."
+msgstr "Obraz wypełni całą partycję %s."
+
 msgid "The image has extra data at its end"
 msgstr "Obraz ma nadmiarowe dane"
 
@@ -3431,6 +3458,9 @@ msgstr "Instalator obrazów nie zwrócił prawidłowego wyniku."
 
 msgid "The image installer helper is not configured."
 msgstr "Narzędzie instalatora obrazów nie jest skonfigurowane."
+
+msgid "The image is empty"
+msgstr "Obraz jest pusty"
 
 msgid "The image is larger than any partition"
 msgstr "Obraz jest większy niż każda partycja"
@@ -3537,6 +3567,9 @@ msgstr "Operacja lub środowisko nie pasowały do żądanej akcji systemu."
 msgid "The operation was stopped."
 msgstr "Operację zatrzymano."
 
+msgid "The package servers could not be reached."
+msgstr "Nie udało się połączyć z serwerami pakietów."
+
 msgid "The package site did not answer. Check Wi-Fi and try again."
 msgstr "Strona pakietów nie odpowiedziała. Sprawdź Wi-Fi i spróbuj ponownie."
 
@@ -3554,6 +3587,9 @@ msgstr "Nie można odczytać partycji"
 
 msgid "The partition does not match the image after writing"
 msgstr "Partycja nie zgadza się z obrazem po zapisie"
+
+msgid "The partition grows from %s to %s inside super."
+msgstr "Partycja urośnie w super z %s do %s."
 
 msgid "The partition is mounted. Unmount it in Files before writing"
 msgstr "Partycja jest zamontowana. Odmontuj ją w Plikach przed zapisem"
@@ -3678,6 +3714,9 @@ msgstr "Skrypt konfiguracji musi być plikiem tekstowym"
 msgid "The shell has not stopped completely. The terminal remains open."
 msgstr "Powłoka nie zatrzymała się całkowicie. Terminal pozostaje otwarty."
 
+msgid "The size of the checked image is required"
+msgstr "Wymagany jest rozmiar sprawdzonego obrazu"
+
 msgid "The starting root is recovery RAM. Mount Linux in Files first, then use /mnt/volumes/userdata. The microSD backup mount is /mnt/backup."
 msgstr "Katalog startowy to RAM recovery. Najpierw zamontuj Linuksa w Plikach, potem użyj /mnt/volumes/userdata. Kopia na microSD jest montowana w /mnt/backup."
 
@@ -3723,6 +3762,12 @@ msgstr "Narzędzie przesyłania plików USB nie jest skonfigurowane."
 msgid "The USB stick could not be opened for writing."
 msgstr "Nie można otworzyć pendrive do zapisu."
 
+msgid "The whole image of all of them"
+msgstr "Cały obraz ze wszystkimi"
+
+msgid "The whole image, or one Android partition inside it."
+msgstr "Cały obraz albo jedna partycja Androida w środku."
+
 msgid "The write receipt could not be displayed completely. Inspect installation status."
 msgstr "Nie udało się w całości wyświetlić potwierdzenia zapisu. Sprawdź stan instalacji."
 
@@ -3746,6 +3791,9 @@ msgstr "Obok zachowanego systemu brakuje miejsca"
 
 msgid "There is not enough space on userdata for this image"
 msgstr "Na userdata brakuje miejsca na ten obraz"
+
+msgid "There was not enough free space on userdata for the packages."
+msgstr "Na userdata zabrakło wolnego miejsca na pakiety."
 
 msgid "This action replaces the listed targets."
 msgstr "Ta akcja zastępuje wymienione cele."
@@ -4263,3 +4311,8 @@ msgstr "Zoom"
 msgid "Zoom with blur"
 msgstr "Zoom z rozmyciem"
 
+msgid "Back"
+msgstr "Wstecz"
+
+msgid "A computer is connected over SSH or SFTP: close that session, then try again"
+msgstr "Komputer jest połączony przez SSH lub SFTP: zamknij tę sesję i spróbuj ponownie"

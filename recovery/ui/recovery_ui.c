@@ -98,7 +98,7 @@
 enum Screen { HOME, SPLASH, FLASH, FLASH_REVIEW, LANGUAGE, THEME, TERMINAL_THEME, ANIMATIONS, LOCKSCREEN, ACCESS_REQUEST, OS_MENU, SYSTEMS_SETUP, BACKUP, LIST, DETAIL, PLAN, PROGRESS, RESULT, STORAGE, SYSTEM, POWER, POWER_CONFIRM, POWER_MENU, TOOLS, TOOLS_EXPORT, DISPLAY_SETTINGS, PREPARE_FILESYSTEM, USB_FILES, TERMINAL, SYSTEMS, SYSTEMS_PLAN, SYSTEMS_RECOVER,
     INSTALL, INSTALL_PLAN, INSTALL_RESULT,
     FILE_VOLUMES, FILE_VOLUME, FILE_BROWSER, FILE_INFO, FILE_TEXT, FILE_EDIT, FILE_PROMPT, FILE_CONFIRM, FILE_DISCARD, SYSTEMS_EXTRAS, SYSTEMS_DONE, WIFI, SYSTEMS_NEW, SYSTEMS_CATALOG,
-    SYSTEMS_APP_LIST, SYSTEMS_SEARCH, IDENTITY, IDENTITY_RESTORE, SYSTEMS_SHELLS, SYSTEMS_LOCALE, SYSTEMS_TIMEZONE, SYSTEMS_REMOVE, SYSTEMS_IMAGES, ADB_REQUEST, APLAN };
+    SYSTEMS_APP_LIST, SYSTEMS_SEARCH, IDENTITY, IDENTITY_RESTORE, SYSTEMS_SHELLS, SYSTEMS_LOCALE, SYSTEMS_TIMEZONE, SYSTEMS_REMOVE, SYSTEMS_IMAGES, ADB_REQUEST, APLAN, FLASH_SUPER, ICON_SHEET };
 enum Action { A_BACK=1,A_BACKUP,A_RESTORE,A_VERIFY,A_STORAGE,A_SYSTEM,A_POWER,A_REVIEW_BACKUP,A_REVIEW_RESTORE,A_VERIFY_ONE,A_CONFIRM,A_DONE,A_LIST_PREV,A_LIST_NEXT,A_REBOOT,A_SHUTDOWN,A_POWER_CONFIRM,A_MOUNT,A_UMOUNT,A_REFRESH,
     A_FILES,A_FS_PREV,A_FS_NEXT,A_FS_OPEN,A_FS_MOUNT_RO,A_FS_MOUNT_RW,A_FS_UNMOUNT,A_FS_UP,A_FS_VOLUME,A_FS_REFRESH,
     A_FS_READ,A_FS_EDIT,A_FS_NEW_FILE,A_FS_MKDIR,A_FS_RENAME,A_FS_COPY,A_FS_DELETE,A_FS_PROMPT_NEXT,A_FS_CONFIRM,
@@ -117,7 +117,7 @@ enum Action { A_BACK=1,A_BACKUP,A_RESTORE,A_VERIFY,A_STORAGE,A_SYSTEM,A_POWER,A_
     A_APPS_OPEN=5830,A_PKG_OPEN,A_PKG_QUERY,A_PKG_PREV,A_PKG_NEXT,A_APPS_DONE,A_PKG_DONE,A_PKG_FAMILY=5840,A_PKG_RESULT=5850,A_IDENTITY=5950,A_ID_DEST_NEXT,A_ID_BACKUP,A_ID_RESTORE_OPEN,A_ID_RESTORE,A_ID_ITEM=5960,A_CHARGER_ON=5970,A_CHARGER_OFF,
     A_SHELL_ITEM=5980,A_GREETER_ITEM=5990,A_SHELLS_NEXT=6000,A_LOCALE_OPEN=6010,A_TZ_OPEN,A_TZ_RECOVERY,A_TZ_PICK,A_LOCALE_ITEM=6020,
     A_TZ_REGION=6040,A_TZ_ITEM=6100,
-    A_NEW_SAVED=7000,A_IMAGES_CATALOG,A_IMAGE_DELETE_CONFIRM,A_IMAGE_DELETE_CANCEL,A_IMAGE_ITEM=7010,A_IMAGE_DELETE=7030,A_ADB_ALLOW=7050,A_ADB_DENY,A_ID_KIND=7100,A_ID_PART=7110,A_APLAN=7130,A_APLAN_REVIEW,A_APLAN_EDIT,A_APLAN_FORGET };
+    A_NEW_SAVED=7000,A_IMAGES_CATALOG,A_IMAGE_DELETE_CONFIRM,A_IMAGE_DELETE_CANCEL,A_IMAGE_ITEM=7010,A_IMAGE_DELETE=7030,A_ADB_ALLOW=7050,A_ADB_DENY,A_ID_KIND=7100,A_ID_PART=7110,A_APLAN=7130,A_APLAN_REVIEW,A_APLAN_EDIT,A_APLAN_FORGET,A_FLASH_SUPER=7140 };
 enum JobKind { J_NONE,J_INVENTORY,J_LIST,J_BACKUP_PLAN,J_RESTORE_PLAN,J_BACKUP,J_VERIFY,J_RESTORE,J_STORAGE_INVENTORY,J_MOUNT,J_UMOUNT,
     J_FS_INVENTORY,J_FS_MOUNT,J_FS_UNMOUNT,J_FS_LIST,J_FS_READ,J_FS_WRITE,J_FS_MKDIR,J_FS_RENAME,J_FS_COPY,J_FS_DELETE,
     J_FS_STAT,J_FS_CHMOD,J_FS_CHOWN,J_FS_RESOLVE,J_FS_COPY_TREE,J_FS_FORMAT,J_FS_CHECK,J_FS_RESIZE,J_TOOLS_STATUS,J_TOOLS_EXPORT,J_DISPLAY_STATUS,J_DISPLAY_SET,J_WIPE_PLAN,J_WIPE,J_USB_STATUS,J_USB_START,J_USB_STOP,
@@ -149,8 +149,8 @@ enum LockFlow { LF_NONE,LF_SET,LF_CHANGE,LF_REMOVE,LF_MODE,LF_ACCESS };
 /* Two finished frames and a moving shape between them: no page is drawn again while it runs. */
 typedef struct { enum TransitionKind kind;bool armed,active;uint64_t started,worst;unsigned int duration,frames;Rect origin;int glyph,cx,cy;bool blur;uint32_t*from,*to,*soft_from,*soft_to; } Transition;
 typedef struct { int from,to;Rect origin;int glyph; } TransitionStep;
-#define FLASH_TARGETS 12
-typedef struct { char label[32],title[64];uint64_t bytes; } FlashTarget;
+#define FLASH_TARGETS 20  /* A_FLASH_TARGET..A_FLASH_CONFIRM-1: the partitions and those inside super. */
+typedef struct { char label[32],title[64];uint64_t bytes,room;bool logical; } FlashTarget;
 typedef struct { char path[PATH_LEN],name[192],profile[64],created[80],schema[64],workflow[64]; uint64_t bytes; } BackupEntry;
 typedef struct { char label[64],path[PATH_LEN]; uint64_t bytes; bool available,mounted; } PartitionEntry;
 typedef struct {
@@ -216,7 +216,9 @@ typedef struct {
     /* The installation prepared in the Android app (android_plan_ui.h, 2026-11-10). */
     bool aplan_asked,aplan_known,aplan_present,aplan_valid,aplan_opened,aplan_pending,aplan_used,aplan_forget_after,aplan_script_present,aplan_erase,aplan_edit;
     char aplan_sha[72],aplan_catalog[64],aplan_name[96],aplan_version[48],aplan_file[160],aplan_user[40],aplan_hash[140],aplan_script[72],aplan_locale[16],aplan_zone[64],aplan_desktop_id[16],aplan_greeter_id[16],aplan_source[72],aplan_error[320],aplan_helper[PATH_LEN],systems_password_hash[140];
-    uint64_t aplan_size,aplan_created;unsigned int aplan_shells,aplan_apps;unsigned int id_count;uint64_t id_bytes,id_sizes[ID_PARTS];int id_pick;unsigned int id_backup_count;struct{char path[96],created[32],sha[72];unsigned int parts;uint64_t bytes;bool same;}id_backups[8];char id_labels[ID_PARTS][24],id_volume_id[96],id_volume_token[96],id_error[256],id_done[192],id_helper[PATH_LEN];
+    uint64_t aplan_size,aplan_created;unsigned int aplan_shells,aplan_apps;
+    /* A logical partition inside super (2026-11-10): its size now and after the flash, and the image's own size. */
+    bool flash_logical;uint64_t flash_size_now,flash_size_after,flash_payload,flash_super_free;unsigned int id_count;uint64_t id_bytes,id_sizes[ID_PARTS];int id_pick;unsigned int id_backup_count;struct{char path[96],created[32],sha[72];unsigned int parts;uint64_t bytes;bool same;}id_backups[8];char id_labels[ID_PARTS][24],id_volume_id[96],id_volume_token[96],id_error[256],id_done[192],id_helper[PATH_LEN];
     int64_t tools_scroll,page_scroll,page_content;
     enum Screen theme_pick,theme_return;uint8_t*theme_image;char theme_remove_code[24];int theme_armed;uint64_t theme_armed_until;
     SysRow sys_rows[SYS_ROWS],sys_summary[SYS_SUMMARY];char sys_titles[SYS_SECTIONS][40],sys_name[48],sys_model[24],sys_codename[24],sys_version[24];const char*sysinfo_root;
@@ -381,7 +383,7 @@ static void render_systems_plan(App*a);
 static void render_systems_recover(App*a);static void render_systems_remove(App*a);
 static void render_wifi(App*a);static void wifi_settings_row(App*a,int y,bool enabled);static bool wifi_action(App*a,int id);
 static bool images_job(int kind);static void render_systems_new(App*a);static void render_catalog(App*a);static void render_images(App*a);static bool images_action(App*a,int id);static void open_images(App*a);static void adb_poll(App*a);static void render_adb_request(App*a);static bool adb_action(App*a,int id);static bool start_images_job(App*a,int kind,const char*argument);static bool installer_action(App*a,int id);static bool start_catalog_job(App*a);
-static void complete_catalog_job(App*a,const Json*j,bool ok,bool check);static void render_package_prompt(App*a);static void render_systems_apps(App*a);static void render_package_search(App*a);static void render_apps_card(App*a,int y);static void complete_package_search(App*a,const Json*j,bool ok);static void render_identity(App*a);static void render_identity_restore(App*a);static void render_aplan(App*a);static int render_aplan_card(App*a,int y);static void android_plan_tick(App*a);static int render_charger_card(App*a,int y,bool free_ui);static void identity_inventory(App*a);static void installer_card(App*a,Rect r,unsigned int tone,int glyph,const char*title,const char*note,int action,bool enabled);
+static void complete_catalog_job(App*a,const Json*j,bool ok,bool check);static void render_package_prompt(App*a);static void render_systems_apps(App*a);static void render_package_search(App*a);static void render_apps_card(App*a,int y);static void complete_package_search(App*a,const Json*j,bool ok);static void render_identity(App*a);static void render_identity_restore(App*a);static void render_aplan(App*a);static int render_aplan_card(App*a,int y);static void render_flash_super(App*a);static void render_icon_sheet(App*a);static void android_plan_tick(App*a);static int render_charger_card(App*a,int y,bool free_ui);static void identity_inventory(App*a);static void installer_card(App*a,Rect r,unsigned int tone,int glyph,const char*title,const char*note,int action,bool enabled);
 static void render_systems_shells(App*a);static int shells_append_args(const App*a,char**args,int n);static void shells_summary(const App*a,char*out,size_t size);static bool shells_offered(const App*a);static unsigned int shells_extra(const App*a);static int locale_append_args(const App*a,char**args,int n);static void locale_summary(const App*a,char*out,size_t size);static void render_locale_card(App*a,int y);static void render_systems_locale(App*a);static void render_systems_timezone(App*a);
 static void render_systems_manifest(App*a);static void render_systems_done(App*a);static void render_systems_extras(App*a);static void render_systems_script(App*a);static void systems_wifi_focus(App*a,int kind);
 static void render_systems_setup(App*a);
@@ -832,6 +834,18 @@ static void render_home(App*a){
     home_grid(a,834,170,16);
     if(a->device&&!a->linux_restore_available)text(a,40,1394,0,ORANGE,"Linux restore awaits qualification");
 }
+/* Every icon white on black in a grid, for the Android app (tools/export_icons.py, 2026-11-10):
+   the app shows the very same icons, tinted like here. Only ever a preview. */
+static const struct{int id;const char*name;}sheet_icons[]={
+    {A_OS,"install"},{A_BACKUP,"backup"},{A_FILES,"files"},{A_RESTORE,"restore"},{A_VERIFY,"verify"},{A_STORAGE,"storage"},
+    {A_POWER,"power"},{A_SYSTEM,"phone_info"},{ICON_LINUX,"terminal"},{ICON_PHONE,"phone"},{ICON_FLASH,"flash"},{ICON_CHEVRON,"chevron"},
+    {ICON_BACK,"back"},{ICON_TUNE,"tune"},{ICON_LANGUAGE,"language"},{ICON_VIBRATE,"vibrate"},{ICON_DISPLAY,"display"},{ICON_CLOCK,"clock"},
+    {ICON_LOCK,"lock"},{ICON_THEME,"theme"},{ICON_USB,"usb"},{ICON_KEYBOARD,"keyboard"},{ICON_ERASE,"erase"},{ICON_TRASH,"trash"},
+    {ICON_NAV,"navigation"},{ICON_WIFI,"wifi"},{ICON_BROWSER,"browser"}};
+static void render_icon_sheet(App*a){
+    rounded(a,(Rect){0,0,720,1600},0,0x000000u);
+    for(unsigned int n=0;n<sizeof(sheet_icons)/sizeof(sheet_icons[0]);n++)icon(a,sheet_icons[n].id,8+(int)(n%6)*118,8+(int)(n/6)*118,96,0xffffffu);
+}
 static void render_os(App*a){
     heading(a,"Install","Choose what to install on this phone.",true);
     int y=render_aplan_card(a,242);  /* A plan from the Android app comes first (2026-11-10). */
@@ -975,7 +989,11 @@ static void render_result(App*a){
     bool diagnostic=a->result_return==TOOLS||a->result_return==TOOLS_EXPORT;
     wrapped(a,48,484,624,diagnostic?0:2,TEXT,a->message[0]?a->message:(a->successful?"The backend reported success.":"The backend did not report a successful result."),diagnostic?18:8);
     if(!a->successful)wrapped(a,48,1050,624,0,MUTED,"No retry is started automatically. Inspect the backend result before another operation.",4);
-    button(a,(Rect){28,1320,664,102},a->result_return>=FILE_VOLUMES?"Back to files":(a->result_return==USB_FILES?"Back to USB files":(a->result_return==PREPARE_FILESYSTEM?"Back to preparation":(a->result_return==DISPLAY_SETTINGS?"Back to display":(a->result_return==TOOLS||a->result_return==TOOLS_EXPORT?"Back to tools":"Back to recovery")))),A_DONE,true,true,0);
+    /* "Back to files" only for the file pages themselves (2026-11-10): the same pages choosing an
+       image, and the pages listed after them (Wi-Fi, systems, backups of identity...), say "Back". */
+    bool files=a->result_return>=FILE_VOLUMES&&a->result_return<=FILE_DISCARD,picking=a->flash_pick||a->install.pick_source||a->theme_pick||a->systems_pick_manifest;
+    /* "Back to recovery" only where it goes home: after a flash it goes back to Flash a partition. */
+    button(a,(Rect){28,1320,664,102},files&&!picking?"Back to files":(a->result_return==USB_FILES?"Back to USB files":(a->result_return==PREPARE_FILESYSTEM?"Back to preparation":(a->result_return==DISPLAY_SETTINGS?"Back to display":(a->result_return==TOOLS||a->result_return==TOOLS_EXPORT?"Back to tools":(a->result_return==HOME?"Back to recovery":"Back"))))),A_DONE,true,true,0);
 }
 static bool repository_needs_setup(const App*a,int index){return a->repository_volume[index][0]&&(a->repository_read_only[index]||access(a->repositories[index],F_OK));}
 static void render_storage(App*a){
@@ -1989,7 +2007,7 @@ static void render(App*a){
     case POWER_CONFIRM:heading(a,"Power action",NULL,true);wrapped(a,40,350,640,2,TEXT,power_confirmation(a->power_intent),4);if(terminal_session_open(a)&&a->terminal_busy)wrapped(a,40,640,640,1,RED,"The command running in the terminal will be stopped.",3);button(a,(Rect){28,1220,664,110},"Hold 2 seconds to confirm",A_POWER_CONFIRM,a->allow_power&&!a->job.pid&&a->power_intent>=200&&a->power_intent<=203&&(a->power_intent!=200||(!a->systems_reboot_blocked&&!a->install.reboot_blocked)),true,2000);break;
     case TOOLS:render_tools(a);break;case TOOLS_EXPORT:render_tools_export(a);break;case DISPLAY_SETTINGS:render_display(a);break;case WIFI:render_wifi(a);break;case SYSTEMS_NEW:render_systems_new(a);break;case SYSTEMS_IMAGES:render_images(a);break;case ADB_REQUEST:render_adb_request(a);break;case SYSTEMS_CATALOG:render_catalog(a);break;
     case TERMINAL:render_terminal(a);break;
-    case SYSTEMS:render_systems(a);break;case SYSTEMS_EXTRAS:render_systems_extras(a);break;case SYSTEMS_SHELLS:render_systems_shells(a);break;case SYSTEMS_LOCALE:render_systems_locale(a);break;case SYSTEMS_TIMEZONE:render_systems_timezone(a);break;case SYSTEMS_APP_LIST:render_systems_apps(a);break;case SYSTEMS_SEARCH:render_package_search(a);break;case IDENTITY:render_identity(a);break;case APLAN:render_aplan(a);break;case IDENTITY_RESTORE:render_identity_restore(a);break;case SYSTEMS_DONE:render_systems_done(a);break;case SYSTEMS_PLAN:render_systems_plan(a);break;case SYSTEMS_RECOVER:render_systems_recover(a);break;case SYSTEMS_REMOVE:render_systems_remove(a);break;
+    case SYSTEMS:render_systems(a);break;case SYSTEMS_EXTRAS:render_systems_extras(a);break;case SYSTEMS_SHELLS:render_systems_shells(a);break;case SYSTEMS_LOCALE:render_systems_locale(a);break;case SYSTEMS_TIMEZONE:render_systems_timezone(a);break;case SYSTEMS_APP_LIST:render_systems_apps(a);break;case SYSTEMS_SEARCH:render_package_search(a);break;case IDENTITY:render_identity(a);break;case APLAN:render_aplan(a);break;case FLASH_SUPER:render_flash_super(a);break;case ICON_SHEET:render_icon_sheet(a);break;case IDENTITY_RESTORE:render_identity_restore(a);break;case SYSTEMS_DONE:render_systems_done(a);break;case SYSTEMS_PLAN:render_systems_plan(a);break;case SYSTEMS_RECOVER:render_systems_recover(a);break;case SYSTEMS_REMOVE:render_systems_remove(a);break;
     case INSTALL:render_install(a);break;case INSTALL_PLAN:render_install_review(a,false);break;case INSTALL_RESULT:render_install_review(a,true);break;
     case FILE_VOLUMES:render_file_volumes(a);break;case FILE_VOLUME:render_file_volume(a);break;case FILE_BROWSER:render_file_browser(a);break;
     case FILE_INFO:render_file_info(a);break;case FILE_TEXT:render_file_text(a,false);break;case FILE_EDIT:render_file_text(a,true);break;
@@ -4181,6 +4199,24 @@ static bool preview(App*a,const char*name){
         if(!a->aplan_valid)copy(a->aplan_error,sizeof(a->aplan_error),"This recovery does not know the image windows-11");
         a->screen=!strcmp(name,"os-plan")?OS_MENU:(!strcmp(name,"home-plan")?HOME:APLAN);
     }
+    else if(!strcmp(name,"flash-super")||!strcmp(name,"flash-list")||!strcmp(name,"flash-gsi")){
+        /* 2026-11-10: the partitions inside super, as flash.py lists them on this phone. */
+        static const struct{const char*label,*title;uint64_t bytes,room;bool logical;}rows[]={
+            {"boot","Kernel and ramdisk",32ull<<20,0,false},{"dtbo","Device tree overlays",8ull<<20,0,false},{"vbmeta","Verified boot data",64ull<<10,0,false},
+            {"super","Android system partitions",6904ull<<20,0,false},{"recovery","This recovery, from a new image",40ull<<20,0,false},
+            {"super/system","Logical partition in super",4361ull<<20,159ull<<20,true},{"super/odm","Logical partition in super",4ull<<20,159ull<<20,true},
+            {"super/product","Logical partition in super",1333ull<<20,159ull<<20,true},{"super/vendor","Logical partition in super",1043ull<<20,159ull<<20,true}};
+        a->flash_target_count=0;for(size_t i=0;i<sizeof(rows)/sizeof(rows[0]);i++){FlashTarget*f=&a->flash_targets[a->flash_target_count++];memset(f,0,sizeof(*f));
+            copy(f->label,sizeof(f->label),rows[i].label);copy(f->title,sizeof(f->title),rows[i].title);f->bytes=rows[i].bytes;f->room=rows[i].room;f->logical=rows[i].logical;}
+        a->flash_known=true;a->flash_super_free=162ull<<20;
+        if(!strcmp(name,"flash-gsi")){
+            a->flash_selected=5;a->flash_logical=true;a->flash_size_now=4361ull<<20;a->flash_size_after=4500ull<<20;a->flash_payload=4500ull<<20;a->flash_review_valid=true;a->flash_offline=true;
+            copy(a->flash_name,sizeof(a->flash_name),"system-squeak-arm64-ab-vndklite-gapps.img");copy(a->flash_kind,sizeof(a->flash_kind),"ext4 file system image");a->flash_bytes=2100ull<<20;
+            copy(a->flash_sha,sizeof(a->flash_sha),"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");copy(a->flash_warnings,sizeof(a->flash_warnings),"This partition is too large to save first");
+            a->screen=FLASH_REVIEW;
+        }else a->screen=!strcmp(name,"flash-super")?FLASH_SUPER:FLASH;
+    }
+    else if(!strcmp(name,"icon-sheet"))a->screen=ICON_SHEET;
     else if(!strcmp(name,"android-backup")){
         /* 2026-11-10: the Android partitions of the same page, with dtbo left out. */
         a->screen=IDENTITY;a->id_kind=1;a->id_known=true;static const char*const labels[]={"boot","dtbo","vbmeta","vbmeta_system","vbmeta_vendor","super","prism","optics"};

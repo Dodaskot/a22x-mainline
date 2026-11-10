@@ -21,6 +21,9 @@ static int theme_index(const char*code){for(int n=0;n<(int)theme_file_count;n++)
 int main(int argc,char**argv){
     if(argc!=5)return 2;
     unsigned int checks=0;const char*which=argv[3];App*a=calloc(1,sizeof(*a));if(!a)return 2;initialize(a);
+    /* 2026-11-10: the check for a plan from the Android app runs once from hotplug_tick() and starts
+       its helper; these display cases do not cover it, so it counts as done (lock-dark met it). */
+    a->aplan_asked=true;
     copy(a->fixture,sizeof(a->fixture),argv[1]);copy(a->display_helper,sizeof(a->display_helper),argv[2]);copy(a->python,sizeof(a->python),argv[4]);
     char path[PATH_LEN],number[24];snprintf(path,sizeof(path),"%s/display-inherited-fd-sentinel",argv[1]);int original=open(path,O_RDWR|O_CREAT|O_EXCL,0600);int sentinel=original>=0?fcntl(original,F_DUPFD,128):-1;if(original>=0)close(original);
     DCHECK(sentinel>=128);snprintf(number,sizeof(number),"%d",sentinel);DCHECK(setenv("A22X_RECOVERY_LOCK_FD",number,1)==0&&setenv("A22X_DISPLAY_FIXTURE_SENTINEL_FD",number,1)==0);

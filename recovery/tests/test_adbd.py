@@ -240,6 +240,25 @@ class TestWithTheAdbClient(unittest.TestCase):
         junk.write_bytes(b'not an image' * 1000)
         self.assertNotEqual(self.adb('sideload', str(junk), timeout=120).returncode, 0)
         self.assertEqual(len(list(self.store.iterdir())), 2)
+        # 2026-11-10: images of the phone's own partitions are kept too, named for Flash a
+        # partition; a recovery image is told from a BOOT by the DTBO it carries.
+        header = bytearray(b'ANDROID!' + bytes(4088))
+        struct.pack_into('<I', header, 40, 2)
+        boot, recovery, vbmeta = (Path(self.tmp.name) / name for name in ('boot.img', 'recovery.img', 'vbmeta.img'))
+        boot.write_bytes(bytes(header) + os.urandom(60000))
+        struct.pack_into('<I', header, 1632, 8192)
+        recovery.write_bytes(bytes(header) + os.urandom(60000))
+        vbmeta.write_bytes(b'AVB0' + os.urandom(8188))
+        for item in (boot, recovery, vbmeta, vbmeta):
+            self.assertEqual(self.adb('sideload', str(item), timeout=120).returncode, 0, item)
+        names = sorted(p.name for p in self.store.iterdir())
+        self.assertEqual(len(names), 6, names)
+        for kind in ('boot', 'recovery'):
+            self.assertEqual(len([n for n in names if n.endswith('-%s.img' % kind)]), 1, names)
+        # The same kind twice, possibly within one second: both stay.
+        self.assertEqual(len([n for n in names if '-vbmeta' in n]), 2, names)
+        saved = [n for n in names if n.endswith('-recovery.img')][0]
+        self.assertEqual((self.store / saved).read_bytes(), recovery.read_bytes())
         # The key approved once is proven by signature next time: no second offer.
         subprocess.run(['adb', 'disconnect', self.serial], env=self.env, capture_output=True, timeout=30)
         out = subprocess.run(['adb', 'connect', self.serial], env=self.env, capture_output=True, text=True, timeout=60)

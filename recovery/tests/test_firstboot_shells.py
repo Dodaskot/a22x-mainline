@@ -133,6 +133,34 @@ class Shells(unittest.TestCase):
         self.run_sh('account', 'NEW_USER=anna\nNEW_PASSWORD=246810')
         self.assertEqual(self.read('etc/default_user'), 'anna\n')
 
+    def test_the_setup_swap_leaves_room_for_the_packages(self):
+        """2026-11-10: a fixed 4 GiB swap on a nearly full userdata left apt no room for GNOME.
+        df, dd, mkswap and swapon are busybox applets, which ash runs before any file in PATH:
+        they are shell functions here, so nothing real is written."""
+        stand_ins = ('dd() { echo "dd $*" >> /calls; }\nmkswap() { echo "mkswap $*" >> /calls; }\n'
+                     'swapon() { [ "$1" = --show ] && return 0; echo "swapon $*" >> /calls; }\nchmod() { :; }\n')
+        for free_mib, expected in ((12288, 'count=4096'), (7168, 'count=2048'), (5530, None)):
+            self.write('calls', '')
+            df = 'df() { echo "Filesystem 1024-blocks Used Available Capacity Mounted"; echo "/dev/x 99999999 1 %d 1%% /"; }\n' % (free_mib * 1024)
+            self.run_sh(stand_ins + df + 'swap_on || echo refused >> /calls')
+            calls = self.calls()
+            if expected:
+                self.assertIn(expected, calls)
+                self.assertIn('swapon /var/a22x-swap', calls)
+            else:
+                self.assertNotIn('dd ', calls)
+                self.assertIn('say: no temporary swap: the packages need the free space', calls)
+                self.assertIn('refused', calls)
+        # A disk that fills up while the file is written: the part already written goes away.
+        self.write('var/a22x-swap', 'partly written')
+        df = 'df() { echo header; echo "/dev/x 99999999 1 %d 1%% /"; }\n' % (12288 * 1024)
+        self.run_sh(stand_ins.replace('dd() { echo "dd $*" >> /calls; }', 'dd() { return 1; }') + df + 'swap_on || echo refused >> /calls')
+        self.assertFalse((self.root / 'var/a22x-swap').exists())
+        # swap_off removes the file even when it was never switched on.
+        self.write('var/a22x-swap', 'left over')
+        self.run_sh('swapoff() { return 255; }\nswap_off')
+        self.assertFalse((self.root / 'var/a22x-swap').exists())
+
     def test_a_password_from_the_android_app_is_set_as_its_hash(self):
         """2026-11-10: the app's plan carries a SHA-512 hash, never the password."""
         self.stub('chpasswd', '#!/bin/sh\necho "chpasswd $* $(cat)" >> /calls\n')

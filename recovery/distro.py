@@ -1557,6 +1557,19 @@ SCRIPT_LIMIT = 1 << 20
 WIFI_TOOLS = ('usr/bin/wpa_supplicant', 'usr/sbin/wpa_supplicant')
 IMAGE_FACTOR_FLOOR = 2 * 1024**3
 IMAGE_MARGIN = 1024**3
+# What the packages of each shell and app take once installed, with their downloads, roughly
+# (2026-11-10: Debian 13 with Phosh and GNOME ran out of space while apt fetched them, after the
+# plan had said 2.6 GiB were enough).
+SHELL_BYTES = {'phosh': 1536 * 1024**2, 'gnome': 2048 * 1024**2, 'plasma': 2560 * 1024**2, 'xfce': 1024 * 1024**2,
+               'sxmo': 512 * 1024**2, 'lomiri': 2048 * 1024**2}
+APP_BYTES = 192 * 1024**2
+COUNT_PACKAGES = None  # None: on the phone only (fixtures live on a small tmpfs); tests set True
+
+
+def packages_bytes(options):
+    """The room the shells and apps of OPTIONS need in the new system."""
+    shells = [options['desktop']] + list(options.get('shells') or ())
+    return sum(SHELL_BYTES.get(s, 0) for s in shells) + APP_BYTES * (len(options.get('apps') or ()) + len(options.get('packages') or ()))
 PLATFORM_EXTRAS = ('opt/a22x-conn/bt_addr', 'opt/a22x-conn/kernel-release',
                    'etc/systemd/system/a22x-conn.service',
                    'etc/systemd/system/multi-user.target.wants/a22x-conn.service',
@@ -1816,7 +1829,11 @@ def sideload_store(context, size):
     for the transfer when the recovery has not mounted it, and stays pinned until the file is in place."""
     volume = context.volume('userdata')
     mounted_here = not volume['mounted']
-    if mounted_here:
+    # Opened read-only (browsing files, choosing an image), userdata is made writable for the
+    # transfer and read-only again after it (2026-11-10: the computer only saw "failed", the
+    # reason was in the phone's log).
+    reopen = volume['mounted'] and volume['read_only'] and volume.get('mount_owner') == 'filesystem'
+    if mounted_here or reopen:
         context.mount('userdata', 'rw', True, volume['volume_token'])
     try:
         with fs.PinnedVolume(context, 'userdata', writing=True) as pin, Tree(pin) as live:
@@ -1831,6 +1848,11 @@ def sideload_store(context, size):
         if mounted_here:
             os.sync()
             context.unmount('userdata')
+        elif reopen:
+            os.sync()
+            # Still writable if this fails: nothing is lost, and Files shows the mode as it is.
+            with contextlib.suppress(OSError, fs.FilesystemError):
+                context.mount('userdata', 'ro', True, context.volume('userdata')['volume_token'])
 
 
 def images_delete(context, name, confirmed=False):
@@ -2557,6 +2579,8 @@ def image_plan(context, source_volume, image_path, options, expected_source=None
             required = max(stamp[3] * info['factor'], IMAGE_FACTOR_FLOOR) + MIN_FREE
         if remote is not None:
             required += remote['size']
+        if COUNT_PACKAGES or (COUNT_PACKAGES is None and context.mode == 'device'):
+            required += packages_bytes(options)
         require(free >= required, 'INSUFFICIENT_SPACE', 'There is not enough space beside the retained system',
                 available_bytes=free, required_bytes=required)
         slot = image_slot(name, live) if not wipe else image_slot(name, types.SimpleNamespace(exists=lambda _: False))
@@ -3113,7 +3137,36 @@ def provision(context, root, progress, runner=None, network=True):
         if kept is not None:
             kept.close()
     done = status == 0 and not conf.exists()
-    return {'provisioned': done, 'provision': 'recovery' if done else 'first-start', 'provision_status': status}
+    found = None if done else setup_failure(root)
+    return {'provisioned': done, 'provision': 'recovery' if done else 'first-start', 'provision_status': status,
+            **({'provision_error': found} if found else {})}
+
+
+# Why a setup in recovery stopped, from the new system's own log (2026-11-10: the page said "A
+# package download failed" where apt had found no room: "You don't have enough free space").
+SETUP_FAILURES = (
+    (("You don't have enough free space", 'No space left on device', 'not enough free space'),
+     'There was not enough free space on userdata for the packages.'),
+    (('Temporary failure resolving', 'Could not resolve', 'Failed to resolve', 'Network is unreachable'),
+     'The package servers could not be reached.'),
+    (('Hash Sum mismatch', 'checksum mismatch', 'signature is invalid', 'NO_PUBKEY'),
+     'A package download did not pass its check.'),
+)
+
+
+def setup_failure(root):
+    """The reason of a failed setup that the first-start log names, or None."""
+    path = Path(root) / 'var/log/a22x-firstboot.log'
+    try:
+        with open(path, 'rb') as f:
+            f.seek(max(0, os.fstat(f.fileno()).st_size - (256 << 10)))
+            text = f.read().decode('utf-8', 'replace')
+    except OSError:
+        return None
+    for needles, message in SETUP_FAILURES:
+        if any(needle in text for needle in needles):
+            return message
+    return None
 
 
 # Builds the phone made for a system (phoc's wlroots, Phrog: up to 40 minutes, 2026-11-09). Its

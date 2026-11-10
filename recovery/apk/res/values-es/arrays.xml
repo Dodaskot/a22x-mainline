@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- The recovery's own labels and their translations there (ui/i18n), generated 2026-11-10. -->
+<resources>
+    <string-array name="plan_desktops">
+        <item>Phosh</item>
+        <item>GNOME</item>
+        <item>Plasma Mobile</item>
+        <item>Xfce</item>
+        <item>Sxmo</item>
+        <item>Lomiri</item>
+        <item>Console</item>
+        <item>Como en la imagen</item>
+    </string-array>
+    <string-array name="plan_greeters">
+        <item>Inicio automático</item>
+        <item>Phrog</item>
+        <item>Inicio en texto</item>
+        <item>GDM</item>
+        <item>SDDM</item>
+        <item>LightDM</item>
+    </string-array>
+    <string-array name="plan_apps">
+        <item>Navegador</item>
+        <item>Ajustes</item>
+        <item>Archivos</item>
+        <item>Terminal</item>
+        <item>Editor de texto</item>
+        <item>Tienda de apps</item>
+        <item>Teclado</item>
+        <item>Telegram</item>
+        <item>Servidor SSH</item>
+        <item>Correo</item>
+        <item>Música</item>
+        <item>Reproductor de vídeo</item>
+        <item>Fotos</item>
+        <item>Documentos</item>
+        <item>Ofimática</item>
+        <item>Calculadora</item>
+        <item>Reloj</item>
+        <item>Tiempo</item>
+        <item>Mapas</item>
+        <item>Cámara</item>
+        <item>Contactos</item>
+        <item>Calendario</item>
+        <item>Contraseñas</item>
+        <item>Flatpak</item>
+        <item>Chromium</item>
+        <item>Pódcasts</item>
+        <item>Mensajes</item>
+        <item>Git</item>
+        <item>Monitor del sistema</item>
+    </string-array>
+</resources>

@@ -38,6 +38,12 @@ P
 # The rules shared with the recovery are tested on this computer first.
 javac -nowarn --release 8 -d "$work/test" "$here"/src/org/a22x/installer/{Json,Handoff,Root,Scripts,Compat,Plan,Sha512Crypt}.java "$here"/test/org/a22x/installer/{HandoffTest,ScriptsMain}.java
 java -cp "$work/test" org.a22x.installer.HandoffTest
+# The backdrops are the recovery's own: every pixel of BackdropMath against its canvas_backdrop().
+cc -O2 -I "$here/../ui" -o "$work/backdrop_ref" "$here/test/backdrop_ref.c" -lm
+size=$("$work/backdrop_ref" "$work/backdrop-daylight.raw" "$work/backdrop-aurora.raw")
+javac -nowarn --release 8 -d "$work/test" "$here"/src/org/a22x/installer/BackdropMath.java "$here"/test/org/a22x/installer/BackdropTest.java
+java -cp "$work/test" org.a22x.installer.BackdropTest "$here/res" "$work/backdrop-daylight.raw" "$work/backdrop-aurora.raw" $size
+rm -f "$work"/backdrop-*.raw
 
 # APP_REVISION: a new build of the app around the same recovery (2026-11-10: 0.6.138-r2, the theme
 # change in place); the version code grows either way, so it installs over the last one.
@@ -66,5 +72,6 @@ if [ ! -e "$KEYSTORE" ]; then
 fi
 javac -nowarn -cp "$TOOLS/apksig.jar" -d "$work/signer" "$here/signer/Sign.java"
 java -cp "$TOOLS/apksig.jar:$work/signer" Sign "$KEYSTORE" "$KEYPASS" "$work/base.apk" "$out"
-"$TOOLS/bin/aapt2" dump badging "$out" | head -3
+# sed reads everything: head would end aapt2 early (SIGPIPE, exit 141 under pipefail) before the hash.
+"$TOOLS/bin/aapt2" dump badging "$out" | sed -n 1,3p
 sha256sum "$out"

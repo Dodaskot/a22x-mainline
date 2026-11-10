@@ -236,16 +236,30 @@ retry_later() {
     exit 0
 }
 
-# Package managers can need more memory than this phone has; a bare image has no swap.
+# Package managers can need more memory than this phone has; a bare image has no swap. The swap
+# file takes only what the packages leave, at most 4 GiB: a fixed 4 GiB on a nearly full userdata
+# left apt no room for the desktop it was fetching (Debian 13 with GNOME, 2026-11-10).
 swap_on() {
     [ -n "$(swapon --show --noheadings 2>/dev/null)" ] && return 0
-    dd if=/dev/zero of=/var/a22x-swap bs=1M count=4096 2>/dev/null && chmod 600 /var/a22x-swap &&
-        mkswap /var/a22x-swap >/dev/null && swapon /var/a22x-swap
+    free=$(df -Pk /var 2>/dev/null | awk 'NR == 2 {print int($4 / 1024)}')
+    size=$(( ${free:-0} - 5120 ))
+    [ "$size" -le 4096 ] || size=4096
+    if [ "$size" -lt 512 ]; then
+        say "no temporary swap: the packages need the free space"
+        return 1
+    fi
+    if dd if=/dev/zero of=/var/a22x-swap bs=1M count="$size" 2>/dev/null && chmod 600 /var/a22x-swap &&
+        mkswap /var/a22x-swap >/dev/null && swapon /var/a22x-swap; then
+        return 0
+    fi
+    rm -f /var/a22x-swap  # A file cut short by a full disk would keep the space.
+    return 1
 }
 
 swap_off() {
     [ -e /var/a22x-swap ] || return 0
-    swapoff /var/a22x-swap && rm -f /var/a22x-swap
+    swapoff /var/a22x-swap 2>/dev/null
+    rm -f /var/a22x-swap
 }
 
 # Packages of one shell for one package family. The sign-in screen brings its own (2026-11-09).
@@ -1757,7 +1771,7 @@ desktop_packages=
 [ "$DESKTOP" = console ] || [ "$DESKTOP" = image ] || [ -n "${OFFLINE:-}" ] || desktop_packages=1
 if [ -n "$desktop_packages" ] || [ -n "${APPS:-}" ] || [ -n "${EXTRA_PACKAGES:-}" ]; then
     wifi || retry_later "Wi-Fi unavailable"
-    swap_on || say "no temporary swap"
+    swap_on || say "continuing without a temporary swap"
     if [ -n "$desktop_packages" ]; then
         # The login prompt is already on screen: say that the setup is still at work.
         if [ -n "${A22X_CHROOT:-}" ]; then

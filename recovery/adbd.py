@@ -543,13 +543,38 @@ def sideload_store(size, log=None):
         yield folder
 
 
+def partition_image(head):
+    """Which of the phone's partitions an image is for, from its first bytes (2026-11-10): adb
+    sideload keeps such an image in the store for "Flash a partition", as TWRP's Install Image.
+    A recovery image carries its own DTBO after kernel and ramdisk (boot header v1 and v2)."""
+    if head[:8] == b'ANDROID!':
+        version = struct.unpack_from('<I', head, 40)[0] if len(head) >= 44 else 0
+        dtbo = struct.unpack_from('<I', head, 1632)[0] if len(head) >= 1636 else 0
+        return 'recovery' if version in (1, 2) and dtbo > 0 else 'boot'
+    if head[:8] == b'VNDRBOOT':
+        return 'vendor_boot'
+    if head[:4] == b'AVB0':
+        return 'vbmeta'
+    if head[:4] == b'\xd7\xb7\xab\x1e':
+        return 'dtbo'
+    if head[:4] == b'\x3a\xff\x26\xed':
+        return 'sparse'
+    if head[4096:4100] == b'gDla':
+        return 'super'
+    return None
+
+
 def sideload_name(path):
-    """A file name for what came in: a ZIP for Android, or a system image the installer reads."""
+    """A file name for what came in: a ZIP for Android, an image of one of the phone's partitions,
+    or a system image the installer reads."""
     with open(path, 'rb') as f:
-        head = f.read(4)
+        head = f.read(4100)
     stamp = time.strftime('sideload-%Y%m%d-%H%M%S', time.gmtime())
-    if head == b'PK\x03\x04':
+    if head[:4] == b'PK\x03\x04':
         return stamp + '.zip'
+    kind = partition_image(head)
+    if kind:
+        return '%s-%s.img' % (stamp, kind)
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import image_import
     try:
@@ -599,7 +624,12 @@ def receive_sideload(stream, folder, size, block):
         if name is None:
             stream.write(b'FAILFAIL')
             return
-        os.replace(part, folder / name)
+        # Two files in the same second keep both: the later one is numbered.
+        target, stem, suffix, number = folder / name, name.split('.', 1)[0], name.split('.', 1)[1], 2
+        while target.exists():
+            target = folder / ('%s-%d.%s' % (stem, number, suffix))
+            number += 1
+        os.replace(part, target)
         done = True
         stream.write(b'DONEDONE')
     finally:

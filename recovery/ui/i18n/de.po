@@ -102,6 +102,9 @@ msgstr "Ein Computer möchte ADB mit diesem Recovery verwenden."
 msgid "A computer is asking to use this phone."
 msgstr "Ein Computer möchte dieses Telefon verwenden."
 
+msgid "A GSI's system.img goes into system. When the image is larger, the partition grows into the free space of super; the other partitions stay as they are."
+msgstr "Die system.img eines GSI kommt nach system. Ist das Abbild größer, wächst die Partition in den freien Platz von super; die anderen bleiben, wie sie sind."
+
 msgid "A network name has 1 to 32 bytes"
 msgstr "Ein Netzwerkname hat 1 bis 32 Byte"
 
@@ -119,6 +122,9 @@ msgstr "Ein neuer Ordner in A22xIdentityBackups wird mit jeder Partition und ihr
 
 msgid "A new theme always spreads as a circle, unless animations are off."
 msgstr "Ein neues Design breitet sich immer als Kreis aus, außer Animationen sind aus."
+
+msgid "A package download did not pass its check."
+msgstr "Ein heruntergeladenes Paket hat die Prüfung nicht bestanden."
 
 msgid "A package download failed in recovery."
 msgstr "Ein Paket konnte im Recovery nicht geladen werden."
@@ -557,6 +563,9 @@ msgstr "Kalender"
 
 msgid "Camera"
 msgstr "Kamera"
+
+msgid "Can grow by %s"
+msgstr "Kann um %s wachsen"
 
 msgid "Cancel"
 msgstr "Abbrechen"
@@ -1260,6 +1269,9 @@ msgstr "Das Formatieren löscht alles auf diesem Volume, auch Sicherungen."
 msgid "Formatting userdata"
 msgstr "userdata wird formatiert"
 
+msgid "Free in super: %s"
+msgstr "Frei in super: %s"
+
 msgid "Free on userdata: %s"
 msgstr "Frei auf userdata: %s"
 
@@ -1698,6 +1710,9 @@ msgstr "Sperrbildschirm"
 msgid "Locked"
 msgstr "Gesperrt"
 
+msgid "Logical partition in super"
+msgstr "Logische Partition in super"
+
 msgid "mAh"
 msgstr "mAh"
 
@@ -1835,6 +1850,9 @@ msgstr "Name"
 
 msgid "Name or part of it"
 msgstr "Name oder ein Teil davon"
+
+msgid "Name the partition to write"
+msgstr "Nennen Sie die zu schreibende Partition"
 
 msgid "Navigation"
 msgstr "Navigation"
@@ -3114,6 +3132,9 @@ msgstr "Stark"
 msgid "Sunday"
 msgstr "Sonntag"
 
+msgid "super/"
+msgstr "super/"
+
 msgid "Swipe through the full source, backup and target list."
 msgstr "Wischen Sie durch die vollständige Liste von Quelle, Sicherung und Zielen."
 
@@ -3423,6 +3444,12 @@ msgstr "Das Image endet zu früh"
 msgid "The image file is damaged or incomplete. Copy it again, then eject the stick safely before unplugging it."
 msgstr "Die Image-Datei ist beschädigt oder unvollständig. Kopieren Sie sie erneut und werfen Sie den Stick sicher aus, bevor Sie ihn abziehen."
 
+msgid "The image fills part of the %s partition; the rest is zeroed."
+msgstr "Das Abbild füllt einen Teil der Partition mit %s; der Rest wird genullt."
+
+msgid "The image fills the whole %s partition."
+msgstr "Das Abbild füllt die ganze Partition mit %s."
+
 msgid "The image has extra data at its end"
 msgstr "Das Image hat Daten am Ende"
 
@@ -3431,6 +3458,9 @@ msgstr "Der Image-Installer hat kein gültiges Ergebnis geliefert."
 
 msgid "The image installer helper is not configured."
 msgstr "Das Hilfsprogramm des Image-Installers ist nicht konfiguriert."
+
+msgid "The image is empty"
+msgstr "Das Abbild ist leer"
 
 msgid "The image is larger than any partition"
 msgstr "Das Image ist größer als jede Partition"
@@ -3537,6 +3567,9 @@ msgstr "Vorgang oder Umgebung passten nicht zur angeforderten Systemaktion."
 msgid "The operation was stopped."
 msgstr "Der Vorgang wurde gestoppt."
 
+msgid "The package servers could not be reached."
+msgstr "Die Paketserver waren nicht erreichbar."
+
 msgid "The package site did not answer. Check Wi-Fi and try again."
 msgstr "Die Paketseite hat nicht geantwortet. WLAN prüfen und erneut versuchen."
 
@@ -3554,6 +3587,9 @@ msgstr "Partition nicht rücklesbar"
 
 msgid "The partition does not match the image after writing"
 msgstr "Die Partition stimmt nach dem Schreiben nicht mit dem Image überein"
+
+msgid "The partition grows from %s to %s inside super."
+msgstr "Die Partition wächst in super von %s auf %s."
 
 msgid "The partition is mounted. Unmount it in Files before writing"
 msgstr "Die Partition ist eingehängt. Hängen Sie sie vor dem Schreiben unter Dateien aus"
@@ -3678,6 +3714,9 @@ msgstr "Das Einrichtungsskript muss eine Textdatei sein"
 msgid "The shell has not stopped completely. The terminal remains open."
 msgstr "Die Shell wurde nicht vollständig beendet. Das Terminal bleibt offen."
 
+msgid "The size of the checked image is required"
+msgstr "Die Größe des geprüften Abbilds wird benötigt"
+
 msgid "The starting root is recovery RAM. Mount Linux in Files first, then use /mnt/volumes/userdata. The microSD backup mount is /mnt/backup."
 msgstr "Startverzeichnis ist das Recovery-RAM. Hängen Sie Linux zuerst unter Dateien ein und nutzen Sie dann /mnt/volumes/userdata. Die microSD-Sicherung ist unter /mnt/backup eingehängt."
 
@@ -3723,6 +3762,12 @@ msgstr "Das Hilfsprogramm für USB-Dateiübertragung ist nicht konfiguriert."
 msgid "The USB stick could not be opened for writing."
 msgstr "Der USB-Stick ließ sich nicht zum Schreiben öffnen."
 
+msgid "The whole image of all of them"
+msgstr "Das ganze Abbild mit allen"
+
+msgid "The whole image, or one Android partition inside it."
+msgstr "Das ganze Abbild oder eine Android-Partition darin."
+
 msgid "The write receipt could not be displayed completely. Inspect installation status."
 msgstr "Der Schreibbeleg konnte nicht vollständig angezeigt werden. Prüfen Sie den Installationsstatus."
 
@@ -3746,6 +3791,9 @@ msgstr "Neben dem beibehaltenen System ist nicht genug Platz"
 
 msgid "There is not enough space on userdata for this image"
 msgstr "Auf userdata ist nicht genug Platz für dieses Abbild"
+
+msgid "There was not enough free space on userdata for the packages."
+msgstr "Auf userdata war nicht genug freier Platz für die Pakete."
 
 msgid "This action replaces the listed targets."
 msgstr "Diese Aktion ersetzt die aufgeführten Ziele."
@@ -4263,3 +4311,8 @@ msgstr "Zoom"
 msgid "Zoom with blur"
 msgstr "Zoom mit Unschärfe"
 
+msgid "Back"
+msgstr "Zurück"
+
+msgid "A computer is connected over SSH or SFTP: close that session, then try again"
+msgstr "Ein Computer ist über SSH oder SFTP verbunden: Schließen Sie diese Sitzung und versuchen Sie es erneut"

@@ -102,6 +102,9 @@ msgstr "Un ordinateur demande à utiliser ADB avec ce recovery."
 msgid "A computer is asking to use this phone."
 msgstr "Un ordinateur demande à utiliser ce téléphone."
 
+msgid "A GSI's system.img goes into system. When the image is larger, the partition grows into the free space of super; the other partitions stay as they are."
+msgstr "Le system.img d’une GSI va dans system. Si l’image est plus grande, la partition s’agrandit dans l’espace libre de super ; les autres restent telles quelles."
+
 msgid "A network name has 1 to 32 bytes"
 msgstr "Un nom de réseau compte de 1 à 32 octets"
 
@@ -119,6 +122,9 @@ msgstr "Un nouveau dossier est écrit dans A22xIdentityBackups avec chaque parti
 
 msgid "A new theme always spreads as a circle, unless animations are off."
 msgstr "Un nouveau thème s'étend toujours en cercle, sauf si les animations sont désactivées."
+
+msgid "A package download did not pass its check."
+msgstr "Un paquet téléchargé n’a pas passé sa vérification."
 
 msgid "A package download failed in recovery."
 msgstr "Le téléchargement d’un paquet a échoué dans le recovery."
@@ -557,6 +563,9 @@ msgstr "Agenda"
 
 msgid "Camera"
 msgstr "Caméra"
+
+msgid "Can grow by %s"
+msgstr "Peut grandir de %s"
 
 msgid "Cancel"
 msgstr "Annuler"
@@ -1260,6 +1269,9 @@ msgstr "Le formatage efface tout sur ce volume, y compris les sauvegardes."
 msgid "Formatting userdata"
 msgstr "Formatage de userdata"
 
+msgid "Free in super: %s"
+msgstr "Libre dans super : %s"
+
 msgid "Free on userdata: %s"
 msgstr "Libre sur userdata : %s"
 
@@ -1698,6 +1710,9 @@ msgstr "Écran de verrouillage"
 msgid "Locked"
 msgstr "Verrouillé"
 
+msgid "Logical partition in super"
+msgstr "Partition logique dans super"
+
 msgid "mAh"
 msgstr "mAh"
 
@@ -1835,6 +1850,9 @@ msgstr "Nom"
 
 msgid "Name or part of it"
 msgstr "Nom ou une partie"
+
+msgid "Name the partition to write"
+msgstr "Indiquez la partition à écrire"
 
 msgid "Navigation"
 msgstr "Navigation"
@@ -3114,6 +3132,9 @@ msgstr "Forte"
 msgid "Sunday"
 msgstr "dimanche"
 
+msgid "super/"
+msgstr "super/"
+
 msgid "Swipe through the full source, backup and target list."
 msgstr "Faites défiler la liste complète de la source, de la sauvegarde et des cibles."
 
@@ -3423,6 +3444,12 @@ msgstr "L'image se termine trop tôt"
 msgid "The image file is damaged or incomplete. Copy it again, then eject the stick safely before unplugging it."
 msgstr "Le fichier image est endommagé ou incomplet. Copiez-le à nouveau, puis éjectez la clé en toute sécurité avant de la débrancher."
 
+msgid "The image fills part of the %s partition; the rest is zeroed."
+msgstr "L’image remplit une partie de la partition de %s ; le reste est mis à zéro."
+
+msgid "The image fills the whole %s partition."
+msgstr "L’image remplit toute la partition de %s."
+
 msgid "The image has extra data at its end"
 msgstr "L'image a des données en trop"
 
@@ -3431,6 +3458,9 @@ msgstr "L'installateur d'images n'a pas renvoyé de résultat valide."
 
 msgid "The image installer helper is not configured."
 msgstr "L'outil de l'installateur d'images n'est pas configuré."
+
+msgid "The image is empty"
+msgstr "L’image est vide"
 
 msgid "The image is larger than any partition"
 msgstr "L'image est plus grande que toutes les partitions"
@@ -3537,6 +3567,9 @@ msgstr "L'opération ou l'environnement ne correspondait pas à l'action systèm
 msgid "The operation was stopped."
 msgstr "L'opération a été arrêtée."
 
+msgid "The package servers could not be reached."
+msgstr "Les serveurs de paquets étaient injoignables."
+
 msgid "The package site did not answer. Check Wi-Fi and try again."
 msgstr "Le site des paquets n’a pas répondu. Vérifiez le Wi-Fi et réessayez."
 
@@ -3554,6 +3587,9 @@ msgstr "Relecture impossible"
 
 msgid "The partition does not match the image after writing"
 msgstr "La partition ne correspond pas à l'image après l'écriture"
+
+msgid "The partition grows from %s to %s inside super."
+msgstr "La partition passe de %s à %s dans super."
 
 msgid "The partition is mounted. Unmount it in Files before writing"
 msgstr "La partition est montée. Démontez-la dans Fichiers avant l'écriture"
@@ -3678,6 +3714,9 @@ msgstr "Le script de configuration doit être un fichier texte"
 msgid "The shell has not stopped completely. The terminal remains open."
 msgstr "Le shell ne s'est pas complètement arrêté. Le terminal reste ouvert."
 
+msgid "The size of the checked image is required"
+msgstr "La taille de l’image vérifiée est requise"
+
 msgid "The starting root is recovery RAM. Mount Linux in Files first, then use /mnt/volumes/userdata. The microSD backup mount is /mnt/backup."
 msgstr "La racine de départ est la RAM du recovery. Montez d'abord Linux dans Fichiers, puis utilisez /mnt/volumes/userdata. La sauvegarde microSD est montée sur /mnt/backup."
 
@@ -3723,6 +3762,12 @@ msgstr "L'outil de transfert de fichiers USB n'est pas configuré."
 msgid "The USB stick could not be opened for writing."
 msgstr "Impossible d'ouvrir la clé USB en écriture."
 
+msgid "The whole image of all of them"
+msgstr "L’image entière de toutes"
+
+msgid "The whole image, or one Android partition inside it."
+msgstr "L’image entière, ou une partition Android à l’intérieur."
+
 msgid "The write receipt could not be displayed completely. Inspect installation status."
 msgstr "Le reçu d'écriture n'a pas pu être affiché en entier. Consultez l'état de l'installation."
 
@@ -3746,6 +3791,9 @@ msgstr "Il n'y a pas assez de place à côté du système conservé"
 
 msgid "There is not enough space on userdata for this image"
 msgstr "Il n'y a pas assez d'espace sur userdata pour cette image"
+
+msgid "There was not enough free space on userdata for the packages."
+msgstr "Il n’y avait pas assez d’espace libre sur userdata pour les paquets."
 
 msgid "This action replaces the listed targets."
 msgstr "Cette action remplace les cibles listées."
@@ -4263,3 +4311,8 @@ msgstr "Zoom"
 msgid "Zoom with blur"
 msgstr "Zoom avec flou"
 
+msgid "Back"
+msgstr "Retour"
+
+msgid "A computer is connected over SSH or SFTP: close that session, then try again"
+msgstr "Un ordinateur est connecté en SSH ou SFTP : fermez cette session, puis réessayez"

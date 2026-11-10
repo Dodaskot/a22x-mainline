@@ -102,6 +102,9 @@ msgstr "Комп'ютер просить доступ ADB до цього recove
 msgid "A computer is asking to use this phone."
 msgstr "Комп'ютер просить доступ до цього телефона."
 
+msgid "A GSI's system.img goes into system. When the image is larger, the partition grows into the free space of super; the other partitions stay as they are."
+msgstr "system.img з GSI прошивається в system. Якщо образ більший, розділ збільшується за рахунок вільного місця super; інші розділи лишаються як є."
+
 msgid "A network name has 1 to 32 bytes"
 msgstr "Назва мережі має від 1 до 32 байтів"
 
@@ -119,6 +122,9 @@ msgstr "Буде створено нову теку в A22xIdentityBackups з к
 
 msgid "A new theme always spreads as a circle, unless animations are off."
 msgstr "Нова тема завжди розходиться колом, якщо анімації не вимкнено."
+
+msgid "A package download did not pass its check."
+msgstr "Завантажений пакет не пройшов перевірку."
 
 msgid "A package download failed in recovery."
 msgstr "Завантаження пакета в recovery не вдалося."
@@ -557,6 +563,9 @@ msgstr "Календар"
 
 msgid "Camera"
 msgstr "Камера"
+
+msgid "Can grow by %s"
+msgstr "Може збільшитися на %s"
 
 msgid "Cancel"
 msgstr "Скасувати"
@@ -1260,6 +1269,9 @@ msgstr "Форматування стирає все на цьому томі, �
 msgid "Formatting userdata"
 msgstr "Форматування userdata"
 
+msgid "Free in super: %s"
+msgstr "Вільно в super: %s"
+
 msgid "Free on userdata: %s"
 msgstr "Вільно на userdata: %s"
 
@@ -1698,6 +1710,9 @@ msgstr "Екран блокування"
 msgid "Locked"
 msgstr "Заблоковано"
 
+msgid "Logical partition in super"
+msgstr "Логічний розділ у super"
+
 msgid "mAh"
 msgstr "мА·год"
 
@@ -1835,6 +1850,9 @@ msgstr "Назва"
 
 msgid "Name or part of it"
 msgstr "Назва або її частина"
+
+msgid "Name the partition to write"
+msgstr "Назвіть розділ для запису"
 
 msgid "Navigation"
 msgstr "Навігація"
@@ -3114,6 +3132,9 @@ msgstr "Сильна"
 msgid "Sunday"
 msgstr "Неділя"
 
+msgid "super/"
+msgstr "super/"
+
 msgid "Swipe through the full source, backup and target list."
 msgstr "Прогорніть увесь список джерела, копії та цілей."
 
@@ -3423,6 +3444,12 @@ msgstr "Образ закінчився зарано"
 msgid "The image file is damaged or incomplete. Copy it again, then eject the stick safely before unplugging it."
 msgstr "Файл образу пошкоджений або неповний. Скопіюйте його ще раз і безпечно вийміть флешку, перш ніж від’єднати її."
 
+msgid "The image fills part of the %s partition; the rest is zeroed."
+msgstr "Образ займе частину розділу на %s; решту буде заповнено нулями."
+
+msgid "The image fills the whole %s partition."
+msgstr "Образ займе весь розділ на %s."
+
 msgid "The image has extra data at its end"
 msgstr "В образі є зайві дані наприкінці"
 
@@ -3431,6 +3458,9 @@ msgstr "Інсталятор образів не повернув дійсног
 
 msgid "The image installer helper is not configured."
 msgstr "Помічник інсталятора образів не налаштовано."
+
+msgid "The image is empty"
+msgstr "Образ порожній"
 
 msgid "The image is larger than any partition"
 msgstr "Образ більший за будь-який розділ"
@@ -3537,6 +3567,9 @@ msgstr "Операція чи середовище не збіглися із з
 msgid "The operation was stopped."
 msgstr "Операцію зупинено."
 
+msgid "The package servers could not be reached."
+msgstr "Не вдалося зв’язатися з серверами пакетів."
+
 msgid "The package site did not answer. Check Wi-Fi and try again."
 msgstr "Сайт пакетів не відповів. Перевірте Wi-Fi і спробуйте ще раз."
 
@@ -3554,6 +3587,9 @@ msgstr "Не вдалося перечитати розділ"
 
 msgid "The partition does not match the image after writing"
 msgstr "Розділ не збігається з образом після запису"
+
+msgid "The partition grows from %s to %s inside super."
+msgstr "Розділ збільшиться з %s до %s усередині super."
 
 msgid "The partition is mounted. Unmount it in Files before writing"
 msgstr "Розділ змонтовано. Розмонтуйте його у Файлах перед записом"
@@ -3678,6 +3714,9 @@ msgstr "Скрипт налаштування має бути текстовим
 msgid "The shell has not stopped completely. The terminal remains open."
 msgstr "Оболонка не зупинилася повністю. Термінал лишається відкритим."
 
+msgid "The size of the checked image is required"
+msgstr "Потрібен розмір перевіреного образу"
+
 msgid "The starting root is recovery RAM. Mount Linux in Files first, then use /mnt/volumes/userdata. The microSD backup mount is /mnt/backup."
 msgstr "Початковий корінь — RAM recovery. Спершу змонтуйте Linux у Файлах, а потім використовуйте /mnt/volumes/userdata. Копії на microSD монтуються в /mnt/backup."
 
@@ -3723,6 +3762,12 @@ msgstr "Помічник передавання USB-файлів не налаш
 msgid "The USB stick could not be opened for writing."
 msgstr "Не вдалося відкрити флешку для запису."
 
+msgid "The whole image of all of them"
+msgstr "Цілий образ з усіма ними"
+
+msgid "The whole image, or one Android partition inside it."
+msgstr "Цілий образ або один розділ Android усередині."
+
 msgid "The write receipt could not be displayed completely. Inspect installation status."
 msgstr "Звіт про запис не вдалося показати повністю. Перегляньте стан встановлення."
 
@@ -3746,6 +3791,9 @@ msgstr "Поруч зі збереженою системою недостатн
 
 msgid "There is not enough space on userdata for this image"
 msgstr "На userdata замало місця для цього образу"
+
+msgid "There was not enough free space on userdata for the packages."
+msgstr "На userdata не вистачило вільного місця для пакетів."
 
 msgid "This action replaces the listed targets."
 msgstr "Ця дія замінює перелічені цілі."
@@ -4263,3 +4311,8 @@ msgstr "Зум"
 msgid "Zoom with blur"
 msgstr "Зум із блюром"
 
+msgid "Back"
+msgstr "Назад"
+
+msgid "A computer is connected over SSH or SFTP: close that session, then try again"
+msgstr "До recovery підключено комп'ютер через SSH або SFTP: закрийте той сеанс і спробуйте ще раз"

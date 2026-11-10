@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import types
 import unittest
 from unittest import mock
 from pathlib import Path
@@ -277,6 +278,36 @@ class TestImageInstall(unittest.TestCase):
         self.assertEqual((self.root('distro-1-0') / 'etc/a22x/firstboot.conf').stat().st_mode & 0o777, 0o600)
         self.assertIn('EXTRA_SHELLS=\'\'', conf)
         self.assertIn('GREETER=auto', conf)
+
+    def test_the_reason_of_a_failed_setup_comes_from_its_log(self):
+        """2026-11-10: apt found no room, and the page said a download had failed."""
+        root = Path(self.tmp.name) / 'slotroot'
+        (root / 'var/log').mkdir(parents=True)
+        self.assertIsNone(d.setup_failure(root))
+        (root / 'var/log/a22x-firstboot.log').write_text('a22x-firstboot: start\nE: You don\'t have enough free space in /var/cache/apt/archives/.\n')
+        self.assertEqual(d.setup_failure(root), 'There was not enough free space on userdata for the packages.')
+        (root / 'var/log/a22x-firstboot.log').write_text('Err:1 http://deb.debian.org trixie InRelease\n  Temporary failure resolving deb.debian.org\n')
+        self.assertEqual(d.setup_failure(root), 'The package servers could not be reached.')
+        (root / 'var/log/a22x-firstboot.log').write_text('everything else\n')
+        self.assertIsNone(d.setup_failure(root))
+
+    def test_the_plan_counts_the_room_of_shells_and_apps(self):
+        """2026-11-10: Debian 13 with Phosh and GNOME needed far more than the image alone."""
+        (Path(os.environ['A22X_PLATFORM_HELPERS']) / 'wpa_supplicant').write_bytes(b'static wpa_supplicant')
+        roomy = types.SimpleNamespace(f_bavail=1 << 30, f_blocks=1 << 30, f_frsize=4096)
+        with mock.patch.object(d, 'COUNT_PACKAGES', True), mock.patch.object(d.os, 'fstatvfs', lambda fd: roomy):
+            bare = d.image_plan(self.f.context, 'sdcard-p1', '/distro-1.0.tar.gz',
+                                d.image_options('console', 'keep', None, None, 0, None))['plan']['required_bytes']
+            full = d.image_plan(self.f.context, 'sdcard-p1', '/distro-1.0.tar.gz',
+                                d.image_options('phosh', 'keep', None, None, 0, None, apps=['ssh', 'calculator'],
+                                                shells=['gnome']))['plan']['required_bytes']
+        self.assertEqual(full - bare, d.SHELL_BYTES['phosh'] + d.SHELL_BYTES['gnome'] + 2 * d.APP_BYTES)
+        tight = types.SimpleNamespace(f_bavail=(bare + d.SHELL_BYTES['phosh']) // 4096, f_blocks=1 << 30, f_frsize=4096)
+        with mock.patch.object(d, 'COUNT_PACKAGES', True), mock.patch.object(d.os, 'fstatvfs', lambda fd: tight):
+            with self.assertRaises(d.fs.FilesystemError) as caught:
+                d.image_plan(self.f.context, 'sdcard-p1', '/distro-1.0.tar.gz',
+                             d.image_options('phosh', 'keep', None, None, 0, None, shells=['gnome']))
+        self.assertEqual(caught.exception.code, 'INSUFFICIENT_SPACE')  # refused before anything is unpacked
 
     def test_a_prepared_password_hash_reaches_first_boot(self):
         """2026-11-10: a plan from the Android app has the account's SHA-512 hash, not its password."""
@@ -1297,6 +1328,18 @@ class TestImageStore(unittest.TestCase):
             (folder / 'sideload-20261110-000000.zip').write_bytes(b'PK\x03\x04' + b'0' * 996)
         self.assertEqual([item['file'] for item in d.images(self.f.context)['images']], ['sideload-20261110-000000.zip'])
         self.error('INSUFFICIENT_SPACE', lambda: d.sideload_store(self.f.context, 1 << 60).__enter__())
+
+    def test_a_sideload_reopens_a_read_only_userdata(self):
+        """2026-11-10, on the phone: userdata left read-only by the image picker refused the
+        transfer. It is writable for the transfer and read-only again after it."""
+        context = self.f.context
+        context.mount('userdata', 'ro', True, context.volume('userdata')['volume_token'])
+        self.assertTrue(context.volume('userdata')['read_only'])
+        with d.sideload_store(context, 1000) as folder:
+            self.assertFalse(context.volume('userdata')['read_only'])
+            (folder / 'sideload-20261110-000001-recovery.img').write_bytes(b'ANDROID!' + bytes(992))
+        self.assertTrue(context.volume('userdata')['mounted'] and context.volume('userdata')['read_only'])
+        self.assertIn('sideload-20261110-000001-recovery.img', [p.name for p in self.store.iterdir()])
 
     def test_a_saved_image_installs_beside_the_system(self):
         path = self.save()

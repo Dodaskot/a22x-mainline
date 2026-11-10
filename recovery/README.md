@@ -13,7 +13,7 @@ on-phone check: [docs/PROGRESS.md](docs/PROGRESS.md).
 
 | | |
 |---|---|
-| Recovery | 0.6.141, SHA-256 `ee84217f6177080f7a19a9f7f975040418d9ae06117b1e5e1ee0fb5de418272f` |
+| Recovery | 0.6.147, SHA-256 `0c20339567dc23339a2883f49d9003091af92899bd97d32b85f4796d88760bfb` |
 | Recovery kernel | `7.2.0-a22x-recovery+ #123`: [linux-a22x](https://github.com/Dodaskot/linux-a22x) branch `a22x-recovery`, tag `a22x-recovery-kernel123` |
 | Tested with | BOOT v146 (`releases/v146`, kernel `#122`) and v145 (kernel `#121`), branch `a22x-boot` |
 | Image | not published: it contains firmware captured from the developer's phone and the developer's SSH key (see [Building](#building)) |
@@ -51,8 +51,10 @@ networks are not part of this repository.
   (`172.16.42.1`) and over Wi-Fi.
 - **ADB** over USB and over the USB network (`adb connect 172.16.42.1:5555`):
   root shell, `push`/`pull`, and `adb sideload FILE`, which saves the file in
-  the image store on `userdata` (a ZIP for later Android installation, or a
-  Linux image). A new computer is allowed on the phone screen first and then
+  the image store on `userdata`: a ZIP for later Android installation, a Linux
+  image, or an image of one of the phone's partitions (BOOT, recovery, vbmeta,
+  DTBO, sparse or super images, named by what they are) for **Flash a
+  partition**. A new computer is allowed on the phone screen first and then
   remembered; the recovery password, when set, is asked as for SSH.
 
 ### Linux systems
@@ -97,6 +99,13 @@ networks are not part of this repository.
   first (on the SD card, or in `userdata`'s image store), and the partition is
   read back after writing. RECOVERY and BOOT were flashed this way on the
   phone (2026-11-10).
+- **Logical partitions inside super** (`system`, `odm`, `product`, `vendor`):
+  an image (a GSI's `system.img`, raw or sparse) goes into one of them; a
+  larger image makes the partition grow into super's free space within its
+  group, every copy of super's metadata is rewritten and read back. A small
+  partition's content is saved first, and the same image is recognised as
+  already there. Checked on the phone on `odm`: written, read back, restored
+  from the saved copy, super's metadata unchanged (2026-11-10).
 - Images are judged by their **contents**, not by a list of approved hashes
   (`bootimage.py`): a BOOT or recovery image must be complete (the kernel
   unpacks to its end, or its AVB hash matches) and made for this phone (the
