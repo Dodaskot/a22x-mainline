@@ -24,13 +24,28 @@ SIZES = {'boot': 1 << 20, 'dtbo': 1 << 18, 'vbmeta': 1 << 16, 'vbmeta_vendor': 1
 
 
 def boot_image(size=8192, *, dtbo=0, board=b'SRPTL28A011'):
+    """A small but complete A22x boot (or, with DTBO, recovery) image: gzip kernel with its device
+    tree, gzip ramdisk and a DT table, so it passes the content check of bootimage.py."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import test_bootimage as tb
+    kernel, ramdisk, dtb = tb.kernel(appended=tb.MAINLINE_TREE), tb.ramdisk(), tb.dt_table(tb.MAINLINE_TREE)
+    pad = lambda blob: blob + bytes(-len(blob) % 2048)
     header = bytearray(2048)
     header[:8] = b'ANDROID!'
-    struct.pack_into('<10I', header, 8, 2048, 0x40080000, 2048, 0x51100000, 0, 0, 0x47c80000, 2048, 2, 0)
+    struct.pack_into('<10I', header, 8, len(kernel), 0x40080000, len(ramdisk), 0x51100000, 0, 0, 0x47c80000, 2048, 2, 0)
     header[48:48 + len(board)] = board
-    struct.pack_into('<IQI', header, 1632, dtbo, 6144 if dtbo else 0, 1660)
-    struct.pack_into('<IQ', header, 1648, 2048, 0x47c80000)
-    return bytes(header) + b'k' * 2048 + b'r' * 2048 + (b'o' * 2048 if dtbo else b'') + b'd' * 2048
+    body = pad(kernel) + pad(ramdisk)
+    struct.pack_into('<IQI', header, 1632, dtbo, 2048 + len(body) if dtbo else 0, 1660)
+    struct.pack_into('<IQ', header, 1648, len(dtb), 0x47c80000)
+    return bytes(header) + body + (pad(b'o' * dtbo) if dtbo else b'') + dtb
+
+
+def vbmeta(tail=b''):
+    """A vbmeta header without signature or descriptors, followed by TAIL."""
+    header = bytearray(256)
+    header[:4] = b'AVB0'
+    struct.pack_into('>IIQQIQQQQQQQQQQQII', header, 4, 1, 0, 0, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    return bytes(header) + bytes(64) + tail
 
 
 def sparse(payload):
@@ -183,11 +198,11 @@ class Flash(unittest.TestCase):
         self.assertEqual((self.root / 'targets/boot').read_bytes(), before)
 
     def test_image_larger_than_the_partition_is_refused(self):
-        code, result, _ = self.check('vbmeta', self.image(b'AVB0' + bytes(SIZES['vbmeta'])))
+        code, result, _ = self.check('vbmeta', self.image(vbmeta(bytes(SIZES['vbmeta']))))
         self.assertEqual((code, result['error']['code']), (2, 'IMAGE_TOO_LARGE'))
 
     def test_flash_from_a_read_only_stick_saves_the_old_content_and_verifies(self):
-        data = b'AVB0' + b'v' * 1000
+        data = vbmeta(b'v' * 1000)
         path = self.image(data)
         code, checked, progress = self.check('vbmeta', path)
         self.assertEqual(code, 0, checked)
@@ -199,6 +214,10 @@ class Flash(unittest.TestCase):
         self.assertEqual(code, 0, done)
         self.assertTrue(done['verified'])
         self.assertEqual(done['sha256'], checked['image']['sha256'])
+        # The verified write is noted for the normal-boot check (2026-11-10).
+        self.assertTrue(done['recorded'])
+        records = json.loads((self.root / '.flash-records.json').read_text())
+        self.assertEqual(records['written']['vbmeta']['sha256'], done['sha256'])
         target = (self.root / 'targets/vbmeta').read_bytes()
         self.assertEqual(target[:len(data)], data)
         self.assertEqual(target[len(data):], bytes(SIZES['vbmeta'] - len(data)))
@@ -208,19 +227,24 @@ class Flash(unittest.TestCase):
         code, again, _ = self.check('vbmeta', path)
         self.assertTrue(again['identical'])
 
+    def test_old_content_on_userdata_goes_into_its_image_store(self):
+        # Linux systems live at the top of userdata: a saved partition must not land inside one.
+        self.assertEqual(flash.rollback_folders({'id': 'mmcblk0p54', 'label': 'userdata'}), ('.a22x-images', flash.ROLLBACK_FOLDER))
+        self.assertEqual(flash.rollback_folders({'id': 'sdcard-p1', 'label': 'alarm_root'}), (flash.ROLLBACK_FOLDER,))
+
     def test_write_needs_confirmation_and_the_checked_file(self):
-        path = self.image(b'AVB0' + b'v' * 100)
+        path = self.image(vbmeta(b'v' * 100))
         _, checked, _ = self.check('vbmeta', path)
         before = (self.root / 'targets/vbmeta').read_bytes()
         code, result, _ = self.write('vbmeta', path, checked, confirm=False)
         self.assertEqual((code, result['error']['code']), (2, 'CONFIRMATION_REQUIRED'))
-        self.image(b'AVB0' + b'w' * 100)
+        self.image(vbmeta(b'w' * 100))
         code, result, _ = self.write('vbmeta', path, checked)
         self.assertEqual((code, result['error']['code']), (2, 'IMAGE_CHANGED'))
         self.assertEqual((self.root / 'targets/vbmeta').read_bytes(), before)
 
     def test_pending_installation_blocks_a_flash(self):
-        path = self.image(b'AVB0' + b'v' * 100)
+        path = self.image(vbmeta(b'v' * 100))
         _, checked, _ = self.check('vbmeta', path)
         (self.root / '.install-transaction.json').write_text('{}')
         before = (self.root / 'targets/vbmeta').read_bytes()
@@ -230,13 +254,13 @@ class Flash(unittest.TestCase):
 
     def test_no_writable_volume_is_reported_before_the_flash(self):
         self.volumes([{'id': 'usb-p1', 'path': 'usb', 'fs_type': 'exfat', 'mounted': True, 'read_only': True}])
-        code, checked, _ = self.check('vbmeta', self.image(b'AVB0' + b'v' * 100))
+        code, checked, _ = self.check('vbmeta', self.image(vbmeta(b'v' * 100)))
         self.assertEqual(code, 0)
         self.assertIsNone(checked['rollback_volume'])
         self.assertIn('The current partition will not be saved first', checked['warnings'])
 
     def test_compressed_and_sparse_images(self):
-        data = b'AVB0' + b'g' * 5000
+        data = vbmeta(b'g' * 5000)
         for name, encoded in (('a.img.gz', gzip.compress(data)),) + ((('a.img.lz4', subprocess.run(
                 ['lz4', '-c'], input=data, stdout=subprocess.PIPE, check=True).stdout),) if shutil.which('lz4') else ()):
             path = self.image(encoded, name)

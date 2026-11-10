@@ -27,6 +27,7 @@ import threading
 import time
 import zlib
 
+import bootimage
 import filesystem as fs
 from operation_lock import operation_lock, ENV_FD
 
@@ -57,6 +58,7 @@ LINUX_BOOT_CHARGER_OFF = 'b689f2dd5bb4f72a65665e1ebfcd5012b4126a21d7b427fa54c2d3
 LINUX_BOOT_K116 = '71a50262a73859e1538e79277f0ce00822be208d52b32328038a5932b513f874'
 # Kernel 121: kernel 116 plus the USB replug after system sleep, same modules (2026-11-09).
 LINUX_BOOT_K121 = 'e3542fcdd905a4b89a10eb828fa983bc9f0837a2635155d0124c692f6c5fbb1f'
+LINUX_BOOT_K122 = '9701f48ddced60c648e79a502885778935d1cb5610a011d77fc1898eea01d41a'
 MMC_SECTORS = 122142720
 MMC_BOOT_BYTES = 4 * CHUNK
 PLATFORM_BASELINE = {
@@ -1120,6 +1122,80 @@ def check_plan(context, plan, confirmation=None):
                 'INSTALL_CONFIRMATION_REQUIRED', 'The exact executable reviewed plan confirmation is required')
 
 
+FLASH_RECORDS = Path('a22x-recovery/flash-records.json')
+FLASH_RECORDS_SCHEMA = 'a22x.flash-records.v1'
+
+
+@contextlib.contextmanager
+def flash_records_file(context, mode):
+    """Where this recovery notes the partitions it wrote and read back itself (2026-11-10): the cache
+    volume on the phone, the fixture's own folder in tests."""
+    if context.mode == 'fixture':
+        yield context.root / '.flash-records.json'
+        return
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import settings
+    with settings.volume_root(context.fs, 'cache', mode) as root:
+        yield root / FLASH_RECORDS
+
+
+def parse_flash_records(path):
+    if not path.is_file() or path.is_symlink():
+        return {}
+    value = json.loads(path.read_bytes()[:65536].decode('utf-8'))
+    if not isinstance(value, dict) or value.get('schema') != FLASH_RECORDS_SCHEMA or not isinstance(value.get('written'), dict):
+        return {}
+    return {label: item['sha256'] for label, item in value['written'].items()
+            if isinstance(label, str) and re.fullmatch(r'[a-z0-9_]{1,32}', label) and isinstance(item, dict)
+            and isinstance(item.get('sha256'), str) and re.fullmatch(r'[0-9a-f]{64}', item['sha256'])}
+
+
+def read_flash_records(context):
+    """{label: sha256} of the last verified write of each partition by Flash a partition; empty when unknown."""
+    try:
+        with flash_records_file(context, 'ro') as path:
+            return parse_flash_records(path)
+    except (OSError, ValueError, fs.FilesystemError):
+        return {}
+
+
+def record_flash(context, label, sha256):
+    """Note a verified write, so that a normal boot accepts the partition while it holds exactly this."""
+    try:
+        with flash_records_file(context, 'rw') as path:
+            path.parent.mkdir(mode=0o700, exist_ok=True)
+            try:
+                value = json.loads(path.read_bytes()[:65536].decode('utf-8')) if path.is_file() and not path.is_symlink() else {}
+            except ValueError:
+                value = {}
+            written = value.get('written') if isinstance(value, dict) and value.get('schema') == FLASH_RECORDS_SCHEMA else None
+            written = dict(written) if isinstance(written, dict) else {}
+            written[label] = {'sha256': sha256, 'utc': int(time.time())}
+            part = path.with_name(path.name + '.part')
+            part.write_text(json.dumps({'schema': FLASH_RECORDS_SCHEMA, 'written': written}, indent=1, sort_keys=True) + '\n')
+            os.replace(part, path)
+            os.sync()
+        return True
+    except (OSError, ValueError, fs.FilesystemError):
+        return False
+
+
+def target_bytes(context, target, limit=64 << 20):
+    """A whole small partition (BOOT, dtbo, vbmeta) in memory, to judge it by its contents."""
+    require(target['size_bytes'] <= limit, 'TARGET_TOO_LARGE', 'The partition is too large to judge by its contents')
+    fd = context.open_target(target)
+    try:
+        data = bytearray()
+        while len(data) < target['size_bytes']:
+            chunk = os.pread(fd, min(CHUNK, target['size_bytes'] - len(data)), len(data))
+            require(chunk, 'TARGET_READ_FAILED', 'The partition could not be read')
+            data += chunk
+        context.check_target(fd, target)
+        return bytes(data)
+    finally:
+        os.close(fd)
+
+
 def target_hash(context, target, progress=None):
     fd = context.open_target(target)
     try:
@@ -1764,9 +1840,10 @@ def boot_check(context):
                     observed[label] = target_hash(context, context.target(label))
                 return observed[label]
             known_linux = all(current(label) == expected or (label == 'boot' and context.mode == 'device'
-                                                              and current(label) in (LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K116, LINUX_BOOT_K121))
+                                                              and current(label) in (LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K116, LINUX_BOOT_K121, LINUX_BOOT_K122))
                               for label, expected in baseline.items())
             verified_transaction = None
+            verified_flash, verified_contents = [], []
             if not known_linux:
                 # Merely inserting an unrelated empty card is not proof that
                 # the original installation completed. Bind an exact durable
@@ -1779,12 +1856,36 @@ def boot_check(context):
                         continue
                     verified_transaction = candidate['id']
                     break
-                require(verified_transaction is not None, 'BOOT_SAFETY_UNPROVEN',
+                if verified_transaction is None:
+                    # 2026-11-10: a changed partition is accepted while it holds exactly what Flash a
+                    # partition wrote and read back there, or when its contents show a complete image
+                    # for this phone (bootimage.py): an Android or Linux BOOT, a DT table, a vbmeta.
+                    # A write that stopped part way breaks the kernel stream or an AVB hash instead.
+                    records = read_flash_records(context)
+                    changed = [label for label, expected in baseline.items() if current(label) != expected and not (
+                        label == 'boot' and context.mode == 'device' and current(label) in (
+                            LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K116, LINUX_BOOT_K121, LINUX_BOOT_K122))]
+                    problems = {}
+                    for label in changed:
+                        if records.get(label) == current(label):
+                            verified_flash.append(label)
+                            continue
+                        try:
+                            bootimage.inspect(label, target_bytes(context, context.target(label)))
+                            verified_contents.append(label)
+                        except bootimage.ImageError as exc:
+                            problems[label] = exc.code
+                    require(changed and not problems, 'BOOT_SAFETY_UNPROVEN',
+                            'Changed %s is not a complete image for this phone (%s); flash a good image or use Recovery repair'
+                            % (', '.join(sorted(problems)) or 'BOOT', ', '.join(sorted(set(problems.values()))) or 'no proof'),
+                            partitions=problems)
+                require(verified_transaction is not None or verified_flash or verified_contents, 'BOOT_SAFETY_UNPROVEN',
                         'Changed BOOT lacks a completed matching transaction; use Recovery repair or reinsert its source SD')
             return {'ok': True, 'schema': 'a22x.install.boot-check.v1', 'operation': 'boot-check',
                     'mode': context.mode, 'boot_id': context.boot_id, 'normal_boot_allowed': True,
                     'journal_storage_present': present, 'durable_state_checked': present,
                     'known_linux_boot_safe': known_linux, 'verified_completed_transaction': verified_transaction,
+                    'verified_recovery_flash': verified_flash, 'verified_by_contents': verified_contents,
                     'pending': False, 'auto_reboot': False}
         finally:
             for ident, token in reversed(owned):

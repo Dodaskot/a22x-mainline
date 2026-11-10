@@ -4022,3 +4022,99 @@ msgstr "Wspólne pliki wymagają tych samych nazw i numerów grup"
 
 msgid "Shared home requires the same user name, UID, primary GID and home path"
 msgstr "Wspólny /home wymaga tej samej nazwy, UID, głównej grupy i katalogu użytkownika"
+
+msgid "checked against the catalog"
+msgstr "sprawdzony z katalogiem"
+
+msgid "Choose an image of the store"
+msgstr "Wybierz zapisany obraz"
+
+msgid "copied file"
+msgstr "skopiowany plik"
+
+msgid "Delete this image?"
+msgstr "Usunąć ten obraz?"
+
+msgid "Download from the catalog"
+msgstr "Pobierz z katalogu"
+
+msgid "Download to the phone"
+msgstr "Pobierz na telefon"
+
+msgid "Downloading %s..."
+msgstr "Pobieranie %s..."
+
+msgid "Free on userdata: %s"
+msgstr "Wolne na userdata: %s"
+
+msgid "Hold 2 seconds to delete"
+msgstr "Przytrzymaj 2 sekundy, aby usunąć"
+
+msgid "Images in the phone's memory, no SD card needed"
+msgstr "Obrazy w pamięci telefonu, bez karty SD"
+
+msgid "In the phone's memory: they install without an SD card."
+msgstr "W pamięci telefonu: instalują się bez karty SD."
+
+msgid "It is removed from the phone's memory. Installed systems are not affected."
+msgstr "Zostanie usunięty z pamięci telefonu. Zainstalowane systemy pozostaną bez zmian."
+
+msgid "Mount userdata with write access first: the images are kept there."
+msgstr "Najpierw zamontuj userdata z zapisem: tam przechowywane są obrazy."
+
+msgid "No images are saved yet. Download one from the catalog, or copy an image into the .a22x-images folder of userdata with USB files."
+msgstr "Nie ma jeszcze zapisanych obrazów. Pobierz obraz z katalogu albo skopiuj go do folderu .a22x-images na userdata przez Pliki USB."
+
+msgid "No SD card is needed; the image stays saved after the installation."
+msgstr "Karta SD nie jest potrzebna; obraz pozostaje zapisany po instalacji."
+
+msgid "Reading the saved images..."
+msgstr "Odczytywanie zapisanych obrazów..."
+
+msgid "Saved images"
+msgstr "Zapisane obrazy"
+
+msgid "Saved in the phone's memory and checked, for installing later."
+msgstr "Zapisywane w pamięci telefonu po sprawdzeniu, do późniejszej instalacji."
+
+msgid "SAVED ON THE PHONE"
+msgstr "ZAPISANY NA TELEFONIE"
+
+msgid "Saved on the phone"
+msgstr "Zapisane na telefonie"
+
+msgid "Saved on the phone: %s"
+msgstr "Zapisano na telefonie: %s"
+
+msgid "The image is not saved on the phone"
+msgstr "Tego obrazu nie ma na telefonie"
+
+msgid "The image store did not return a valid result."
+msgstr "Magazyn obrazów nie zwrócił prawidłowego wyniku."
+
+msgid "The image store on userdata is not a folder"
+msgstr "Magazyn obrazów na userdata nie jest folderem"
+
+msgid "The image was deleted."
+msgstr "Obraz został usunięty."
+
+msgid "There is not enough space on userdata for this image"
+msgstr "Na userdata brakuje miejsca na ten obraz"
+
+msgid "A computer is asking to use ADB with this recovery."
+msgstr "Komputer prosi o dostęp ADB do tego recovery."
+
+msgid "ADB connection"
+msgstr "Połączenie ADB"
+
+msgid "An allowed computer is remembered. When the recovery has a password, it is asked as well."
+msgstr "Dozwolony komputer zostanie zapamiętany. Jeśli recovery ma hasło, ono również będzie wymagane."
+
+msgid "It gets a root shell, copies files and can restart the phone."
+msgstr "Otrzyma powłokę root, będzie kopiować pliki i może uruchamiać telefon ponownie."
+
+msgid "KEY FINGERPRINT"
+msgstr "ODCISK KLUCZA"
+
+msgid "USB debugging"
+msgstr "Debugowanie USB"

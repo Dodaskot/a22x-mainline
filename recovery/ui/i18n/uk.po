@@ -4022,3 +4022,99 @@ msgstr "Спільні файли вимагають тих самих назв 
 
 msgid "Shared home requires the same user name, UID, primary GID and home path"
 msgstr "Спільний /home вимагає того самого імені, UID, основної групи й теки користувача"
+
+msgid "checked against the catalog"
+msgstr "перевірено за каталогом"
+
+msgid "Choose an image of the store"
+msgstr "Виберіть образ зі сховища"
+
+msgid "copied file"
+msgstr "скопійований файл"
+
+msgid "Delete this image?"
+msgstr "Видалити цей образ?"
+
+msgid "Download from the catalog"
+msgstr "Завантажити з каталогу"
+
+msgid "Download to the phone"
+msgstr "Завантажити на телефон"
+
+msgid "Downloading %s..."
+msgstr "Завантаження %s..."
+
+msgid "Free on userdata: %s"
+msgstr "Вільно на userdata: %s"
+
+msgid "Hold 2 seconds to delete"
+msgstr "Утримуйте 2 с, щоб видалити"
+
+msgid "Images in the phone's memory, no SD card needed"
+msgstr "Образи в пам'яті телефона, без SD-картки"
+
+msgid "In the phone's memory: they install without an SD card."
+msgstr "У пам'яті телефона: встановлюються без SD-картки."
+
+msgid "It is removed from the phone's memory. Installed systems are not affected."
+msgstr "Його буде стерто з пам'яті телефона. Встановлених систем це не торкнеться."
+
+msgid "Mount userdata with write access first: the images are kept there."
+msgstr "Спершу змонтуйте userdata із записом: образи зберігаються там."
+
+msgid "No images are saved yet. Download one from the catalog, or copy an image into the .a22x-images folder of userdata with USB files."
+msgstr "Збережених образів ще немає. Завантажте образ із каталогу або скопіюйте його в теку .a22x-images на userdata через «USB-файли»."
+
+msgid "No SD card is needed; the image stays saved after the installation."
+msgstr "SD-картка не потрібна; після встановлення образ лишається збереженим."
+
+msgid "Reading the saved images..."
+msgstr "Читаю збережені образи..."
+
+msgid "Saved images"
+msgstr "Збережені образи"
+
+msgid "Saved in the phone's memory and checked, for installing later."
+msgstr "Зберігаються в пам'яті телефона після перевірки, щоб встановити пізніше."
+
+msgid "SAVED ON THE PHONE"
+msgstr "ЗБЕРЕЖЕНО НА ТЕЛЕФОНІ"
+
+msgid "Saved on the phone"
+msgstr "Збережені на телефоні"
+
+msgid "Saved on the phone: %s"
+msgstr "Збережено на телефоні: %s"
+
+msgid "The image is not saved on the phone"
+msgstr "Цього образу немає серед збережених на телефоні"
+
+msgid "The image store did not return a valid result."
+msgstr "Сховище образів не повернуло коректного результату."
+
+msgid "The image store on userdata is not a folder"
+msgstr "Сховище образів на userdata не є текою"
+
+msgid "The image was deleted."
+msgstr "Образ видалено."
+
+msgid "There is not enough space on userdata for this image"
+msgstr "На userdata замало місця для цього образу"
+
+msgid "A computer is asking to use ADB with this recovery."
+msgstr "Комп'ютер просить доступ ADB до цього recovery."
+
+msgid "ADB connection"
+msgstr "З'єднання ADB"
+
+msgid "An allowed computer is remembered. When the recovery has a password, it is asked as well."
+msgstr "Дозволений комп'ютер запам'ятовується. Якщо recovery має пароль, його теж буде запитано."
+
+msgid "It gets a root shell, copies files and can restart the phone."
+msgstr "Він отримає root-оболонку, копіюватиме файли й зможе перезапускати телефон."
+
+msgid "KEY FINGERPRINT"
+msgstr "ВІДБИТОК КЛЮЧА"
+
+msgid "USB debugging"
+msgstr "Налагодження USB"

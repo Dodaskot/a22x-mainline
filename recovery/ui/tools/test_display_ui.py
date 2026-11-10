@@ -18,7 +18,7 @@ CASES = ('busy-backup', 'power-focus-hold', 'wake-contact', 'terminal-mtp',
          'restore-boot', 'restore-tap', 'restore-locked', 'restore-refused',
          'restore-set-error', 'restore-unavailable', 'stick-choice', 'rate-change', 'transitions',
          'password', 'lock-guard', 'lock-keeps-text', 'access', 'animation-styles', 'blur', 'pad', 'prompt-field', 'settings-retry', 'theme-files', 'phone-details',
-         'vblank-stays', 'lock-dark', 'pad-dots', 'pad-round', 'power-menu', 'navigation', 'restore-image', 'account-page', 'clean-install', 'systems-mount', 'format-done', 'check-done', 'wifi', 'installer', 'packages')
+         'vblank-stays', 'lock-dark', 'pad-dots', 'pad-round', 'power-menu', 'navigation', 'restore-image', 'account-page', 'clean-install', 'systems-mount', 'format-done', 'check-done', 'wifi', 'installer', 'packages', 'adb')
 
 
 def flaky_settings(root, env):
@@ -129,7 +129,7 @@ def main():
             assert ops[0] == 'status'
             if case in ('unavailable', 'malformed', 'strict-readback', 'stick-choice', 'transitions', 'password', 'lock-guard',
                         'lock-keeps-text', 'access', 'animation-styles', 'blur', 'pad', 'prompt-field', 'settings-retry', 'theme-files', 'phone-details',
-                        'vblank-stays', 'lock-dark', 'pad-dots', 'pad-round', 'power-menu', 'navigation', 'restore-image', 'account-page', 'clean-install', 'systems-mount', 'format-done', 'check-done', 'wifi', 'installer', 'packages'):
+                        'vblank-stays', 'lock-dark', 'pad-dots', 'pad-round', 'power-menu', 'navigation', 'restore-image', 'account-page', 'clean-install', 'systems-mount', 'format-done', 'check-done', 'wifi', 'installer', 'packages', 'adb'):
                 expected = ['status']
             elif case in ('slider', 'no-drm'):
                 expected = ['status', 'brightness', 'status', 'brightness', 'status']

@@ -18,6 +18,7 @@ import shutil
 import stat
 import struct
 import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -40,6 +41,7 @@ LINUX_BOOT_CHARGER_OFF = "b689f2dd5bb4f72a65665e1ebfcd5012b4126a21d7b427fa54c2d3
 LINUX_BOOT_K116 = "71a50262a73859e1538e79277f0ce00822be208d52b32328038a5932b513f874"
 # Kernel 121: kernel 116 plus the USB replug after system sleep, same modules (2026-11-09).
 LINUX_BOOT_K121 = "e3542fcdd905a4b89a10eb828fa983bc9f0837a2635155d0124c692f6c5fbb1f"
+LINUX_BOOT_K122 = "9701f48ddced60c648e79a502885778935d1cb5610a011d77fc1898eea01d41a"
 LABELS = ("boot", "userdata")
 RESERVE = 64 * 1024 * 1024
 METADATA_ALLOWANCE = 1024 * 1024
@@ -306,6 +308,21 @@ def _manifest(context, plan, entries):
                             "No secure erasure, atomic restore or automatic reboot."]}
 
 
+def _linux_boot_in_backup(directory, entry):
+    """Whether a backup's BOOT holds a complete Linux BOOT for this phone (2026-11-10: judged by its
+    contents with bootimage.py instead of a list of tested hashes)."""
+    try:
+        with gzip.open(Path(directory) / entry["archive"], "rb") as archive:
+            raw = archive.read(int(entry["raw_bytes"]) + 1)
+    except (OSError, EOFError, ValueError, KeyError, TypeError):
+        return False
+    if len(raw) != entry["raw_bytes"] or hashlib.sha256(raw).hexdigest() != entry.get("raw_sha256"):
+        return False
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import bootimage
+    return bootimage.linux_release(raw) is not None
+
+
 def load_manifest(context, backup_path):
     path = context.user_path(backup_path)
     if not path.is_dir() or ".partial-" in path.name:
@@ -478,7 +495,8 @@ def make_destructive_plan(context, backup_path, operation, progress=None):
         boot_sha = _boot_hash(context, parts[0], progress, operation + "-plan")
         backup_boot_sha = manifest["entries"][0]["raw_sha256"]
         blockers = list(qualification["blockers"])
-        if context.mode == "device" and qualification["eligible"] and backup_boot_sha not in (qualification["linux_boot_sha256"], LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K121, LINUX_BOOT_K116):
+        if context.mode == "device" and qualification["eligible"] and backup_boot_sha not in (qualification["linux_boot_sha256"], LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K121, LINUX_BOOT_K116, LINUX_BOOT_K122) \
+                and not _linux_boot_in_backup(path, manifest["entries"][0]):
             blockers.append("LINUX_BOOT_NOT_QUALIFIED")
         if operation == "wipe":
             if boot_sha != backup_boot_sha:
@@ -823,7 +841,8 @@ def execute(context, plan, confirmation, progress=None):
                 or manifest.get("source_geometry") != qualified.geometry_record(parts)):
             fail("PLAN_STALE", "The sealed source backup or target contract changed after review")
         backup_boot = manifest["entries"][0]["raw_sha256"]
-        if context.mode == "device" and backup_boot not in (plan["qualification"]["linux_boot_sha256"], LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K116, LINUX_BOOT_K121):
+        if context.mode == "device" and backup_boot not in (plan["qualification"]["linux_boot_sha256"], LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K116, LINUX_BOOT_K121, LINUX_BOOT_K122) \
+                and not _linux_boot_in_backup(path, manifest["entries"][0]):
             fail("LINUX_BOOT_NOT_QUALIFIED", "This backup BOOT image is outside the tested Linux boot allowlist")
         for part in parts:
             if _fingerprint(context, part) != plan["target_fingerprints"][part["label"]]:

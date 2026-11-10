@@ -142,6 +142,24 @@ int main(int argc,char**argv){
         access_file("granted");screen(a,HOME);render(a);lock_show(a);DCHECK(access(grant,F_OK)!=0);
         REQUEST("ee");POLL();DCHECK(a->screen==ACCESS_REQUEST&&a->locked);action(a,A_ACCESS_DENY);DCHECK(a->screen==LOCKSCREEN&&a->locked);goto done;
     }
+    if(!strcmp(which,"adb")){
+        /* 2026-11-10: a new ADB key waits for the phone; each answer writes its file, a computer
+           that gives up closes the page, a locked phone does not show it, and a strange id names nothing. */
+        char base[PATH_LEN],path[PATH_LEN+64];snprintf(base,sizeof(base),"%.900s/adb",argv[1]);DCHECK(mkdir(base,0700)==0);adb_dir=base;
+        #define ADB_FILE(id) do{snprintf(path,sizeof(path),"%s/request-" id ".json",base);FILE*f=fopen(path,"w");DCHECK(f!=NULL);fputs("{\"id\":\"" id "\",\"fingerprint\":\"SHA256:abc\",\"comment\":\"user@pc\",\"peer\":\"172.16.42.2:5000\"}",f);fclose(f);}while(0)
+        #define ADB_POLL() do{a->now+=500;adb_poll(a);}while(0)
+        screen(a,TOOLS);a->now=1000;ADB_POLL();DCHECK(a->screen==TOOLS);
+        ADB_FILE("aa11");ADB_POLL();DCHECK(a->screen==ADB_REQUEST&&!strcmp(a->adb_id,"aa11")&&!strcmp(a->adb_fingerprint,"SHA256:abc")&&!strcmp(a->adb_comment,"user@pc"));render(a);
+        action(a,A_ADB_ALLOW);snprintf(path,sizeof(path),"%s/allowed-aa11",base);DCHECK(!access(path,F_OK)&&a->screen==TOOLS&&!a->adb_id[0]);
+        ADB_POLL();DCHECK(a->screen==TOOLS); /* not asked twice before adbd removes it */
+        (void)unlink(path);snprintf(path,sizeof(path),"%s/request-aa11.json",base);(void)unlink(path);
+        ADB_FILE("bb22");ADB_POLL();DCHECK(a->screen==ADB_REQUEST);action(a,A_ADB_DENY);snprintf(path,sizeof(path),"%s/denied-bb22",base);DCHECK(!access(path,F_OK)&&a->screen==TOOLS);
+        (void)unlink(path);snprintf(path,sizeof(path),"%s/request-bb22.json",base);(void)unlink(path);
+        ADB_FILE("cc33");ADB_POLL();DCHECK(a->screen==ADB_REQUEST);(void)unlink(path);ADB_POLL();DCHECK(a->screen==TOOLS&&!a->adb_id[0]);
+        a->locked=true;ADB_FILE("dd44");ADB_POLL();DCHECK(a->screen!=ADB_REQUEST);a->locked=false;(void)unlink(path);
+        snprintf(path,sizeof(path),"%s/request-x.json",base);{FILE*f=fopen(path,"w");DCHECK(f!=NULL);fputs("{\"id\":\"../x\"}",f);fclose(f);}ADB_POLL();DCHECK(a->screen==TOOLS&&!a->adb_id[0]);
+        goto done;
+    }
     if(!strcmp(which,"animation-styles")){
         size_t bytes=(size_t)NW*NH*sizeof(uint32_t);a->tr.from=malloc(bytes);a->tr.to=malloc(bytes);DCHECK(a->tr.from&&a->tr.to);a->animate=true;
         screen(a,HOME);render(a);Rect tile=test_button(a,A_STORAGE)->r;

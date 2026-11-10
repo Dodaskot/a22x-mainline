@@ -28,6 +28,7 @@ import time
 import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import bootimage
 import filesystem as fs
 import install
 from install import require
@@ -352,6 +353,14 @@ def rollback_volume(context, size):
     return None
 
 
+def rollback_folders(volume):
+    """Linux systems live at the top of userdata, so an old partition goes into its image store there
+    and never into a system's root (2026-11-10); elsewhere it goes to a folder of its own."""
+    if (volume.get('label') or volume['id']) == 'userdata':
+        return ('.a22x-images', ROLLBACK_FOLDER)
+    return (ROLLBACK_FOLDER,)
+
+
 def save_rollback(context, target, progress):
     if target['size_bytes'] > ROLLBACK_LIMIT:
         return None
@@ -362,11 +371,16 @@ def save_rollback(context, target, progress):
     source = context.open_target(target)
     try:
         with fs.PinnedVolume(context.fs, volume['id'], writing=True) as pin:
-            with contextlib.suppress(FileExistsError):
-                os.mkdir(ROLLBACK_FOLDER, 0o700, dir_fd=pin.fd)
-            folder = os.open(ROLLBACK_FOLDER, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=pin.fd)
+            parts = rollback_folders(volume)
+            folder = os.dup(pin.fd)
             try:
-                pin.check_fd(folder)
+                for part in parts:
+                    with contextlib.suppress(FileExistsError):
+                        os.mkdir(part, 0o700, dir_fd=folder)
+                    inner = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=folder)
+                    os.close(folder)
+                    folder = inner
+                    pin.check_fd(folder)
                 # Two flashes within one second must not lose the older copy.
                 for attempt in range(100):
                     name = stamp + ('-%d.img' % attempt if attempt else '.img')
@@ -390,7 +404,7 @@ def save_rollback(context, target, progress):
                 os.close(folder)
     finally:
         os.close(source)
-    return {'volume': volume.get('label') or volume['id'], 'path': '/' + ROLLBACK_FOLDER + '/' + name}
+    return {'volume': volume.get('label') or volume['id'], 'path': '/' + '/'.join(parts) + '/' + name}
 
 
 def targets(context):
@@ -403,6 +417,23 @@ def targets(context):
     return {'targets': rows}
 
 
+def judge(label, data):
+    """What a BOOT, recovery, dtbo or vbmeta image holds; an image for another phone, or one that
+    is damaged or cut short, is refused before anything is written."""
+    try:
+        info = bootimage.inspect(label, data)
+    except bootimage.ImageError as exc:
+        fail_codes = {'BOOT_OTHER_PHONE': 'IMAGE_FOR_ANOTHER_PHONE', 'BOOT_PHONE_UNKNOWN': 'IMAGE_FOR_ANOTHER_PHONE'}
+        require(False, fail_codes.get(exc.code, 'IMAGE_DAMAGED'), str(exc), check=exc.code)
+    if info['kind'] != 'boot':
+        return {'kind': info['kind']}
+    android = info['android'] or {}
+    return {'kind': 'boot', 'linux': info['kernel']['release'], 'mainline': info['mainline'],
+            'android': android.get('version'), 'patch_level': android.get('patch_level'),
+            'phone': info['device']['model'] or info['device']['device'], 'this_phone': info['device']['this_phone'],
+            'avb': info['avb']['state']}
+
+
 def check(context, args, progress):
     with source_file(context, args.volume, args.volume_token, args.path) as fd:
         size = os.fstat(fd).st_size
@@ -412,10 +443,14 @@ def check(context, args, progress):
         image_format = layout(fd, compression, target['size_bytes'])
         reader = open_reader(fd, compression, target['size_bytes'])
         digest, prefix, count = hashlib.sha256(), bytearray(), 0
+        # BOOT, recovery, dtbo and vbmeta are judged by their contents as well (2026-11-10).
+        whole = bytearray() if label in bootimage.INSPECT and target['size_bytes'] <= ROLLBACK_LIMIT else None
         try:
             for data in install.fixed_chunks(install.decode_image(reader, image_format, target['size_bytes'])):
                 if len(prefix) < PREFIX:
                     prefix.extend(data[:PREFIX - len(prefix)])
+                if whole is not None:
+                    whole.extend(data)
                 digest.update(data)
                 count += len(data)
                 progress('Checking the image', target, count)
@@ -423,6 +458,7 @@ def check(context, args, progress):
             close_reader(reader)
         require(count == target['size_bytes'], 'IMAGE_SIZE_MISMATCH', 'The image does not fit this partition')
         kind, warnings = classify(label, prefix, reader.payload_bytes)
+        contents = judge(label, bytes(whole)) if whole is not None else None
         value = digest.hexdigest()
         checksum = saved_checksum(context, args, compression, value, target['size_bytes'], reader.payload_bytes)
         try:
@@ -441,7 +477,7 @@ def check(context, args, progress):
                 'image': {'name': Path(args.path).name[:200], 'kind': kind, 'compression': compression, 'format': image_format,
                           'file_bytes': size, 'payload_bytes': reader.payload_bytes, 'sha256': value, 'identity': identity(fd),
                           'checksum_file': checksum},
-                'identical': identical, 'warnings': warnings,
+                'identical': identical, 'warnings': warnings, 'contents': contents,
                 'rollback_volume': (volume.get('label') or volume['id']) if volume else None}
 
 
@@ -492,8 +528,10 @@ def write(context, args, progress):
         observed = read_back(context, target, progress)
         require(observed == args.expected_sha256, 'READBACK_MISMATCH',
                 'The partition does not match the image after writing', rollback=rollback)
+        # A normal boot then knows this BOOT (or vbmeta, dtbo) was put there on purpose.
+        recorded = install.record_flash(context, args.target, observed)
         return {'target': {'label': args.target, 'size_bytes': target['size_bytes']}, 'sha256': observed,
-                'verified': True, 'rollback': rollback}
+                'verified': True, 'rollback': rollback, 'recorded': recorded}
 
 
 def parser():

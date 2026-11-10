@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCES = ('recovery_ui.c', 'systems_ui.h', 'install_ui.h', 'wifi_ui.h', 'installer_ui.h', 'packages_ui.h', 'identity_ui.h', 'screenshot_ui.h', 'charger_ui.h', 'shells_ui.h', 'locale_ui.h', 'terminal_ui.h', 'flash_ui.h', 'theme.h')
+SOURCES = ('recovery_ui.c', 'systems_ui.h', 'install_ui.h', 'wifi_ui.h', 'installer_ui.h', 'images_ui.h', 'adb_ui.h', 'packages_ui.h', 'identity_ui.h', 'screenshot_ui.h', 'charger_ui.h', 'shells_ui.h', 'locale_ui.h', 'terminal_ui.h', 'flash_ui.h', 'theme.h')
 HELPERS = ('../flash.py', '../themes.py', '../sysinfo.py')
 WORDS = {'unavailable', 'mounted', 'offline', 'raw', 'active', 'yes', 'no', 'live', 'history', 'on', 'off', 'unknown',
          'backup', 'wipe', 'restore', '30 s', 'minimal', 'signed', 'none', 'arm64',
@@ -18,7 +18,7 @@ NOT_TEXT = {r'\x89PNG\r\n\x1a\n', 'IHDR', 'IDAT', 'IEND', 'en_US', 'uk_UA', 'de_
             'Esc', 'Tab', 'PYTHONUNBUFFERED', 'INSTALL-STOCK-', 'partclone-ext4-v2+zstd', 'LUKS', 'Plasma', 'Xfce', 'UTC%c%d', 'UTC%c%d:%02d', 'TZ', 'UTC0',
             'SM-A226B  /  Recovery 0.6', 'A22x Recovery', 'Mainline Recovery', 'USB SSH', 'microSD', 'Android', 'Console', '%u Hz', '60 Hz', '90 Hz', 'Ctrl+C', 'Ctrl+D', 'GiB', 'KiB', 'MiB', 'TiB', 'GNOME', 'Phosh', 'Sxmo', 'Lomiri', 'Del', 'saved\\n', 'FILE TEST', 'PREVIEW', 'SHA-256'}
 # Messages from the backup backend that a person is likely to meet.
-BACKEND_TEXT = {'This system cannot read the saved password of this account. Choose New user with the same name and enter the password again.', 'Shared files require the same group names and GIDs', 'Shared home requires the same user name, UID, primary GID and home path', 'Platform file permissions or owner differ', 'Required kernel, firmware or device adapter file differs', 'Required platform symlink differs', 'A required rootfs directory is missing or symlinked', 'Only systemd distributions are supported by the current device adapter', 'The backup does not fit on this storage. Choose one with more free space', 
+BACKEND_TEXT = {'There is not enough space on userdata for this image', 'Choose an image of the store', 'The image is not saved on the phone', 'The image store on userdata is not a folder', 'This system cannot read the saved password of this account. Choose New user with the same name and enter the password again.', 'Shared files require the same group names and GIDs', 'Shared home requires the same user name, UID, primary GID and home path', 'Platform file permissions or owner differ', 'Required kernel, firmware or device adapter file differs', 'Required platform symlink differs', 'A required rootfs directory is missing or symlinked', 'Only systemd distributions are supported by the current device adapter', 'The backup does not fit on this storage. Choose one with more free space', 
                 # filesystem.py check (TWRP's "Repair file system", 2026-11-09).
                 'The check found errors it could not repair', 'The filesystem could not be checked',
                 'Unmount the volume before checking it', 'This recovery checks and repairs ext2, ext3 and ext4 only',

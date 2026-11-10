@@ -98,7 +98,7 @@
 enum Screen { HOME, SPLASH, FLASH, FLASH_REVIEW, LANGUAGE, THEME, TERMINAL_THEME, ANIMATIONS, LOCKSCREEN, ACCESS_REQUEST, OS_MENU, SYSTEMS_SETUP, BACKUP, LIST, DETAIL, PLAN, PROGRESS, RESULT, STORAGE, SYSTEM, POWER, POWER_CONFIRM, POWER_MENU, TOOLS, TOOLS_EXPORT, DISPLAY_SETTINGS, PREPARE_FILESYSTEM, USB_FILES, TERMINAL, SYSTEMS, SYSTEMS_PLAN, SYSTEMS_RECOVER,
     INSTALL, INSTALL_PLAN, INSTALL_RESULT,
     FILE_VOLUMES, FILE_VOLUME, FILE_BROWSER, FILE_INFO, FILE_TEXT, FILE_EDIT, FILE_PROMPT, FILE_CONFIRM, FILE_DISCARD, SYSTEMS_EXTRAS, SYSTEMS_DONE, WIFI, SYSTEMS_NEW, SYSTEMS_CATALOG,
-    SYSTEMS_APP_LIST, SYSTEMS_SEARCH, IDENTITY, IDENTITY_RESTORE, SYSTEMS_SHELLS, SYSTEMS_LOCALE, SYSTEMS_TIMEZONE, SYSTEMS_REMOVE };
+    SYSTEMS_APP_LIST, SYSTEMS_SEARCH, IDENTITY, IDENTITY_RESTORE, SYSTEMS_SHELLS, SYSTEMS_LOCALE, SYSTEMS_TIMEZONE, SYSTEMS_REMOVE, SYSTEMS_IMAGES, ADB_REQUEST };
 enum Action { A_BACK=1,A_BACKUP,A_RESTORE,A_VERIFY,A_STORAGE,A_SYSTEM,A_POWER,A_REVIEW_BACKUP,A_REVIEW_RESTORE,A_VERIFY_ONE,A_CONFIRM,A_DONE,A_LIST_PREV,A_LIST_NEXT,A_REBOOT,A_SHUTDOWN,A_POWER_CONFIRM,A_MOUNT,A_UMOUNT,A_REFRESH,
     A_FILES,A_FS_PREV,A_FS_NEXT,A_FS_OPEN,A_FS_MOUNT_RO,A_FS_MOUNT_RW,A_FS_UNMOUNT,A_FS_UP,A_FS_VOLUME,A_FS_REFRESH,
     A_FS_READ,A_FS_EDIT,A_FS_NEW_FILE,A_FS_MKDIR,A_FS_RENAME,A_FS_COPY,A_FS_DELETE,A_FS_PROMPT_NEXT,A_FS_CONFIRM,
@@ -116,13 +116,14 @@ enum Action { A_BACK=1,A_BACKUP,A_RESTORE,A_VERIFY,A_STORAGE,A_SYSTEM,A_POWER,A_
     A_SYS_NEW=5770,A_NEW_INTERNET,A_NEW_FILE,A_CATALOG_WIFI,A_CATALOG_PREV,A_CATALOG_NEXT,A_HOME_CATALOG,A_CATALOG_FAMILY=5780,A_CATALOG_ITEM=5800,
     A_APPS_OPEN=5830,A_PKG_OPEN,A_PKG_QUERY,A_PKG_PREV,A_PKG_NEXT,A_APPS_DONE,A_PKG_DONE,A_PKG_FAMILY=5840,A_PKG_RESULT=5850,A_IDENTITY=5950,A_ID_DEST_NEXT,A_ID_BACKUP,A_ID_RESTORE_OPEN,A_ID_RESTORE,A_ID_ITEM=5960,A_CHARGER_ON=5970,A_CHARGER_OFF,
     A_SHELL_ITEM=5980,A_GREETER_ITEM=5990,A_SHELLS_NEXT=6000,A_LOCALE_OPEN=6010,A_TZ_OPEN,A_TZ_RECOVERY,A_TZ_PICK,A_LOCALE_ITEM=6020,
-    A_TZ_REGION=6040,A_TZ_ITEM=6100 };
+    A_TZ_REGION=6040,A_TZ_ITEM=6100,
+    A_NEW_SAVED=7000,A_IMAGES_CATALOG,A_IMAGE_DELETE_CONFIRM,A_IMAGE_DELETE_CANCEL,A_IMAGE_ITEM=7010,A_IMAGE_DELETE=7030,A_ADB_ALLOW=7050,A_ADB_DENY };
 enum JobKind { J_NONE,J_INVENTORY,J_LIST,J_BACKUP_PLAN,J_RESTORE_PLAN,J_BACKUP,J_VERIFY,J_RESTORE,J_STORAGE_INVENTORY,J_MOUNT,J_UMOUNT,
     J_FS_INVENTORY,J_FS_MOUNT,J_FS_UNMOUNT,J_FS_LIST,J_FS_READ,J_FS_WRITE,J_FS_MKDIR,J_FS_RENAME,J_FS_COPY,J_FS_DELETE,
     J_FS_STAT,J_FS_CHMOD,J_FS_CHOWN,J_FS_RESOLVE,J_FS_COPY_TREE,J_FS_FORMAT,J_FS_CHECK,J_FS_RESIZE,J_TOOLS_STATUS,J_TOOLS_EXPORT,J_DISPLAY_STATUS,J_DISPLAY_SET,J_WIPE_PLAN,J_WIPE,J_USB_STATUS,J_USB_START,J_USB_STOP,
     J_TERM_STATUS,J_TERM_START,J_TERM_READ,J_TERM_WRITE,J_TERM_RESIZE,J_TERM_STOP,J_SYS_STATUS,J_SYS_IMPORT_PLAN,J_SYS_SWITCH_PLAN,J_SYS_IMPORT,J_SYS_SWITCH,J_SYS_RECOVER,J_SYS_REMOVE,
     J_INSTALL_STATUS,J_INSTALL_BOOT_PLAN,J_INSTALL_STOCK_PLAN,J_INSTALL_RESUME_PLAN,J_INSTALL_EXECUTE,J_FLASH_TARGETS,J_FLASH_CHECK,J_FLASH_WRITE,J_USB_SYNC,J_USB_BACKUP,J_USB_EJECT,J_SYS_ACCOUNT_USER,J_SYS_ACCOUNT_PASS,J_SYS_WIFI_SSID,J_SYS_WIFI_PASS,J_LOCK_ENTER,J_LOCK_SET,J_LOCK_OLD,J_LOCK_CONFIRM,J_LOCK_ACCESS,J_SYSINFO,J_THEME_IMPORT,J_THEME_REMOVE,J_THEME_RESTORE,
-    J_WIFI_STATUS,J_WIFI_SCAN,J_WIFI_CONNECT,J_WIFI_DISCONNECT,J_WIFI_FORGET,J_WIFI_SSID,J_WIFI_PASS,J_CATALOG,J_CATALOG_CHECK,J_PKG_SEARCH,J_PKG_QUERY,J_ID_LIST,J_ID_BACKUP,J_ID_BACKUPS,J_ID_RESTORE,J_CHARGER };
+    J_WIFI_STATUS,J_WIFI_SCAN,J_WIFI_CONNECT,J_WIFI_DISCONNECT,J_WIFI_FORGET,J_WIFI_SSID,J_WIFI_PASS,J_CATALOG,J_CATALOG_CHECK,J_PKG_SEARCH,J_PKG_QUERY,J_ID_LIST,J_ID_BACKUP,J_ID_BACKUPS,J_ID_RESTORE,J_CHARGER,J_IMAGES,J_IMAGES_DOWNLOAD,J_IMAGES_DELETE };
 enum ScrollSurface { SCROLL_NONE,SCROLL_FOLDER,SCROLL_VOLUMES,SCROLL_TEXT,SCROLL_PROMPT,SCROLL_TERMINAL,SCROLL_SYSTEMS,SCROLL_TOOLS,SCROLL_INSTALL_REVIEW,SCROLL_INSTALL_PENDING,SCROLL_PAGE };
 enum DisplayCommand { DC_NONE,DC_STATUS,DC_BRIGHTNESS,DC_BLANK,DC_WAKE,DC_TOGGLE };
 
@@ -188,6 +189,8 @@ typedef struct { char ssid[132],hex[72],security[16],band[16];unsigned int bars;
 /* One image of the installer catalog (installer_ui.h). */
 #define CATALOG_MAX 24u
 typedef struct { char id[48],name[64],version[24],family[24],file[96],desktop[16],notes[48];uint64_t size;bool minimal,reachable,unavailable,signed_; } CatalogImage;
+#define STORE_MAX 16u
+typedef struct { char file[208],path[232],name[64],version[32],family[16];uint64_t size;bool checked; } StoredImage;
 typedef struct { char name[64],version[48],summary[128];int available; } PkgResult;
 #define PKG_RESULTS 24u
 #define PACKAGES_MAX 40u
@@ -222,7 +225,7 @@ typedef struct {
     int battery_percent;bool battery_charging,battery_refresh;int queued_action;enum Screen queued_screen;unsigned int saved_hz,saved_brightness,restore_hz,restore_brightness;bool restore_status_asked,display_restoring,storage_prefers_usb;int toast_icon;uint64_t progress_mark_at,progress_mark_done;char progress_mark_phase[128];char toast[120];uint64_t toast_until,hotplug_at,usb_cable_check,usb_cable_lost_at;bool hotplug_pending,usb_cable_seen;unsigned int hotplug_retries;
     bool job_cancel_asked,job_cancelled,locked,lock_enabled,flash_known,flash_pick,flash_review_valid,flash_identical,flash_restore,flash_offline,settings_dirty;
     FlashTarget flash_targets[FLASH_TARGETS];unsigned int flash_target_count,vibration,haptic_active;int flash_selected,haptic_fd,haptic_id,utc_offset,clock_minute;uint64_t flash_bytes,settings_changed_at,hold_felt_at;
-    char flash_helper[PATH_LEN],flash_volume[96],flash_volume_token[80],flash_path[PATH_LEN],flash_name[256],flash_kind[96],flash_sha[80],flash_identity[80],flash_rollback[96],flash_warnings[512],flash_reason[256],flash_label[24],flash_checksum[96];
+    char flash_helper[PATH_LEN],flash_volume[96],flash_volume_token[80],flash_path[PATH_LEN],flash_name[256],flash_kind[96],flash_contents[256],flash_sha[80],flash_identity[80],flash_rollback[96],flash_warnings[512],flash_reason[256],flash_label[24],flash_checksum[96];
     unsigned int screen_timeout_index,display_wanted_percent,display_live_percent,brightness_max;int brightness_fd,display_drag_x;uint64_t last_activity,display_live_at;
     bool display_input_blocked,display_uncertain,display_power_down,display_brightness_drag,display_request_accepted,display_expected_blank;
     unsigned int display_percent,display_last_percent,display_preview_percent,display_requested_percent;
@@ -283,6 +286,7 @@ typedef struct {
     unsigned int splash_percent,splash_from,animation,lock_mode,lock_pending_mode,access_mode,lock_failures;int lock_flow,lock_start_y,lock_drag,lock_kept_kind,access_kind;
     uint64_t job_started,nav_settle_end,lock_wait_until,lock_shake_until,access_checked;int nav_settle_kind,nav_settle_amount;enum Screen lock_return,access_return;bool lock_frame_pending,lock_opened,lock_keyboard,lock_digits,tools_export_next,terminal_autostart,power_held,gesture_ready,gesture_terminal,usb_volumes_known,usb_mounting,usb_refresh_after;unsigned int nav_mode;int gesture,gesture_x0,gesture_y0,gesture_x,gesture_y,gesture_anchor_y,usb_rows[USB_VOLUME_ROWS],usb_row_count;uint64_t gesture_still_at;uint32_t*menu_backdrop;enum Screen menu_return;char usb_want[128];pid_t settings_pid;uint64_t settings_retry_at;uint32_t*lock_backdrop;
     char lock_note[96],lock_old[128],lock_new[128],lock_kept[PATH_LEN],access_id[40],access_channel[8],access_peer[72],access_prompt[PATH_LEN];
+    char adb_id[40],adb_answered[40],adb_fingerprint[64],adb_comment[100],adb_peer[72];uint64_t adb_checked;enum Screen adb_return; /* An ADB key asked about on the phone. */
     uint64_t pressed_at,now;
     int power_intent,exit_code;
     unsigned int plan_sequence,progress_events;
@@ -318,6 +322,7 @@ typedef struct {
     /* Installer (installer_ui.h): the catalog, and a new system from it or from a file. */
     CatalogImage catalog[CATALOG_MAX];unsigned int catalog_count,catalog_family,catalog_page;bool catalog_known,catalog_https,catalog_network,catalog_after_status,wifi_from_catalog;
     /* The check of the servers that follows each opening of the catalog (2026-11-08). */
+    StoredImage saved[STORE_MAX];unsigned int saved_count,saved_delete;uint64_t saved_free;bool saved_known,catalog_saving;char saved_note[160],saved_argument[208]; /* Images saved on the phone; saved_delete counts from 1. */
     bool catalog_checked,catalog_check_done;unsigned int catalog_servers,catalog_updated,catalog_gone,catalog_failed;char catalog_problem[120];
     bool systems_wipe,systems_plan_erase,systems_adding;char systems_remote_id[48];uint64_t systems_plan_download;
     Job job;
@@ -341,6 +346,7 @@ static bool terminal_screen(const App*a){return a->screen==TERMINAL;}
 static bool terminal_session_open(const App*a){return a->terminal_session[0]!=0;}
 static bool terminal_input_ready(const App*a){return a->screen==TERMINAL&&a->terminal_known&&a->terminal_available&&!a->terminal_paused&&!strcmp(a->terminal_state,"active")&&terminal_session_open(a)&&!a->terminal_close_requested&&(!a->job.pid||terminal_background_job(a->job.kind));}
 static const char*access_dir="/run/a22x-recovery/access";
+static const char*adb_dir="/run/a22x-recovery/adb";
 static bool job_long(int kind);
 static void transition_cancel(App*a);
 static void access_close(App*a);
@@ -363,12 +369,14 @@ static bool systems_source_allowed(const FileVolume*v){return v&&v->mounted&&(!s
 /* A card or stick not mounted yet is listed too: a tap mounts it read-only (2026-11-08: the list
    had no way to mount it, so nothing could be chosen). */
 static bool systems_source_listed(const FileVolume*v){return v&&(!strncmp(v->id,"sdcard",6)||!strncmp(v->id,"usb-",4))&&v->token[0]&&(v->mounted||v->mountable);}
+/* Setup scripts saved on the phone (2026-11-10): cache:/a22x-recovery/scripts, written by an Android app or the recovery. */
+static bool script_store_volume(const FileVolume*v){return v&&!strcmp(v->id,"cache")&&v->token[0]&&(v->mounted||v->mountable);}
 static bool systems_manifest_selected(const App*a);
 static void render_systems(App*a);
 static void render_systems_plan(App*a);
 static void render_systems_recover(App*a);static void render_systems_remove(App*a);
 static void render_wifi(App*a);static void wifi_settings_row(App*a,int y,bool enabled);static bool wifi_action(App*a,int id);
-static void render_systems_new(App*a);static void render_catalog(App*a);static bool installer_action(App*a,int id);static bool start_catalog_job(App*a);
+static bool images_job(int kind);static void render_systems_new(App*a);static void render_catalog(App*a);static void render_images(App*a);static bool images_action(App*a,int id);static void open_images(App*a);static void adb_poll(App*a);static void render_adb_request(App*a);static bool adb_action(App*a,int id);static bool start_images_job(App*a,int kind,const char*argument);static bool installer_action(App*a,int id);static bool start_catalog_job(App*a);
 static void complete_catalog_job(App*a,const Json*j,bool ok,bool check);static void render_package_prompt(App*a);static void render_systems_apps(App*a);static void render_package_search(App*a);static void render_apps_card(App*a,int y);static void complete_package_search(App*a,const Json*j,bool ok);static void render_identity(App*a);static void render_identity_restore(App*a);static int render_charger_card(App*a,int y,bool free_ui);static void identity_inventory(App*a);static void installer_card(App*a,Rect r,unsigned int tone,int glyph,const char*title,const char*note,int action,bool enabled);
 static void render_systems_shells(App*a);static int shells_append_args(const App*a,char**args,int n);static void shells_summary(const App*a,char*out,size_t size);static bool shells_offered(const App*a);static unsigned int shells_extra(const App*a);static int locale_append_args(const App*a,char**args,int n);static void locale_summary(const App*a,char*out,size_t size);static void render_locale_card(App*a,int y);static void render_systems_locale(App*a);static void render_systems_timezone(App*a);
 static void render_systems_manifest(App*a);static void render_systems_done(App*a);static void render_systems_extras(App*a);static void render_systems_script(App*a);static void systems_wifi_focus(App*a,int kind);
@@ -389,7 +397,7 @@ static bool install_job(int kind){return kind>=J_INSTALL_STATUS&&kind<=J_INSTALL
 static bool wifi_job(int kind){return kind>=J_WIFI_STATUS&&kind<=J_WIFI_FORGET;}
 /* These only read state. The page stays usable while they run: a tap waits for the
  * result instead of the whole page going grey. */
-static bool job_quiet(int kind){return wifi_job(kind)||kind==J_CATALOG||kind==J_CATALOG_CHECK||kind==J_PKG_SEARCH||kind==J_ID_LIST||kind==J_ID_BACKUPS||kind==J_CHARGER||kind==J_SYSINFO||kind==J_TOOLS_STATUS||kind==J_DISPLAY_STATUS||kind==J_DISPLAY_SET||kind==J_USB_STATUS||kind==J_SYS_STATUS||kind==J_INSTALL_STATUS||kind==J_STORAGE_INVENTORY||kind==J_FS_INVENTORY||kind==J_FS_LIST||kind==J_LIST||kind==J_FLASH_TARGETS||kind==J_USB_SYNC||kind==J_TERM_STATUS||kind==J_TERM_STOP;}
+static bool job_quiet(int kind){return wifi_job(kind)||kind==J_IMAGES||kind==J_CATALOG||kind==J_CATALOG_CHECK||kind==J_PKG_SEARCH||kind==J_ID_LIST||kind==J_ID_BACKUPS||kind==J_CHARGER||kind==J_SYSINFO||kind==J_TOOLS_STATUS||kind==J_DISPLAY_STATUS||kind==J_DISPLAY_SET||kind==J_USB_STATUS||kind==J_SYS_STATUS||kind==J_INSTALL_STATUS||kind==J_STORAGE_INVENTORY||kind==J_FS_INVENTORY||kind==J_FS_LIST||kind==J_LIST||kind==J_FLASH_TARGETS||kind==J_USB_SYNC||kind==J_TERM_STATUS||kind==J_TERM_STOP;}
 enum { NAV_GESTURES,NAV_BUTTONS,NAV_OFF };
 enum { GESTURE_NONE,GESTURE_BACK,GESTURE_BOTTOM };
 static bool flash_job(int kind){return kind>=J_FLASH_TARGETS&&kind<=J_FLASH_WRITE;}
@@ -1205,7 +1213,7 @@ static void render_lockscreen(App*a){
 static void render_access(App*a){
     heading(a,"Computer access","A computer is asking to use this phone.",false);
     rounded(a,(Rect){28,236,664,250},26,PANEL);icon_tile(a,ICON_PHONE,52,262,84,ICON_FILL);
-    text(a,160,264,2,TEXT,!strcmp(a->access_channel,"uart")?"UART console":"SSH connection");
+    text(a,160,264,2,TEXT,!strcmp(a->access_channel,"uart")?"UART console":!strcmp(a->access_channel,"adb")?"ADB connection":"SSH connection");
     {const char*cable=tr("Cable");raw_text(true);ellipsis(a,160,326,500,1,MUTED,a->access_peer[0]?a->access_peer:cable);raw_text(false);}
     wrapped(a,52,394,616,0,MUTED,"It can read and change everything here.",2);
     wrapped(a,40,520,640,1,TEXT,"Allow this computer only if you started this yourself.",3);
@@ -1428,7 +1436,7 @@ static void render_file_volumes(App*a){
         snprintf(linebuf,sizeof(linebuf),"%s  /  %.24s  /  %s",tr(volume_type_label(v)),v->fs_type[0]?v->fs_type:tr("raw"),v->bytes?size:tr("size unknown"));
         ellipsis(a,116,r.y+58,550,0,MUTED,linebuf);
         ellipsis(a,116,r.y+98,550,0,v->mounted?GREEN:(v->mountable?MUTED:ORANGE),v->mounted?(v->read_only||!v->write_supported?"Mounted read-only":"Mounted with write access"):(v->mountable?"Not mounted":(v->reason[0]?v->reason:"File browsing unavailable")));
-        register_button(a,r,A_FS_VOLUME_ITEM+i,ui_free(a)&&(!a->systems_pick_manifest||systems_source_listed(v))&&(!a->install.pick_source||install_source_allowed(v))&&(!a->flash_pick||flash_source_allowed(v))&&(!a->theme_pick||flash_source_allowed(v)),0);
+        register_button(a,r,A_FS_VOLUME_ITEM+i,ui_free(a)&&(!a->systems_pick_manifest||systems_source_listed(v)||(a->systems_pick_script&&script_store_volume(v)))&&(!a->install.pick_source||install_source_allowed(v))&&(!a->flash_pick||flash_source_allowed(v))&&(!a->theme_pick||flash_source_allowed(v)),0);
     }
     a->clip_active=false;scroll_indicator(a,(Rect){684,VOLUME_LIST_TOP,6,VOLUME_LIST_BOTTOM-VOLUME_LIST_TOP},a->volume_scroll,(int64_t)a->volume_count*VOLUME_ROW_HEIGHT-16,ORANGE);
     if(!a->volume_count)wrapped(a,48,300,624,1,MUTED,a->job.pid?"Reading storage volumes...":"No volume inventory received. Tap Refresh to try again.",5);
@@ -1858,7 +1866,7 @@ static void render_file_confirmation(App*a){
 }
 /* Long work shows one banner. Only work that can stop without damage offers Cancel. */
 static bool job_long(int kind){return !terminal_job(kind)&&!job_quiet(kind)&&kind!=J_NONE&&kind!=J_INVENTORY&&kind!=J_DISPLAY_SET&&kind!=J_USB_BACKUP&&kind!=J_USB_EJECT;}
-static bool job_cancellable(int kind){return kind==J_BACKUP||kind==J_VERIFY||kind==J_SYS_IMPORT||kind==J_FS_COPY||kind==J_FS_COPY_TREE||kind==J_FLASH_CHECK||kind==J_BACKUP_PLAN||kind==J_RESTORE_PLAN||kind==J_WIPE_PLAN||kind==J_SYS_IMPORT_PLAN||kind==J_SYS_SWITCH_PLAN||kind==J_INSTALL_BOOT_PLAN||kind==J_INSTALL_STOCK_PLAN||kind==J_INSTALL_RESUME_PLAN;}
+static bool job_cancellable(int kind){return kind==J_IMAGES_DOWNLOAD||kind==J_BACKUP||kind==J_VERIFY||kind==J_SYS_IMPORT||kind==J_FS_COPY||kind==J_FS_COPY_TREE||kind==J_FLASH_CHECK||kind==J_BACKUP_PLAN||kind==J_RESTORE_PLAN||kind==J_WIPE_PLAN||kind==J_SYS_IMPORT_PLAN||kind==J_SYS_SWITCH_PLAN||kind==J_INSTALL_BOOT_PLAN||kind==J_INSTALL_STOCK_PLAN||kind==J_INSTALL_RESUME_PLAN;}
 static void render_job_banner(App*a){
     if(!a->job.pid||!job_long(a->job.kind))return;
     bool can=job_cancellable(a->job.kind);int h=can?(a->job_cancel_asked?300:250):190,y=1470-h;
@@ -1962,7 +1970,7 @@ static void render(App*a){
     case HOME:render_home(a);break;case SPLASH:if(a->preview&&a->exit_code>=200&&a->exit_code<=203){render_farewell(a,a->exit_code);break;}render_splash(a);break;case FLASH:render_flash(a);break;case FLASH_REVIEW:render_flash_review(a);break;case LANGUAGE:render_language(a);break;case THEME:render_theme(a);break;case TERMINAL_THEME:render_terminal_theme(a);break;case OS_MENU:render_os(a);break;case SYSTEMS_SETUP:render_systems_setup(a);break;case BACKUP:render_backup(a);break;case LIST:render_list(a);break;case DETAIL:render_detail(a);break;case PLAN:render_plan(a);break;case PREPARE_FILESYSTEM:render_prepare(a);break;case USB_FILES:render_usb(a);break;case PROGRESS:render_progress(a);break;case RESULT:render_result(a);break;case STORAGE:render_storage(a);break;case SYSTEM:render_system(a);break;case POWER:render_power(a);break;
     case POWER_MENU:render_power_menu(a);break;
     case POWER_CONFIRM:heading(a,"Power action",NULL,true);wrapped(a,40,350,640,2,TEXT,power_confirmation(a->power_intent),4);if(terminal_session_open(a)&&a->terminal_busy)wrapped(a,40,640,640,1,RED,"The command running in the terminal will be stopped.",3);button(a,(Rect){28,1220,664,110},"Hold 2 seconds to confirm",A_POWER_CONFIRM,a->allow_power&&!a->job.pid&&a->power_intent>=200&&a->power_intent<=203&&(a->power_intent!=200||(!a->systems_reboot_blocked&&!a->install.reboot_blocked)),true,2000);break;
-    case TOOLS:render_tools(a);break;case TOOLS_EXPORT:render_tools_export(a);break;case DISPLAY_SETTINGS:render_display(a);break;case WIFI:render_wifi(a);break;case SYSTEMS_NEW:render_systems_new(a);break;case SYSTEMS_CATALOG:render_catalog(a);break;
+    case TOOLS:render_tools(a);break;case TOOLS_EXPORT:render_tools_export(a);break;case DISPLAY_SETTINGS:render_display(a);break;case WIFI:render_wifi(a);break;case SYSTEMS_NEW:render_systems_new(a);break;case SYSTEMS_IMAGES:render_images(a);break;case ADB_REQUEST:render_adb_request(a);break;case SYSTEMS_CATALOG:render_catalog(a);break;
     case TERMINAL:render_terminal(a);break;
     case SYSTEMS:render_systems(a);break;case SYSTEMS_EXTRAS:render_systems_extras(a);break;case SYSTEMS_SHELLS:render_systems_shells(a);break;case SYSTEMS_LOCALE:render_systems_locale(a);break;case SYSTEMS_TIMEZONE:render_systems_timezone(a);break;case SYSTEMS_APP_LIST:render_systems_apps(a);break;case SYSTEMS_SEARCH:render_package_search(a);break;case IDENTITY:render_identity(a);break;case IDENTITY_RESTORE:render_identity_restore(a);break;case SYSTEMS_DONE:render_systems_done(a);break;case SYSTEMS_PLAN:render_systems_plan(a);break;case SYSTEMS_RECOVER:render_systems_recover(a);break;case SYSTEMS_REMOVE:render_systems_remove(a);break;
     case INSTALL:render_install(a);break;case INSTALL_PLAN:render_install_review(a,false);break;case INSTALL_RESULT:render_install_review(a,true);break;
@@ -1992,6 +2000,9 @@ static void problem(App*a,const char*code,const char*message){
     copy(a->status,sizeof(a->status),code);copy(a->message,sizeof(a->message),message);a->successful=false;a->result_return=HOME;screen(a,RESULT);}
 
 static const char*job_name(int kind){
+    if(kind==J_IMAGES)return "systems-images";
+    if(kind==J_IMAGES_DOWNLOAD)return "systems-images-download";
+    if(kind==J_IMAGES_DELETE)return "systems-images-delete";
     if(kind==J_CATALOG)return "systems-catalog";
     if(kind==J_CATALOG_CHECK)return "systems-catalog-check";
     if(kind==J_PKG_SEARCH)return "package-search";
@@ -2037,7 +2048,7 @@ static bool launch_job(App*a,int kind,char*const*args){
     a->result_return=HOME;
     if(kind==J_FS_LIST){a->pressed_action=0;a->button_count=0;a->focus=-1;}
     else if(!terminal_background_job(kind))stop_inertia(a,"operation");
-    if(!terminal_job(kind)&&kind!=J_INSTALL_STATUS&&kind!=J_SYS_STATUS&&kind!=J_INVENTORY&&kind!=J_STORAGE_INVENTORY&&kind!=J_FS_INVENTORY&&kind!=J_FS_LIST&&kind!=J_TOOLS_STATUS&&kind!=J_DISPLAY_STATUS&&kind!=J_DISPLAY_SET&&kind!=J_USB_STATUS&&kind!=J_FLASH_TARGETS&&kind!=J_USB_SYNC&&kind!=J_USB_BACKUP&&kind!=J_USB_EJECT&&kind!=J_SYSINFO&&!wifi_job(kind)&&kind!=J_CATALOG&&kind!=J_CATALOG_CHECK&&kind!=J_PKG_SEARCH&&kind!=J_ID_LIST&&kind!=J_ID_BACKUPS&&kind!=J_CHARGER)screen(a,PROGRESS);
+    if(!terminal_job(kind)&&kind!=J_INSTALL_STATUS&&kind!=J_SYS_STATUS&&kind!=J_INVENTORY&&kind!=J_STORAGE_INVENTORY&&kind!=J_FS_INVENTORY&&kind!=J_FS_LIST&&kind!=J_TOOLS_STATUS&&kind!=J_DISPLAY_STATUS&&kind!=J_DISPLAY_SET&&kind!=J_USB_STATUS&&kind!=J_FLASH_TARGETS&&kind!=J_USB_SYNC&&kind!=J_USB_BACKUP&&kind!=J_USB_EJECT&&kind!=J_SYSINFO&&!wifi_job(kind)&&kind!=J_CATALOG&&kind!=J_CATALOG_CHECK&&kind!=J_PKG_SEARCH&&kind!=J_ID_LIST&&kind!=J_ID_BACKUPS&&kind!=J_CHARGER&&!images_job(kind))screen(a,PROGRESS);
     else if(kind==J_INVENTORY)copy(a->status,sizeof(a->status),"Reading device inventory...");
     if(!terminal_background_job(kind))a->dirty=true;
     return true;
@@ -2755,6 +2766,8 @@ static void theme_file_chosen(App*a){start_theme_job(a,J_THEME_IMPORT);}
 #include "install_ui.h"
 #include "wifi_ui.h"
 #include "installer_ui.h"
+#include "images_ui.h"
+#include "adb_ui.h"
 #include "packages_ui.h"
 #include "identity_ui.h"
 #include "charger_ui.h"
@@ -2771,11 +2784,13 @@ static void complete_job(App*a){
     if(a->job_cancelled){
         a->job_cancelled=false;free(tok);free(j->output);j->output=NULL;a->successful=false;copy(a->status,sizeof(a->status),"Operation cancelled");copy(a->message,sizeof(a->message),"The operation was stopped.");
         if(kind==J_SYS_IMPORT)systems_forget_plan(a);
-        a->result_return=kind==J_SYS_IMPORT?SYSTEMS:(kind==J_FLASH_CHECK?FLASH:(kind==J_FS_COPY||kind==J_FS_COPY_TREE?FILE_BROWSER:HOME));screen(a,RESULT);return;
+        a->result_return=kind==J_SYS_IMPORT?SYSTEMS:kind==J_IMAGES_DOWNLOAD?SYSTEMS_IMAGES:(kind==J_FLASH_CHECK?FLASH:(kind==J_FS_COPY||kind==J_FS_COPY_TREE?FILE_BROWSER:HOME));screen(a,RESULT);return;
     }
     if(terminal_job(kind)){complete_terminal_job(a,parsed?&doc:NULL,kind,ok);free(tok);if(j->output){memset(j->output,0,j->used);free(j->output);j->output=NULL;}return;}
     if(systems_job(kind)){int next=complete_systems_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;if(next)start_systems_job(a,next);
         if(kind==J_SYS_STATUS&&a->catalog_after_status&&!a->job.pid){a->catalog_after_status=false;start_catalog_job(a);}
+        /* Userdata mounted from the saved images page: its list is read now. */
+        if(kind==J_SYS_STATUS&&a->screen==SYSTEMS_IMAGES&&!a->job.pid&&systems_ready(a)&&!a->saved_known)start_images_job(a,J_IMAGES,NULL);
         /* The image chosen before userdata was mounted goes on to the install pages. */
         if(kind==J_SYS_STATUS&&a->catalog_pending&&a->screen==SYSTEMS_CATALOG&&!a->job.pid){
             unsigned int n=a->catalog_pending-1;a->catalog_pending=0;
@@ -2786,6 +2801,7 @@ static void complete_job(App*a){
        every check then reported that the servers did not answer (2026-11-08, found on the phone). */
     if(kind==J_CATALOG||kind==J_CATALOG_CHECK){char*reply=j->output;j->output=NULL;complete_catalog_job(a,parsed?&doc:NULL,ok,kind==J_CATALOG_CHECK);free(tok);free(reply);return;}
     if(kind==J_CHARGER){complete_charger_job(a,parsed?&doc:NULL,ok);free(tok);free(j->output);j->output=NULL;return;}
+    if(images_job(kind)){complete_images_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;return;}
     if(kind==J_ID_LIST||kind==J_ID_BACKUP||kind==J_ID_BACKUPS||kind==J_ID_RESTORE){complete_identity_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;return;}
     if(kind==J_PKG_SEARCH){complete_package_search(a,parsed?&doc:NULL,ok);free(tok);free(j->output);j->output=NULL;return;}
     if(wifi_job(kind)){int next=complete_wifi_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;if(next)start_wifi_job(a,next);return;}
@@ -3228,6 +3244,7 @@ static void hotplug_tick(App*a){
         else if(a->locked&&lock_prompting(a))lock_restart(a);
     }
     access_poll(a);
+    adb_poll(a);
     if(a->battery_refresh){a->battery_refresh=false;update_battery(a);a->dirty=true;}
     wifi_state_poll(a);
     if(a->toast_until&&a->now>=a->toast_until){a->toast_until=0;a->dirty=true;}
@@ -3432,6 +3449,8 @@ static void action(App*a,int id){
     if(terminal_action(a,id))return;
     /* Wi-Fi handles Back itself, also while it searches or joins. */
     if(wifi_action(a,id))return;
+    if(adb_action(a,id))return;
+    if(images_action(a,id))return;
     if(installer_action(a,id))return;
     if(packages_action(a,id))return;
     if(id==A_BACK&&a->screen==IDENTITY&&!a->job.pid){screen(a,BACKUP);return;}
@@ -4160,7 +4179,7 @@ static bool preview(App*a,const char*name){
         }else if(!strcmp(name,"systems-done")||!strcmp(name,"systems-done-beside")){
             a->systems_done_clean=!strcmp(name,"systems-done");copy(a->systems_done_name,sizeof(a->systems_done_name),"Manjaro ARM Linux");
             snprintf(a->systems_done_desktop,sizeof(a->systems_done_desktop),T("Desktop: %s  /  apps: %u"),tr("Plasma Mobile"),4u);
-            snprintf(a->systems_done_network,sizeof(a->systems_done_network),T("Wi-Fi: %s  /  script: %s"),"Oneplus 15","—");a->screen=SYSTEMS_DONE;
+            snprintf(a->systems_done_network,sizeof(a->systems_done_network),T("Wi-Fi: %s  /  script: %s"),"Hotspot","—");a->screen=SYSTEMS_DONE;
         }else if(!strcmp(name,"systems-refused")){
             problem(a,"POWER_REFUSED","The phone stayed in recovery: a backup, restore or installation is still running. Wait until it finishes, then try again.");
         }else if(!strcmp(name,"systems-wifi")){
@@ -4170,6 +4189,19 @@ static bool preview(App*a,const char*name){
             a->screen=FILE_INFO;a->systems_pick_manifest=a->systems_pick_script=true;a->volume_count=1;a->volume_index=0;FileVolume*v=&a->volumes[0];copy(v->id,sizeof(v->id),"usb-sda1");copy(v->token,sizeof(v->token),"preview-volume-token");v->mounted=true;v->read_only=true;
             copy(a->fs_selected.name,sizeof(a->fs_selected.name),"налаштування.sh");copy(a->fs_selected.path,sizeof(a->fs_selected.path),"/scripts/налаштування.sh");copy(a->fs_selected.type,sizeof(a->fs_selected.type),"file");copy(a->fs_selected.token,sizeof(a->fs_selected.token),"preview-entry-token");a->fs_selected.size=2310;
         }else if(strcmp(name,"systems"))return false;
+    }
+    else if(!strcmp(name,"adb-request")){a->screen=ADB_REQUEST;copy(a->adb_id,sizeof(a->adb_id),"a1b2c3d4");copy(a->adb_fingerprint,sizeof(a->adb_fingerprint),"SHA256:V2xpdmU0Ym9h3K8sJxQz1R0hX7kLmN9pQrStUvWxYz0");copy(a->adb_comment,sizeof(a->adb_comment),"user@laptop");copy(a->adb_peer,sizeof(a->adb_peer),"172.16.42.2:41234");}
+    else if(!strcmp(name,"saved-images")||!strcmp(name,"saved-images-delete")){
+        /* The images saved on the phone (2026-11-10), and the question before one is deleted. */
+        static const struct{const char*file,*name,*version,*family;uint64_t size;bool checked;}saved[]={
+            {"ubuntu-24.04-server-cloudimg-arm64-root.tar.xz","Ubuntu Server","24.04 LTS","ubuntu",216215656u,true},
+            {"mobian-rockchip-phosh-13.0.img.xz","Mobian","13 Phosh","mobian",1026326552u,true},
+            {"Fedora-Cloud-Base-Generic-45-1.4.aarch64.qcow2","","","",596705280u,false}};
+        a->systems_known=a->systems_platform=a->systems_mounted=true;a->systems_read_only=false;a->saved_count=0;
+        for(size_t n=0;n<sizeof(saved)/sizeof(saved[0]);n++){StoredImage*v=&a->saved[a->saved_count++];memset(v,0,sizeof(*v));
+            copy(v->file,sizeof(v->file),saved[n].file);snprintf(v->path,sizeof(v->path),"/.a22x-images/%s",saved[n].file);copy(v->name,sizeof(v->name),saved[n].name);
+            copy(v->version,sizeof(v->version),saved[n].version);copy(v->family,sizeof(v->family),saved[n].family);v->size=saved[n].size;v->checked=saved[n].checked;}
+        a->saved_known=true;a->saved_free=21368029184u;a->saved_delete=!strcmp(name,"saved-images-delete")?2:0;a->screen=SYSTEMS_IMAGES;
     }
     else if(!strcmp(name,"new-system")||!strcmp(name,"add-system")||!strcmp(name,"catalog")||!strcmp(name,"catalog-online")){
         /* The installer: a new system page and the catalog (the first without network). */
@@ -4208,13 +4240,13 @@ static bool preview(App*a,const char*name){
     else if(!strcmp(name,"home-wifi")){
         /* The home page with recovery joined to a network: the status bar and the bottom row. */
         a->screen=HOME;a->wifi_known=a->wifi_available=a->wifi_on=a->wifi_connected=true;a->wifi_count=1;
-        copy(a->wifi_ssid,sizeof(a->wifi_ssid),"Oneplus 15");memset(&a->wifi_nets[0],0,sizeof(WifiNet));
-        copy(a->wifi_nets[0].ssid,sizeof(a->wifi_nets[0].ssid),"Oneplus 15");a->wifi_nets[0].bars=3;a->wifi_nets[0].connected=true;
+        copy(a->wifi_ssid,sizeof(a->wifi_ssid),"Hotspot");memset(&a->wifi_nets[0],0,sizeof(WifiNet));
+        copy(a->wifi_nets[0].ssid,sizeof(a->wifi_nets[0].ssid),"Hotspot");a->wifi_nets[0].bars=3;a->wifi_nets[0].connected=true;
     }
     else if(!strncmp(name,"wifi",4)){
         /* Recovery Wi-Fi: the list, a joined network, the password page and an empty search. */
         static const struct{const char*ssid,*security,*band;unsigned int bars;bool secure,supported;}nets[]={
-            {"Дім 5G","WPA2","5 GHz",4,true,true},{"Oneplus 15","WPA2","2.4 GHz",3,true,true},{"Кав'ярня біля парку","Open","2.4 GHz",2,false,true},
+            {"Дім 5G","WPA2","5 GHz",4,true,true},{"Hotspot","WPA2","2.4 GHz",3,true,true},{"Кав'ярня біля парку","Open","2.4 GHz",2,false,true},
             {"Office-WPA3","WPA3","5 GHz",2,true,false},{"Сусіди","WPA2","2.4 GHz",1,true,true}};
         a->wifi_known=a->wifi_available=a->wifi_on=true;a->wifi_count=0;
         for(size_t n=0;n<sizeof(nets)/sizeof(nets[0]);n++){
@@ -4225,7 +4257,7 @@ static bool preview(App*a,const char*name){
         }
         if(!strcmp(name,"wifi-connected")){
             WifiNet joined=a->wifi_nets[1];memmove(&a->wifi_nets[1],&a->wifi_nets[0],sizeof(WifiNet));a->wifi_nets[0]=joined;a->wifi_nets[0].connected=true;
-            a->wifi_connected=true;copy(a->wifi_ssid,sizeof(a->wifi_ssid),"Oneplus 15");copy(a->wifi_address,sizeof(a->wifi_address),"10.42.117.158");
+            a->wifi_connected=true;copy(a->wifi_ssid,sizeof(a->wifi_ssid),"Hotspot");copy(a->wifi_address,sizeof(a->wifi_address),"192.168.1.23");
         }else if(!strcmp(name,"wifi-error"))copy(a->wifi_error,sizeof(a->wifi_error),"The password is wrong.");
         else if(!strcmp(name,"wifi-empty")){a->wifi_count=0;a->wifi_known=a->wifi_on=false;}
         else if(strcmp(name,"wifi")&&strcmp(name,"wifi-password")&&strcmp(name,"wifi-keypress"))return false;

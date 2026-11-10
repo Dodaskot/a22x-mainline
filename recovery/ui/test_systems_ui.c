@@ -88,6 +88,16 @@ int main(int argc,char**argv){
     SCHECK(test_press(a,A_SYS_REMOVE_CONFIRM,2000)&&!a->job.pid&&a->screen==SYSTEMS_REMOVE);
     SCHECK(test_press(a,A_SYS_REMOVE_CONFIRM,3100)&&systems_settle(a)&&systems_settle(a)&&a->screen==SYSTEMS&&strstr(a->systems_note,"removed"));
     SCHECK(a->systems_known&&a->systems_slot_count==1&&!strcmp(a->systems_active,"original"));
+    /* 2026-11-10: an image saved on the phone survived both switches, installs without an SD card
+       (userdata is its source) and is deleted only after a hold. */
+    screen(a,SYSTEMS_NEW);a->systems_adding=true;
+    SCHECK(test_press(a,A_NEW_SAVED,50)&&a->screen==SYSTEMS_IMAGES&&systems_settle(a)&&a->saved_known&&a->saved_count==1&&!strcmp(a->saved[0].file,"rootfs.tar.gz"));
+    SCHECK(test_press(a,A_IMAGE_ITEM,50)&&a->screen==SYSTEMS_SETUP&&!strcmp(a->systems_source_volume,"userdata")&&!strcmp(a->systems_manifest,"/.a22x-images/rootfs.tar.gz")&&!a->systems_wipe);
+    screen(a,SYSTEMS_IMAGES);
+    SCHECK(test_press(a,A_IMAGE_DELETE,50)&&a->saved_delete==1);
+    SCHECK(test_press(a,A_IMAGE_DELETE_CONFIRM,1000)&&!a->job.pid&&a->saved_delete==1);
+    SCHECK(test_press(a,A_IMAGE_DELETE_CONFIRM,2100)&&systems_settle(a)&&a->saved_count==0&&!a->saved_delete&&strstr(a->saved_note,"deleted"));
+    screen(a,SYSTEMS);
     /* Existing slots are pixel-scrollable, with bounded inertia and stop-tap suppression. */
     a->preview=true;a->systems_slot_count=16;for(int n=0;n<16;n++){snprintf(a->systems_slots[n].id,sizeof(a->systems_slots[n].id),"slot-%02d",n);copy(a->systems_slots[n].name,sizeof(a->systems_slots[n].name),"A long prepared ARM64 system");a->systems_slots[n].active=n==0;}
     uint64_t at=milliseconds();workflow_swipe(a,250,960,460,at);SCHECK(a->systems_scroll==500&&a->kinetic.active&&a->motion_surface==SCROLL_SYSTEMS&&!a->job.pid);

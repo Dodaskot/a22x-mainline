@@ -247,9 +247,13 @@ class Gadget:
         fs.absolute_no_symlinks(GADGET)
         config = GADGET / 'configs/c.1'
         links = {p.name: p for p in config.iterdir() if p.is_symlink()}
-        require(set(links) == {'ncm.usb0'} and
-                links['ncm.usb0'].resolve() == GADGET / 'functions/ncm.usb0',
-                'USB_GADGET_CHANGED', 'Expected the dedicated NCM-only recovery gadget')
+        # NCM, and the adb interface when the recovery publishes one over USB (2026-11-10); the
+        # MTP session leaves that one as it found it.
+        expected = {'ncm.usb0'} | ({'ffs.adb'} if 'ffs.adb' in links else set())
+        require(set(links) == expected and
+                links['ncm.usb0'].resolve() == GADGET / 'functions/ncm.usb0' and
+                ('ffs.adb' not in links or links['ffs.adb'].resolve() == GADGET / 'functions/ffs.adb'),
+                'USB_GADGET_CHANGED', 'Expected the dedicated NCM recovery gadget')
         require(not (GADGET / 'functions/ffs.mtp').exists(), 'USB_GADGET_CHANGED', 'An MTP function already exists')
         udc = (GADGET / 'UDC').read_text().strip()
         require(re.fullmatch(r'[A-Za-z0-9_.:-]+', udc or '') and (Path('/sys/class/udc') / udc).exists(),

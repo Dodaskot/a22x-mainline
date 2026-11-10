@@ -51,6 +51,15 @@ static void complete_flash_job(App*a,const Json*j,int kind,bool ok){
         jstring(j,image,"name",a->flash_name,sizeof(a->flash_name));jstring(j,image,"kind",a->flash_kind,sizeof(a->flash_kind));jstring(j,image,"sha256",a->flash_sha,sizeof(a->flash_sha));
         jstring(j,image,"identity",a->flash_identity,sizeof(a->flash_identity));a->flash_bytes=json_uint(j,json_get(j,image,"file_bytes"),0);
         a->flash_identical=json_bool(j,json_get(j,0,"identical"),0);jstring(j,0,"rollback_volume",a->flash_rollback,sizeof(a->flash_rollback));
+        /* What a BOOT or recovery holds, from its own contents (2026-11-10): shown as found, untranslated. */
+        a->flash_contents[0]=0;int contents=json_get(j,0,"contents");
+        if(contents>=0&&j->tokens[contents].type==J_OBJECT){
+            char release[72]={0},android[24]={0},patch[16]={0},phone[72]={0};
+            jstring(j,contents,"linux",release,sizeof(release));jstring(j,contents,"android",android,sizeof(android));
+            jstring(j,contents,"patch_level",patch,sizeof(patch));jstring(j,contents,"phone",phone,sizeof(phone));
+            if(json_bool(j,json_get(j,contents,"mainline"),0)==1&&release[0])snprintf(a->flash_contents,sizeof(a->flash_contents),"Linux %s  /  %s",release,phone);
+            else if(android[0])snprintf(a->flash_contents,sizeof(a->flash_contents),"Android %s (%s)  /  %s  /  Linux %s",android,patch,phone,release);
+        }
         a->flash_warnings[0]=0;int warnings=json_get(j,0,"warnings");
         if(warnings>=0&&j->tokens[warnings].type==J_ARRAY)for(int i=warnings+1;i<json_next(j,warnings);i=json_next(j,i)){
             char line[160];if(json_string(j,i,line,sizeof(line))<=0)continue;if(a->flash_warnings[0])append(a->flash_warnings,sizeof(a->flash_warnings),"\n");append(a->flash_warnings,sizeof(a->flash_warnings),tr(line));
@@ -94,6 +103,7 @@ static void render_flash_review(App*a){
     snprintf(line,sizeof(line),"%s  /  %s",tr(a->flash_kind),size);ellipsis(a,52,520,606,0,MUTED,line);
     text(a,52,566,0,ORANGE,"SHA-256");snprintf(line,sizeof(line),"%.32s",a->flash_sha);text(a,52,602,0,MUTED,line);snprintf(line,sizeof(line),"%.32s",a->flash_sha+32);text(a,52,634,0,MUTED,line);
     int y=700;
+    if(a->flash_contents[0]){raw_text(true);y+=wrapped(a,40,y,640,0,GREEN,a->flash_contents,2)+16;raw_text(false);}
     if(a->flash_identical){wrapped(a,40,y,640,1,GREEN,"This image is already on the partition. There is nothing to flash.",3);y+=120;}
     if(a->flash_restore){
         if(a->flash_checksum[0]){snprintf(line,sizeof(line),T("Matches the checksum saved with it: %s"),a->flash_checksum);y+=wrapped(a,40,y,640,0,GREEN,line,2)+16;}

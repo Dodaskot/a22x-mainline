@@ -33,6 +33,10 @@ def main():
             with open(f.sd/'Fedora-Cloud.qcow2.man', 'wb') as out:
                 out.truncate(32 << 20)
             (f.sd/'rootfs.tar.gz.sha256').write_text('0' * 64 + '  rootfs.tar.gz\n')
+            if case == 'roundtrip':
+                # 2026-11-10: an image saved on the phone; it must stay through both switches.
+                (f.live/distro.STORE_DIR).mkdir()
+                (f.live/distro.STORE_DIR/'rootfs.tar.gz').write_bytes((f.sd/'rootfs.tar.gz').read_bytes())
             if case in ('resume', 'rollback'):
                 plan = f.imported()
                 def stop(name, index):

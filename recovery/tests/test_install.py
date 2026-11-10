@@ -494,6 +494,38 @@ class Lifecycle(unittest.TestCase):
         f.sd.rename(f.root / 'retained-original-card'); f.sd.mkdir()
         self.error('BOOT_SAFETY_UNPROVEN', lambda: i.boot_check(i.FixtureContext(f.root)))
 
+    def test_a_boot_written_by_flash_a_partition_is_allowed_only_while_it_is_unchanged(self):
+        # 2026-11-10: Flash a partition notes each verified write; a normal boot accepts exactly that.
+        f = self.f
+        new = bytes([0x5a]) * len(f.old_bytes['boot'])
+        f.target_paths['boot'].write_bytes(new)
+        self.error('BOOT_SAFETY_UNPROVEN', lambda: i.boot_check(f.context))
+        self.assertTrue(i.record_flash(f.context, 'boot', hashlib.sha256(b'other').hexdigest()))
+        self.error('BOOT_SAFETY_UNPROVEN', lambda: i.boot_check(f.context))
+        self.assertTrue(i.record_flash(f.context, 'boot', hashlib.sha256(new).hexdigest()))
+        self.assertEqual(i.boot_check(f.context)['verified_recovery_flash'], ['boot'])
+        f.target_paths['boot'].write_bytes(bytes([0x5b]) * len(new))
+        self.error('BOOT_SAFETY_UNPROVEN', lambda: i.boot_check(f.context))
+        (f.root / '.flash-records.json').write_text('{broken')
+        self.assertEqual(i.read_flash_records(f.context), {})
+
+    def test_a_changed_boot_whose_contents_are_a_boot_for_this_phone_is_allowed(self):
+        # 2026-11-10: no hash list; a torn write breaks the kernel stream and is refused.
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import test_bootimage as tb
+        f = self.f
+        size = len(f.old_bytes['boot'])
+        image = tb.boot(tb.kernel(appended=tb.MAINLINE_TREE), tb.ramdisk(), tb.dt_table(tb.MAINLINE_TREE))
+        f.target_paths['boot'].write_bytes(image + bytes(size - len(image)))
+        self.assertEqual(i.boot_check(f.context)['verified_by_contents'], ['boot'])
+        torn = bytearray(f.target_paths['boot'].read_bytes())
+        torn[2048 + 40:2048 + 120] = bytes(80)
+        f.target_paths['boot'].write_bytes(bytes(torn))
+        self.error('BOOT_SAFETY_UNPROVEN', lambda: i.boot_check(f.context))
+        other = tb.boot(tb.kernel(), tb.ramdisk({'ro.product.bootimage.device': 'a32x'}))
+        f.target_paths['boot'].write_bytes(other + bytes(size - len(other)))
+        self.error('BOOT_SAFETY_UNPROVEN', lambda: i.boot_check(f.context))
+
     def test_unchanged_linux_boot_allowed_with_unrelated_empty_or_absent_sd(self):
         self.assertTrue(i.boot_check(self.f.context)['known_linux_boot_safe'])
         path = self.f.root / 'filesystem-fixture.json'

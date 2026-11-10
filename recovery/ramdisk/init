@@ -64,7 +64,24 @@ if [ -n "$udc" ]; then
     echo a22x-recovery > "$g/strings/0x409/serialnumber"
     echo NCM > "$g/configs/c.1/strings/0x409/configuration"
     ln -s "$g/functions/ncm.usb0" "$g/configs/c.1/"
-    echo "$udc" > "$g/UDC"
+    # adb over USB beside NCM (2026-11-10): adbd publishes its FunctionFS interface before the UDC
+    # binds, and serves TCP on the USB network too. Without the interface in time, or when the
+    # controller does not bind both functions, NCM goes on alone as before.
+    adb_usb= adbd_started=
+    if [ -f /opt/a22x-recovery/adbd.py ] && mkdir -p "$g/functions/ffs.adb" /dev/usb-ffs/adb 2>/dev/null &&
+            mount -t functionfs adb /dev/usb-ffs/adb 2>/dev/null; then
+        /usr/bin/python3 /opt/a22x-recovery/adbd.py --persist --ffs /dev/usb-ffs/adb \
+            > /run/a22x-recovery/adbd.log 2>&1 &
+        adbd_started=1
+        n=0
+        while [ ! -e /dev/usb-ffs/adb/ep2 ] && [ $n -lt 60 ]; do sleep 0.1; n=$((n + 1)); done
+        [ -e /dev/usb-ffs/adb/ep2 ] && ln -s "$g/functions/ffs.adb" "$g/configs/c.1/" && adb_usb=1
+    fi
+    if ! echo "$udc" > "$g/UDC" && [ -n "$adb_usb" ]; then
+        rm -f "$g/configs/c.1/ffs.adb"
+        adb_usb=
+        echo "$udc" > "$g/UDC"
+    fi
     sleep 1
     ifconfig usb0 172.16.42.1 netmask 255.255.255.0 up
     printf 'start 172.16.42.2\nend 172.16.42.2\ninterface usb0\noption subnet 255.255.255.0\nlease_file /run/udhcpd.leases\n' > /run/udhcpd.conf
@@ -74,7 +91,12 @@ if [ -n "$udc" ]; then
         > /run/a22x-recovery/diagnostics.log 2>&1 &
     /usr/bin/python3 /opt/a22x-recovery/ssh_service.py start \
         > /run/a22x-recovery/ssh-start.log 2>&1
-    msg "USB NCM: diagnostics 172.16.42.1:8081; key-only SSH on port 22"
+    # ADB (2026-11-10): over USB when the interface was published, and on the USB network
+    # (adb connect 172.16.42.1:5555). A new computer key is allowed on the phone screen first;
+    # the recovery password, when set, is asked as for SSH.
+    [ -n "$adbd_started" ] || /usr/bin/python3 /opt/a22x-recovery/adbd.py --persist \
+        > /run/a22x-recovery/adbd.log 2>&1 &
+    msg "USB NCM: diagnostics 172.16.42.1:8081; key-only SSH on port 22; adb on 172.16.42.1:5555${adb_usb:+ and over USB}"
 fi
 
 # Engineering recovery retains the existing physical UART console.
@@ -117,6 +139,12 @@ while true; do
     fi
     /usr/bin/python3 /opt/a22x-recovery/management.py --device rotate-logs \
         >> /run/a22x-recovery/maintenance.log 2>&1
+    # Settings handed over by a phone system (2026-11-10): Wi-Fi, language and time zone from
+    # cache:/a22x-recovery/handoff.json, taken once and deleted before the interface reads them.
+    if [ ! -e /run/a22x-recovery/handoff.done ] && [ -f /opt/a22x-recovery/handoff.py ]; then
+        : > /run/a22x-recovery/handoff.done
+        /usr/bin/python3 /opt/a22x-recovery/handoff.py apply > /run/a22x-recovery/handoff.json 2>&1
+    fi
     # Remembered Wi-Fi networks: recovery joins the strongest one in the background, once per start.
     if [ ! -e /run/a22x-recovery/wifi-auto.started ] && [ -f /opt/a22x-recovery/wifi.py ]; then
         : > /run/a22x-recovery/wifi-auto.started

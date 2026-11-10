@@ -1218,6 +1218,108 @@ def make_vhd(path, blocks, block=65536):
     return size
 
 
+class TestImageStore(unittest.TestCase):
+    """2026-11-10: images saved on the phone (userdata/.a22x-images) install without an SD card,
+    stay through a switch and a clean installation, and a clean installation from the catalog
+    downloads before it erases anything."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix='a22x-store-')
+        self.addCleanup(self.tmp.cleanup)
+        self.f = ImageFixture(self.tmp.name)
+        TestImageInstall.platform_bundle(self)
+        self.store = self.f.live / d.STORE_DIR
+
+    serve = TestCleanInstall.serve
+    catalog = TestCleanInstall.catalog
+
+    def error(self, code, call, *args):
+        with self.assertRaises(d.fs.FilesystemError) as caught:
+            call(*args)
+        self.assertEqual(caught.exception.code, code)
+
+    def save(self):
+        self.store.mkdir(exist_ok=True)
+        shutil.copyfile(self.f.image, self.store / self.f.image.name)
+        return '/' + d.STORE_DIR + '/' + self.f.image.name
+
+    def test_download_list_and_delete(self):
+        self.catalog()
+        self.assertEqual(d.images(self.f.context)['images'], [])
+        saved = d.images_download(self.f.context, 'fixture-linux', True)
+        self.assertEqual(saved['saved'], self.f.image.name)
+        self.assertEqual((self.store / self.f.image.name).read_bytes(), self.f.image.read_bytes())
+        item = d.images(self.f.context)['images'][0]
+        self.assertEqual((item['file'], item['catalog_id'], item['name'], item['checked']),
+                         (self.f.image.name, 'fixture-linux', 'Fixture Linux', True))
+        self.assertEqual([p.name for p in self.store.iterdir() if p.name.startswith('.')], [])
+        self.error('INVALID_ARGUMENT', d.images_delete, self.f.context, '../etc', True)
+        self.error('IMAGE_NOT_FOUND', d.images_delete, self.f.context, 'missing.tar.gz', True)
+        self.assertEqual(d.images_delete(self.f.context, self.f.image.name, True)['images'], [])
+        self.assertEqual(list(self.store.iterdir()), [])
+
+    def test_a_sideloaded_file_lands_in_the_store(self):
+        # adb sideload (2026-11-10): the store is created when needed and must have room for the file.
+        with d.sideload_store(self.f.context, 1000) as folder:
+            self.assertEqual(folder.resolve(), self.store.resolve())
+            (folder / 'sideload-20261110-000000.zip').write_bytes(b'PK\x03\x04' + b'0' * 996)
+        self.assertEqual([item['file'] for item in d.images(self.f.context)['images']], ['sideload-20261110-000000.zip'])
+        self.error('INSUFFICIENT_SPACE', lambda: d.sideload_store(self.f.context, 1 << 60).__enter__())
+
+    def test_a_saved_image_installs_beside_the_system(self):
+        path = self.save()
+        options = d.image_options('console', 'keep', None, None, 0, None)
+        plan = d.image_plan(self.f.context, 'userdata', path, options)['plan']
+        self.assertFalse(plan['clean_install'])
+        result = d.install(self.f.context, plan, True)
+        self.assertTrue((self.f.live / d.MANAGER / 'slots' / result['installed_slot'] / 'root/usr/bin/systemd').exists())
+        self.assertTrue((self.store / self.f.image.name).exists())
+        # Other files on userdata stay refused: only the store is a source there.
+        self.error('BUNDLE_ON_USERDATA', d.image_plan, self.f.context, 'userdata', '/etc/os-release', options)
+
+    def test_a_saved_image_installs_as_the_only_system_and_stays(self):
+        path = self.save()
+        options = d.image_options('console', 'new', 'user', '246810', 0, None)
+        plan = d.image_plan(self.f.context, 'userdata', path, options, wipe=True)['plan']
+        self.assertTrue(plan['clean_install'] and plan['erase_userdata'])
+        result = d.install(self.f.context, plan, True)
+        self.assertTrue(result['switched'] and result['clean_install'])
+        self.assertTrue((self.store / self.f.image.name).exists())
+        self.assertFalse((self.f.live / 'var/lib/pkg/state').read_text() == 'live')
+        self.assertEqual(sorted(p.name for p in self.f.live.iterdir() if p.name.startswith('.a22x')), [d.STORE_DIR, d.MANAGER])
+
+    def test_a_switch_leaves_the_store_in_place(self):
+        self.save()
+        options = d.image_options('console', 'keep', None, None, 0, None)
+        slot = d.install(self.f.context, d.image_plan(self.f.context, 'sdcard-p1', '/distro-1.0.tar.gz', options)['plan'], True)['installed_slot']
+        d.switch(self.f.context, d.switch_plan(self.f.context, slot)['plan'], True)
+        self.assertTrue((self.store / self.f.image.name).exists())
+        self.assertFalse((self.f.live / d.MANAGER / 'slots' / 'original' / 'root' / d.STORE_DIR).exists())
+
+    def test_a_clean_catalog_install_downloads_before_erasing(self):
+        self.catalog(sha256='0' * 64)
+        options = d.image_options('console', 'new', 'user', '246810', 0, None)
+        plan = d.image_plan(self.f.context, None, None, options, wipe=True, remote=d.catalog_entry(self.f.context, 'fixture-linux'))['plan']
+        self.error('DOWNLOAD_CHECKSUM_MISMATCH', d.install, self.f.context, plan, True)
+        # Nothing was erased: the system and /home are as they were.
+        self.assertTrue((self.f.live / 'usr/bin/systemd').exists())
+        self.f.assert_home(self)
+        self.assertEqual([p for p in self.store.iterdir()] if self.store.exists() else [], [])
+        self.catalog()
+        plan = d.image_plan(self.f.context, None, None, options, wipe=True, remote=d.catalog_entry(self.f.context, 'fixture-linux'))['plan']
+        self.assertTrue(d.install(self.f.context, plan, True)['clean_install'])
+        self.assertEqual(list(self.store.iterdir()), [])
+        self.assertFalse((self.f.live / d.DOWNLOAD_DIR).exists())
+
+    def test_saved_images_survive_a_clean_install_without_room_to_download_first(self):
+        self.save()
+        self.catalog()
+        options = d.image_options('console', 'new', 'user', '246810', 0, None)
+        plan = d.image_plan(self.f.context, None, None, options, wipe=True, remote=d.catalog_entry(self.f.context, 'fixture-linux'))['plan']
+        with mock.patch.object(d, 'download_before_erase', return_value=None):
+            self.assertTrue(d.install(self.f.context, plan, True)['clean_install'])
+        self.assertTrue((self.store / self.f.image.name).exists())
+
+
 class TestVirtualDisks(unittest.TestCase):
     """2026-11-08: qcow2, dynamic VHD and Vagrant boxes unpack to the raw disk they describe."""
     def setUp(self):

@@ -25,6 +25,7 @@ A clean install needs a new account: userdata has none to keep.
 A clean installation, like the installer of a live disk.
 A command is running in the terminal and holds storage. Wait for it to end, or stop it in the terminal.
 A completed manifest is published only after the archive and its decoded hash have been verified.
+A computer is asking to use ADB with this recovery.
 A computer is asking to use this phone.
 A network name has 1 to 32 bytes
 A network name has at most 32 bytes.
@@ -52,6 +53,7 @@ ACCESS
 Access stays open until the phone locks or restarts. The computer never sees the password.
 ACCOUNT
 active
+ADB connection
 Add a new slot alongside the current Linux.
 Add a system
 Add a theme from a file
@@ -73,6 +75,7 @@ Already unmounted
 ALSO INSTALL
 Always
 America
+An allowed computer is remembered. When the recovery has a password, it is asked as well.
 An ARM64 ISO, disk image (raw, qcow2, VHD), Vagrant box or rootfs archive.
 An incomplete import remains in /.a22x-systems/staging for inspection. No automatic cleanup is performed.
 An installation is unfinished
@@ -184,6 +187,7 @@ Check and repair: ext4 only
 Check backup integrity
 Check: errors repaired
 Check: no errors found
+checked against the catalog
 Checking BOOT
 Checking restored data
 Checking status...
@@ -208,6 +212,7 @@ Choose a setup script
 Choose a shorter destination path.
 Choose a theme file
 Choose an already mounted writable volume.
+Choose an image of the store
 Choose an image of userdata or BOOT
 Choose an SD card or USB stick with backups, or restore a partition image.
 Choose an SD card or USB stick.
@@ -252,6 +257,7 @@ Connecting...
 CONNECTION
 Contacts
 Continue
+copied file
 Copy and rename require a new destination. Delete removes a regular file or an empty folder.
 Copy file
 Copy folder
@@ -277,6 +283,7 @@ Debian
 December
 Delete
 Delete a saved system that is not running.
+Delete this image?
 Deleted
 Deny
 Design capacity
@@ -304,6 +311,9 @@ Documents
 Done
 Done: %u packages
 Download %s over Wi-Fi, checked against the catalog
+Download from the catalog
+Download to the phone
+Downloading %s...
 Downloading the system image
 DURABLE JOURNAL
 Each shell is installed with its packages. Sxmo and Lomiri come from Debian and Ubuntu.
@@ -388,6 +398,7 @@ Formatted
 Formatting erases every system and /home here. Android needs F2FS, Linux ext4.
 Formatting erases everything on this volume, including backups.
 Formatting userdata
+Free on userdata: %s
 Friday
 FROM
 From a file
@@ -409,6 +420,7 @@ history
 Hold 1 second to discard
 Hold 2 seconds to back up
 Hold 2 seconds to confirm
+Hold 2 seconds to delete
 Hold 2 seconds to export
 Hold 2 seconds to install
 Hold 2 seconds to share read / write
@@ -438,7 +450,9 @@ Identity restored and checked
 If the backup also has a BOOT image, restore it the same way before starting Linux.
 IMAGE
 Image source
+Images in the phone's memory, no SD card needed
 Import a system
+In the phone's memory: they install without an SD card.
 In the repositories of %s
 Indian Ocean
 Input delivery was not confirmed. Pending input was discarded and will not be replayed. Refresh to inspect the shell.
@@ -471,7 +485,9 @@ Installing the desktop
 Internal storage
 INTERRUPTED SWITCH
 It can read and change everything here.
+It gets a root shell, copies files and can restart the phone.
 It is ready: recovery has installed the desktop, apps and account. Switch to it in Systems to start it.
+It is removed from the phone's memory. Installed systems are not affected.
 It starts ready: recovery has installed the desktop, apps and account.
 Its first start sets up the account, network, desktop and apps, then restarts once.
 Its root filesystem with its programs, /etc and /var is deleted. /home, the active system and BOOT stay. This cannot be undone.
@@ -491,6 +507,7 @@ Keep the previous system available for rollback.
 Keep the verified Linux backup on the microSD card: Restore brings Linux back.
 Kernel
 Kernel and ramdisk
+KEY FINGERPRINT
 Keyboard
 Language
 LANGUAGE AND TIME
@@ -558,6 +575,7 @@ Mount userdata in Files to see and change it
 Mount userdata to inspect systems
 Mount userdata to read it
 Mount userdata with write access and refresh Systems before planning.
+Mount userdata with write access first: the images are kept there.
 Mount userdata with write access first: the installer needs it to check the space.
 Mount with write access
 mounted
@@ -598,6 +616,7 @@ No completed backups
 No current executable plan is available for this operation.
 No host key reported.
 No identity copy on this volume.
+No images are saved yet. Download one from the catalog, or copy an image into the .a22x-images folder of userdata with USB files.
 No installed system on userdata
 No link text returned
 No longer on its server
@@ -611,6 +630,7 @@ No partition inventory received.
 No power action selected.
 No retry is started automatically. Inspect the backend result before another operation.
 No saved system slots yet. Import a prepared bundle to keep the current Linux alongside another system.
+No SD card is needed; the image stays saved after the installation.
 No valid export reported
 No volume inventory received. Tap Refresh to try again.
 No volumes
@@ -756,6 +776,7 @@ Reading terminal state...
 Reading the catalog...
 Reading the partition back
 Reading the phone...
+Reading the saved images...
 Reading USB status...
 Reading Wi-Fi...
 Reading...
@@ -884,6 +905,11 @@ SAVE TO
 Saved
 SAVED AND CHECKED
 Saved archive
+Saved images
+Saved in the phone's memory and checked, for installing later.
+SAVED ON THE PHONE
+Saved on the phone
+Saved on the phone: %s
 Saved snapshot
 saved system
 Saved until reboot: no writable storage
@@ -1083,7 +1109,11 @@ The image installer did not return a valid result.
 The image installer helper is not configured.
 The image is larger than any partition
 The image is larger than the partition
+The image is not saved on the phone
 The image or installation state changed since planning
+The image store did not return a valid result.
+The image store on userdata is not a folder
+The image was deleted.
 The images match their servers.
 The input acknowledgement did not match. Pending input was discarded and will not be replayed.
 The installed root filesystem changes. /home stays shared; each system retains its own /etc and /var. BOOT is retained.
@@ -1173,6 +1203,7 @@ Theme file
 Theme removed
 There is no automatic reboot.
 There is not enough space beside the retained system
+There is not enough space on userdata for this image
 This action replaces the listed targets.
 This compression is not supported
 This creates an empty filesystem, not secure erasure. The saved snapshot remains on SD. Recovery does not reboot automatically.
@@ -1246,6 +1277,7 @@ Unsupported
 Up
 Updated from the servers: %u
 USB address unavailable
+USB debugging
 USB files
 USB files stopped: cable removed
 USB stick

@@ -133,7 +133,7 @@ nm_wifi() {
     echo "networks seen:"; printf '%s\n' "$seen"
     ssid=$WIFI_SSID hidden=
     if ! printf '%s\n' "$seen" | grep -qxF -- "$WIFI_SSID"; then
-        # A hotspot named "Oneplus 15 " was typed as "Oneplus 15" (2026-11-08): a visible name
+        # A hotspot whose name ended in a space was typed without it (2026-11-08): a visible name
         # that differs only in case or surrounding spaces is taken instead.
         key=$(printf '%s' "$WIFI_SSID" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | tr '[:upper:]' '[:lower:]')
         near=$(printf '%s\n' "$seen" | while IFS= read -r name; do

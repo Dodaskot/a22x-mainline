@@ -118,7 +118,7 @@ static bool systems_manifest_selected(const App*a){
 }
 /* Userdata can be mounted from Systems, from New system and from the catalog (2026-11-08: the
    button of New system did nothing, as only Systems handled it). */
-static bool systems_mount_screen(int screen_){return screen_==SYSTEMS||screen_==SYSTEMS_NEW||screen_==SYSTEMS_CATALOG;}
+static bool systems_mount_screen(int screen_){return screen_==SYSTEMS||screen_==SYSTEMS_NEW||screen_==SYSTEMS_CATALOG||screen_==SYSTEMS_IMAGES;}
 static bool systems_can_mount(const App*a){return a->systems_known&&!a->systems_transaction[0]&&a->systems_volume_token[0]&&(!a->systems_mounted||a->systems_read_only);}
 /* Mounting from here: the same request Files sends, then Systems reads the volume again. */
 static void render_systems_mount(App*a){
@@ -227,7 +227,8 @@ static void render_systems_done(App*a){
 }
 static bool systems_script_selected(const App*a){
     const FileVolume*v=a->volume_index>=0&&a->volume_index<a->volume_count?&a->volumes[a->volume_index]:NULL;
-    return systems_source_allowed(v)&&file_is_regular(&a->fs_selected)&&a->fs_selected.token[0]&&a->fs_selected.size<=SYSTEMS_SCRIPT_LIMIT;
+    bool saved=script_store_volume(v)&&v->mounted&&!strncmp(a->fs_selected.path,"/a22x-recovery/scripts/",23)&&!strchr(a->fs_selected.path+23,'/');
+    return (systems_source_allowed(v)||saved)&&file_is_regular(&a->fs_selected)&&a->fs_selected.token[0]&&a->fs_selected.size<=SYSTEMS_SCRIPT_LIMIT;
 }
 static void render_systems_script(App*a){
     heading(a,"Setup script","Runs once as root at the first start of the new system.",true);
@@ -265,6 +266,11 @@ static void render_systems_plan(App*a){
             char download[64],line[160];human_bytes(a->systems_plan_download,download,sizeof(download));
             text(a,40,532,0,ORANGE,"FROM THE CATALOG");raw_text(true);wrapped(a,40,574,640,1,TEXT,a->systems_manifest,2);raw_text(false);
             snprintf(line,sizeof(line),T("Download %s over Wi-Fi, checked against the catalog"),download);wrapped(a,40,664,640,0,MUTED,line,2);
+        }else if(!strcmp(a->systems_source_volume,"userdata")){
+            /* An image saved on the phone (2026-11-10): it stays in the store after the installation. */
+            const char*name=strrchr(a->systems_manifest,'/');
+            text(a,40,532,0,ORANGE,"SAVED ON THE PHONE");raw_text(true);wrapped(a,40,574,640,1,TEXT,name?name+1:a->systems_manifest,2);raw_text(false);
+            wrapped(a,40,664,640,0,MUTED,"No SD card is needed; the image stays saved after the installation.",2);
         }else{
             text(a,40,532,0,ORANGE,"SOURCE MANIFEST");ellipsis(a,40,574,640,0,MUTED,a->systems_source_volume);
             confirmation_path(a,52,618,608,a->systems_manifest,a->systems_plan_page,5);
@@ -578,8 +584,9 @@ static bool systems_action(App*a,int id){
         if(id==A_FS_VOLUME){screen(a,FILE_VOLUMES);return true;}
         if(id>=A_FS_VOLUME_ITEM&&id<A_FS_VOLUME_ITEM+a->volume_count){
             int index=id-A_FS_VOLUME_ITEM;FileVolume*v=&a->volumes[index];
-            if(systems_source_allowed(v))select_volume(a,index);
-            else if(systems_source_listed(v)){
+            bool saved=a->systems_pick_script&&script_store_volume(v);
+            if(systems_source_allowed(v)||(saved&&v->mounted))select_volume(a,index);
+            else if(systems_source_listed(v)||saved){
                 /* Read-only is enough to read the image; the browser opens once it is mounted. */
                 a->volume_index=index;copy(a->volume_id,sizeof(a->volume_id),v->id);copy(a->fs_path,sizeof(a->fs_path),"/");reset_browser(a);
                 FileRequest q=file_request(a,J_FS_MOUNT);copy(q.mode,sizeof(q.mode),"ro");start_files_request(a,&q);

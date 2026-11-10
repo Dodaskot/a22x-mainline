@@ -6,15 +6,16 @@ touch interface, and installs and manages Linux distributions in `userdata`.
 Android installation is planned, but it is not ready yet.
 
 Ukrainian: [README.uk.md](README.uk.md). History before 0.6.124:
-[docs/CHANGELOG.md](docs/CHANGELOG.md).
+[docs/CHANGELOG.md](docs/CHANGELOG.md). Day-by-day progress of 0.6, with every
+on-phone check: [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Status (2026-11-10)
 
 | | |
 |---|---|
-| Recovery | 0.6.124, SHA-256 `eb55fa26bf0891d237b2db8a6010db27fa3ea1bcd94e43ad7c8baf8e1a8a9b6e` |
+| Recovery | 0.6.136, SHA-256 `4eea5ee30ea833dc4d32b6a2199b30e88e854de019b86a3dff62cb4b5ebe801a` |
 | Recovery kernel | `7.2.0-a22x-recovery+ #120`: [linux-a22x](https://github.com/Dodaskot/linux-a22x) branch `a22x-recovery`, tag `a22x-recovery-kernel120` |
-| Tested with | BOOT v1r5 (`releases/v145`, kernel `#121`, branch `a22x-boot`) |
+| Tested with | BOOT v146 (`releases/v146`, kernel `#122`) and v145 (kernel `#121`), branch `a22x-boot` |
 | Image | not published: it contains firmware captured from the developer's phone and the developer's SSH key (see [Building](#building)) |
 
 Everything listed as working below was done on the phone by touch, the way a
@@ -29,7 +30,8 @@ networks are not part of this repository.
 - Six languages: English, Ukrainian, German, French, Polish and Spanish.
 - Themes, animations, 60/90 Hz without a dark flash, brightness, screen timeout.
 - Status bar with Wi-Fi, charging, battery and clock. The Power key turns the
-  screen off and on.
+  screen off and on. The brightness slider and the screen-off work; the
+  recovery blanks the screen but does not suspend, so jobs keep running.
 
 ### Files and storage
 
@@ -45,6 +47,11 @@ networks are not part of this repository.
 - Wi-Fi: scan, connect, saved networks. Downloads use HTTPS.
 - SSH with keys only, and a diagnostics page, over the USB network
   (`172.16.42.1`) and over Wi-Fi.
+- **ADB** over USB and over the USB network (`adb connect 172.16.42.1:5555`):
+  root shell, `push`/`pull`, and `adb sideload FILE`, which saves the file in
+  the image store on `userdata` (a ZIP for later Android installation, or a
+  Linux image). A new computer is allowed on the phone screen first and then
+  remembered; the recovery password, when set, is asked as for SSH.
 
 ### Linux systems
 
@@ -60,6 +67,10 @@ networks are not part of this repository.
   `qcow2`. postmarketOS images made for other phones work too.
   An online installation needs no SD card: the image is downloaded into
   `userdata` and deleted after unpacking.
+- **Saved on the phone**: catalog images can be downloaded into `userdata`
+  (`/.a22x-images`), checked against the catalog, and installed later
+  without a network or an SD card; the page shows the free space and deletes
+  images. A clean installation keeps this store.
 - Choices for each installation:
   - the main desktop and more shells: Phosh, GNOME, Plasma Mobile, Xfce, Sxmo
     and Lomiri (Sxmo and Lomiri only on Debian and Ubuntu);
@@ -75,6 +86,29 @@ networks are not part of this repository.
 - The recovery adds kernel modules, firmware and device services by itself. It
   refuses a system that could not start here, for example one with another init,
   missing platform files, or a password format the system cannot read.
+
+### Flashing
+
+- **Flash a partition**: BOOT, RECOVERY, DTBO, vbmeta, vbmeta_system,
+  vbmeta_vendor, super, prism and optics, from microSD, a USB stick or
+  `userdata`; raw, sparse, gzip, LZ4, XZ or ZSTD. The old content is saved
+  first (on the SD card, or in `userdata`'s image store), and the partition is
+  read back after writing. RECOVERY and BOOT were flashed this way on the
+  phone (2026-11-10).
+- Images are judged by their **contents**, not by a list of approved hashes
+  (`bootimage.py`): a BOOT or recovery image must be complete (the kernel
+  unpacks to its end, or its AVB hash matches) and made for this phone (the
+  header board `SRPTL28A011`, the device tree, or the ramdisk's
+  `ro.product.bootimage.device=a22x`); the check page shows what is inside,
+  for example `Linux 7.2.0-a22x+ / Samsung Galaxy A22 5G (SM-A226B)`. A DTBO
+  must be a valid DT table and a vbmeta a valid AVB image. An image for another
+  phone, or a damaged one, is refused before anything is written.
+- **Restart into the system** checks a changed BOOT, DTBO or vbmeta the same
+  way, so a stock Android BOOT, a Magisk-patched one or a new Linux kernel needs
+  no update of the recovery. A write that stopped part way is caught by the
+  kernel stream or the AVB hash. Linux installations accept any complete Linux
+  BOOT for this phone whose kernel release matches the platform modules
+  (`7.2.0-a22x+`).
 
 ### Power
 
@@ -103,14 +137,15 @@ shared `/home`. Switching between them in every direction worked.
 ## Known problems
 
 1. **A restart sometimes lands in the previous mode.** In this session it
-   happened 4 times in about 40 restarts. The preloader starts twice, the
+   happened 5 times in about 50 restarts. The preloader starts twice, the
    second run clears the restart markers in SRAM, and LK then boots the mode of
    the previous start. Where LK keeps that mode is not known; it is not in
    `misc` or `para`, in RTC `PDN1`, or in WDT `NONRST_REG2`. Workaround: restart
    again.
-2. **USB networking after suspend in an installed system.** Kernels #120 and #121
-   re-attach the USB device role after every system sleep. This was verified in
-   the recovery; in a running installed system it is not verified yet.
+2. **Sleep with a computer attached.** With BOOT v146 (kernel #122) the USB
+   link to a computer stays up during sleep, but the computer's traffic wakes
+   the phone, so it does not stay in deep sleep while attached (the screen
+   stays off). On a charger or on battery it sleeps as before.
 3. **Lomiri** works since 0.6.118 with a grid unit of 16 px. Mir crashed at
    scale 3 because 2408 is not a multiple of 3. Systems installed earlier keep
    24 px: reinstall them, or set `GRID_UNIT_PX=16`.
@@ -127,9 +162,12 @@ shared `/home`. Switching between them in every direction worked.
 8. **Android**: installing stock firmware, ROMs or ZIP packages and decrypting
    Android data are not ready. The screens for stock firmware, partition
    flashing, backup and restore exist, but they were not qualified again in 0.6.
-9. The image leaves 2.3 MiB of the RECOVERY partition free. The kernel also
+9. **Not yet checked on the phone:** Wi-Fi, language and time zone handed
+   over by a phone system (`a22x-recovery/handoff.json` on `cache`), and setup
+   scripts saved in `cache` (`a22x-recovery/scripts/`).
+10. The image leaves 2.3 MiB of the RECOVERY partition free. The kernel also
    supports XZ and ZSTD initramfs, which would free more room.
-10. There is no public image yet, because the build needs platform files
+11. There is no public image yet, because the build needs platform files
     captured from the phone.
 
 ## Building
@@ -154,7 +192,7 @@ Inputs (see the header of `tools/build-image.sh`):
 ## Tests
 
 ```fish
-unshare -r python3 -B -m unittest discover -s tests   # 500 tests
+unshare -r python3 -B -m unittest discover -s tests   # 528 tests
 cd ui; and make test systems-ui-integration display-ui-integration shells-ui-test locale-ui-test
 make -C ui arm64 CROSS_COMPILE=aarch64-linux-gnu-     # static interface for the phone
 ```

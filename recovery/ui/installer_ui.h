@@ -39,7 +39,8 @@ static void render_systems_new(App*a){
     bool ready=systems_ready(a),free_ui=ui_free(a);
     installer_card(a,(Rect){28,236,664,168},2,ICON_BROWSER,"From the internet","Minimal images from the catalog, downloaded over Wi-Fi",A_NEW_INTERNET,free_ui);
     installer_card(a,(Rect){28,420,664,168},1,A_FILES,"From a file","A system image on a USB stick or SD card",A_NEW_FILE,free_ui&&ready);
-    int y=616;
+    installer_card(a,(Rect){28,604,664,168},3,ICON_PHONE,"Saved on the phone","Images in the phone's memory, no SD card needed",A_NEW_SAVED,free_ui);
+    int y=800;
     if(!a->systems_known||!a->systems_mounted||a->systems_read_only){
         y+=wrapped(a,40,y,640,0,ORANGE,"Mount userdata with write access first: the installer needs it to check the space.",3)+16;
         button(a,(Rect){28,y,664,84},"Mount userdata",A_SYS_MOUNT,free_ui&&systems_can_mount(a),false,0);y+=108;
@@ -62,7 +63,9 @@ static void render_systems_new(App*a){
 }
 
 static void render_catalog(App*a){
-    heading(a,"Catalog","Official images, downloaded and checked during the installation.",true);
+    /* Opened from the saved images: an image is downloaded to the phone, not installed (2026-11-10). */
+    if(a->catalog_saving)heading(a,"Download to the phone","Saved in the phone's memory and checked, for installing later.",true);
+    else heading(a,"Catalog","Official images, downloaded and checked during the installation.",true);
     bool busy=a->job.pid&&a->job.kind==J_CATALOG,checking=a->job.pid&&a->job.kind==J_CATALOG_CHECK,free_ui=ui_free(a)&&!busy;
     /* One list that scrolls under the finger, with the chips and the state of the check (2026-11-08). */
     a->page_scroll=(int64_t)scroll_clamp((double)a->page_scroll,(double)page_max_scroll(a));int y=232-(int)a->page_scroll;
@@ -177,7 +180,7 @@ static void catalog_choose(App*a,const CatalogImage*c){
 static bool installer_action(App*a,int id){
     if(id==A_SYS_NEW){if(ui_free(a)){a->systems_mount_sheet=false;a->systems_adding=false;screen(a,SYSTEMS_NEW);}return true;}
     if(id==A_HOME_CATALOG){
-        if(ui_free(a)){a->systems_adding=false;a->catalog_family=0;a->catalog_page=0;a->page_scroll=0;a->catalog_checked=a->catalog_check_done=false;screen(a,SYSTEMS_CATALOG);
+        if(ui_free(a)){a->systems_adding=false;a->catalog_saving=false;a->catalog_family=0;a->catalog_page=0;a->page_scroll=0;a->catalog_checked=a->catalog_check_done=false;screen(a,SYSTEMS_CATALOG);
             /* The install pages need the state of userdata; the catalog is read right after it. */
             a->catalog_after_status=a->distro_helper[0]!=0;if(!a->catalog_after_status||!start_systems_job(a,J_SYS_STATUS)){a->catalog_after_status=false;start_catalog_job(a);}}
         return true;
@@ -185,7 +188,7 @@ static bool installer_action(App*a,int id){
     if(a->screen==SYSTEMS_NEW){
         if(a->systems_mount_sheet)return false;
         if(id==A_BACK){screen(a,SYSTEMS);return true;}
-        if(id==A_NEW_INTERNET){a->catalog_family=0;a->catalog_page=0;a->page_scroll=0;a->catalog_checked=a->catalog_check_done=false;screen(a,SYSTEMS_CATALOG);start_catalog_job(a);return true;}
+        if(id==A_NEW_INTERNET){a->catalog_saving=false;a->catalog_family=0;a->catalog_page=0;a->page_scroll=0;a->catalog_checked=a->catalog_check_done=false;screen(a,SYSTEMS_CATALOG);start_catalog_job(a);return true;}
         if(id==A_NEW_FILE){
             if(!systems_ready(a))return true;
             a->systems_remote_id[0]=0;a->systems_wipe=!a->systems_adding;a->systems_pick_manifest=true;a->systems_pick_script=false;a->systems_plan_page=0;a->volume_scroll=0;
@@ -194,7 +197,7 @@ static bool installer_action(App*a,int id){
     }
     if(a->screen==SYSTEMS_CATALOG){
         if(a->systems_mount_sheet)return false; /* The sheet's own buttons, in systems_action. */
-        if(id==A_BACK){screen(a,a->systems_known?SYSTEMS_NEW:HOME);return true;}
+        if(id==A_BACK){if(a->catalog_saving){a->catalog_saving=false;open_images(a);return true;}screen(a,a->systems_known?SYSTEMS_NEW:HOME);return true;}
         if(id==A_CATALOG_WIFI){a->wifi_from_catalog=true;return wifi_action(a,A_WIFI);}
         if(id>=A_CATALOG_FAMILY&&id<A_CATALOG_FAMILY+(int)CATALOG_FAMILIES){a->catalog_family=(unsigned int)(id-A_CATALOG_FAMILY);a->catalog_page=0;a->page_scroll=0;a->dirty=true;return true;}
         if(id==A_CATALOG_PREV){if(a->catalog_page)a->catalog_page--;a->dirty=true;return true;}
@@ -208,6 +211,11 @@ static bool installer_action(App*a,int id){
                     else screen(a,SYSTEMS_NEW);
                     return true;
                 }
+                if(a->catalog_saving){
+                    /* The download's own reply carries the new list of saved images. */
+                    a->catalog_saving=false;a->saved_delete=0;a->page_scroll=0;screen(a,SYSTEMS_IMAGES);
+                    snprintf(a->saved_note,sizeof(a->saved_note),T("Downloading %s..."),a->catalog[n].name);
+                    start_images_job(a,J_IMAGES_DOWNLOAD,a->catalog[n].id);return true;}
                 catalog_choose(a,&a->catalog[n]);
             }
             return true;

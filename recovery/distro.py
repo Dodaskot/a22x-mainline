@@ -30,9 +30,17 @@ import tarfile
 import time
 import types
 
+import bootimage
 import filesystem as fs
 
 MANAGER = '.a22x-systems'
+# Images saved on the phone (2026-11-10): downloaded from the catalog or copied over USB, kept
+# beside the systems on userdata. A switch never moves them, and a clean installation keeps them,
+# so an SD card is not needed to install, and a download is not lost when the network drops.
+STORE_DIR = '.a22x-images'
+STORE_META = '.a22x.json'
+STORE_FILE = re.compile(r'[A-Za-z0-9][A-Za-z0-9._+-]{0,199}')
+SCRIPT_STORE = 'a22x-recovery/scripts/'
 PROFILE_PATH = Path('/etc/a22x-recovery/distro-platform.json')
 # The exact files the profile names, kept in the recovery for a system that lost them.
 PLATFORM_BUNDLE = Path('/opt/a22x-recovery/platform/platform-files.tar.xz')
@@ -50,7 +58,9 @@ BOOT_K116_SHA256 = '71a50262a73859e1538e79277f0ce00822be208d52b32328038a5932b513
 # Kernel 121 = 116 + USB replug after system sleep; only the kernel differs from 116, the same
 # modules (release 7.2.0-a22x+) serve both (2026-11-09, artifacts/boot-k121-20261109).
 BOOT_K121_SHA256 = 'e3542fcdd905a4b89a10eb828fa983bc9f0837a2635155d0124c692f6c5fbb1f'
-ALLOWED_BOOTS = frozenset((BOOT_SHA256, BOOT_K108_SHA256, BOOT_CHARGER_OFF_SHA256, BOOT_K116_SHA256, BOOT_K121_SHA256))
+# BOOT v1r6 (2026-11-10): kernel 122 keeps the USB device link through system sleep.
+BOOT_K122_SHA256 = '9701f48ddced60c648e79a502885778935d1cb5610a011d77fc1898eea01d41a'
+ALLOWED_BOOTS = frozenset((BOOT_SHA256, BOOT_K108_SHA256, BOOT_CHARGER_OFF_SHA256, BOOT_K116_SHA256, BOOT_K121_SHA256, BOOT_K122_SHA256))
 BOOT_BYTES = 33554432
 USERDATA_BYTES = 53393489920
 # A first start of Manjaro ARM grew userdata to the end of the eMMC (sfdisk, 2026-11-08):
@@ -59,7 +69,7 @@ USERDATA_GROWN_BYTES = (122142720 - 33 - 17850368) * 512
 USERDATA_SIZES = (USERDATA_BYTES, USERDATA_GROWN_BYTES)
 PROFILE_ID = 'a22x-ext4-v2'
 KERNEL_RELEASE = '7.2.0-a22x+'
-RESERVED = frozenset(('home', 'lost+found', MANAGER))
+RESERVED = frozenset(('home', 'lost+found', MANAGER, STORE_DIR))
 MAX_JSON = 4 * 1024 * 1024
 MAX_ENTRIES = 200000
 MAX_PROFILE_ENTRIES = 30000
@@ -384,19 +394,35 @@ def boot_identity(context):
     require(part['size_bytes'] == BOOT_BYTES and part.get('partition_number') == 41,
             'BOOT_PROFILE_MISMATCH', 'BOOT geometry differs from the supported boot profile')
     h = hashlib.sha256()
-    count = 0
+    image = bytearray()
     with block.open_partition(part) as source:
-        while count < BOOT_BYTES:
-            data = source.read(min(CHUNK, BOOT_BYTES - count))
+        while len(image) < BOOT_BYTES:
+            data = source.read(min(CHUNK, BOOT_BYTES - len(image)))
             require(data, 'SHORT_READ', 'Cannot read the complete current BOOT profile')
             h.update(data)
-            count += len(data)
+            image += data
         require(not source.read(1) and block_stamp(source.fileno()) == part['stamp'],
                 'BOOT_CHANGED', 'BOOT changed during profile admission')
-    require(h.hexdigest() in ALLOWED_BOOTS, 'BOOT_PROFILE_MISMATCH',
-            'This installer profile requires a tested kernel #107 or #108 BOOT image')  # Same kernels; see ALLOWED_BOOTS.
+    # 2026-11-10: a BOOT is admitted by what it holds, not by a list of tested hashes: a complete
+    # Linux BOOT for this phone whose kernel release is the one the platform modules were built for.
+    release = None if h.hexdigest() in ALLOWED_BOOTS else bootimage.linux_release(bytes(image))
+    if h.hexdigest() not in ALLOWED_BOOTS:
+        expected = platform_kernel_release(context)
+        require(release is not None and release == expected, 'BOOT_PROFILE_MISMATCH',
+                'BOOT does not hold a Linux kernel for this phone built for the platform modules (%s); found %s'
+                % (expected, release or 'no such kernel'))
     return {'profile': PROFILE_ID, 'boot_sha256': h.hexdigest(), 'fixture': False,
-            'device_identity': block.device['identity']}
+            'device_identity': block.device['identity'], 'kernel_release': release}
+
+
+def platform_kernel_release(context):
+    """The kernel release the platform modules in this recovery were built for."""
+    try:
+        release = fs.regular_json(profile_path(context), MAX_JSON).get('kernel_release')
+    except (OSError, ValueError, fs.FilesystemError):
+        release = None
+    require(isinstance(release, str) and release, 'PLATFORM_PROFILE_MISSING', 'The platform profile names no kernel release')
+    return release
 
 
 def profile_path(context):
@@ -410,7 +436,8 @@ def load_profile(context):
     raw = fs.regular_json(path, MAX_JSON)
     check_seal(raw)
     require(raw.get('schema') == 'a22x.distro.platform.v1' and raw.get('id') == PROFILE_ID
-            and set(raw.get('boot_sha256_allowed', ())) == ALLOWED_BOOTS and raw.get('architecture') == 'aarch64'
+            and isinstance(raw.get('kernel_release'), str) and raw.get('architecture') == 'aarch64'
+            and all(isinstance(item, str) and re.fullmatch(r'[0-9a-f]{64}', item) for item in raw.get('boot_sha256_allowed', ()))
             and raw.get('init_system') in ('systemd', 'openrc'),
             'PLATFORM_PROFILE_MISMATCH', 'Unsupported kernel/userspace platform profile')
     entries = raw.get('entries')
@@ -1140,7 +1167,8 @@ def read_bundle(source, manifest_path):
             'INVALID_BUNDLE', 'Select an A22x ARM64 rootfs bundle manifest')
     identifier(bundle.get('id'))
     name_text(bundle.get('name'))
-    require(bundle.get('boot_profile') == PROFILE_ID and bundle.get('boot_sha256') in ALLOWED_BOOTS,
+    require(bundle.get('boot_profile') == PROFILE_ID and isinstance(bundle.get('boot_sha256'), str)
+            and re.fullmatch(r'[0-9a-f]{64}', bundle['boot_sha256']),
             'BUNDLE_BOOT_PROFILE_MISMATCH', 'This rootfs was not prepared for the retained A22x boot profile')
     fs.require_hash(bundle.get('platform_profile_sha256'), 'platform_profile_sha256')
     archive = bundle.get('rootfs', {})
@@ -1232,7 +1260,7 @@ def read_transaction(tree):
 def validate_transaction(value):
     source, target = identifier(value['source']), identifier(value['target'])
     require(source != target and value.get('direction') in ('resume', 'rollback')
-            and value.get('boot_sha256') in ALLOWED_BOOTS,
+            and isinstance(value.get('boot_sha256'), str) and re.fullmatch(r'[0-9a-f]{64}', value['boot_sha256']),
             'INVALID_TRANSACTION', 'Invalid switch identities or boot profile')
     before, after = check_seal(value['before_state']), check_seal(value['after_state'])
     require(before['active'] == source and after['active'] == target
@@ -1664,8 +1692,193 @@ def recovery_locale(context):
 
 def userdata_empty(tree):
     """A freshly formatted userdata: nothing but lost+found, so a clean install replaces nothing."""
-    names = [name for name in tree.list() if name != DOWNLOAD_DIR]
+    names = [name for name in tree.list() if name not in (DOWNLOAD_DIR, STORE_DIR)]
     return set(names) <= {'lost+found'} and all(stat.S_ISDIR(tree.lstat(name).st_mode) for name in names)
+
+
+def store_name(image_path):
+    """The file name when IMAGE_PATH is an image of the phone's own store, else None."""
+    if not isinstance(image_path, str):
+        return None
+    parts = image_path.lstrip('/').split('/')
+    if len(parts) == 2 and parts[0] == STORE_DIR and STORE_FILE.fullmatch(parts[1]) and not parts[1].endswith(STORE_META):
+        return parts[1]
+    return None
+
+
+def store_folder(live):
+    """The store as a real folder, never a link a system could have placed there."""
+    if live.exists(STORE_DIR):
+        require(stat.S_ISDIR(live.lstat(STORE_DIR).st_mode), 'STORE_INVALID', 'The image store on userdata is not a folder')
+    else:
+        live.mkdirs(STORE_DIR)
+    return real_path(live) / STORE_DIR
+
+
+def store_images(live):
+    """The saved images, with what the catalog said about them when they were downloaded."""
+    if not live.exists(STORE_DIR) or not stat.S_ISDIR(live.lstat(STORE_DIR).st_mode):
+        return []
+    found = []
+    for name in sorted(live.list(STORE_DIR)):
+        if not STORE_FILE.fullmatch(name) or name.endswith(STORE_META):
+            continue
+        st = live.lstat(STORE_DIR + '/' + name)
+        if not stat.S_ISREG(st.st_mode):
+            continue
+        meta = {}
+        if live.exists(STORE_DIR + '/' + name + STORE_META):
+            with contextlib.suppress(Exception):
+                meta = json.loads(live.read(STORE_DIR + '/' + name + STORE_META, 65536).decode('utf-8'))
+        meta = meta if isinstance(meta, dict) else {}
+        text = lambda key, limit: str(meta.get(key) or '')[:limit]
+        found.append({'file': name, 'path': '/' + STORE_DIR + '/' + name, 'size': st.st_size,
+                      'catalog_id': text('id', 64), 'name': text('name', 64), 'version': text('version', 32),
+                      'family': text('family', 16), 'checked': meta.get('checked') is True and meta.get('size') == st.st_size})
+    return found
+
+
+def store_bytes(live):
+    return sum(item['size'] for item in store_images(live))
+
+
+def images(context):
+    """The images saved on the phone and the free space for more."""
+    with fs.PinnedVolume(context, 'userdata') as pin, Tree(pin) as live:
+        require_userdata(pin)
+        vfs = os.fstatvfs(pin.fd)
+        return {'images': store_images(live), 'free_bytes': vfs.f_bavail * vfs.f_frsize, 'store': '/' + STORE_DIR}
+
+
+def download_progress(name):
+    last = [0.0]
+
+    def report(phase, done=0, total=0):
+        now = time.monotonic()
+        if not PROGRESS_EVENTS or (now - last[0] < 0.5 and done < total):
+            return
+        last[0] = now
+        print(json.dumps({'event': 'progress', 'operation': 'images-download', 'phase': phase, 'partition': name,
+                          'bytes_done': int(done), 'bytes_total': int(total)}, separators=(',', ':')), file=sys.stderr, flush=True)
+    return report
+
+
+def store_download(context, live, entry, target, progress):
+    """Download a catalog image to TARGET in the store: size and checksum or signature must match."""
+    try:
+        ensure_clock(context)
+        signed = {'url': entry['signature_url'], 'sha256': entry['signature_sha256'], 'key': entry['key']} \
+            if 'signature_url' in entry else None
+        fetch(context, entry['url'], target, entry['size'], entry.get('sha256') or entry.get('sha512') or '',
+              progress, signature=signed)
+    except BaseException as error:
+        with contextlib.suppress(OSError):
+            target.unlink()
+        downloaded_differently(context, entry, error)
+        raise
+
+
+def images_download(context, image_id, confirmed=False):
+    """Save a catalog image on the phone, for installing later without a network or an SD card."""
+    context.confirm(confirmed)
+    entry = plan_entry(context, image_id)
+    with fs.PinnedVolume(context, 'userdata', writing=True) as pin, Tree(pin) as live:
+        require_userdata(pin)
+        vfs = os.fstatvfs(pin.fd)
+        free = vfs.f_bavail * vfs.f_frsize
+        require(free >= entry['size'] + MIN_FREE, 'INSUFFICIENT_SPACE', 'There is not enough space on userdata for this image',
+                available_bytes=free, required_bytes=entry['size'] + MIN_FREE)
+        store = store_folder(live)
+        part = store / ('.part-' + entry['file'])
+        store_download(context, live, entry, part, download_progress(entry['file']))
+        os.replace(part, store / entry['file'])
+        meta = {'schema': 'a22x.image-store.v1', 'id': entry['id'], 'name': entry.get('name', ''),
+                'version': entry.get('version', ''), 'family': entry.get('family', ''), 'size': entry['size'],
+                'sha256': entry.get('sha256', ''), 'sha512': entry.get('sha512', ''), 'url': entry['url'], 'checked': True}
+        (store / (entry['file'] + STORE_META)).write_text(json.dumps(meta, indent=1) + '\n')
+        os.sync()
+        vfs = os.fstatvfs(pin.fd)
+        return {'saved': entry['file'], 'images': store_images(live), 'free_bytes': vfs.f_bavail * vfs.f_frsize}
+
+
+@contextlib.contextmanager
+def sideload_store(context, size):
+    """The image store for a file of SIZE bytes arriving over adb (2026-11-10). userdata is mounted
+    for the transfer when the recovery has not mounted it, and stays pinned until the file is in place."""
+    volume = context.volume('userdata')
+    mounted_here = not volume['mounted']
+    if mounted_here:
+        context.mount('userdata', 'rw', True, volume['volume_token'])
+    try:
+        with fs.PinnedVolume(context, 'userdata', writing=True) as pin, Tree(pin) as live:
+            require_userdata(pin)
+            vfs = os.fstatvfs(pin.fd)
+            free = vfs.f_bavail * vfs.f_frsize
+            require(free >= size + MIN_FREE, 'INSUFFICIENT_SPACE', 'There is not enough space on userdata for this file',
+                    available_bytes=free, required_bytes=size + MIN_FREE)
+            yield store_folder(live)
+            os.sync()
+    finally:
+        if mounted_here:
+            os.sync()
+            context.unmount('userdata')
+
+
+def images_delete(context, name, confirmed=False):
+    """Delete a saved image and what the catalog said about it."""
+    context.confirm(confirmed)
+    require(isinstance(name, str) and STORE_FILE.fullmatch(name) and not name.endswith(STORE_META),
+            'INVALID_ARGUMENT', 'Choose an image of the store')
+    with fs.PinnedVolume(context, 'userdata', writing=True) as pin, Tree(pin) as live:
+        require_userdata(pin)
+        path = STORE_DIR + '/' + name
+        require(live.exists(path) and stat.S_ISREG(live.lstat(path).st_mode), 'IMAGE_NOT_FOUND', 'The image is not saved on the phone')
+        store = store_folder(live)
+        (store / name).unlink()
+        with contextlib.suppress(FileNotFoundError):
+            (store / (name + STORE_META)).unlink()
+        os.sync()
+        vfs = os.fstatvfs(pin.fd)
+        return {'deleted': name, 'images': store_images(live), 'free_bytes': vfs.f_bavail * vfs.f_frsize}
+
+
+def download_before_erase(context, remote, progress):
+    """The catalog image of a clean installation, saved in the store before anything is erased.
+    None when userdata has no room for it now: then it is formatted and the image comes after."""
+    with fs.PinnedVolume(context, 'userdata', writing=True) as pin, Tree(pin) as live:
+        require_userdata(pin)
+        vfs = os.fstatvfs(pin.fd)
+        if vfs.f_bavail * vfs.f_frsize < remote['size'] + MIN_FREE:
+            return None
+        store = store_folder(live)
+        for name in os.listdir(store):
+            if name.startswith('.install-'):
+                (store / name).unlink()
+        target = store / ('.install-' + remote['file'])
+        store_download(context, live, remote, target, progress)
+        return target.name
+
+
+def store_in_use(context):
+    """Whether userdata holds saved images that a format would destroy."""
+    try:
+        with fs.PinnedVolume(context, 'userdata') as pin, Tree(pin) as live:
+            return bool(store_images(live))
+    except fs.FilesystemError:
+        return False
+
+
+def clear_userdata(live):
+    """A clean installation that keeps the image store: every system and /home go, the saved
+    images stay (2026-11-10). The partition is not formatted, so the image being installed or the
+    download made just before is not lost."""
+    root = real_path(live)
+    for name in live.list():
+        if name in (STORE_DIR, 'lost+found'):
+            continue
+        target = root / name
+        shutil.rmtree(target) if target.is_dir() and not target.is_symlink() else target.unlink()
+    os.sync()
 
 
 def has_linux_root(tree):
@@ -1675,9 +1888,11 @@ def has_linux_root(tree):
 def script_stamp(context, script):
     """The chosen setup script: its bytes, hash and identity. Recovery only copies it."""
     with fs.PinnedVolume(context, script['volume'], script['token']) as pin, Tree(pin) as tree:
-        require(context.mode == 'fixture' or pin.volume.get('external') is True, 'EXTERNAL_SCRIPT_REQUIRED',
-                'Setup scripts must be on external SD/USB storage')
         path = logical_path(script['path'])
+        # Or one saved on the phone (2026-11-10): cache:/a22x-recovery/scripts, by an Android app or the recovery.
+        saved = script['volume'] == 'cache' and path.startswith(SCRIPT_STORE) and '/' not in path[len(SCRIPT_STORE):]
+        require(context.mode == 'fixture' or saved or pin.volume.get('external') is True, 'EXTERNAL_SCRIPT_REQUIRED',
+                'Setup scripts must be on external SD/USB storage')
         fd = tree.regular(path)
         try:
             stamp = fs.stamp(os.fstat(fd))
@@ -2270,18 +2485,21 @@ def fetch(context, url, target, size, checksum, progress, attempts=4, signature=
 
 def image_plan(context, source_volume, image_path, options, expected_source=None, wipe=False, remote=None):
     import image_import
-    if remote is None:
+    saved = store_name(image_path) if remote is None and source_volume == 'userdata' else None
+    if remote is None and saved is None:
         require(source_volume != 'userdata', 'BUNDLE_ON_USERDATA', 'Choose an image on external SD/USB storage')
     profile, boot = load_profile(context), boot_identity(context)
     with contextlib.ExitStack() as stack:
         target_pin = stack.enter_context(fs.PinnedVolume(context, 'userdata', writing=True))
         live = stack.enter_context(Tree(target_pin))
         source_pin = source = None
-        if remote is None:
+        if saved is not None:
+            source = live
+        elif remote is None:
             source_pin = stack.enter_context(fs.PinnedVolume(context, source_volume, expected_source))
             source = stack.enter_context(Tree(source_pin))
         require_userdata(target_pin)
-        require(remote is not None or context.mode == 'fixture' or source_pin.volume.get('external') is True,
+        require(remote is not None or saved is not None or context.mode == 'fixture' or source_pin.volume.get('external') is True,
                 'EXTERNAL_BUNDLE_REQUIRED', 'Images must be on external SD/USB storage')
         state = read_state(live) if live.exists(MANAGER) else None
         if state and not wipe:
@@ -2320,8 +2538,9 @@ def image_plan(context, source_volume, image_path, options, expected_source=None
                     'factor': int(remote.get('factor', 6))}
             name = remote['file']
         vfs = os.fstatvfs(target_pin.fd)
-        # Erased first, the whole partition is free; a download stays until it is unpacked.
-        free = (vfs.f_blocks if wipe else vfs.f_bavail) * vfs.f_frsize
+        # Erased first, the whole partition is free but for the saved images; a download stays
+        # until it is unpacked.
+        free = vfs.f_blocks * vfs.f_frsize - store_bytes(live) if wipe else vfs.f_bavail * vfs.f_frsize
         if info.get('used_bytes'):
             # An ext image unpacks sparsely, then its files are copied out: twice what it holds.
             required = 2 * info['used_bytes'] + IMAGE_MARGIN + MIN_FREE
@@ -2333,7 +2552,8 @@ def image_plan(context, source_volume, image_path, options, expected_source=None
                 available_bytes=free, required_bytes=required)
         slot = image_slot(name, live) if not wipe else image_slot(name, types.SimpleNamespace(exists=lambda _: False))
         binding = {'volume_token': target_pin.volume['volume_token'], 'state_seal': state['seal'] if state else None,
-                   'source_volume_token': source_pin.volume['volume_token'] if source_pin else None,
+                   'source_volume_token': source_pin.volume['volume_token'] if source_pin else
+                   (target_pin.volume['volume_token'] if saved is not None and not wipe else None),
                    'image_identity': list(stamp), 'format': info, 'boot': boot, 'platform_profile_sha256': digest(profile),
                    'options': options, 'clean': clean, 'script': script, 'wipe': wipe,
                    'remote': {k: remote[k] for k in ('id', 'url', 'sha256', 'sha512', 'size', 'file', 'signature_url', 'signature_sha256', 'key')
@@ -3001,12 +3221,25 @@ def install_image(context, plan, confirmed=False):
     require(fresh['binding'] == plan['binding'], 'PLAN_STALE', 'The image or installation state changed since planning')
     profile = load_profile(context)
     clean = plan['binding'].get('clean') is True
+    saved = store_name(plan.get('manifest_path')) if remote is None and plan.get('source_volume') == 'userdata' else None
+    predownload = None
+    if wipe and remote is not None:
+        # Downloaded before anything is erased (2026-11-10): when the network drops, the installed
+        # systems are still there. Without room for it, the partition is formatted first, as before.
+        predownload = download_before_erase(context, remote, progress)
+    # Formatted only when nothing saved would be lost; otherwise the store stays and the rest goes.
+    keep_store = saved is not None or predownload is not None or (wipe and store_in_use(context))
     if wipe:
         progress('image-erase', 0, 1)
         old = context.volume('userdata')
         if old.get('mounted') and old.get('mountpoint'):
             keep_builds(context, old['mountpoint'])
-        erase_userdata(context)
+        if not keep_store:
+            erase_userdata(context)
+        elif context.mode != 'fixture':  # the fixture empties its folder once it is pinned
+            with fs.PinnedVolume(context, 'userdata', writing=True) as erase_pin, Tree(erase_pin) as erase_live:
+                require_userdata(erase_pin)
+                clear_userdata(erase_live)
         progress('image-erase', 1, 1)
     script = None
     if options.get('script'):
@@ -3018,13 +3251,15 @@ def install_image(context, plan, confirmed=False):
         pin = stack.enter_context(fs.PinnedVolume(context, 'userdata', None if wipe else plan['binding']['volume_token'], writing=True))
         live = stack.enter_context(Tree(pin))
         source = None
-        if remote is None:
+        if saved is not None:
+            source = live
+        elif remote is None:
             source_pin = stack.enter_context(fs.PinnedVolume(context, plan['source_volume'], plan['binding']['source_volume_token']))
             source = stack.enter_context(Tree(source_pin))
         require_userdata(pin)
         if wipe and context.mode == 'fixture':
             for entry_name in os.listdir(real_path(live)):
-                if entry_name != 'lost+found':
+                if entry_name not in (('lost+found', STORE_DIR) if keep_store else ('lost+found',)):
                     target = real_path(live) / entry_name
                     shutil.rmtree(target) if target.is_dir() and not target.is_symlink() else target.unlink()
         if clean:
@@ -3045,7 +3280,9 @@ def install_image(context, plan, confirmed=False):
         discard = real_path(live) / setup if clean else stage_path
         root = stage_path / 'root'
         try:
-            if remote is not None:
+            if remote is not None and predownload is not None:
+                fd = os.open(real_path(live) / STORE_DIR / predownload, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+            elif remote is not None:
                 # Downloaded beside the setup on userdata, checked against the catalog, then unpacked.
                 live.mkdirs(DOWNLOAD_DIR)
                 download = real_path(live) / DOWNLOAD_DIR / remote['file']
@@ -3069,7 +3306,10 @@ def install_image(context, plan, confirmed=False):
                 image_import.extract(os.readlink('/proc/self/fd/%d' % fd), stage_path / 'work', root, progress)
             finally:
                 os.close(fd)
-                if remote is not None:
+                if predownload is not None:
+                    with contextlib.suppress(FileNotFoundError):
+                        (real_path(live) / STORE_DIR / predownload).unlink()
+                elif remote is not None:
                     shutil.rmtree(real_path(live) / DOWNLOAD_DIR, ignore_errors=True)
             desktop = options['desktop']
             networks = None if clean else wifi_source(live)
@@ -3507,6 +3747,13 @@ def parser():
     search.add_argument('--family', required=True)
     search.add_argument('--release', default='')
     search.add_argument('--query', required=True)
+    commands.add_parser('images')
+    keep = commands.add_parser('images-download')
+    keep.add_argument('--remote', required=True, help='An image of the catalog, saved on the phone')
+    keep.add_argument('--confirm', action='store_true')
+    drop = commands.add_parser('images-delete')
+    drop.add_argument('--file', required=True)
+    drop.add_argument('--confirm', action='store_true')
     cat = commands.add_parser('catalog')
     cat.add_argument('--refresh', action='store_true', help='Check the servers of the images (over Wi-Fi)')
     cat.add_argument('--force', action='store_true', help='Check even the servers checked recently')
@@ -3573,6 +3820,12 @@ def main(argv=None):
                                          args.init_system, args.modules_built_in, args.require_command, args.python_module)
             elif operation == 'catalog':
                 result = catalog(context, args.refresh, args.force)
+            elif operation == 'images':
+                result = images(context)
+            elif operation == 'images-download':
+                result = images_download(context, args.remote, args.confirm)
+            elif operation == 'images-delete':
+                result = images_delete(context, args.file, args.confirm)
             elif operation == 'charger-mode':
                 result = charger_mode(context, args.set)
             elif operation == 'package-search':
