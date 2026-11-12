@@ -464,6 +464,65 @@ class Shells(unittest.TestCase):
         self.assertIn('say: lightdm is not installed', self.calls())
         self.assertIn('systemctl enable --force greetd.service', self.calls())
 
+    def test_an_image_with_phosh_but_no_greetd_starts_it_through_its_own_unit(self):
+        """2026-11-12, Manjaro ARM Phosh on the phone: "unit greetd.service does not exist", Phosh
+        stayed disabled and the phone stopped at a text login. The image's own phosh.service is
+        enabled instead, for the account chosen in the recovery and through a22x-shell."""
+        (self.root / 'usr/lib/systemd/system/greetd.service').unlink()
+        self.write('usr/lib/systemd/system/phosh.service', '[Service]\nExecStart=capsh --noamb -- -c "exec /usr/bin/phosh-session"\nUser=1000\n')
+        self.session('phosh', 'auto')
+        calls = self.calls()
+        self.assertIn('systemctl enable --force phosh.service', calls)
+        self.assertNotIn('systemctl enable --force greetd.service', calls)
+        self.assertIn('say: this image has no greetd', calls)
+        self.assertEqual(self.read('etc/systemd/system/phosh.service.d/10-a22x.conf'),
+                         '[Service]\nUser=user\nExecStart=\nExecStart=/usr/bin/a22x-shell\n')
+        self.assertTrue((self.root / 'usr/bin/a22x-shell').is_file())
+        # With greetd there, or with another main shell, nothing changes: greetd signs in.
+        (self.root / 'calls').unlink()
+        self.write('usr/lib/systemd/system/greetd.service', '[Unit]\n')
+        self.session('phosh', 'auto')
+        self.assertIn('systemctl enable --force greetd.service', self.calls())
+
+    def test_an_image_with_phosh_says_whether_phoc_must_be_built_for_the_phone(self):
+        """2026-11-12, the owner: "why is phoc no longer built by itself for this phone?" An image
+        that brings Phosh is asked what the build script would build; nothing is built where the
+        image's wlroots is fine, where the build is there already, or without pacman."""
+        build = 'opt/a22x-conn/build/a22x-build-phoc.sh'
+        needed = lambda: self.run_sh('phone_build_needed && echo yes || echo no').strip().splitlines()[-1]
+        self.write(build, '#!/bin/sh\n[ "$1" = --key ] && echo "libwlroots-0.20.so 0.20.2"\n')
+        self.assertEqual(needed(), 'no')                       # no pacman, no phoc
+        self.stub('pacman')
+        self.assertEqual(needed(), 'no')
+        self.write('usr/bin/phoc', '#!/bin/sh\n', 0o755)
+        self.assertEqual(needed(), 'yes')
+        self.write('opt/a22x-phoc/built-for', 'libwlroots-0.20.so 0.20.2\n')
+        self.assertEqual(needed(), 'no')                       # built for exactly this already
+        self.write('opt/a22x-phoc/built-for', 'libwlroots-0.19.so 0.19.1\n')
+        self.assertEqual(needed(), 'yes')                      # built for an older wlroots
+        self.write(build, '#!/bin/sh\necho "a22x-build-phoc: /usr/lib/libwlroots-0.20.so already accepts Phosh\'s surfaces; nothing to do"\n')
+        self.assertEqual(needed(), 'no')
+        self.write(build, '#!/bin/sh\nexit 0\n')
+        self.assertEqual(needed(), 'no')
+
+    def test_the_gpu_driver_is_named_as_the_installed_mesa_names_it(self):
+        """2026-11-12, Manjaro ARM's image (Mesa 24.0.2): asked for "kmsro", Mesa found no driver,
+        phoc drew in software and Phosh's buttons answered late. That Mesa keeps kmsro under the
+        display driver's name; a newer one knows "kmsro"."""
+        self.session('phosh', 'auto')
+        tool = self.read('usr/bin/a22x-gpu-driver')
+        self.assertIn('mediatek_dri.so', tool)
+        self.assertEqual(self.run_sh('sh /usr/bin/a22x-gpu-driver; mesa_driver').split(), ['kmsro', 'kmsro'])
+        self.assertIn('MESA_LOADER_DRIVER_OVERRIDE=$(/usr/bin/a22x-gpu-driver', self.read('usr/bin/a22x-session'))
+        self.write('usr/lib/dri/mediatek_dri.so', '')           # Mesa up to 24.1
+        self.write('usr/lib/dri/panfrost_dri.so', '')
+        self.assertEqual(self.run_sh('sh /usr/bin/a22x-gpu-driver; mesa_driver').split(), ['mediatek', 'mediatek'])
+        self.session('plasma', 'sddm')
+        self.assertEqual(self.read('etc/systemd/user/plasma-kwin_wayland.service.d/50-a22x-gpu.conf'),
+                         '[Service]\nEnvironment=MESA_LOADER_DRIVER_OVERRIDE=mediatek XWAYLAND_NO_GLAMOR=1\n')
+        self.write('usr/lib/dri/kmsro_dri.so', '')              # a Mesa that has both names
+        self.assertEqual(self.run_sh('sh /usr/bin/a22x-gpu-driver; mesa_driver').split(), ['kmsro', 'kmsro'])
+
     def test_phosh_session_uses_the_fixed_phoc_when_built(self):
         self.session('phosh', 'auto')
         self.write('opt/a22x-phoc/bin/phoc', '#!/bin/sh\n', 0o755)

@@ -164,6 +164,35 @@ static void canvas_ring(uint32_t*pixels,Bounds b,float cx,float cy,float radius,
         }
     }
 }
+/* An arc of a ring from START radians, SWEEP radians clockwise on screen, with round ends
+ * (2026-11-11: the ring of the work page). */
+static void canvas_arc(uint32_t*pixels,Bounds b,float cx,float cy,float radius,float width,float start,float sweep,uint32_t color){
+    const float turn=6.28318531f;
+    if(sweep<=0.f)return;
+    if(sweep>=turn){canvas_ring(pixels,b,cx,cy,radius,width,color);return;}
+    float inner=radius-width;
+    int x0=(int)floorf(cx-radius)-1,y0=(int)floorf(cy-radius)-1,x1=(int)ceilf(cx+radius)+2,y1=(int)ceilf(cy+radius)+2;
+    if(x0<b.x0)x0=b.x0;
+    if(y0<b.y0)y0=b.y0;
+    if(x1>b.x1)x1=b.x1;
+    if(y1>b.y1)y1=b.y1;
+    for(int y=y0;y<y1;y++){
+        uint32_t*row=pixels+(size_t)y*NW;float dy=(float)y+.5f-cy;
+        for(int x=x0;x<x1;x++){
+            float dx=(float)x+.5f-cx,distance=sqrtf(dx*dx+dy*dy);
+            if(distance<inner-1.f||distance>radius+1.f)continue;
+            float angle=atan2f(dy,dx)-start;
+            while(angle<0.f)angle+=turn;
+            while(angle>=turn)angle-=turn;
+            if(angle>sweep)continue;
+            unsigned int alpha=(unsigned int)(canvas_cover(distance-radius)*canvas_cover(inner-distance)*255.f+.5f);
+            if(alpha)row[x]=canvas_blend(row[x],color,alpha);
+        }
+    }
+    float middle=radius-width*.5f,cap=width*.5f;
+    canvas_ring(pixels,b,cx+cosf(start)*middle,cy+sinf(start)*middle,cap,cap,color);
+    canvas_ring(pixels,b,cx+cosf(start+sweep)*middle,cy+sinf(start+sweep)*middle,cap,cap,color);
+}
 /* How much of a shadow pixel shows: none under the card, and a smooth share along its
  * curved corners, so a translucent card and its shadow meet with no gap. */
 static inline unsigned int canvas_shadow_outside(int x,int y,int left,int top,int right,int bottom,float radius,unsigned int value){

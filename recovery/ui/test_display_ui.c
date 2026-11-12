@@ -171,8 +171,22 @@ int main(int argc,char**argv){
             a->animation=styles[n].style;a->tr_depth=0;a->pressed_rect=tile;a->pressed_glyph=A_STORAGE;tap_action(a,A_STORAGE);
             DCHECK(a->screen==STORAGE&&a->tr.armed&&a->tr.kind==styles[n].forward&&a->tr.blur==styles[n].blur);
             transition_start(a);transition_compose(a,1.f);DCHECK(!memcmp(a->pixels,a->tr.to,bytes));transition_compose(a,.5f);DCHECK(memcmp(a->pixels,a->tr.to,bytes)&&memcmp(a->pixels,a->tr.from,bytes));
+            /* Zoom with blur is told from the plain zoom at a glance (2026-11-10, on the phone: it could
+               not be). A third of the way in, the page behind is its frosted copy and the page itself is
+               still in the frost; the plain zoom shows two sharp pages and mixes only the edge between. */
+            if(styles[n].forward==TR_OPEN){
+                size_t mixed=0;transition_compose(a,.35f);for(size_t k=0;k<(size_t)NW*NH;k++)mixed+=a->pixels[k]!=a->tr.from[k]&&a->pixels[k]!=a->tr.to[k];
+                if(styles[n].blur)DCHECK(mixed>(size_t)NW*NH/4&&a->pixels[20]==a->tr.soft_from[20]&&a->tr.duration==TRANSITION_BLUR_OPEN_MS);
+                else DCHECK(mixed<(size_t)NW*NH/20&&a->tr.duration==TRANSITION_OPEN_MS);
+            }
             a->tr.active=false;render(a);tap_action(a,A_BACK);DCHECK(a->screen==HOME&&a->tr.armed&&a->tr.kind==styles[n].back);
-            transition_start(a);transition_compose(a,1.f);DCHECK(a->pixels[20]==a->tr.to[20]&&a->pixels[(size_t)2300*NW+1000]==a->tr.to[(size_t)2300*NW+1000]);a->tr.active=false;render(a);
+            transition_start(a);transition_compose(a,1.f);DCHECK(a->pixels[20]==a->tr.to[20]&&a->pixels[(size_t)2300*NW+1000]==a->tr.to[(size_t)2300*NW+1000]);
+            /* Closing is the same film backwards: half way, the page that returns is still frosted. */
+            if(styles[n].back==TR_CLOSE){
+                size_t mixed=0;transition_compose(a,.5f);for(size_t k=0;k<(size_t)NW*NH;k++)mixed+=a->pixels[k]!=a->tr.from[k]&&a->pixels[k]!=a->tr.to[k];
+                if(styles[n].blur)DCHECK(mixed>(size_t)NW*NH/4&&a->tr.duration==TRANSITION_BLUR_BACK_MS);else DCHECK(mixed<(size_t)NW*NH/20);
+            }
+            a->tr.active=false;render(a);
         }
         /* Off means no animation of any kind, the theme circle included. */
         a->animation=ANIM_OFF;a->pressed_rect=tile;tap_action(a,A_STORAGE);DCHECK(a->screen==STORAGE&&!a->tr.armed);render(a);tap_action(a,A_BACK);DCHECK(!a->tr.armed);
@@ -734,7 +748,11 @@ int main(int argc,char**argv){
         Input key_only={.need_release=true};for(int k=0;k<MAX_SLOTS;k++)key_only.slots[k].id=-1;Display unused={0};
         input_sync(a,&key_only,&unused);DCHECK(a->pointer_requires_release&&a->screen==HOME&&!a->job.pid);
         pointer(a,true,188,506,300);pointer(a,false,188,506,400);DCHECK(a->screen==HOME&&!a->job.pid&&!a->pointer_requires_release);
-        DCHECK(test_press(a,A_BACKUP,50)&&a->screen==BACKUP);goto done;
+        DCHECK(test_press(a,A_BACKUP,50)&&a->screen==BACKUP);
+        /* The page reads the systems status once, to know whether userdata is Android's (2026-11-11):
+           the read ends, and the page stays. */
+        {uint64_t deadline=milliseconds()+12000;while(a->job.pid&&milliseconds()<deadline){a->now=milliseconds();poll_job(a);struct timespec pause={0,1000000};nanosleep(&pause,NULL);}}
+        DCHECK(!a->job.pid&&a->screen==BACKUP);goto done;
     }
     if(!strcmp(which,"terminal-mtp")){
         screen(a,TERMINAL);a->terminal_known=a->terminal_available=true;copy(a->terminal_state,sizeof(a->terminal_state),"active");copy(a->terminal_session,sizeof(a->terminal_session),"fixture-active-pty");
@@ -807,6 +825,8 @@ int main(int argc,char**argv){
     }
     DCHECK(false);
 done:
+    /* The Backup page reads the systems status once (2026-11-11); a case that ends there lets it end. */
+    {uint64_t deadline=milliseconds()+12000;while(a->job.pid&&a->job.kind==J_SYS_STATUS&&milliseconds()<deadline){a->now=milliseconds();poll_job(a);struct timespec pause={0,1000000};nanosleep(&pause,NULL);}}
     DCHECK(!a->display_control.pid&&!a->job.pid&&a->running&&!a->exit_code);
     close(sentinel);unsetenv("A22X_RECOVERY_LOCK_FD");unsetenv("A22X_DISPLAY_FIXTURE_SENTINEL_FD");display_test_stop(a);
     printf("{\"ok\":true,\"case\":\"%s\",\"checks\":%u,\"helper_double\":true,\"device_io\":false}\n",which,checks);return 0;

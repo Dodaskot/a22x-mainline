@@ -647,6 +647,49 @@ class TestCleanInstall(unittest.TestCase):
         self.assertFalse((self.f.live / 'note.txt').exists())
         self.assertTrue((self.f.live / 'usr/bin/systemd').exists())
 
+    def test_a_userdata_of_android_is_formatted_by_a_clean_install(self):
+        """2026-11-11: with Android on userdata nothing can be mounted. A new system is planned on the
+        partition as it will be, and the format waits for the confirmed start of the installation."""
+        spec = self.f.context_json
+        spec['volumes'][0].update(fs_type='f2fs', fscrypt_feature=True, mounted=False)
+        (self.f.path / 'filesystem-fixture.json').write_text(json.dumps(spec))
+        (self.f.live / 'android.bin').write_text('what Android kept here')
+        status = d.status(self.f.context)
+        self.assertTrue(status['foreign'] and not status['mounted'], status)
+        self.assertIn('formatted', status['next_action'])
+        options = d.image_options('console', 'new', 'user', '246810', 0, None)
+        # Beside what is there nothing can be installed: there is no Linux to keep.
+        self.error('LINUX_USERDATA_REQUIRED', d.image_plan, self.f.context, 'sdcard-p1', '/distro-1.0.tar.gz', options)
+        plan = d.image_plan(self.f.context, 'sdcard-p1', '/distro-1.0.tar.gz', options, wipe=True)['plan']
+        self.assertTrue(plan['clean_install'] and plan['erase_userdata'] and plan['format_userdata'], plan)
+        self.assertIn('Format userdata', plan['confirmation'])
+        self.assertGreater(plan['available_bytes'], plan['required_bytes'])
+        self.assertTrue((self.f.live / 'android.bin').exists())  # Nothing is formatted by planning.
+        self.assertFalse(self.f.context.volume('userdata')['mounted'])
+        result = d.install(self.f.context, plan, True)
+        self.assertTrue(result['clean_install'])
+        volume = self.f.context.volume('userdata')
+        self.assertEqual((volume['fs_type'], volume['mounted'], volume['read_only']), ('ext4', True, False))
+        self.assertFalse((self.f.live / 'android.bin').exists())
+        self.assertTrue((self.f.live / 'usr/bin/systemd').exists())
+        self.assertFalse(d.status(self.f.context)['foreign'])
+
+    def test_status_says_whether_boot_holds_the_linux_kernel(self):
+        """2026-11-11: with Android's kernel on BOOT a new system could not start; the page of New
+        system says so before anything is chosen, from this field of the status."""
+        self.assertTrue(d.status(self.f.context)['boot_linux'])
+        spec = dict(self.f.context_json, android_boot=True)
+        (self.f.path / 'filesystem-fixture.json').write_text(json.dumps(spec))
+        self.assertFalse(d.status(self.f.context)['boot_linux'])
+
+    def test_a_linux_userdata_is_never_taken_for_android(self):
+        """A plan beside the installed system and a clean one both keep working on plain ext4."""
+        self.assertFalse(d.status(self.f.context)['foreign'])
+        options = d.image_options('console', 'new', 'user', '246810', 0, None)
+        plan = d.image_plan(self.f.context, 'sdcard-p1', '/distro-1.0.tar.gz', options, wipe=True)['plan']
+        self.assertFalse(plan['format_userdata'])
+        self.assertIn('Erase userdata', plan['confirmation'])
+
     def test_builds_made_on_the_phone_outlive_the_erased_userdata(self):
         """2026-11-09: phoc and Phrog builds go over an erased userdata to the next pacman system;
         an archive reaching outside its build's paths is not carried."""
@@ -1329,6 +1372,158 @@ class TestImageStore(unittest.TestCase):
         self.assertEqual([item['file'] for item in d.images(self.f.context)['images']], ['sideload-20261110-000000.zip'])
         self.error('INSUFFICIENT_SPACE', lambda: d.sideload_store(self.f.context, 1 << 60).__enter__())
 
+    def test_an_android_image_of_the_catalog_is_saved_but_never_installed_as_linux(self):
+        """2026-11-10: GSIs in the catalog: listed with their version, type and whether they fit
+        this phone's vendor; downloaded into the store, checked; the Linux installer refuses them."""
+        import zipfile
+        gsi = self.f.path / 'served' / 'aosp_arm64-exp-TEST.zip'
+        gsi.parent.mkdir()
+        with zipfile.ZipFile(gsi, 'w') as z:
+            z.writestr('system.img', bytes(8192))
+            z.writestr('vbmeta.img', b'AVB0' + bytes(60))
+        base = self.serve(gsi.parent)
+        data = gsi.read_bytes()
+        entry = lambda android, levels: {
+            'id': 'gsi-%s-aosp' % android, 'category': 'gsi', 'name': 'Android ' + android, 'version': 'TEST', 'android': android,
+            'variant': 'aosp', 'region': 'Global', 'family': 'android', 'url': base + gsi.name, 'file': gsi.name, 'size': len(data),
+            'sha256': hashlib.sha256(data).hexdigest(), 'system_bytes': 8192, 'vendor_levels': levels}
+        (self.f.path / 'catalog.json').write_text(json.dumps({'images': [], 'android': [entry('13', [4, 5, 6, 7]), entry('16', [6, 7, 8])]}))
+        listed = d.catalog(self.f.context)['android']
+        self.assertEqual([(i['id'], i['fits'], i['variant'], i['region']) for i in listed],
+                         [('gsi-13-aosp', True, 'aosp', 'Global'), ('gsi-16-aosp', False, 'aosp', 'Global')])
+        self.assertTrue(listed[1]['fit_note'] and 'url' not in listed[0])
+        saved = d.images_download(self.f.context, 'gsi-13-aosp', confirmed=True)
+        self.assertEqual(saved['saved'], gsi.name)
+        item = next(i for i in d.images(self.f.context)['images'] if i['file'] == gsi.name)
+        self.assertEqual((item['family'], item['checked']), ('android', True))
+        self.assertEqual((self.store / gsi.name).read_bytes(), data)
+        self.error('CATALOG_NOT_LINUX', d.linux_entry, self.f.context, 'gsi-13-aosp')
+
+    def android_phone(self, card=True, mounted=True, cache=False):
+        """The same phone with Android on userdata: encrypted, not a place for files."""
+        volumes = [{'id': 'userdata', 'path': 'userdata', 'fs_type': 'f2fs', 'fscrypt_feature': True, 'mounted': False, 'read_only': True}]
+        if card:
+            volumes.append({'id': 'sdcard-p1', 'path': 'sd', 'fs_type': 'ext4', 'mounted': mounted, 'read_only': True})
+        if cache:
+            (self.f.path / 'cache').mkdir(exist_ok=True)
+            volumes.append({'id': 'cache', 'path': 'cache', 'fs_type': 'ext4', 'mounted': False, 'read_only': True})
+        (self.f.path / 'filesystem-fixture.json').write_text(json.dumps({'schema': 'a22x.filesystem.fixture.v1', 'volumes': volumes}))
+        state = self.f.path / '.filesystem-state.json'
+        if state.exists():
+            state.unlink()
+        self.f.context = d.fs.FixtureContext(self.f.path)
+        return self.f.context
+
+    def android_catalog(self):
+        import zipfile
+        gsi = self.f.path / 'served' / 'aosp_arm64-exp-TEST.zip'
+        gsi.parent.mkdir(exist_ok=True)
+        with zipfile.ZipFile(gsi, 'w') as z:
+            z.writestr('system.img', bytes(8192))
+        data = gsi.read_bytes()
+        base = self.serve(gsi.parent)
+        linux = self.f.image.read_bytes()
+        shutil.copyfile(self.f.image, gsi.parent / self.f.image.name)
+        (self.f.path / 'catalog.json').write_text(json.dumps({
+            'images': [{'id': 'fixture-linux', 'name': 'Fixture Linux', 'version': '1.0', 'family': 'fixture', 'url': base + self.f.image.name,
+                        'sha256': hashlib.sha256(linux).hexdigest(), 'size': len(linux), 'file': self.f.image.name,
+                        'format': 'tar', 'compression': 'gzip', 'factor': 4, 'minimal': True}],
+            'android': [{'id': 'gsi-13-aosp', 'category': 'gsi', 'name': 'Android 13', 'version': 'TEST', 'android': '13', 'variant': 'aosp',
+                         'region': 'Global', 'family': 'android', 'url': base + gsi.name, 'file': gsi.name, 'size': len(data),
+                         'sha256': hashlib.sha256(data).hexdigest(), 'system_bytes': 8192, 'vendor_levels': [4, 5, 6, 7]}]}))
+        return gsi, data
+
+    def test_with_android_on_userdata_an_android_image_is_saved_on_the_card(self):
+        """2026-11-11: a phone that runs Android had no place for a download from the catalog, since
+        the store was only on a Linux userdata. There the store is the same folder on a card."""
+        gsi, data = self.android_catalog()
+        context = self.android_phone()
+        token = context.volume('sdcard-p1')['volume_token']
+        listed = d.images(context)
+        self.assertEqual((listed['images'], listed['store_volume'], listed['store_token'], listed['store']),
+                         ([], 'sdcard-p1', token, '/' + d.STORE_DIR))
+        self.assertGreater(listed['free_bytes'], 0)
+        self.assertFalse((self.f.sd / d.STORE_DIR).exists())
+        saved = d.images_download(context, 'gsi-13-aosp', confirmed=True)
+        self.assertEqual((saved['saved'], saved['store_volume'], saved['store_token']), (gsi.name, 'sdcard-p1', token))
+        self.assertEqual((self.f.sd / d.STORE_DIR / gsi.name).read_bytes(), data)
+        self.assertEqual([p.name for p in (self.f.sd / d.STORE_DIR).iterdir() if p.name.startswith('.part-')], [])
+        self.assertFalse((self.f.live / d.STORE_DIR).exists())
+        # The card was read-only before the download and is read-only again: the image on it can be installed.
+        card = context.volume('sdcard-p1')
+        self.assertTrue(card['mounted'] and card['read_only'])
+        item = d.images(context)['images'][0]
+        self.assertEqual((item['file'], item['path'], item['family'], item['checked']),
+                         (gsi.name, '/' + d.STORE_DIR + '/' + gsi.name, 'android', True))
+        # A Linux image keeps its place on the userdata it is installed to: none goes to the card.
+        with self.assertRaises(d.fs.FilesystemError):
+            d.images_download(context, 'fixture-linux', confirmed=True)
+        self.assertEqual(sorted(p.name for p in (self.f.sd / d.STORE_DIR).iterdir()), [gsi.name, gsi.name + d.STORE_META])
+        self.error('IMAGE_NOT_FOUND', d.images_delete, context, 'missing.zip', True)
+        gone = d.images_delete(context, gsi.name, True)
+        self.assertEqual((gone['images'], gone['store_volume']), ([], 'sdcard-p1'))
+        self.assertEqual(list((self.f.sd / d.STORE_DIR).iterdir()), [])
+        self.assertTrue(context.volume('sdcard-p1')['read_only'])
+
+    def test_a_card_that_was_not_mounted_is_left_so_unless_it_holds_an_image(self):
+        gsi, _data = self.android_catalog()
+        context = self.android_phone(mounted=False)
+        self.assertEqual(d.images(context)['store_volume'], 'sdcard-p1')
+        self.assertFalse(context.volume('sdcard-p1')['mounted'])
+        d.images_download(context, 'gsi-13-aosp', confirmed=True)
+        card = context.volume('sdcard-p1')
+        self.assertTrue(card['mounted'] and card['read_only'])
+        self.assertEqual([i['file'] for i in d.images(context)['images']], [gsi.name])
+        # Deleting finds the card mounted read-only and leaves it so.
+        d.images_delete(context, gsi.name, True)
+        card = context.volume('sdcard-p1')
+        self.assertTrue(card['mounted'] and card['read_only'])
+
+    def test_without_a_card_the_page_is_told_to_ask_for_one(self):
+        self.android_catalog()
+        context = self.android_phone(card=False)
+        listed = d.images(context)
+        self.assertEqual((listed['images'], listed['store_volume'], listed['free_bytes']), ([], '', 0))
+        self.assertIn('SD card', listed['store_reason'])
+        self.error('STORE_MISSING', d.images_download, context, 'gsi-13-aosp', True)
+        self.error('IMAGE_NOT_FOUND', d.images_delete, context, 'aosp_arm64-exp-TEST.zip', True)
+
+    def test_with_android_on_userdata_a_sideloaded_file_goes_to_the_card_or_to_cache(self):
+        """2026-11-11: adb sideload refused every file on a phone that runs Android, since its only
+        place was the store on a Linux userdata. A card's store takes it, else cache when it fits;
+        the volume is read-only afterwards, so the file can be reviewed from it at once."""
+        context = self.android_phone(cache=True)
+        with d.sideload_place(context, 1000) as place:
+            self.assertEqual((place['volume'], place['dir']), ('sdcard-p1', '/' + d.STORE_DIR))
+            self.assertEqual(place['token'], context.volume('sdcard-p1')['volume_token'])
+            (place['folder'] / 'sideload-20261111-000000.zip').write_bytes(b'PK\x03\x04' + bytes(996))
+        self.assertTrue((self.f.sd / d.STORE_DIR / 'sideload-20261111-000000.zip').is_file())
+        card = context.volume('sdcard-p1')
+        self.assertTrue(card['mounted'] and card['read_only'])
+        self.assertFalse(context.volume('cache')['mounted'])
+        # No card: cache takes what fits, in a folder of its own, and is read-only afterwards.
+        context = self.android_phone(card=False, cache=True)
+        with d.sideload_place(context, 1000) as place:
+            self.assertEqual((place['volume'], place['dir']), ('cache', '/sideload'))
+            (place['folder'] / 'sideload-20261111-000001.zip').write_bytes(b'PK\x03\x04' + bytes(996))
+        self.assertTrue((self.f.path / 'cache/sideload/sideload-20261111-000001.zip').is_file())
+        volume = context.volume('cache')
+        self.assertTrue(volume['mounted'] and volume['read_only'])
+        # What fits neither is refused, and cache stays as it was left.
+        self.error('INSUFFICIENT_SPACE', lambda: d.sideload_place(context, 1 << 50).__enter__())
+        self.assertTrue(context.volume('cache')['read_only'])
+        context = self.android_phone(card=True, cache=True)
+        self.error('INSUFFICIENT_SPACE', lambda: d.sideload_place(context, 1 << 50).__enter__())
+        # A Linux userdata keeps its own store, as before.
+        self.f.context = d.fs.FixtureContext(self.f.path)
+        (self.f.path / 'filesystem-fixture.json').write_text(json.dumps(self.f.context_json))
+        state = self.f.path / '.filesystem-state.json'
+        if state.exists():
+            state.unlink()
+        context = self.f.context = d.fs.FixtureContext(self.f.path)
+        with d.sideload_place(context, 1000) as place:
+            self.assertEqual((place['volume'], place['dir']), ('userdata', '/' + d.STORE_DIR))
+
     def test_a_sideload_reopens_a_read_only_userdata(self):
         """2026-11-10, on the phone: userdata left read-only by the image picker refused the
         transfer. It is writable for the transfer and read-only again after it."""
@@ -1671,3 +1866,115 @@ class TestFormats(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+fs = d.fs
+
+
+class LinuxBootTaken(unittest.TestCase):
+    """2026-11-11, the owner: "I tried to install Mobian Phosh myself, flashing BOOT before it: make
+    this simpler". With Android's kernel on BOOT a new system takes its Linux BOOT with it. First the
+    release this recovery was made for, kept on cache or downloaded; only then another one that the
+    phone keeps (on the owner's phone a BOOT kept since kernel 107 was taken, and the systems
+    installed with it did not start as they should). The plan is bound to the image and the
+    installation writes it at its end."""
+    RELEASE = {'sha256': 'd' * 64, 'release': '7.2.0-a22x+'}
+    OLD = {'sha256': 'c' * 64, 'release': '7.2.0-a22x+'}
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix='a22x-linux-boot-')
+        self.addCleanup(self.tmp.cleanup)
+        self.f = ImageFixture(self.tmp.name)
+
+    def spec(self, **more):
+        spec = dict(self.f.context_json, **more)
+        (self.f.path / 'filesystem-fixture.json').write_text(json.dumps(spec))
+
+    def code(self, **kwargs):
+        with self.assertRaises(fs.FilesystemError) as raised:
+            d.boot_for_linux(self.f.context, **kwargs)
+        return raised.exception.code
+
+    def test_the_boot_there_is_used_when_it_is_linux(self):
+        boot = d.boot_for_linux(self.f.context)
+        self.assertNotIn('write', boot)
+        status = d.status(self.f.context)
+        self.assertEqual((status['boot_source'], status['boot_outdated']), ('', False))
+
+    def test_without_any_linux_boot_the_plan_says_what_to_do(self):
+        self.spec(android_boot=True)
+        self.assertEqual(self.code(), 'BOOT_PROFILE_MISMATCH')
+        self.assertEqual(d.status(self.f.context)['boot_source'], '')
+
+    def test_the_release_kept_on_cache_needs_no_network(self):
+        self.spec(android_boot=True, offline=True, linux_boot_release=self.RELEASE, linux_boot_cache=[self.OLD, self.RELEASE])
+        boot = d.boot_for_linux(self.f.context)
+        self.assertEqual((boot['boot_sha256'], boot['write'], boot['kernel_release']), ('d' * 64, True, '7.2.0-a22x+'))
+        self.assertEqual(d.status(self.f.context)['boot_source'], 'cache')
+
+    def test_the_release_comes_before_an_older_boot_the_phone_keeps(self):
+        """What went wrong on the phone: the old one was newest on cache, and it was taken."""
+        self.spec(android_boot=True, linux_boot_release=self.RELEASE, linux_boot_cache=[self.OLD])
+        self.assertEqual(d.boot_for_linux(self.f.context)['boot_sha256'], 'd' * 64)
+        self.assertEqual(d.status(self.f.context)['boot_source'], 'download')
+        # Without the network the older one is better than none.
+        self.spec(android_boot=True, offline=True, linux_boot_release=self.RELEASE, linux_boot_cache=[self.OLD])
+        self.assertEqual(d.boot_for_linux(self.f.context)['boot_sha256'], 'c' * 64)
+        self.assertEqual(d.status(self.f.context)['boot_source'], 'cache')
+
+    def test_the_published_boot_needs_the_network_at_planning(self):
+        self.spec(android_boot=True, offline=True, linux_boot_release=self.RELEASE)
+        self.assertEqual(self.code(), 'LINUX_BOOT_NEEDS_NETWORK')
+        self.spec(android_boot=True, linux_boot_release=self.RELEASE)
+        self.assertEqual(d.boot_for_linux(self.f.context)['boot_sha256'], 'd' * 64)
+        self.assertEqual(d.status(self.f.context)['boot_source'], 'download')
+
+    def test_a_clean_installation_replaces_an_older_linux_boot(self):
+        """BOOT holds a Linux kernel for this phone, but not the release: a clean installation writes
+        the release; a system added beside the others leaves BOOT as it is."""
+        self.spec(linux_boot_release=self.RELEASE, boot_sha256='c' * 64)
+        self.assertNotIn('write', d.boot_for_linux(self.f.context))
+        fresh = d.boot_for_linux(self.f.context, fresh=True)
+        self.assertEqual((fresh['boot_sha256'], fresh['write']), ('d' * 64, True))
+        status = d.status(self.f.context)
+        self.assertEqual((status['boot_linux'], status['boot_outdated'], status['boot_source']), (True, True, 'download'))
+        # The release is there already: nothing to write. Offline with nothing kept: BOOT stays.
+        self.spec(linux_boot_release=self.RELEASE, boot_sha256='d' * 64)
+        self.assertNotIn('write', d.boot_for_linux(self.f.context, fresh=True))
+        self.assertFalse(d.status(self.f.context)['boot_outdated'])
+        self.spec(linux_boot_release=self.RELEASE, boot_sha256='c' * 64, offline=True)
+        self.assertNotIn('write', d.boot_for_linux(self.f.context, fresh=True))
+        self.assertFalse(d.status(self.f.context)['boot_outdated'])
+
+    def test_the_boot_is_fetched_first_and_written_last(self):
+        self.spec(android_boot=True, linux_boot_release=self.RELEASE)
+        steps = []
+        plan = {'binding': {'boot': d.boot_for_linux(self.f.context)}, 'name': 'test'}
+        with mock.patch.object(d, 'verify_plan'), \
+                mock.patch.object(d, 'linux_boot_fetched', side_effect=lambda *a: steps.append('fetch') or '/kept.img') as fetched, \
+                mock.patch.object(d, 'install_image_system', side_effect=lambda *a: steps.append('system') or {'installed_slot': 'x'}), \
+                mock.patch.object(d, 'linux_boot_written', side_effect=lambda *a: steps.append('boot') or {'sha256': 'd' * 64, 'kept_boot': '/old.img'}):
+            result = d.install_image(self.f.context, plan, True)
+        self.assertEqual(steps, ['fetch', 'system', 'boot'])
+        self.assertEqual((result['installed_slot'], result['boot_written'], result['kept_boot']), ('x', 'd' * 64, '/old.img'))
+        self.assertEqual(fetched.call_args[0][1], plan['binding']['boot'])
+        # A system that fails leaves BOOT as it was: nothing is written.
+        steps.clear()
+        with mock.patch.object(d, 'verify_plan'), mock.patch.object(d, 'linux_boot_fetched', return_value='/kept.img'), \
+                mock.patch.object(d, 'install_image_system', side_effect=fs.FilesystemError('IMAGE_NOT_INSTALLABLE', 'no')), \
+                mock.patch.object(d, 'linux_boot_written', side_effect=lambda *a: steps.append('boot')):
+            with self.assertRaises(fs.FilesystemError):
+                d.install_image(self.f.context, plan, True)
+        self.assertEqual(steps, [])
+
+    def test_the_fixture_writes_its_boot(self):
+        self.spec(android_boot=True, linux_boot_cache=[self.OLD])
+        boot = d.boot_for_linux(self.f.context)
+        self.assertEqual(d.linux_boot_fetched(self.f.context, boot, lambda *a: None), '')
+        d.linux_boot_written(self.f.context, '', boot, lambda *a: None)
+        self.assertTrue(d.status(self.f.context)['boot_linux'])
+        # A plan for an image that is neither kept nor offered any more is stale.
+        self.spec(android_boot=True, linux_boot_release={'sha256': 'e' * 64, 'release': '7.2.0-a22x+'})
+        with self.assertRaises(fs.FilesystemError) as raised:
+            d.linux_boot_fetched(self.f.context, boot, lambda *a: None)
+        self.assertEqual(raised.exception.code, 'PLAN_STALE')

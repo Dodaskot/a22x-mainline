@@ -26,8 +26,8 @@ int main(int argc,char**argv){
     render(a);pointer(a,true,532,1290,now+65);pointer(a,false,532,1290,now+90);ICHECK(!a->kinetic.active&&a->screen==TOOLS&&!a->job.pid&&a->tools_scroll==before);
     tools_scroll_to(a,INT64_MAX);render(a);ICHECK(a->tools_scroll==tools_max_scroll(a));
     a->fs_dirty=true;copy(a->fs_text,sizeof(a->fs_text),"unsaved installer editor ґ");
-    screen(a,OS_MENU);render(a);ICHECK(test_press(a,A_INSTALL,50)&&a->screen==RESULT&&a->result_return==FILE_EDIT&&!a->job.pid);
-    a->fs_dirty=false;screen(a,OS_MENU);ICHECK(test_press(a,A_INSTALL,50)&&install_settle(a)&&a->screen==INSTALL&&a->install.known);
+    screen(a,ANDROID_MENU);render(a);ICHECK(test_press(a,A_INSTALL,50)&&a->screen==RESULT&&a->result_return==FILE_EDIT&&!a->job.pid);
+    a->fs_dirty=false;screen(a,ANDROID_MENU);render(a);ICHECK(test_press(a,A_INSTALL,50)&&install_settle(a)&&a->screen==INSTALL&&a->install.known);
     if(!strcmp(which,"guard-missing")){
         ICHECK(!a->install.pending_count&&a->install.status_blockers[0]&&a->install.reboot_blocked&&!install_ready(a));
         a->allow_power=true;screen(a,POWER);ICHECK(!test_press(a,A_REBOOT,50));action(a,A_REBOOT);ICHECK(a->screen==POWER&&a->running);

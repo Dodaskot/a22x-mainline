@@ -767,7 +767,7 @@ public class MainActivity extends Activity {
                     withBoot = !withBoot;
                     refresh();
                 });
-        if (withBoot) content.addView(label(getString(R.string.boot_warning), 13.5f, p.red, false));
+        if (withBoot) content.addView(label(getString(R.string.boot_warning), 13.5f, p.muted, false));
         if (!compat.compatible) content.addView(label(getString(R.string.not_this_phone), 13.5f, p.red, true));
         TextView note = label(getString(R.string.confirm_backup, BACKUPS), 13, p.muted, false);
         note.setPadding(0, dp(8), 0, 0);
@@ -781,13 +781,17 @@ public class MainActivity extends Activity {
                     say(getString(R.string.working) + " " + item.label);
                     try {
                         File file = Payload.extract(this, item);
-                        Root.Result r = RecoveryStore.flash(item.label, file, item.size, item.sha256, BACKUPS);
+                        // The Linux BOOT goes to the recovery, which writes it when it installs Linux
+                        // (0.6.178): flashed from here, Android would not start again.
+                        boolean kept = item.label.equals("boot");
+                        Root.Result r = kept ? RecoveryStore.keepLinuxBoot(file, item.size, item.sha256, item.release)
+                                : RecoveryStore.flash(item.label, file, item.size, item.sha256, BACKUPS);
                         String saved = r.marker("OK");
                         if (!r.ok() || saved == null) {
                             say(getString(R.string.failed, r.marker("ERROR") != null ? r.marker("ERROR") : r.output.trim()));
                             return;  // Nothing more is written after a failure.
                         }
-                        say(getString(R.string.done_flash, item.label, saved));
+                        say(kept ? getString(R.string.done_keep) : getString(R.string.done_flash, item.label, saved));
                     } catch (Exception e) {
                         say(getString(R.string.failed, e.getMessage()));
                         return;

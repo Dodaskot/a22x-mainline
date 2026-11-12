@@ -99,8 +99,15 @@ STOCK_ORDER = ('super', 'prism', 'optics', 'dtbo',
 # This recovery stays installed: Android boots without stock RECOVERY, and it is
 # the way back to Linux. The manifest still verifies the stock RECOVERY image.
 STOCK_WRITE = tuple(label for label in STOCK_ORDER if label != 'recovery')
-RESET_MAKE_F2FS = ('/bin/make_f2fs', '-g', 'android', '-f', '-O', 'project_quota,extra_attr', '-O', 'casefold',
-                   '-C', 'utf8', '-O', 'compression', '-O', 'extra_attr')
+# /data as Samsung's own userdata.img of the stock firmware makes it (AP_A226BXXSBDZC3, read
+# 2026-11-10): f2fs with encrypt, extra_attr, project_quota, quota, verity and compression
+# (features 0x2499), labelled "data", no casefold. The stock kernel 4.14 mounts exactly that;
+# Android then encrypts it in place on its first start (metadata encryption).
+RESET_MAKE_F2FS = ('/bin/make_f2fs', '-g', 'android', '-f', '-O', 'quota', '-O', 'compression', '-O', 'extra_attr',
+                   '-l', 'data')
+ANDROID_DATA_FEATURES = 0x2499
+F2FS_MAGIC = b'\x10\x20\xf5\xf2'
+F2FS_FEATURE_AT = 1024 + 2180  # struct f2fs_super_block.feature, the superblock at 1 KiB
 METADATA_CLEAR_BYTES = 16 * CHUNK
 STOCK_FORMAT = {label: ('sparse' if label in ('super', 'prism', 'optics') else 'raw')
                 for label in STOCK_ORDER}
@@ -642,6 +649,14 @@ class DeviceContext:
         done = subprocess.run([*RESET_MAKE_F2FS, str(paths['userdata'])], stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, text=True, errors='replace')
         require(done.returncode == 0, 'USERDATA_RESET_FAILED', 'make_f2fs could not format userdata', output=done.stdout[-400:])
+        fd = os.open(paths['userdata'], os.O_RDONLY | os.O_CLOEXEC)
+        try:
+            head = os.pread(fd, 4096, 0)
+        finally:
+            os.close(fd)
+        features = struct.unpack_from('<I', head, F2FS_FEATURE_AT)[0] if len(head) >= F2FS_FEATURE_AT + 4 else None
+        require(head[1024:1028] == F2FS_MAGIC and features == ANDROID_DATA_FEATURES, 'USERDATA_RESET_FEATURES',
+                "userdata was formatted with other features than Samsung's", features=features)
 
     def check_offline(self, targets):
         for target in targets:

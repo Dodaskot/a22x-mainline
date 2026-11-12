@@ -12,8 +12,10 @@ import shutil
 import struct
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
+import zipfile
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -227,6 +229,51 @@ class Flash(unittest.TestCase):
         code, again, _ = self.check('vbmeta', path)
         self.assertTrue(again['identical'])
 
+    def test_an_image_inside_a_zip_is_written_with_its_crc(self):
+        """2026-11-10: GSIs and many images come as ZIPs; the image is decoded from the ZIP itself,
+        its CRC checked, and nothing is unpacked beside it."""
+        data = vbmeta(b'z' * 3000)
+        with zipfile.ZipFile(self.root / 'usb/vbmeta.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+            z.writestr('vbmeta.img', data)
+            z.writestr('README.txt', 'notes')
+        code, checked, _ = self.check('vbmeta', '/vbmeta.zip')
+        self.assertEqual(code, 0, checked)
+        self.assertEqual(checked['image']['compression'], 'zip')
+        code, done, _ = self.write('vbmeta', '/vbmeta.zip', checked)
+        self.assertEqual(code, 0, done)
+        self.assertEqual((self.root / 'targets/vbmeta').read_bytes()[:len(data)], data)
+        with zipfile.ZipFile(self.root / 'usb/two.zip', 'w') as z:
+            z.writestr('vbmeta.img', data)
+            z.writestr('dtbo.img', b'x' * 100)
+        code, result, _ = self.check('vbmeta', '/two.zip')
+        self.assertEqual((code, result['error']['code']), (2, 'ZIP_AMBIGUOUS'))
+        # A GSI's own vbmeta.img, chosen by its name beside its system.img.
+        disabled = vbmeta(b'g' * 3000)
+        with zipfile.ZipFile(self.root / 'usb/gsi.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+            z.writestr('system.img', bytes(4096))
+            z.writestr('vbmeta.img', disabled)
+        code, checked, _ = self.run_helper('check', '--target', 'vbmeta', '--volume', 'usb-p1', '--volume-token', self.token('usb-p1'),
+                                           '--path', '/gsi.zip', '--member', 'vbmeta.img')
+        self.assertEqual((code, checked['image']['compression']), (0, 'zip:vbmeta.img'), checked)
+        code, done, _ = self.write('vbmeta', '/gsi.zip', checked, '--member', 'vbmeta.img')
+        self.assertEqual(code, 0, done)
+        self.assertEqual((self.root / 'targets/vbmeta').read_bytes()[:len(disabled)], disabled)
+        code, result, _ = self.run_helper('check', '--target', 'vbmeta', '--volume', 'usb-p1', '--volume-token', self.token('usb-p1'),
+                                          '--path', '/gsi.zip', '--member', 'boot.img')
+        self.assertEqual((code, result['error']['code']), (2, 'ZIP_MEMBER_MISSING'))
+        # A stored image with one byte changed: the CRC stops it before anything is written.
+        stored = vbmeta(b's' * 3000)
+        with zipfile.ZipFile(self.root / 'usb/bad.zip', 'w', zipfile.ZIP_STORED) as z:
+            z.writestr('vbmeta.img', stored)
+        raw = bytearray((self.root / 'usb/bad.zip').read_bytes())
+        at = raw.find(stored[:64]) + 2000
+        raw[at] ^= 0xff
+        (self.root / 'usb/bad.zip').write_bytes(bytes(raw))
+        before = (self.root / 'targets/vbmeta').read_bytes()
+        code, result, _ = self.check('vbmeta', '/bad.zip')
+        self.assertEqual((code, result['error']['code']), (2, 'INVALID_COMPRESSED_IMAGE'))
+        self.assertEqual((self.root / 'targets/vbmeta').read_bytes(), before)
+
     def test_old_content_on_userdata_goes_into_its_image_store(self):
         # Linux systems live at the top of userdata: a saved partition must not land inside one.
         self.assertEqual(flash.rollback_folders({'id': 'mmcblk0p54', 'label': 'userdata'}), ('.a22x-images', flash.ROLLBACK_FOLDER))
@@ -282,6 +329,85 @@ class Flash(unittest.TestCase):
         self.assertEqual(written[8192:12288], b'\xaa' * 4096)
         self.assertEqual(written[12288:], bytes(SIZES['super'] - 12288))
 
+    @unittest.skipUnless(shutil.which('lz4'), 'lz4 is needed')
+    def test_samsung_firmware_images_are_read_from_their_tar(self):
+        """2026-11-10: Samsung's AP_....tar.md5 holds LZ4 images (super sparse inside); each is
+        read from its place in the tar, through lz4, and nothing is unpacked beside it."""
+        lz4 = lambda data: subprocess.run(['lz4', '-c'], input=data, stdout=subprocess.PIPE, check=True).stdout
+        payload = bytearray(8192)
+        payload[4096:4100] = b'gDla'
+        meta = vbmeta(b'm' * 3000)
+        members = [('boot.img.lz4', lz4(b'not used here' * 100)), ('super.img.lz4', lz4(sparse(bytes(payload)))),
+                   ('vbmeta.img.lz4', lz4(meta)), ('meta-data/fota.zip', b'PK')]
+        stream = io.BytesIO()
+        with tarfile.open(fileobj=stream, mode='w', format=tarfile.USTAR_FORMAT) as archive:
+            for name, data in members:
+                info = tarfile.TarInfo(name)
+                info.size = len(data)
+                archive.addfile(info, io.BytesIO(data))
+        body = stream.getvalue()
+        name = 'AP_A226BXXSBDZC3_TEST.tar.md5'
+        (self.root / 'usb' / name).write_bytes(body + (hashlib.md5(body).hexdigest() + '  ' + name[:-4] + '\n').encode())
+        helper = lambda command, target, member, *extra: self.run_helper(
+            command, '--target', target, '--volume', 'usb-p1', '--volume-token', self.token('usb-p1'), '--path', '/' + name,
+            '--member', member, *extra)
+        code, checked, _ = helper('check', 'super', 'super.img.lz4')
+        self.assertEqual(code, 0, checked)
+        self.assertEqual((checked['image']['compression'], checked['image']['format']), ('tar:super.img.lz4', 'sparse'))
+        code, done, _ = helper('write', 'super', 'super.img.lz4', '--expected-sha256', checked['image']['sha256'],
+                               '--expected-identity', checked['image']['identity'], '--confirm')
+        self.assertEqual(code, 0, done)
+        written = (self.root / 'targets/super').read_bytes()
+        self.assertEqual((written[:8192], written[8192:12288]), (bytes(payload), b'\xaa' * 4096))
+        code, checked, _ = helper('check', 'vbmeta', 'vbmeta.img.lz4')
+        self.assertEqual(code, 0, checked)
+        code, done, _ = helper('write', 'vbmeta', 'vbmeta.img.lz4', '--expected-sha256', checked['image']['sha256'],
+                               '--expected-identity', checked['image']['identity'], '--confirm')
+        self.assertEqual(code, 0, done)
+        self.assertEqual((self.root / 'targets/vbmeta').read_bytes()[:len(meta)], meta)
+        code, result, _ = helper('check', 'vbmeta', 'vbmeta_system.img.lz4')
+        self.assertEqual((code, result['error']['code']), (2, 'TAR_MEMBER_MISSING'))
+        code, result, _ = self.check('vbmeta', '/' + name)
+        self.assertEqual((code, result['error']['code']), (2, 'TAR_MEMBER_REQUIRED'))
+        # One byte of the LZ4 stream changed: lz4 stops, and nothing is written.
+        raw = bytearray((self.root / 'usb' / name).read_bytes())
+        at = raw.find(lz4(meta)[:32]) + 40
+        raw[at] ^= 0x55
+        (self.root / 'usb' / name).write_bytes(bytes(raw))
+        before = (self.root / 'targets/vbmeta').read_bytes()
+        code, result, _ = helper('check', 'vbmeta', 'vbmeta.img.lz4')
+        self.assertEqual(code, 2, result)
+        self.assertIn(result['error']['code'], ('INVALID_COMPRESSED_IMAGE', 'WRONG_IMAGE_TYPE', 'SHORT_IMAGE'))
+        self.assertEqual((self.root / 'targets/vbmeta').read_bytes(), before)
+
+    def test_the_boot_that_was_there_is_kept_on_cache(self):
+        """2026-11-10: before BOOT is written, a BOOT of this phone there (Linux here) is kept on
+        cache, the way back; without a cache the write goes on."""
+        linux = boot_image()
+        with open(self.root / 'targets/boot', 'r+b') as f:
+            f.write(linux)
+        before = (self.root / 'targets/boot').read_bytes()
+        (self.root / 'cache').mkdir()
+        self.volumes([{'id': 'usb-p1', 'path': 'usb', 'fs_type': 'exfat', 'mounted': True, 'read_only': True},
+                      {'id': 'cache', 'path': 'cache', 'fs_type': 'ext4', 'mounted': True, 'read_only': True}])
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from test_android_gsi import stock_boot
+        path = self.image(stock_boot(), 'stock.img')
+        code, checked, _ = self.check('boot', path)
+        self.assertEqual(code, 0, checked)
+        code, done, _ = self.write('boot', path, checked)
+        self.assertEqual(code, 0, done)
+        kept = self.root / 'cache' / done['kept_boot'].lstrip('/')
+        self.assertTrue(kept.name.startswith('linux-7.2.0-a22x'))
+        self.assertEqual(kept.read_bytes(), before)
+        self.assertEqual(json.loads(Path(str(kept) + '.json').read_text())['kind'], 'linux')
+        # Without a cache volume nothing is kept, and the write still goes on.
+        self.volumes([{'id': 'usb-p1', 'path': 'usb', 'fs_type': 'exfat', 'mounted': True, 'read_only': True}])
+        path = self.image(linux, 'linux.img')
+        code, checked, _ = self.check('boot', path)
+        code, done, _ = self.write('boot', path, checked)
+        self.assertEqual((code, done['kept_boot']), (0, None))
+
     def test_unusual_boot_header_warns_but_a_user_may_continue(self):
         code, checked, _ = self.check('boot', self.image(boot_image(board=b'OTHERBOARD')))
         self.assertEqual(code, 0, checked)
@@ -316,7 +442,7 @@ class Settings(unittest.TestCase):
     def test_defaults_then_saved_values(self):
         self.assertEqual(json.loads(self.call('status')[1]), {'language': 'en', 'theme': 'graphite', 'terminal': 'auto', 'storage': 'sd', 'vibration': 2, 'timeout': 2, 'utc_offset': 0,
                                                        'refresh': 0, 'brightness': 0, 'animation': 'zoom', 'lock': 1, 'access': 1,
-                                                       'navigation': 0, 'timezone': '', 'password': False, 'password_digits': False})
+                                                       'navigation': 0, 'timezone': '', 'torch': 0, 'android_log': '', 'password': False, 'password_digits': False})
         self.assertEqual(self.call('set', '--language', 'uk', '--vibration', '3', '--utc-offset', '60')[0], 0)
         self.assertEqual(self.disk, {'language': 'uk', 'vibration': 3, 'utc_offset': 60})
         self.assertEqual(self.call('set', '--refresh', '90', '--brightness', '40', '--terminal', 'tokyo-night', '--storage', 'usb')[0], 0)
@@ -439,6 +565,30 @@ class Settings(unittest.TestCase):
         for bad in ('a', '../x', 'A' * 4, 'x' * 24):
             self.assertEqual(self.call('set', '--theme', bad)[0], 2, bad)
 
+    def test_the_flashlight_level_is_kept(self):
+        """2026-11-11: the level of the flashlight chosen in the interface; 0 means none was chosen."""
+        self.assertEqual(self.call('set', '--torch', '9')[0], 0)
+        self.assertEqual(self.disk['torch'], 9)
+        self.assertEqual(json.loads(self.call('status')[1])['torch'], 9)
+        self.assertEqual(self.call('set', '--language', 'uk')[0], 0)  # another change keeps it
+        self.assertEqual(self.disk['torch'], 9)
+        for bad in ('-1', '256', 'bright', ''):
+            self.assertEqual(self.call('set', '--torch', bad)[0], 2, bad)
+        self.assertEqual(self.disk['torch'], 9)
+
+    def test_the_failed_start_of_android_that_was_read_about_is_kept(self):
+        """2026-11-12: the page that says why Android did not start opens once for each failed start;
+        the id of the one the owner has read about is kept with the settings."""
+        self.assertEqual(self.call('set', '--android-log', 'bb9507f313de2d66')[0], 0)
+        self.assertEqual(self.disk['android_log'], 'bb9507f313de2d66')
+        self.assertEqual(json.loads(self.call('status')[1])['android_log'], 'bb9507f313de2d66')
+        self.assertEqual(self.call('set', '--torch', '3')[0], 0)  # another setting leaves it
+        self.assertEqual(self.disk['android_log'], 'bb9507f313de2d66')
+        for bad in ('BB9507F313DE2D66', 'bb95', 'bb9507f313de2d66a', '../etc/passwd', 'zz9507f313de2d66'):
+            self.assertEqual(self.call('set', '--android-log', bad)[0], 2, bad)
+        self.assertEqual(self.call('set', '--android-log', '')[0], 0)
+        self.assertEqual(self.disk['android_log'], '')
+
     def test_new_settings_refuse_unknown_values(self):
         self.assertEqual(self.call('set', '--animation', 'spin')[0], 2)
         self.assertEqual(self.call('set', '--lock', '3')[0], 2)
@@ -524,6 +674,25 @@ class FlashLogical(unittest.TestCase):
         s, p = self.partition('system')
         self.assertEqual(s.size_of(p), 21 * self.MIB)
         self.assertEqual(s.read_partition('system'), done['partition_sha256'])
+
+    def test_a_gsi_zip_goes_into_system(self):
+        """2026-11-10: Google's GSI ZIP holds system.img, vbmeta.img and build.prop; system.img is
+        decoded from it straight into super/system, with the rest of the partition zeroed."""
+        data = bytearray(os.urandom(5 * self.MIB))
+        struct.pack_into('<H', data, 1080, 0xEF53)
+        with zipfile.ZipFile(self.root / 'usb/aosp_arm64-exp-TEST.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+            z.writestr('system.img', bytes(data))
+            z.writestr('vbmeta.img', b'AVB0' + bytes(60))
+            z.writestr('build.prop', 'ro.build.version.release=13\n')
+        code, result, _ = self.check('super/system', '/aosp_arm64-exp-TEST.zip')
+        self.assertEqual(code, 0, result)
+        self.assertEqual((result['image']['compression'], result['image']['payload_bytes'], result['target']['new_size_bytes']),
+                         ('zip', len(data), 8 * self.MIB))
+        self.assertEqual(result['image']['kind'], 'ext4 file system image')
+        code, done, _ = self.write('super/system', '/aosp_arm64-exp-TEST.zip', result, result['image']['payload_bytes'])
+        self.assertEqual(code, 0, done)
+        s, _ = self.partition('system')
+        self.assertEqual(s.read_partition('system'), hashlib.sha256(bytes(data) + bytes(3 * self.MIB)).hexdigest())
 
     def test_its_own_size_keeps_the_partition_and_the_old_content_is_saved(self):
         """2026-11-10, on the phone: odm holds 4,349,952 bytes, not a whole MiB, and its own image

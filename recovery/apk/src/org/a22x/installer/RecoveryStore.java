@@ -83,6 +83,11 @@ final class RecoveryStore {
                 Scripts.PLATFORM, "recovery", "boot"), 600);
     }
 
+    /** The Linux BOOT handed to the recovery: kept on cache, not written to the BOOT partition. */
+    static Root.Result keepLinuxBoot(File image, long size, String sha256, String release) {
+        return Root.run(Scripts.keepLinuxBoot(image.getAbsolutePath(), size, sha256, release), 300);
+    }
+
     /** The installation prepared on the Plan card (2026-11-10): written beside the hand-over. */
     static Root.Result savePlan(Context context, String json) throws IOException {
         File file = privateFile(context, "plan.part", json);

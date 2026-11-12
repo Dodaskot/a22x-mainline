@@ -436,7 +436,8 @@ class BaseContext:
         path = absolute_no_symlinks(self.lock_path, missing=True)
         with ExitStack() as stack:
             try:
-                stack.enter_context(recovery_operation_lock(path, self.mode))
+                # Kept, so that a helper can lend the lease to a step it runs itself (distro.py: BOOT).
+                self.lock_fd = stack.enter_context(recovery_operation_lock(path, self.mode))
             except BlockingIOError:
                 if ssh_session_active():
                     fail('OPERATION_BUSY', 'A computer is connected over SSH or SFTP: close that session, then try again')
@@ -518,12 +519,15 @@ class FixtureContext(BaseContext):
             if self.root not in path.parents or not path.is_dir():
                 fail('INVALID_FIXTURE', 'Every fixture volume must be a directory beneath its fixture root')
             st = path.stat()
-            filesystem = spec.get('fs_type', 'ext4')
+            # A formatted volume holds what it was formatted with (2026-11-11: a userdata of Android
+            # that a clean installation formats for Linux), and nothing encrypted any more.
+            formatted = state.get(ident, {}).get('formatted')
+            filesystem = formatted or spec.get('fs_type', 'ext4')
             token = digest({'fixture': str(self.root), 'id': ident, 'path': str(path),
                             'dev': st.st_dev, 'inode': st.st_ino, 'fs': filesystem})
             mounted = bool(state.get(ident, {}).get('mounted', spec.get('mounted', False)))
             readonly = bool(state.get(ident, {}).get('read_only', spec.get('read_only', True)))
-            fscrypt = bool(spec.get('fscrypt_feature', False))
+            fscrypt = bool(spec.get('fscrypt_feature', False)) and not formatted
             mountable = filesystem in SUPPORTED_FS
             result.append({'id': ident, 'label': spec.get('label', ident), 'fs_type': filesystem,
                            'mountable': mountable, 'mounted': mounted, 'read_only': readonly,
@@ -547,7 +551,7 @@ class FixtureContext(BaseContext):
                 fail('READ_ONLY_FILESYSTEM', 'This volume is not admitted for writes')
         mount_options(volume['fs_type'], mode)
         state = self.state()
-        state[ident] = {'mounted': True, 'read_only': mode == 'ro'}
+        state[ident] = {**self.kept(state, ident), 'mounted': True, 'read_only': mode == 'ro'}
         atomic_state(self.state_path, state)
         return {'volume': self.volume(ident)}
 
@@ -576,10 +580,15 @@ class FixtureContext(BaseContext):
         atomic_state(self.state_path, state)
         return {'volume': self.volume(ident), 'checked': volume['fs_type'], 'result': 'clean', 'exit_code': 0, 'output': ''}
 
+    @staticmethod
+    def kept(state, ident):
+        """What a mount or an unmount leaves of a volume's state: the filesystem it was formatted with."""
+        return {key: value for key, value in state.get(ident, {}).items() if key == 'formatted'}
+
     def unmount(self, ident, expected=None):
         self.volume(ident, expected)
         state = self.state()
-        state[ident] = {'mounted': False, 'read_only': True}
+        state[ident] = {**self.kept(state, ident), 'mounted': False, 'read_only': True}
         atomic_state(self.state_path, state)
         return {'volume': self.volume(ident)}
 

@@ -61,10 +61,12 @@ int main(int argc,char**argv){
     SCHECK(systems_ready(a)&&!a->systems_initialized);
     /* 2026-11-09: Import opens the adding page (catalog or file); nothing is erased from there. */
     SCHECK(test_press(a,A_SYS_IMPORT,50)&&a->screen==SYSTEMS_NEW&&a->systems_adding&&!a->systems_wipe);
-    SCHECK(test_press(a,A_NEW_FILE,50)&&systems_settle(a)&&a->screen==FILE_VOLUMES&&a->systems_pick_manifest&&!a->systems_wipe);
+    /* 2026-11-11: the sheet over the page asks where the image is; a Linux image comes from a card,
+       so userdata is not offered there. */
+    SCHECK(test_press(a,A_NEW_FILE,50)&&systems_settle(a)&&a->screen==SYSTEMS_NEW&&a->source_sheet&&a->source_known&&a->systems_pick_manifest&&!a->systems_wipe);
     int sd=-1,user=-1;for(int n=0;n<a->volume_count;n++){if(!strcmp(a->volumes[n].id,"sdcard-p1"))sd=n;if(!strcmp(a->volumes[n].id,"userdata"))user=n;}
-    SCHECK(sd>=0&&user>=0&&!test_press(a,A_FS_VOLUME_ITEM+user,50)&&!a->job.pid);
-    SCHECK(test_press(a,A_FS_VOLUME_ITEM+sd,50)&&systems_settle(a)&&a->screen==FILE_BROWSER);
+    SCHECK(sd>=0&&user>=0&&!test_press(a,A_SOURCE_ITEM+user,50)&&!a->job.pid);
+    SCHECK(test_press(a,A_SOURCE_ITEM+sd,50)&&systems_settle(a)&&a->screen==FILE_BROWSER&&!a->source_sheet);
     int manifest=-1,archive=-1,odd=-1,sum=-1;
     for(int n=0;n<a->file_count;n++){
         const char*name=a->files[n].name;

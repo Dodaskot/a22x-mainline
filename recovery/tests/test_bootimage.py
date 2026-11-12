@@ -58,8 +58,8 @@ def cpio(files):
     return out
 
 
-def ramdisk(props=None):
-    files = {'init': b'#!/bin/sh\n'}
+def ramdisk(props=None, extra=None):
+    files = {'init': b'#!/bin/sh\n', **(extra or {})}
     if props:
         files['system/etc/ramdisk/build.prop'] = ''.join('%s=%s\n' % item for item in props.items()).encode()
     return gzip.compress(cpio(files), mtime=0)

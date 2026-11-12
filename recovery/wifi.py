@@ -461,6 +461,9 @@ def connect(ssid, password, hidden, use_saved=False, keep=True):
             fail('WIFI_TIMEOUT', 'The network did not answer in time.')
     if not dhcp():
         fail('WIFI_NO_ADDRESS', 'Joined the network, but it gave no address.')
+    # 2026-11-10: the exact time from the internet, without making the join wait for it.
+    import clock
+    clock.sync_in_background()
     if keep:
         remember(ssid, key)
     return state(ssid)

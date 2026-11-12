@@ -10,7 +10,7 @@ import sys
 import time
 
 from common import RecoveryError
-from engine import (backup, inventory, list_backups, load_plan, make_backup_plan,
+from engine import (backup, inventory, list_backups, load_plan, make_backup_plan, manage_backup,
                     make_restore_plan, make_wipe_plan, restore, save_plan, verify_backup, wipe)
 from storage import DeviceContext, FixtureContext
 
@@ -44,6 +44,12 @@ def parser():
         command.add_argument("--output", required=True)
     command = commands.add_parser("verify")
     command.add_argument("--backup", required=True)
+    command = commands.add_parser("rename-backup")
+    command.add_argument("--backup", required=True)
+    command.add_argument("--name", required=True)
+    command = commands.add_parser("delete-backup")
+    command.add_argument("--backup", required=True)
+    command.add_argument("--confirm", required=True)
     for operation in ("backup", "restore", "wipe"):
         command = commands.add_parser(operation)
         command.add_argument("--plan", required=True)
@@ -91,6 +97,10 @@ def main(argv=None):
         elif operation == "verify":
             result = verify_backup(context, args.backup, progress)
             result.pop("archive_stamps", None)
+        elif operation == "rename-backup":
+            result = manage_backup(context, args.backup, "rename", new_name=args.name)
+        elif operation == "delete-backup":
+            result = manage_backup(context, args.backup, "delete", confirm=args.confirm)
         elif operation == "backup":
             result = backup(context, load_plan(context, args.plan), args.confirm, progress)
         elif operation == "wipe":

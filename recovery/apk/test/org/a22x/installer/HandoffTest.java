@@ -103,6 +103,9 @@ public final class HandoffTest {
         check(s.indexOf("[ \"$psize\" = \"$PSIZE\" ]") >= 0 && s.indexOf("[ \"$psize\" = \"$PSIZE\" ]") < backup && backup < write,
                 "exact size before the backup and the write");
         check(s.contains("PSIZE=41943040") && s.contains("PLAT=mt6833") && s.contains("tr 'A-Z' 'a-z'"), "A22x values");
+        int keep = s.indexOf("keep_stock_boot\n", s.indexOf("NO_PARTITION"));
+        check(keep > s.indexOf("NOT_THIS_PHONE platform") && keep < backup && keep < write, "stock BOOT kept on cache before the write");
+        check(s.contains("a22x-recovery/saved-boot") && s.contains("\"kind\": \"android\"") && s.contains("-j44 -N4"), "the recovery's saved-boot form");
         check(Scripts.partitionSize("boot") == 33554432L, "boot size");
         try {
             Scripts.flash("recovery", "/data/x.img", 41943040L, sha, "/sdcard/A22x", 1L, "", "recovery");
@@ -118,8 +121,79 @@ public final class HandoffTest {
         }
     }
 
+    /** The Linux BOOT handed to the recovery (2026-11-11): kept on cache in the recovery's own form,
+     *  never written to a partition. The part that does the keeping is run here, in a folder. */
     @SuppressWarnings("unchecked")
-    public static void main(String[] args) {
+    private static void keepLinuxBoot() throws Exception {
+        String sha = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+        String s = Scripts.keepLinuxBoot("/data/boot.img", Scripts.BOOT_PARTITION, sha, "7.2.0-a22x+");
+        check(!s.contains("dd if=") && !s.contains("by-name/boot"), "no partition is written");
+        check(s.indexOf("CACHE_FULL") < s.indexOf("cat \"$IMG\"") && s.contains("\"kind\": \"linux\"") && s.contains("REL=7.2.0-a22x+"), "the recovery's saved-boot form");
+        check(s.endsWith("exit $RC\n") && s.indexOf("umount \"$C\"") > s.indexOf("keep_linux_boot; RC=$?"), "cache is left as it was found");
+        for (String[] bad : new String[][] {{"12", "7.2.0-a22x+"}, {sha, "7.2.0 a22x"}, {sha, ""}}) {
+            try {
+                Scripts.keepLinuxBoot("/data/boot.img", Scripts.BOOT_PARTITION, bad[0], bad[1]);
+                check(false, "a bad argument reaches the script");
+            } catch (IllegalArgumentException expected) {
+                // refused while building the script
+            }
+        }
+        try {
+            Scripts.keepLinuxBoot("/data/boot.img", 1L, sha, "7.2.0-a22x+");
+            check(false, "an image that is no whole BOOT");
+        } catch (IllegalArgumentException expected) {
+            // refused while building the script
+        }
+        java.io.File dir = java.nio.file.Files.createTempDirectory("a22x-keep").toFile();
+        java.io.File image = new java.io.File(dir, "boot.img");
+        byte[] data = new byte[4096];
+        for (int i = 0; i < data.length; i++) data[i] = (byte) (i * 7);
+        java.nio.file.Files.write(image.toPath(), data);
+        StringBuilder hex = new StringBuilder();
+        for (byte b : java.security.MessageDigest.getInstance("SHA-256").digest(data)) hex.append(String.format("%02x", b & 0xff));
+        String head = "D=" + dir + "/cache; mkdir -p \"$D\"; IMG=" + image + "; SIZE=4096; REL=7.2.0-a22x+; ";
+        String name = "linux-7.2.0-a22x+-" + hex.substring(0, 12) + ".img";
+        String[] out = shell(head + "SHA=" + hex + "\n" + Scripts.KEEP_LINUX_BOOT + "keep_linux_boot; echo RC=$?\n");
+        check(out[0].contains("A22X:OK /a22x-recovery/saved-boot/" + name) && out[0].contains("RC=0"), "kept: " + out[0] + out[1]);
+        java.io.File kept = new java.io.File(dir, "cache/saved-boot/" + name);
+        check(java.util.Arrays.equals(java.nio.file.Files.readAllBytes(kept.toPath()), data), "the kept image is the image");
+        Map<String, Object> meta = (Map<String, Object>) Json.parse(new String(java.nio.file.Files.readAllBytes(new java.io.File(kept + ".json").toPath()), "UTF-8"));
+        check("a22x.saved-boot.v1".equals(meta.get("schema")) && "linux".equals(meta.get("kind")) && "7.2.0-a22x+".equals(meta.get("release"))
+                && hex.toString().equals(meta.get("sha256")) && ((Number) meta.get("bytes")).longValue() == 4096L, "what the recovery reads beside it");
+        check(new String(java.nio.file.Files.readAllBytes(new java.io.File(kept + ".sha256").toPath()), "UTF-8").equals(hex + "  " + name + "\n"), "its checksum file");
+        // Once more: it is there already, and nothing is copied again.
+        long before = kept.lastModified();
+        out = shell(head + "SHA=" + hex + "\n" + Scripts.KEEP_LINUX_BOOT + "keep_linux_boot; echo RC=$?\n");
+        check(out[0].contains("A22X:OK") && kept.lastModified() == before, "kept once");
+        // An image that is not the one named: nothing is left on cache.
+        String other = hex.substring(1) + (hex.charAt(0) == '0' ? "1" : "0");
+        out = shell(head + "SHA=" + other + "\n" + Scripts.KEEP_LINUX_BOOT + "keep_linux_boot; echo RC=$?\n");
+        String[] left = new java.io.File(dir, "cache/saved-boot").list();
+        check(out[0].contains("A22X:ERROR IMAGE_CHANGED") && out[0].contains("RC=12") && left != null && left.length == 3, "a changed image is refused");
+        for (java.io.File f : new java.io.File(dir, "cache/saved-boot").listFiles()) f.delete();
+        new java.io.File(dir, "cache/saved-boot").delete();
+        new java.io.File(dir, "cache").delete();
+        image.delete();
+        dir.delete();
+    }
+
+    private static String[] shell(String script) throws Exception {
+        Process p = new ProcessBuilder("sh", "-c", script).start();
+        String out = new String(readAll(p.getInputStream()), "UTF-8"), err = new String(readAll(p.getErrorStream()), "UTF-8");
+        p.waitFor();
+        return new String[] {out, err};
+    }
+
+    private static byte[] readAll(java.io.InputStream in) throws java.io.IOException {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        int n;
+        while ((n = in.read(buffer)) > 0) out.write(buffer, 0, n);
+        return out.toByteArray();
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void main(String[] args) throws Exception {
         // JSON reads what it writes, including escapes and nesting.
         String text = Json.write(Json.parse("{\"a\":[1,2.5,true,null,\"x\\\"y\\n\\u00e9\"],\"b\":{}}"));
         Map<String, Object> back = (Map<String, Object>) Json.parse(text);
@@ -162,6 +236,7 @@ public final class HandoffTest {
                 && !Handoff.scriptNameAllowed("x.txt") && !Handoff.scriptNameAllowed(".hidden.sh"), "script names");
         compat();
         flashGuards();
+        keepLinuxBoot();
         plan();
         System.out.println("{\"ok\":true,\"checks\":" + checks + "}");
     }

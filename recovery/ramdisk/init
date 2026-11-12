@@ -41,6 +41,13 @@ power_refused() {
     msg "$1"
     echo "$1" > /run/a22x-recovery/power-message
 }
+# The camera's LED goes dark before a reset or a power-off: nothing else is sure to switch it off.
+torch_off() {
+    for led in "${1:-/sys/class/leds}"/*flash*/brightness "${1:-/sys/class/leds}"/*torch*/brightness; do
+        if [ -w "$led" ]; then echo 0 > "$led"; fi
+    done 2>/dev/null
+    return 0
+}
 msg "RAM recovery reached on $(uname -r); internal filesystems remain unmounted"
 
 # Export GPT names from kernel-owned sysfs. Do not infer labels from partition order.
@@ -173,6 +180,17 @@ while true; do
         : > /run/a22x-recovery/handoff.done
         /usr/bin/python3 /opt/a22x-recovery/handoff.py apply > /run/a22x-recovery/handoff.json 2>&1
     fi
+    # What Android asked of the recovery (misc): a plain "boot-recovery" is done by arriving here.
+    if [ ! -e /run/a22x-recovery/bcb.json ] && [ -f /opt/a22x-recovery/bcb.py ]; then
+        /usr/bin/python3 /opt/a22x-recovery/bcb.py --device arrive > /run/a22x-recovery/bcb.json 2>/dev/null
+    fi
+    # How Android's last start ended, from the memory its kernel's log outlives a restart in
+    # (2026-11-12): read once, in the background, so the interface does not wait for it.
+    if [ ! -e /run/a22x-recovery/android-last.json ] && [ -f /opt/a22x-recovery/android_log.py ]; then
+        ( /usr/bin/python3 /opt/a22x-recovery/android_log.py --device read --save /run/a22x-recovery/android-last-kmsg.txt \
+            > /run/a22x-recovery/android-last.json.new 2>/dev/null
+          mv /run/a22x-recovery/android-last.json.new /run/a22x-recovery/android-last.json ) &
+    fi
     # A restart into the system that came straight back here (the preloader started twice and
     # lost the restart markers, 2026-11-10) is tried once more, without the interface.
     if [ ! -e /run/a22x-recovery/intent.done ] && [ -f /opt/a22x-recovery/restart_intent.py ]; then
@@ -262,6 +280,7 @@ while true; do
                     /usr/bin/python3 /opt/a22x-recovery/restart_intent.py write "$target" \
                         > /run/a22x-recovery/power-intent.json 2>&1 ;;
                 esac
+                torch_off
                 /bin/recovery-power "$target" 2> /run/a22x-recovery/power-result.txt
                 # Only a refusal returns here; the reason goes on screen, not only into a RAM log.
                 case "$(cat /run/a22x-recovery/power-result.txt 2>/dev/null)" in

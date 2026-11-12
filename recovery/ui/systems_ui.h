@@ -22,6 +22,9 @@ static bool systems_array_has(const Json*j,int parent,const char*key,const char*
     for(int i=array+1;i<json_next(j,array);i=json_next(j,i)){char text_value[80];if(json_string(j,i,text_value,sizeof(text_value))>=0&&!strcmp(text_value,value))return true;}return false;
 }
 static bool systems_ready(const App*a){return a->systems_known&&a->systems_mounted&&!a->systems_read_only&&!a->systems_transaction[0]&&!a->systems_reboot_blocked&&a->systems_platform;}
+/* Userdata that holds no Linux (Android's data, 2026-11-11): nothing there can be mounted or kept,
+   and a new system needs no mount - the confirmed installation formats it. */
+static bool systems_fresh(const App*a){return a->systems_known&&a->systems_foreign&&!a->systems_mounted&&!a->systems_transaction[0]&&a->systems_platform;}
 static void systems_forget_plan(App*a){
     a->systems_plan_valid=false;
     if(a->systems_plan_path[0]){unlink(a->systems_plan_path);a->systems_plan_path[0]=0;}
@@ -115,13 +118,14 @@ static bool systems_image_choice(const char*name,unsigned long long size){
 }
 static bool systems_manifest_selected(const App*a){
     const FileVolume*v=a->volume_index>=0&&a->volume_index<a->volume_count?&a->volumes[a->volume_index]:NULL;
+    /* A prepared bundle goes beside a Linux that is there; on Android's userdata only an image is installed. */
     return systems_source_allowed(v)&&file_is_regular(&a->fs_selected)&&a->fs_selected.token[0]&&
-        (systems_manifest_name(a->fs_selected.name)||systems_image_choice(a->fs_selected.name,(unsigned long long)a->fs_selected.size));
+        ((systems_manifest_name(a->fs_selected.name)&&!a->systems_foreign)||systems_image_choice(a->fs_selected.name,(unsigned long long)a->fs_selected.size));
 }
 /* Userdata can be mounted from Systems, from New system and from the catalog (2026-11-08: the
    button of New system did nothing, as only Systems handled it). */
-static bool systems_mount_screen(int screen_){return screen_==SYSTEMS||screen_==SYSTEMS_NEW||screen_==SYSTEMS_CATALOG||screen_==SYSTEMS_IMAGES;}
-static bool systems_can_mount(const App*a){return a->systems_known&&!a->systems_transaction[0]&&a->systems_volume_token[0]&&(!a->systems_mounted||a->systems_read_only);}
+static bool systems_mount_screen(int screen_){return screen_==SYSTEMS||screen_==SYSTEMS_NEW||screen_==SYSTEMS_CATALOG||screen_==SYSTEMS_IMAGES||screen_==ANDROID_IMAGE;}
+static bool systems_can_mount(const App*a){return a->systems_known&&!a->systems_foreign&&!a->systems_transaction[0]&&a->systems_volume_token[0]&&(!a->systems_mounted||a->systems_read_only);}
 /* Mounting from here: the same request Files sends, then Systems reads the volume again. */
 static void render_systems_mount(App*a){
     a->button_count=0;veil(a,(Rect){0,0,CW,CH},0,0x000000u,110);
@@ -137,9 +141,9 @@ static void render_systems(App*a){
     heading(a,"Linux systems","ARM64 root filesystems / shared /home / existing BOOT",true);
     rounded(a,(Rect){28,242,664,152},18,PANEL);
     text(a,52,262,0,ORANGE,a->systems_transaction[0]?"INTERRUPTED SWITCH":"CURRENT SYSTEM");
-    ellipsis(a,52,304,systems_can_mount(a)?576:610,1,TEXT,a->systems_active[0]?a->systems_active:(a->systems_known?(a->systems_mounted?(a->systems_empty?"Empty userdata: ready for a clean install":"Existing Linux / not yet adopted"):"Mount userdata to inspect systems"):"Reading installed systems..."));
+    ellipsis(a,52,304,systems_can_mount(a)?576:610,1,TEXT,a->systems_active[0]?a->systems_active:(a->systems_known?(a->systems_mounted?(a->systems_empty?"Empty userdata: ready for a clean install":"Existing Linux / not yet adopted"):(a->systems_foreign?"No Linux: userdata holds Android":"Mount userdata to inspect systems")):"Reading installed systems..."));
     /* While the status is read (after a removal, for one) it says so, as Tools and USB files do. */
-    const char*access=!a->systems_known?(a->job.pid&&a->job.kind==J_SYS_STATUS?"Checking status...":"Status unavailable"):(!a->systems_mounted?"Tap to mount userdata":(a->systems_read_only?"Read-only: tap to enable writes":"Userdata is mounted with write access"));
+    const char*access=!a->systems_known?(a->job.pid&&a->job.kind==J_SYS_STATUS?"Checking status...":"Status unavailable"):(!a->systems_mounted?(a->systems_foreign?"A new system formats it for Linux":"Tap to mount userdata"):(a->systems_read_only?"Read-only: tap to enable writes":"Userdata is mounted with write access"));
     ellipsis(a,52,352,560,0,a->systems_mounted&&!a->systems_read_only?GREEN:(systems_can_mount(a)?ORANGE:MUTED),access);
     if(systems_can_mount(a)){icon(a,ICON_CHEVRON,644,300,32,ORANGE);register_button(a,(Rect){28,242,664,152},A_SYS_MOUNT,ui_free(a),0);}
     if(a->systems_transaction[0]){
@@ -162,8 +166,8 @@ static void render_systems(App*a){
             register_button(a,r,A_SYS_SLOT+i,ui_free(a)&&!slot->active&&systems_ready(a),0);
         }
         a->clip_active=false;scroll_indicator(a,(Rect){684,422,6,566},a->systems_scroll,(int64_t)a->systems_slot_count*126-14,ORANGE);
-        if(!a->systems_slot_count)wrapped(a,40,450,640,1,MUTED,a->systems_empty?"Userdata is empty. The system you install becomes the only one, with the desktop, account, Wi-Fi, apps and setup script you choose.":a->systems_known&&a->systems_mounted?"No saved system slots yet. Import a prepared bundle to keep the current Linux alongside another system.":"Tap the card above to mount userdata. Systems are never mounted automatically.",5);
-        if(!a->systems_platform&&a->systems_known)wrapped(a,40,1004,640,0,ORANGE,"The audited phone platform profile is unavailable. Import and switching remain disabled.",3);
+        if(!a->systems_slot_count)wrapped(a,40,450,640,1,MUTED,a->systems_empty?"Userdata is empty. The system you install becomes the only one, with the desktop, account, Wi-Fi, apps and setup script you choose.":a->systems_known&&a->systems_mounted?"No saved system slots yet. Import a prepared bundle to keep the current Linux alongside another system.":(a->systems_foreign?"Userdata holds Android's data, which Linux cannot use. A new system formats userdata when its installation starts: Android's apps and data are erased then, not before.":"Tap the card above to mount userdata. Systems are never mounted automatically."),6);
+        if(!a->systems_platform&&a->systems_known)text_tile(a,1004,0,ORANGE,"The audited phone platform profile is unavailable. Import and switching remain disabled.",3);
         else installer_card(a,(Rect){28,1004,664,140},0,A_OS,"Install a new system","Erase userdata, then install from the internet or a file",A_SYS_NEW,ui_free(a));
         button(a,(Rect){28,1160,664,86},a->systems_empty?"Install a system":"Import a system",A_SYS_IMPORT,ui_free(a)&&systems_ready(a),true,0);
     }
@@ -243,7 +247,7 @@ static void render_systems_script(App*a){
     if(pages>1){button(a,(Rect){28,802,180,64},"Previous",A_SYS_PLAN_PREV,a->systems_plan_page>0,false,0);button(a,(Rect){512,802,180,64},"Next",A_SYS_PLAN_NEXT,a->systems_plan_page+1<pages,false,0);}
     bool fits=a->fs_selected.size<=SYSTEMS_SCRIPT_LIMIT;
     wrapped(a,40,908,640,1,fits?MUTED:RED,fits?"Recovery copies the script into the new system and does not run it. Read it first: it gets full control of the new system.":"A setup script can be at most 1 MiB.",6);
-    if(fits)wrapped(a,40,1120,640,0,MUTED,"The script gets A22X_OS_ID and A22X_PACKAGE_MANAGER (apt, dnf, pacman or zypper) and can install packages with a22x-install.",4);
+    if(fits)text_tile(a,1120,0,MUTED,"The script gets A22X_OS_ID and A22X_PACKAGE_MANAGER (apt, dnf, pacman or zypper) and can install packages with a22x-install.",4);
     button(a,(Rect){28,1330,664,108},"Use this script",A_SYS_USE_SCRIPT,ui_free(a)&&systems_script_selected(a)&&a->systems_plan_page+1>=pages,true,0);
 }
 static void render_systems_manifest(App*a){
@@ -253,54 +257,66 @@ static void render_systems_manifest(App*a){
     unsigned int pages=path_pages(a->fs_selected.path,640,8);
     if(pages>1){button(a,(Rect){28,802,180,64},"Previous",A_SYS_PLAN_PREV,a->systems_plan_page>0,false,0);button(a,(Rect){512,802,180,64},"Next",A_SYS_PLAN_NEXT,a->systems_plan_page+1<pages,false,0);}
     bool known=systems_manifest_name(a->fs_selected.name)||systems_image_choice(a->fs_selected.name,(unsigned long long)a->fs_selected.size);
-    if(file_is_regular(&a->fs_selected)&&!known)wrapped(a,40,908,640,1,RED,"This file is not a recognised system image. Supported: ISO, raw or img disk images, qcow2, VHD, Vagrant box and tar archives, also compressed with xz, zstd, gzip or bzip2.",6);
-    else if(systems_clean(a))wrapped(a,40,908,640,1,MUTED,"Review the archive, phone platform adapter and free space before installation. Userdata is erased first; the new system is checked and then becomes the active one.",6);
-    else wrapped(a,40,908,640,1,MUTED,"Review the archive, phone platform adapter and free space before installation. The installed root is validated before activation. Installation adds a separate system; it does not activate it.",6);
+    if(file_is_regular(&a->fs_selected)&&!known)text_tile(a,908,1,RED,"This file is not a recognised system image. Supported: ISO, raw or img disk images, qcow2, VHD, Vagrant box and tar archives, also compressed with xz, zstd, gzip or bzip2.",6);
+    else if(systems_clean(a))text_tile(a,908,1,MUTED,"Review the archive, phone platform adapter and free space before installation. Userdata is erased first; the new system is checked and then becomes the active one.",6);
+    else text_tile(a,908,1,MUTED,"Review the archive, phone platform adapter and free space before installation. The installed root is validated before activation. Installation adds a separate system; it does not activate it.",6);
     button(a,(Rect){28,1330,664,108},"Continue",A_SYS_USE_MANIFEST,ui_free(a)&&systems_manifest_selected(a)&&a->systems_plan_page+1>=pages,true,0);
 }
-static unsigned int systems_plan_pages(const App*a){return a->systems_plan_kind==J_SYS_IMPORT_PLAN?path_pages(a->systems_manifest,608,5):1;}
+static unsigned int systems_plan_pages(const App*a){return a->systems_plan_kind==J_SYS_IMPORT_PLAN?path_pages(a->systems_manifest,608,4):1;}
 static void render_systems_plan(App*a){
     bool importing=a->systems_plan_kind==J_SYS_IMPORT_PLAN,clean=importing&&a->systems_plan_clean;
     heading(a,importing?(clean?"Clean install":"Install system"):"Switch system",importing?(clean?"The new system becomes the only one on userdata.":"Add a new slot alongside the current Linux."):"Keep the previous system available for rollback.",true);
-    rounded(a,(Rect){28,242,664,250},18,PANEL);text(a,52,264,0,ORANGE,importing?"NEW SYSTEM":"SWITCH TO");
-    wrapped(a,52,308,608,1,TEXT,a->systems_plan_name,2);wrapped(a,52,398,608,0,MUTED,a->systems_plan_slot,2);
+    /* 2026-11-11, in cards as the other pages: what is installed, where it comes from, the room it
+       needs, what happens to userdata, and the choices made on the pages before. */
+    unsigned int pages=systems_plan_pages(a);
+    rounded(a,(Rect){28,242,664,190},24,PANEL);text(a,52,260,0,ORANGE,importing?"NEW SYSTEM":"SWITCH TO");
+    wrapped(a,52,300,608,1,TEXT,a->systems_plan_name,2);ellipsis(a,52,388,608,0,MUTED,a->systems_plan_slot);
     if(importing){
+        rounded(a,(Rect){28,448,664,222},24,PANEL);
         if(a->systems_remote_id[0]){
             /* From the catalog: downloaded and checked when the installation runs. */
             char download[64],line[160];human_bytes(a->systems_plan_download,download,sizeof(download));
-            text(a,40,532,0,ORANGE,"FROM THE CATALOG");raw_text(true);wrapped(a,40,574,640,1,TEXT,a->systems_manifest,2);raw_text(false);
-            snprintf(line,sizeof(line),T("Download %s over Wi-Fi, checked against the catalog"),download);wrapped(a,40,664,640,0,MUTED,line,2);
+            text(a,52,466,0,ORANGE,"FROM THE CATALOG");raw_text(true);wrapped(a,52,506,616,1,TEXT,a->systems_manifest,2);raw_text(false);
+            snprintf(line,sizeof(line),T("Download %s over Wi-Fi, checked against the catalog"),download);wrapped(a,52,596,616,0,MUTED,line,2);
         }else if(!strcmp(a->systems_source_volume,"userdata")){
             /* An image saved on the phone (2026-11-10): it stays in the store after the installation. */
             const char*name=strrchr(a->systems_manifest,'/');
-            text(a,40,532,0,ORANGE,"SAVED ON THE PHONE");raw_text(true);wrapped(a,40,574,640,1,TEXT,name?name+1:a->systems_manifest,2);raw_text(false);
-            wrapped(a,40,664,640,0,MUTED,"No SD card is needed; the image stays saved after the installation.",2);
+            text(a,52,466,0,ORANGE,"SAVED ON THE PHONE");raw_text(true);wrapped(a,52,506,616,1,TEXT,name?name+1:a->systems_manifest,2);raw_text(false);
+            wrapped(a,52,596,616,0,MUTED,"No SD card is needed; the image stays saved after the installation.",2);
         }else{
-            text(a,40,532,0,ORANGE,"SOURCE MANIFEST");ellipsis(a,40,574,640,0,MUTED,a->systems_source_volume);
-            confirmation_path(a,52,618,608,a->systems_manifest,a->systems_plan_page,5);
+            text(a,52,466,0,ORANGE,"SOURCE MANIFEST");raw_text(true);ellipsis(a,pages>1?52:52,506,pages>1?400:616,0,MUTED,a->systems_source_volume);raw_text(false);
+            confirmation_path(a,52,546,608,a->systems_manifest,a->systems_plan_page,4);
+            /* A path longer than the card is read in pages, beside the name of its volume. */
+            if(pages>1){button(a,(Rect){468,458,100,52},"↑",A_SYS_PLAN_PREV,a->systems_plan_page>0,false,0);button(a,(Rect){576,458,100,52},"↓",A_SYS_PLAN_NEXT,a->systems_plan_page+1<pages,false,0);}
         }
-        char needed[64],free_space[64],space[176];human_bytes(a->systems_required_bytes,needed,sizeof(needed));human_bytes(a->systems_available_bytes,free_space,sizeof(free_space));
-        snprintf(space,sizeof(space),T("Needed %s  /  available %s"),needed,free_space);wrapped(a,40,810,640,0,GREEN,space,2);
-        if(a->systems_plan_erase)wrapped(a,40,902,640,1,RED,"Userdata is erased first: every Linux system and /home on it. The new system is active after installation.",4);
-        else wrapped(a,40,902,640,1,MUTED,clean?"Userdata is empty, so nothing is replaced. The new system is active after installation: restart into it from Power.":"The current Linux stays active. A separate review is required to switch. Existing BOOT and shared /home are retained.",4);
+        char needed[64],free_space[64];human_bytes(a->systems_required_bytes,needed,sizeof(needed));human_bytes(a->systems_available_bytes,free_space,sizeof(free_space));
+        /* The labels are translated before the sizes are drawn as they are. */
+        const char*needed_label=tr("NEEDED"),*available_label=tr("AVAILABLE");
+        raw_text(true);stat_tile(a,(Rect){28,686,324,100},needed_label,needed,TEXT);stat_tile(a,(Rect){368,686,324,100},available_label,free_space,GREEN);raw_text(false);
+        int y=818;
+        if(a->systems_plan_erase)y+=text_tile(a,y,0,RED,a->systems_plan_format?"Userdata is formatted for Linux first: Android's apps and data on it are erased. The new system is active after installation.":
+                                         "Userdata is erased first: every Linux system and /home on it. The new system is active after installation.",4)+16;
+        else y+=text_tile(a,y,0,MUTED,clean?"Userdata is empty, so nothing is replaced. The new system is active after installation: restart into it from Power.":"The current Linux stays active. A separate review is required to switch. Existing BOOT and shared /home are retained.",4)+16;
+        /* The plan takes a Linux BOOT with it (2026-11-11): said where the owner decides. */
+        if(a->systems_plan_boot)y+=text_tile(a,y,0,MUTED,"BOOT gets the Linux kernel when the system is in place; the BOOT there now is kept on cache.",2)+16;
         if(!systems_manifest_name(a->systems_manifest)){
             char line[256];unsigned int apps=0;for(unsigned int n=0;n<SYSTEMS_APPS;n++)apps+=(a->systems_apps>>n)&1u;
-            snprintf(line,sizeof(line),T("Desktop: %s  /  apps: %u"),tr(systems_desktop_labels[a->systems_desktop<SYSTEMS_DESKTOPS?a->systems_desktop:0]),apps);ellipsis(a,40,1072,640,0,TEXT,line);
-            snprintf(line,sizeof(line),T("Wi-Fi: %s  /  script: %s"),a->systems_wifi_ssid[0]?a->systems_wifi_ssid:"—",a->systems_script_name[0]?a->systems_script_name:"—");ellipsis(a,40,1110,640,0,TEXT,line);
-            if(shells_offered(a)){shells_summary(a,line,sizeof(line));ellipsis(a,40,1148,640,0,TEXT,line);}
-            locale_summary(a,line,sizeof(line));ellipsis(a,40,shells_offered(a)?1186:1148,640,0,TEXT,line);
+            int rows=shells_offered(a)?4:3;rounded(a,(Rect){28,y-16,664,24+rows*38},24,PANEL);
+            snprintf(line,sizeof(line),T("Desktop: %s  /  apps: %u"),tr(systems_desktop_labels[a->systems_desktop<SYSTEMS_DESKTOPS?a->systems_desktop:0]),apps);ellipsis(a,52,y-2,616,0,TEXT,line);
+            snprintf(line,sizeof(line),T("Wi-Fi: %s  /  script: %s"),a->systems_wifi_ssid[0]?a->systems_wifi_ssid:"—",a->systems_script_name[0]?a->systems_script_name:"—");ellipsis(a,52,y+36,616,0,TEXT,line);
+            if(shells_offered(a)){shells_summary(a,line,sizeof(line));ellipsis(a,52,y+74,616,0,TEXT,line);}
+            locale_summary(a,line,sizeof(line));ellipsis(a,52,y+(shells_offered(a)?112:74),616,0,TEXT,line);
         }
     }else{
-        text(a,40,530,0,ORANGE,"CURRENT SYSTEM");wrapped(a,40,572,640,1,TEXT,a->systems_active,2);
-        wrapped(a,40,692,640,1,MUTED,"The installed root filesystem changes. /home stays shared; each system retains its own /etc and /var. BOOT is retained.",5);
-        wrapped(a,40,910,640,0,ORANGE,"The switch is journaled, not fully atomic. If interrupted, return to Systems and choose Resume or Rollback. Linux boot remains blocked until the journal completes.",6);
+        rounded(a,(Rect){28,448,664,150},24,PANEL);text(a,52,466,0,ORANGE,"CURRENT SYSTEM");wrapped(a,52,506,616,1,TEXT,a->systems_active,2);
+        int y=630;
+        y+=text_tile(a,y,0,MUTED,"The installed root filesystem changes. /home stays shared; each system retains its own /etc and /var. BOOT is retained.",5)+16;
+        text_tile(a,y,0,ORANGE,"The switch is journaled, not fully atomic. If interrupted, return to Systems and choose Resume or Rollback. Linux boot remains blocked until the journal completes.",6);
         /* A saved system that is not running can also be deleted from here (2026-11-09). */
-        if(systems_plan_pages(a)<=1)button(a,(Rect){28,1212,664,96},"Remove this system",A_SYS_REMOVE,ui_free(a)&&systems_ready(a),false,0);
+        if(pages<=1)button(a,(Rect){28,1212,664,96},"Remove this system",A_SYS_REMOVE,ui_free(a)&&systems_ready(a),false,0);
     }
-    unsigned int pages=systems_plan_pages(a);
-    if(pages>1){button(a,(Rect){28,1206,180,64},"Previous",A_SYS_PLAN_PREV,a->systems_plan_page>0,false,0);button(a,(Rect){512,1206,180,64},"Next",A_SYS_PLAN_NEXT,a->systems_plan_page+1<pages,false,0);}
     bool current=(uint64_t)time(NULL)<=a->systems_plan_expires;
-    if(!current)text(a,40,1160,0,RED,"This plan expired. Return and review it again.");
+    if(!current)text(a,40,1286,0,RED,"This plan expired. Return and review it again.");
     button(a,(Rect){28,1330,664,108},importing?"Hold 2 seconds to install":"Hold 3 seconds to switch",A_SYS_PLAN_CONFIRM,ui_free(a)&&a->systems_plan_valid&&current&&a->systems_plan_page+1>=pages,true,importing?2000:3000);
 }
 /* Delete a saved system that is not running (backend remove-slot): its root filesystem only. */
@@ -308,8 +324,8 @@ static void render_systems_remove(App*a){
     heading(a,"Remove system","Delete a saved system that is not running.",true);
     rounded(a,(Rect){28,242,664,250},18,PANEL);text(a,52,266,0,ORANGE,"SYSTEM");
     raw_text(true);wrapped(a,52,310,608,1,TEXT,a->systems_plan_name[0]?a->systems_plan_name:a->systems_plan_slot,2);ellipsis(a,52,420,608,0,MUTED,a->systems_plan_slot);raw_text(false);
-    text(a,40,530,0,ORANGE,"CURRENT SYSTEM");wrapped(a,40,572,640,1,TEXT,a->systems_active,2);
-    wrapped(a,40,692,640,1,RED,"Its root filesystem with its programs, /etc and /var is deleted. /home, the active system and BOOT stay. This cannot be undone.",5);
+    rounded(a,(Rect){28,508,664,150},24,PANEL);text(a,52,526,0,ORANGE,"CURRENT SYSTEM");wrapped(a,52,566,616,1,TEXT,a->systems_active,2);
+    text_tile(a,692,1,RED,"Its root filesystem with its programs, /etc and /var is deleted. /home, the active system and BOOT stay. This cannot be undone.",5);
     button(a,(Rect){28,1330,664,108},"Hold 3 seconds to remove",A_SYS_REMOVE_CONFIRM,ui_free(a)&&systems_ready(a)&&systems_id(a->systems_plan_slot),true,3000);
 }
 static void render_systems_recover(App*a){
@@ -318,7 +334,7 @@ static void render_systems_recover(App*a){
     text(a,52,424,0,ORANGE,"TO");wrapped(a,52,466,608,1,TEXT,a->systems_target,2);
     char state[128];snprintf(state,sizeof(state),T("Journal step %u of %u"),a->systems_step,a->systems_total);text(a,52,600,0,MUTED,state);
     wrapped(a,40,734,640,1,TEXT,rollback?"Restore the previous root filesystem using the saved transaction. Shared /home remains in place.":"Finish moving the reviewed root directories into place. Shared /home remains in place.",5);
-    wrapped(a,40,980,640,0,MUTED,"This is the exact transaction read just before this review. If it changes, the backend refuses this action. The phone does not reboot automatically.",5);
+    text_tile(a,980,0,MUTED,"This is the exact transaction read just before this review. If it changes, the backend refuses this action. The phone does not reboot automatically.",5);
     bool allowed=rollback?a->systems_rollback_allowed:a->systems_resume_allowed;
     button(a,(Rect){28,1330,664,108},rollback?"Hold 3 seconds to roll back":"Hold 3 seconds to resume",A_SYS_RECOVER_CONFIRM,ui_free(a)&&a->systems_known&&a->systems_mounted&&!a->systems_read_only&&allowed&&a->systems_expected_transaction[0]&&!strcmp(a->systems_expected_transaction,a->systems_transaction),true,3000);
 }
@@ -328,7 +344,7 @@ static bool start_systems_job(App*a,int kind){
     if(!a->distro_helper[0]){files_problem(a,"SYSTEMS_UNAVAILABLE","The system manager helper is not configured.",SYSTEMS);return false;}
     char*args[208];int n=0;args[n++]=a->python;args[n++]=a->distro_helper;if(a->device)args[n++]="--device";else{args[n++]="--fixture";args[n++]=a->fixture;}args[n++]=(char*)systems_operation(kind);
     if(kind==J_SYS_IMPORT_PLAN||kind==J_SYS_SWITCH_PLAN){
-        if(!systems_ready(a)){files_problem(a,"SYSTEMS_NOT_READY","Mount userdata with write access and refresh Systems before planning.",SYSTEMS);return false;}
+        if(!systems_ready(a)&&!(kind==J_SYS_IMPORT_PLAN&&a->systems_wipe&&systems_fresh(a))){files_problem(a,"SYSTEMS_NOT_READY","Mount userdata with write access and refresh Systems before planning.",SYSTEMS);return false;}
         /* The note of the last action (a removed system) stayed under the next one (2026-11-09). */
         systems_forget_plan(a);a->systems_plan_kind=kind;a->systems_note[0]=0;
         if(!private_workdir(a->workdir)||snprintf(a->systems_plan_path,sizeof(a->systems_plan_path),"%s/distro-%ld-%u.json",a->workdir,(long)getpid(),++a->plan_sequence)>=(int)sizeof(a->systems_plan_path)){a->systems_plan_path[0]=0;files_problem(a,"WORKDIR_UNAVAILABLE","A private RAM directory is required for this reviewed plan.",SYSTEMS);return false;}
@@ -409,6 +425,8 @@ static bool parse_systems_status(App*a,const Json*j){
     else if(!jequals(j,0,"transaction_state",mounted?"none":"unknown-unmounted"))return false;
     a->systems_known=true;a->systems_mounted=mounted;a->systems_read_only=ro;a->systems_initialized=initialized==1;a->systems_platform=profile;
     a->systems_empty=mounted&&initialized==0&&json_bool(j,json_get(j,0,"empty_userdata"),0)==1;
+    a->systems_foreign=!mounted&&json_bool(j,json_get(j,0,"foreign"),0)==1;
+    a->systems_boot_android=json_bool(j,json_get(j,0,"boot_linux"),1)==0;a->systems_boot_source[0]=0;jstring(j,0,"boot_source",a->systems_boot_source,sizeof(a->systems_boot_source));a->systems_boot_outdated=json_bool(j,json_get(j,0,"boot_outdated"),0)==1;
     if(mounted||blocked)a->systems_reboot_blocked=blocked;
     copy(a->systems_volume_token,sizeof(a->systems_volume_token),volume);copy(a->systems_active,sizeof(a->systems_active),active);copy(a->systems_transaction,sizeof(a->systems_transaction),transaction);copy(a->systems_source,sizeof(a->systems_source),source);copy(a->systems_target,sizeof(a->systems_target),target);
     a->systems_incomplete=0;int incomplete=json_get(j,0,"incomplete_imports");if(incomplete>=0&&j->tokens[incomplete].type==J_ARRAY)for(int i=incomplete+1;i<json_next(j,incomplete);i=json_next(j,i))a->systems_incomplete++;
@@ -427,7 +445,7 @@ static bool parse_systems_plan(App*a,const Json*j,int kind){
         char volume[128],manifest[PATH_LEN];jstring(j,p,"source_volume",volume,sizeof(volume));jstring(j,p,"manifest_path",manifest,sizeof(manifest));required=json_uint(j,json_get(j,p,"required_bytes"),UINT64_MAX);available=json_uint(j,json_get(j,p,"available_bytes"),UINT64_MAX);
         bool remote=a->systems_remote_id[0]!=0;
         if((!remote&&(strcmp(volume,a->systems_source_volume)||strcmp(manifest,a->systems_manifest)))||(remote&&(volume[0]||manifest[0]))||!required||required>available||available==UINT64_MAX||json_bool(j,json_get(j,0,"switches_current_system"),-1)!=0)return false;
-        a->systems_plan_erase=json_bool(j,json_get(j,p,"erase_userdata"),0)==1;a->systems_plan_download=json_uint(j,json_get(j,p,"download_bytes"),0);
+        a->systems_plan_erase=json_bool(j,json_get(j,p,"erase_userdata"),0)==1;a->systems_plan_format=json_bool(j,json_get(j,p,"format_userdata"),0)==1;a->systems_plan_boot=json_bool(j,json_get(j,p,"write_boot"),0)==1;a->systems_plan_download=json_uint(j,json_get(j,p,"download_bytes"),0);
         if(a->systems_wipe!=a->systems_plan_erase)return false;
     }else if(strcmp(slot,a->systems_plan_slot)||!systems_array_exact(j,p,"preserved_paths","/home")||json_bool(j,json_get(j,p,"whole_switch_atomic"),-1)!=0||json_bool(j,json_get(j,0,"retained_boot"),-1)!=1||json_bool(j,json_get(j,0,"writes_partition_table"),-1)!=0)return false;
     struct stat st;if(lstat(path,&st)<0||!S_ISREG(st.st_mode)||st.st_uid!=geteuid()||st.st_nlink!=1||(st.st_mode&0777)!=0600||st.st_size<=0||st.st_size>4*1024*1024)return false;
@@ -446,7 +464,7 @@ static int complete_systems_job(App*a,const Json*j,int kind,bool ok){
         a->systems_review_recovery=false;a->systems_plan_valid=false;copy(a->systems_reason,sizeof(a->systems_reason),message);
         /* 2026-11-08: a refused status reopened the error page from its own Back button forever;
            the reason is shown on the Systems page instead, which can be left. */
-        if(kind==J_SYS_STATUS){a->systems_known=false;if(a->screen!=APLAN)screen(a,SYSTEMS);else a->dirty=true;return J_NONE;}
+        if(kind==J_SYS_STATUS){a->systems_known=false;if(a->screen!=APLAN&&a->screen!=BACKUP)screen(a,SYSTEMS);else a->dirty=true;return J_NONE;}
         /* A system that cannot be switched to can still be removed, unless it is the running one. */
         a->systems_remove_offer=kind==J_SYS_SWITCH_PLAN&&systems_id(a->systems_plan_slot)&&strcmp(code,"ALREADY_ACTIVE")&&strcmp(code,"SWITCH_PENDING")&&strcmp(code,"SLOT_UNAVAILABLE");
         files_problem(a,code,message,SYSTEMS);return J_NONE;
@@ -458,7 +476,7 @@ static int complete_systems_job(App*a,const Json*j,int kind,bool ok){
         if(a->systems_review_recovery){a->systems_review_recovery=false;if(strcmp(a->systems_expected_transaction,a->systems_transaction)){files_problem(a,"TRANSACTION_CHANGED","The interrupted transaction changed. Review the refreshed Systems screen.",SYSTEMS);return J_NONE;}screen(a,SYSTEMS_RECOVER);}
         /* The refresh after a userdata mount from New system or the catalog keeps that page:
            it used to jump to Systems, so the mount there seemed to do nothing (2026-11-08, on the phone). */
-        else if(a->screen==SYSTEMS_NEW||a->screen==SYSTEMS_CATALOG||a->screen==APLAN)a->dirty=true;
+        else if(a->screen==SYSTEMS_NEW||a->screen==SYSTEMS_CATALOG||a->screen==APLAN||a->screen==BACKUP)a->dirty=true;
         else screen(a,SYSTEMS);
         return J_NONE;
     }
@@ -537,7 +555,8 @@ static bool systems_action(App*a,int id){
         if(id==A_SYS_ACCOUNT_KEEP){a->systems_new_account=false;a->systems_username[0]=a->systems_password[0]=a->systems_password_hash[0]=0;a->dirty=true;return true;}
         if(id==A_SYS_ACCOUNT_NEW){systems_account_prompt(a,J_SYS_ACCOUNT_USER);return true;}
         if(id==A_SYS_SETUP_NEXT){if(!a->systems_new_account||(a->systems_username[0]&&(a->systems_password[0]||a->systems_password_hash[0])))screen(a,shells_offered(a)?SYSTEMS_SHELLS:SYSTEMS_EXTRAS);return true;}
-        if(id==A_BACK){screen(a,SYSTEMS);start_systems_job(a,J_SYS_STATUS);return true;}
+        /* Back to the catalog, the saved images or the plan the image was chosen on; else the systems. */
+        if(id==A_BACK){reopen(a,came_from(a,SYSTEMS));return true;}
     }
     if(a->screen==SYSTEMS_DONE){
         if(id==A_SYS_DONE_RESTART){if(a->allow_power&&ui_free(a)){a->power_intent=200;screen(a,POWER_CONFIRM);}return true;}
@@ -582,7 +601,8 @@ static bool systems_action(App*a,int id){
     if(a->systems_pick_manifest){
         if(id==A_SYS_CANCEL_PICK||(id==A_BACK&&a->screen==FILE_VOLUMES)){
             if(a->systems_pick_script){a->systems_pick_manifest=a->systems_pick_script=false;screen(a,SYSTEMS_EXTRAS);return true;}
-            a->systems_pick_manifest=false;screen(a,SYSTEMS);start_systems_job(a,J_SYS_STATUS);return true;
+            /* "From a file" is on New system: Back returns there, not to the list of systems. */
+            enum Screen from=came_from_picker(a,SYSTEMS);a->systems_pick_manifest=false;reopen(a,from);return true;
         }
         if(id==A_SYS_USE_SCRIPT){
             if(a->systems_pick_script&&systems_script_selected(a)&&a->systems_plan_page+1>=path_pages(a->fs_selected.path,640,8)){
@@ -592,8 +612,7 @@ static bool systems_action(App*a,int id){
             }
             return true;
         }
-        if(id==A_BACK&&a->screen==FILE_BROWSER&&!strcmp(a->fs_path,"/")){screen(a,FILE_VOLUMES);return true;}
-        if(id==A_FS_VOLUME){screen(a,FILE_VOLUMES);return true;}
+        if((id==A_BACK&&a->screen==FILE_BROWSER&&!strcmp(a->fs_path,"/"))||id==A_FS_VOLUME){if(!source_back(a))screen(a,FILE_VOLUMES);return true;}
         if(id>=A_FS_VOLUME_ITEM&&id<A_FS_VOLUME_ITEM+a->volume_count){
             int index=id-A_FS_VOLUME_ITEM;FileVolume*v=&a->volumes[index];
             bool saved=a->systems_pick_script&&script_store_volume(v);
@@ -640,7 +659,7 @@ static bool systems_action(App*a,int id){
     }
     if(id==A_SYS_REMOVE_CONFIRM&&a->screen==SYSTEMS_REMOVE){start_systems_job(a,J_SYS_REMOVE);return true;}
     if(a->screen==SYSTEMS_PLAN&&(id==A_SYS_PLAN_PREV||id==A_SYS_PLAN_NEXT)){if(id==A_SYS_PLAN_PREV&&a->systems_plan_page)a->systems_plan_page--;if(id==A_SYS_PLAN_NEXT&&a->systems_plan_page+1<systems_plan_pages(a))a->systems_plan_page++;a->dirty=true;return true;}
-    if(id==A_BACK&&(a->screen==SYSTEMS||a->screen==SYSTEMS_PLAN||a->screen==SYSTEMS_RECOVER||a->screen==SYSTEMS_REMOVE)){enum Screen from=a->screen;systems_forget_plan(a);a->systems_review_recovery=false;screen(a,from==SYSTEMS?OS_MENU:SYSTEMS);if(from!=SYSTEMS)start_systems_job(a,J_SYS_STATUS);return true;}
+    if(id==A_BACK&&(a->screen==SYSTEMS||a->screen==SYSTEMS_PLAN||a->screen==SYSTEMS_RECOVER||a->screen==SYSTEMS_REMOVE)){enum Screen back=a->screen==SYSTEMS?came_from(a,OS_MENU):SYSTEMS;systems_forget_plan(a);a->systems_review_recovery=false;reopen(a,back);return true;}
     return false;
 }
 #endif

@@ -455,6 +455,33 @@ def list_backups(context, repository):
     return {"ok": True, "operation": "list", "repository": repo["path"], "backups": result}
 
 
+def manage_backup(context, backup_path, action, new_name=None, confirm=None):
+    """Rename or delete a finished snapshot (2026-11-11, as TWRP's Restore page does). Only a folder
+    that loads as a complete snapshot is touched, in a repository that is mounted for writing and
+    while no other backup operation runs; a snapshot is deleted only when its own name is given
+    back as the confirmation."""
+    with operation_lock(context):
+        path, manifest, _ = _load_manifest(context, backup_path)
+        context.repository(path.parent, writing=True)
+        if action == "rename":
+            validate_name(new_name if isinstance(new_name, str) else "")
+            if ".partial-" in new_name:
+                fail("INVALID_NAME", "This name is kept for unfinished snapshots")
+            target = path.parent / new_name
+            if target.exists() or target.is_symlink():
+                fail("BACKUP_EXISTS", "A backup with this name already exists", path=str(target))
+            rename_noreplace(path, target)
+            fsync_directory(path.parent)
+            return {"ok": True, "operation": "rename-backup", "backup_path": str(target), "name": new_name,
+                    "old_name": path.name}
+        if confirm != path.name:
+            fail("CONFIRMATION_REQUIRED", "Deleting a backup must be confirmed with its name")
+        shutil.rmtree(path)
+        fsync_directory(path.parent)
+        return {"ok": True, "operation": "delete-backup", "deleted": str(path), "name": path.name,
+                "profile": manifest.get("profile")}
+
+
 def make_restore_plan(context, backup_path, progress=None):
     path, manifest, manifest_hash = _load_manifest(context, backup_path)
     if manifest["schema"] == "a22x.backup.v2":

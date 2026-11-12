@@ -537,6 +537,17 @@ keep_build() {
         mv -f "$BUILD_CACHE/$kind.tar.new" "$BUILD_CACHE/$kind.tar" && printf '%s\n' "$key" > "$BUILD_CACHE/$kind.key"
     rm -f "$BUILD_CACHE/$kind.tar.new"
 }
+# Whether an image that brought its own Phosh still needs phoc's wlroots fix built for this phone:
+# the build script names the build it would make, and nothing when the image's wlroots is fine.
+phone_build_needed() {
+    command -v pacman >/dev/null || return 1
+    [ -x /usr/bin/phoc ] || return 1
+    key=$(sh /opt/a22x-conn/build/a22x-build-phoc.sh --key 2>/dev/null)
+    case "$key" in
+    ''|a22x-build-phoc:*) return 1 ;;
+    esac
+    [ "$(cat /opt/a22x-phoc/built-for 2>/dev/null)" != "$key" ]
+}
 build_for_phone() {
     command -v pacman >/dev/null || return 0
     need=
@@ -1016,6 +1027,36 @@ shell_entry() {
         > "/usr/share/a22x/sessions/a22x-$1.desktop"
 }
 
+# The name Mesa knows this phone's GPU path by. Mesa up to 24.1 installs kmsro under the display
+# driver's name (mediatek_dri.so) and has no kmsro_dri.so; asked for "kmsro" it finds no driver,
+# and the compositor draws in software (Manjaro ARM's image, Mesa 24.0.2, 2026-11-12: phoc said
+# "Software rendering detected" and "your system is too slow", and Phosh's buttons answered late
+# or not at all; with "mediatek" the same phoc said "GL renderer: Mali-G57 (Panfrost)").
+mesa_driver() {
+    for dir in /usr/lib/dri /usr/lib64/dri /usr/lib/aarch64-linux-gnu/dri; do
+        if [ -e "$dir/mediatek_dri.so" ] && [ ! -e "$dir/kmsro_dri.so" ]; then
+            echo mediatek
+            return 0
+        fi
+    done
+    echo kmsro
+}
+# The session programs ask at each start, so an upgrade of Mesa needs no new setup.
+gpu_driver_tool() {
+    cat > /usr/bin/a22x-gpu-driver <<'S'
+#!/bin/sh
+# The name of this phone's GPU path in the installed Mesa (A22x recovery).
+for dir in /usr/lib/dri /usr/lib64/dri /usr/lib/aarch64-linux-gnu/dri; do
+    if [ -e "$dir/mediatek_dri.so" ] && [ ! -e "$dir/kmsro_dri.so" ]; then
+        echo mediatek
+        exit 0
+    fi
+done
+echo kmsro
+S
+    chmod 0755 /usr/bin/a22x-gpu-driver
+}
+
 phosh_shell() {
     mkdir -p /etc/phosh
     # The lock screen authenticates through PAM service "phosh".
@@ -1026,7 +1067,7 @@ phosh_shell() {
     cat > /usr/bin/a22x-session <<'S'
 #!/bin/sh
 # The GPU path needs kmsro on this panel. A session that dies at once retries with software rendering.
-export MESA_LOADER_DRIVER_OVERRIDE=kmsro XWAYLAND_NO_GLAMOR=1
+export MESA_LOADER_DRIVER_OVERRIDE=$(/usr/bin/a22x-gpu-driver 2>/dev/null || echo kmsro) XWAYLAND_NO_GLAMOR=1
 # greetd, unlike a full display manager, does not describe the session to its applications.
 export XDG_CURRENT_DESKTOP=Phosh:GNOME XDG_SESSION_DESKTOP=phosh XDG_SESSION_TYPE=wayland DESKTOP_SESSION=phosh
 # Phosh locks itself at start unless a login screen started it (GDMSESSION=phosh). Phrog and GDM
@@ -1054,7 +1095,7 @@ gnome_shell() {
     cat > /usr/bin/a22x-gnome-session <<'S'
 #!/bin/sh
 # GNOME on Wayland; the GPU path needs kmsro on this panel.
-export MESA_LOADER_DRIVER_OVERRIDE=kmsro XWAYLAND_NO_GLAMOR=1 XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=GNOME
+export MESA_LOADER_DRIVER_OVERRIDE=$(/usr/bin/a22x-gpu-driver 2>/dev/null || echo kmsro) XWAYLAND_NO_GLAMOR=1 XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=GNOME
 exec gnome-session
 S
     chmod 755 /usr/bin/a22x-gnome-session
@@ -1076,7 +1117,7 @@ S
     # (2026-11-09: set for the whole session, Plasma's X11 helpers ksmserver, xembedsniproxy and
     # gmenudbusmenuproxy crashed). KWin runs as a user service in Plasma 6.
     mkdir -p /etc/systemd/user/plasma-kwin_wayland.service.d
-    printf '[Service]\nEnvironment=MESA_LOADER_DRIVER_OVERRIDE=kmsro XWAYLAND_NO_GLAMOR=1\n' > /etc/systemd/user/plasma-kwin_wayland.service.d/50-a22x-gpu.conf
+    printf '[Service]\nEnvironment=MESA_LOADER_DRIVER_OVERRIDE=%s XWAYLAND_NO_GLAMOR=1\n' "$(mesa_driver)" > /etc/systemd/user/plasma-kwin_wayland.service.d/50-a22x-gpu.conf
     # X11 programs drawn at the panel's scale, like Wayland ones.
     if ! grep -qs '^\[Xwayland\]' /etc/xdg/kwinrc; then
         mkdir -p /etc/xdg
@@ -1123,7 +1164,7 @@ sxmo_shell() {
     cat > /usr/bin/a22x-sxmo-session <<'S'
 #!/bin/sh
 # Sxmo on Sway; the panel is 1080x2408, so Sway draws at 2.75 like Phosh.
-export MESA_LOADER_DRIVER_OVERRIDE=kmsro XWAYLAND_NO_GLAMOR=1 XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=sway SXMO_SWAY_SCALE=2.75
+export MESA_LOADER_DRIVER_OVERRIDE=$(/usr/bin/a22x-gpu-driver 2>/dev/null || echo kmsro) XWAYLAND_NO_GLAMOR=1 XDG_SESSION_TYPE=wayland XDG_CURRENT_DESKTOP=sway SXMO_SWAY_SCALE=2.75
 sxmo_winit.sh
 status=$?
 # When Sway ends, Sxmo's modem monitor stays in the session, which then never closes and keeps
@@ -1169,7 +1210,7 @@ lomiri_shell() {
 # (scale 3) Mir crashed with SIGSEGV as soon as the shell came up (Debian 13 and Ubuntu 26.04,
 # 2026-11-09): 2408 / 3 is no whole number, and Mir and QtMir rounded the logical height apart
 # (803 and 802). A scale must divide 1080x2408: 16 px (scale 2) is the largest that looks right.
-export MESA_LOADER_DRIVER_OVERRIDE=kmsro XWAYLAND_NO_GLAMOR=1 XDG_SESSION_TYPE=wayland GRID_UNIT_PX=16 DEVICEINFO_DEVICE_NAME=a22x
+export MESA_LOADER_DRIVER_OVERRIDE=$(/usr/bin/a22x-gpu-driver 2>/dev/null || echo kmsro) XWAYLAND_NO_GLAMOR=1 XDG_SESSION_TYPE=wayland GRID_UNIT_PX=16 DEVICEINFO_DEVICE_NAME=a22x
 exec $command
 S
     chmod 755 /usr/bin/a22x-lomiri-session
@@ -1307,7 +1348,7 @@ phrog_greeter() {
 : "${GREETD_SOCK:?started by greetd}" "${XDG_RUNTIME_DIR:?}"
 export HOME=/var/lib/a22x-greeter
 export XDG_CONFIG_HOME=$HOME/.config XDG_CACHE_HOME=$HOME/.cache XDG_DATA_HOME=$HOME/.local/share XDG_STATE_HOME=$HOME/.local/state
-export XDG_CURRENT_DESKTOP=Phrog:Phosh:GNOME XDG_SESSION_TYPE=wayland GDK_BACKEND=wayland MESA_LOADER_DRIVER_OVERRIDE=kmsro XWAYLAND_NO_GLAMOR=1
+export XDG_CURRENT_DESKTOP=Phrog:Phosh:GNOME XDG_SESSION_TYPE=wayland GDK_BACKEND=wayland MESA_LOADER_DRIVER_OVERRIDE=$(/usr/bin/a22x-gpu-driver 2>/dev/null || echo kmsro) XWAYLAND_NO_GLAMOR=1
 export PATH=/usr/local/bin:/usr/bin:/bin
 export GNOME_SESSION_AUTOSTART_DIR=/usr/share/phrog/autostart:/usr/local/share/phrog/autostart:/etc/phrog/autostart
 # Phrog lists every session it finds: it sees the system's data without the distribution's
@@ -1439,7 +1480,7 @@ dm_sessions() {
 # The display managers draw on this panel's GPU path too, and preselect the main shell.
 dm_common() {
     mkdir -p /etc/environment.d /var/lib/AccountsService/users
-    printf 'MESA_LOADER_DRIVER_OVERRIDE=kmsro\n' > /etc/environment.d/90-a22x-gpu.conf
+    printf 'MESA_LOADER_DRIVER_OVERRIDE=%s\n' "$(mesa_driver)" > /etc/environment.d/90-a22x-gpu.conf
     main=$(head -n 1 /etc/a22x/shells | cut -d'|' -f1)
     printf '[User]\nSession=a22x-%s\nXSession=a22x-%s\nSystemAccount=false\n' "$main" "$main" \
         > "/var/lib/AccountsService/users/$1"
@@ -1483,7 +1524,7 @@ sddm_greeter() {
         printf '[General]\n'
         if [ -n "$compositor" ]; then
             printf 'DisplayServer=wayland\nInputMethod=qtvirtualkeyboard\n'
-            printf 'GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell,QT_SCALE_FACTOR=%s,MESA_LOADER_DRIVER_OVERRIDE=kmsro\n' "$scale"
+            printf 'GreeterEnvironment=QT_WAYLAND_SHELL_INTEGRATION=layer-shell,QT_SCALE_FACTOR=%s,MESA_LOADER_DRIVER_OVERRIDE=%s\n' "$scale" "$(mesa_driver)"
             printf '[Wayland]\nCompositorCommand=%s\n' "$compositor"
         else
             printf '[Wayland]\n'
@@ -1568,8 +1609,39 @@ greeter() {
         say "$GREETER is not installed; signing in automatically instead"
         GREETER=auto ;;
     esac
+    # Automatic sign-in goes through greetd. An image that brings Phosh without it (Manjaro ARM
+    # Phosh, whose own setup program would have enabled phosh.service) is started through that
+    # unit instead, as the same user and through a22x-shell; nothing is downloaded for it
+    # (2026-11-12, on the phone: "unit greetd.service does not exist", and a text login).
+    if ! greetd_installed && phosh_unit_file >/dev/null; then
+        case " $SHELLS " in
+        " phosh "*)
+            say "this image has no greetd: Phosh starts through its own phosh.service"
+            phosh_unit "$login"
+            use_display_manager phosh.service
+            return ;;
+        esac
+    fi
     greetd_write "$login" /usr/bin/a22x-shell "$login"
     use_display_manager greetd.service
+}
+
+greetd_installed() {
+    command -v greetd >/dev/null 2>&1 || [ -f /usr/lib/systemd/system/greetd.service ] || [ -f /lib/systemd/system/greetd.service ]
+}
+
+phosh_unit_file() {
+    for unit in /etc/systemd/system/phosh.service /usr/lib/systemd/system/phosh.service /lib/systemd/system/phosh.service; do
+        [ -f "$unit" ] && { echo "$unit"; return 0; }
+    done
+    return 1
+}
+
+# The image's phosh.service signs in the first account and runs phosh-session; here it signs in
+# the account chosen in the recovery and runs the shell picked last, as greetd would.
+phosh_unit() {
+    mkdir -p /etc/systemd/system/phosh.service.d
+    printf '[Service]\nUser=%s\nExecStart=\nExecStart=/usr/bin/a22x-shell\n' "$1" > /etc/systemd/system/phosh.service.d/10-a22x.conf
 }
 
 # Switching shells. a22x-shell starts the shell this user picked last, else the main one; a
@@ -1693,6 +1765,7 @@ S
 
 session() {
     home_shims
+    gpu_driver_tool
     login=${NEW_USER:-${PHONE_USER:-user}}
     for group in video input render audio; do
         getent group "$group" >/dev/null && usermod -aG "$group" "$login"
@@ -1769,6 +1842,13 @@ auto|phrog|text|gdm|sddm|lightdm) GREETER=${GREETER:-auto} ;;
 esac
 desktop_packages=
 [ "$DESKTOP" = console ] || [ "$DESKTOP" = image ] || [ -n "${OFFLINE:-}" ] || desktop_packages=1
+# 2026-11-12, the owner: "why is phoc no longer built by itself for this phone?" The build ran
+# only where the desktop was installed here; an image that brings Phosh (Manjaro ARM Phosh, chosen
+# "as in the image") skipped it. Such an image gets the build too, when the network is there.
+phone_build=
+if [ -z "$desktop_packages" ] && [ "$DESKTOP" = phosh ] && phone_build_needed; then
+    phone_build=1
+fi
 if [ -n "$desktop_packages" ] || [ -n "${APPS:-}" ] || [ -n "${EXTRA_PACKAGES:-}" ]; then
     wifi || retry_later "Wi-Fi unavailable"
     swap_on || say "continuing without a temporary swap"
@@ -1786,8 +1866,30 @@ if [ -n "$desktop_packages" ] || [ -n "${APPS:-}" ] || [ -n "${EXTRA_PACKAGES:-}
     apps >> "$LOG" 2>&1 || say "some apps were not installed; see $LOG"
     extra_packages >> "$LOG" 2>&1 || say "some packages were not installed; see $LOG"
     audio >> "$LOG" 2>&1
-    [ -z "$desktop_packages" ] || build_for_phone
+    if [ -n "$desktop_packages" ]; then
+        build_for_phone
+    elif [ -n "$phone_build" ]; then
+        if refresh pacman >> "$LOG" 2>&1; then
+            build_for_phone
+        else
+            say "the system could not be brought up to date, so phoc's fix for this phone is not built; Phosh may not start (see $LOG)"
+        fi
+    fi
     swap_off
+elif [ -n "$phone_build" ]; then
+    # Nothing else needs the network: without it the system still gets its session, and says so.
+    if wifi; then
+        swap_on || say "continuing without a temporary swap"
+        say "building for this phone what the image's Phosh needs; this takes 5-10 minutes"
+        if refresh pacman >> "$LOG" 2>&1; then
+            build_for_phone
+        else
+            say "the system could not be brought up to date, so phoc's fix for this phone is not built; Phosh may not start (see $LOG)"
+        fi
+        swap_off
+    else
+        say "no network: phoc's fix for this phone is not built; Phosh may not start"
+    fi
 elif [ -f /etc/a22x/setup-script ]; then
     wifi || say "no network for the setup script"
 fi

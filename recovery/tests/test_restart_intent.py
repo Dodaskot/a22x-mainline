@@ -89,6 +89,35 @@ class RestartIntent(unittest.TestCase):
         self.assertIsNone(ri.userdata_mounts(device))  # not ext4 (Android's f2fs, an encrypted volume)
         self.assertIsNone(ri.userdata_mounts(self.root / 'missing'))
 
+    def test_android_is_told_apart_by_the_metadata_count(self):
+        """2026-11-10: Android's userdata is encrypted f2fs; its first-stage init mounts /metadata (ext4)."""
+        def ext4(name, count):
+            block = bytearray(4096)
+            block[1024 + 0x34:1024 + 0x36] = count.to_bytes(2, 'little')
+            block[1024 + 0x38:1024 + 0x3A] = (0xEF53).to_bytes(2, 'little')
+            (self.root / name).write_bytes(bytes(block))
+            return self.root / name
+        f2fs = self.root / 'f2fs'
+        f2fs.write_bytes(bytes(4096))
+        metadata = ext4('metadata', 41)
+        self.assertEqual(ri.system_mounts(f2fs, metadata), ('metadata', 41))
+        self.assertEqual(ri.system_mounts(ext4('linux', 7), metadata), ('userdata', 7))
+        self.assertEqual(ri.system_mounts(f2fs, f2fs), (None, None))
+        # Came back before Android mounted /metadata: once more. Android started: no retry.
+        ri.write(self.root, 'normal', T0, 41, 'metadata')
+        self.assertEqual(ri.check(self.root, T0 + 40, 41, 'metadata')['retry'], 'normal')
+        ri.write(self.root, 'normal', T0 + 100, 41, 'metadata')
+        self.assertEqual(ri.check(self.root, T0 + 130, 42, 'metadata')['reason'], 'system-started')
+        # A count of another volume is not compared.
+        ri.write(self.root, 'normal', T0 + 200, 41, 'metadata')
+        self.assertEqual(ri.check(self.root, T0 + 230, 41, 'userdata')['reason'], 'no-mount-count')
+
+    def test_the_age_comes_from_the_hardware_clock(self):
+        rtc = self.root / 'since_epoch'
+        rtc.write_text('3686515200\n')  # what this kernel reads after Android ran: 2086
+        self.assertEqual(ri.rtc_now(rtc), 3686515200)
+        self.assertGreater(ri.rtc_now(self.root / 'missing'), 0)
+
 
 class InitWiring(unittest.TestCase):
     """The recovery's /init checks once per start, before the interface, and writes the intent
@@ -108,6 +137,29 @@ class InitWiring(unittest.TestCase):
         self.assertIn('busy_wait /run/a22x-recovery/power-install.json', text)
         self.assertIn('busy_wait /run/a22x-recovery/power-systems.json', text)
         self.assertLess(text.index('busy_wait() {'), text.index('busy_wait /run/a22x-recovery/power-install.json'))
+
+
+class TorchOff(unittest.TestCase):
+    """torch_off from /init, run in a shell on a folder of LEDs: the flashlight goes dark before the
+    power action (2026-11-11), and no other LED is touched."""
+    def test_only_the_flash_led_goes_dark_before_the_power_action(self):
+        import subprocess
+        import tempfile
+        text = (ROOT / 'ramdisk/init').read_text()
+        self.assertLess(text.index('torch_off() {'), text.index('                torch_off\n'))
+        self.assertLess(text.index('                torch_off\n'), text.index('/bin/recovery-power "$target"'))
+        function = text[text.index('torch_off() {'):text.index('\n}\n', text.index('torch_off() {')) + 3]
+        with tempfile.TemporaryDirectory(dir=os.environ.get('TMPDIR')) as tmp:
+            leds = Path(tmp)
+            for name, value in (('white:flash', '9'), ('torch-1', '3'), ('green:status', '1')):
+                (leds / name).mkdir()
+                (leds / name / 'brightness').write_text(value + '\n')
+            r = subprocess.run(['sh', '-c', function + 'torch_off "$1"; echo rc=$?', 'sh', str(leds)], capture_output=True, text=True, timeout=30)
+            self.assertEqual((r.stdout.strip(), r.stderr), ('rc=0', ''))
+            self.assertEqual([(leds / n / 'brightness').read_text().strip() for n in ('white:flash', 'torch-1', 'green:status')], ['0', '0', '1'])
+            # A phone without such an LED: nothing to do, and no complaint.
+            r = subprocess.run(['sh', '-c', function + 'torch_off "$1"; echo rc=$?', 'sh', str(leds / 'none')], capture_output=True, text=True, timeout=30)
+            self.assertEqual((r.stdout.strip(), r.stderr), ('rc=0', ''))
 
 
 class BusyWait(unittest.TestCase):

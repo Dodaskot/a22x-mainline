@@ -49,7 +49,7 @@ int main(int argc,char**argv){
     copy(a->repositories[0],PATH_LEN,argv[7]);a->repository_count=1;
     CHECK(snprintf(a->workdir,sizeof(a->workdir),"%s/privateplans",argv[1])<(int)sizeof(a->workdir)&&private_workdir(a->workdir));
     screen(a,HOME);render(a);CHECK(!a->job.pid&&!a->install.known);
-    screen(a,OS_MENU);render(a);CHECK(test_press(a,A_INSTALL,50)&&settle_install(a)&&a->screen==INSTALL&&a->install.known);
+    screen(a,ANDROID_MENU);render(a);CHECK(test_press(a,A_INSTALL,50)&&settle_install(a)&&a->screen==INSTALL&&a->install.known);
     if(resume){
         CHECK(a->install.pending_count==1&&a->install.reboot_blocked&&!test_press(a,A_INSTALL_REVIEW,50));
         CHECK(test_press(a,A_INSTALL_PENDING,50)&&a->job.kind==J_INSTALL_STATUS&&settle_install(a));

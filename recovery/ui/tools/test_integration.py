@@ -72,10 +72,19 @@ def main():
                           "--render", str(previews / (profile + "-damaged-result.ppm")), expected=1)
             assert not damaged["ok"]
             assert {name: digest(root / "partitions" / (name + ".img")) for name in labels} == original
+            # 2026-11-11: the backup, damaged as it is, is renamed and deleted on its page; nothing else goes.
+            keep = root / "storage/sd/notes.txt"
+            keep.write_text("mine")
+            managed = run(*command, "--workflow", "manage-first",
+                          "--render", str(previews / (profile + "-manage-result.ppm")))
+            assert managed["ok"] and managed["backend_operation"] == "list"
+            assert [path.name for path in (root / "storage/sd").iterdir()] == ["notes.txt"] and keep.read_text() == "mine"
+            assert {name: digest(root / "partitions" / (name + ".img")) for name in labels} == original
             results.append({"profile": profile, "inventory": inventory, "backup": backup, "verify": verification,
                             "restore": restore, "restored_sha256": restored,
                             "retained_super_unchanged": True,
-                            "damaged_archive_ui_failed": True, "writes": "regular files only"})
+                            "damaged_archive_ui_failed": True, "renamed_and_deleted": managed,
+                            "writes": "regular files only"})
         run(str(UI / "a22x-recovery-ui"), "--device", "--workflow", "restore-first", expected=2)
     report = {"ok": True, "tested_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
               "ui_self_tests": run(str(UI / "a22x-recovery-ui"), "--self-test"),

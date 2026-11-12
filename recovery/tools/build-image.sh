@@ -7,11 +7,13 @@
 # Inputs, all below A22X_RECOVERY_WORK (default: the directory that holds this source tree):
 #   base/                  the qualified 0.5 build (BASE, see README "Building")
 #   kernel/                kernel (Image.gz + DTB packaging input) and wifi-modules.tar.xz (KERNEL_DIR)
-#   dtb-aliases/dtb        the device tree with the recovery's aliases
+#   dtb-aliases/dtb        the device tree with the recovery's aliases; since 0.6.177 its torch limit is
+#                          175 mA (led-max-microamp), as Samsung's factory torch; dtb-torch100 is the one before
 #   glibc-runtime/{lib,bin}, rt-wrappers/, https-runtime/fullroot/, helpers/a22x-wmt,
 #   wifi-static/wpa_supplicant (optional)
 #   platform-private/      captured from your own phone, never published:
 #                          platform-files.tar.xz, distro-platform-v2.json, build-update.json
+# PUBLIC=1 builds the image for any phone: see below.
 #
 # The script stops on the first error, and at the end compares every Python file and the
 # interface binary inside the image with this source tree.
@@ -43,6 +45,8 @@ if [ -f "$KERNEL_DIR/wifi-modules.tar.xz" ]; then
     add opt/a22x-recovery/catalog.json "$S/catalog.json"
     add opt/a22x-recovery/openpgp.py "$S/openpgp.py"
     add opt/a22x-recovery/identity_backup.py "$S/identity_backup.py"
+    add opt/a22x-recovery/partition_archive.py "$S/partition_archive.py"
+    add opt/a22x-recovery/screenshot.py "$S/screenshot.py"
     ADD+=(--replace "opt/a22x-recovery/ssh_service.py=$S/ssh_service.py")
     add opt/a22x-recovery/keys/archlinuxarm.asc "$S/keys/archlinuxarm.asc"
     add opt/a22x-recovery/keys/ubuntu-cloud.asc "$S/keys/ubuntu-cloud.asc"
@@ -54,7 +58,21 @@ if [ -f "$KERNEL_DIR/wifi-modules.tar.xz" ]; then
     ADD+=(--link etc/ssl/cert.pem=certs/ca-certificates.crt)
 fi
 add opt/a22x-recovery/platform/platform-files.tar.xz "$PRIVATE/platform-files.tar.xz"
+# APatch (2026-11-11): KernelPatch's kptools as apatch/build-kptools.sh builds it from source (the
+# APK's own needs Android's linker) and KernelPatch's kpimg as released, the one in the APatch APK.
+if [ -x apatch/out/kptools-aarch64 ] && [ -f apatch/out/kpimg ]; then
+    echo "eb2e3d16fe69410150efcf6f9425baf8cad9ac0c39f051fc8b40ce57c7143adb  apatch/out/kpimg" | sha256sum -c --quiet -
+    add opt/a22x-recovery/apatch/kptools apatch/out/kptools-aarch64
+    add opt/a22x-recovery/apatch/kpimg apatch/out/kpimg
+fi
 [ -f wifi-static/wpa_supplicant ] && add opt/a22x-recovery/platform/wpa_supplicant wifi-static/wpa_supplicant
+# An image for any phone (PUBLIC=1, 2026-11-11): no SSH key is built in, so a computer is let in only
+# by the request on the phone's screen; PRIVATE then names platform files whose Bluetooth address is
+# zeros (platform/conn-start.sh makes one from the phone's own storage chip).
+if [ "${PUBLIC:-}" = 1 ]; then
+    : > build-no-keys
+    ADD+=(--replace "etc/a22x-recovery/authorized_keys=build-no-keys")
+fi
 
 rm -rf "build-v06-$NN" build-themes
 mkdir build-themes
@@ -72,12 +90,14 @@ python3 -B "$S/tools/build_v06_image.py" --base "$BASE" --output "build-v06-$NN"
     --replace "$R/distro.py=$S/distro.py" --replace "$R/install.py=$S/install.py" \
     --replace "$R/backend/linux_workflow.py=$S/backend/linux_workflow.py" \
     --replace "$R/backend/common.py=$S/backend/common.py" --replace "$R/backend/storage.py=$S/backend/storage.py" \
+    --replace "$R/backend/engine.py=$S/backend/engine.py" --replace "$R/backend/recoveryctl.py=$S/backend/recoveryctl.py" \
     --replace "etc/a22x-recovery/distro-platform.json=$PRIVATE/distro-platform-v2.json" \
     --add "$R/settings.py=$S/settings.py" --add "$R/themes.py=$S/themes.py" --add "$R/sysinfo.py=$S/sysinfo.py" \
     --add "$R/themes/beaver.theme=build-themes/beaver.theme" --add "$R/flash.py=$S/flash.py" \
     --add "$R/image_import.py=$S/image_import.py" --add "$R/a22x_adapter.py=$S/a22x_adapter.py" \
     --add "$R/platform/a22x-wmt=helpers/a22x-wmt" --add "$R/platform/conn-start.sh=$S/platform/conn-start.sh" \
     --add "$R/platform/a22x-firstboot.sh=$S/platform/a22x-firstboot.sh" --add "$R/adbd.py=$S/adbd.py" --add "$R/handoff.py=$S/handoff.py" --add "$R/bootimage.py=$S/bootimage.py" --add "$R/install_plan.py=$S/install_plan.py" --add "$R/restart_intent.py=$S/restart_intent.py" --add "$R/lp_metadata.py=$S/lp_metadata.py" \
+    --add "$R/samsung_firmware.py=$S/samsung_firmware.py" --add "$R/android_gsi.py=$S/android_gsi.py" --add "$R/android_rom.py=$S/android_rom.py" --add "$R/saved_boot.py=$S/saved_boot.py" --add "$R/zip_install.py=$S/zip_install.py" --add "$R/sdcard.py=$S/sdcard.py" --add "$R/sevenzip.py=$S/sevenzip.py" --add "$R/root.py=$S/root.py" --add "$R/clock.py=$S/clock.py" --add "$R/bcb.py=$S/bcb.py" --add "$R/android_log.py=$S/android_log.py" --replace "$R/management.py=$S/management.py" \
     --bytecode "$S/tools/python_bytecode_modules.txt" --link "$R/platform/busybox=/bin/busybox" \
     "${ADD[@]}" | tail -1 | cut -c1-90
 

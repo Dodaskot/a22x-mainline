@@ -30,6 +30,12 @@ msgstr "%.120s / %.24s / %s wolne"
 msgid "%s  /  from the catalog, %s download"
 msgstr "%s  /  z katalogu, pobieranie %s"
 
+msgid "%s %s is in BOOT. In Android, install the Magisk app that manages root: %s from github.com/topjohnwu/Magisk."
+msgstr "%s %s jest w BOOT. W Androidzie zainstaluj aplikację Magisk, która zarządza rootem: %s z github.com/topjohnwu/Magisk."
+
+msgid "%s (%s) is in BOOT. In Android, install the APatch app from github.com/bmax121/APatch and enter your SuperKey in it."
+msgstr "%s (%s) jest w BOOT. W Androidzie zainstaluj aplikację APatch z github.com/bmax121/APatch i wpisz w niej swój SuperKey."
+
 msgid "%s / %u history rows / basic ANSI"
 msgstr "%s / %u wierszy historii / podstawowy ANSI"
 
@@ -41,6 +47,9 @@ msgstr "Brak %s w cache"
 
 msgid "%s is not supported"
 msgstr "%s nie jest obsługiwane"
+
+msgid "%s on the phone differ from the copy. The bootloader locks them while the phone runs, so a restore leaves them as they are."
+msgstr "%s w telefonie różnią się od kopii. Bootloader blokuje je, gdy telefon działa, więc przywracanie zostawia je bez zmian."
 
 msgid "%s was written and read back. Every byte matches the image.%s"
 msgstr "%s zapisano i odczytano. Każdy bajt zgadza się z obrazem.%s"
@@ -54,14 +63,23 @@ msgstr "%s, hasło z aplikacji"
 msgid "%u apps chosen"
 msgstr "Wybrano aplikacji: %u"
 
+msgid "%u GiB"
+msgstr "%u GiB"
+
 msgid "%u Hz display mode is active."
 msgstr "Aktywny tryb ekranu %u Hz."
 
 msgid "%u of %u partitions, %s"
 msgstr "%u z %u partycji, %s"
 
+msgid "%u partitions written and checked. userdata is ready for Android, and this recovery stays. The first start of Android takes several minutes."
+msgstr "Zapisano i sprawdzono partycje: %u. userdata jest gotowe dla Androida, a Recovery zostaje. Pierwsze uruchomienie Androida trwa kilka minut."
+
 msgid "%u partitions, %s"
-msgstr "%u partycji, %s"
+msgstr "Partycje: %u, %s"
+
+msgid "%u partitions, %s. Every checksum matches."
+msgstr "Partycje: %u, %s. Wszystkie sumy kontrolne się zgadzają."
 
 msgid "1 min"
 msgstr "1 min"
@@ -77,6 +95,18 @@ msgstr "30 s"
 
 msgid "5 min"
 msgstr "5 min"
+
+msgid "8 to 63 characters without spaces, with a letter and a digit. It is kept nowhere: remember it."
+msgstr "Od 8 do 63 znaków bez spacji, z literą i cyfrą. Nie jest nigdzie zapisywany: zapamiętaj go."
+
+msgid "A backup with this name already exists"
+msgstr "Kopia o tej nazwie już istnieje"
+
+msgid "A block node does not match the kernel"
+msgstr "Węzeł urządzenia blokowego nie zgadza się z jądrem"
+
+msgid "A bundle made on a computer, with its manifest"
+msgstr "Pakiet przygotowany na komputerze, z manifestem"
 
 msgid "A city keeps the clock right with summer time."
 msgstr "Miasto utrzymuje właściwy czas, także letni."
@@ -102,8 +132,77 @@ msgstr "Komputer prosi o dostęp ADB do tego recovery."
 msgid "A computer is asking to use this phone."
 msgstr "Komputer prosi o dostęp do tego telefonu."
 
+msgid "A computer is connected over SSH or SFTP: close that session, then try again"
+msgstr "Komputer jest połączony przez SSH lub SFTP: zamknij tę sesję i spróbuj ponownie"
+
+msgid "A copy holds BOOT, super and the other partitions of Android. Recovery and cache are in no copy: a restore leaves them as they are."
+msgstr "Kopia zawiera BOOT, super i pozostałe partycje Androida. Recovery i cache nie są w żadnej kopii: przywracanie zostawia je bez zmian."
+
+msgid "A custom ROM or a system image on an SD card or USB stick"
+msgstr "Własny ROM lub obraz systemu na karcie SD albo pendrivie"
+
+msgid "A factory reset was asked for in Android's settings: Android restarted into this recovery to have its data erased."
+msgstr "W ustawieniach Androida zażądano przywrócenia ustawień fabrycznych: Android uruchomił to recovery, aby skasować swoje dane."
+
+msgid "A FAT32 card cannot hold a file of 4 GiB or more"
+msgstr "Karta FAT32 nie pomieści pliku o rozmiarze 4 GiB lub większym"
+
+msgid "A file has no MD5 at its end; every image is still checked as it is read"
+msgstr "Plik nie ma MD5 na końcu; każdy obraz i tak jest sprawdzany podczas odczytu"
+
+msgid "A file in this ZIP does not match its checksum"
+msgstr "Plik w tym ZIP nie zgadza się ze swoją sumą kontrolną"
+
+msgid "A file of the backup does not match its checksum"
+msgstr "Plik kopii nie zgadza się ze swoją sumą kontrolną"
+
+msgid "A file of the backup has the wrong size"
+msgstr "Plik kopii ma nieprawidłowy rozmiar"
+
+msgid "A file of the backup is shorter than recorded"
+msgstr "Plik kopii jest krótszy, niż zapisano"
+
+msgid "A firmware file beside the AP could not be read"
+msgstr "Nie udało się odczytać pliku firmware obok AP"
+
+msgid "A fixture medium has no usable id"
+msgstr "Nośnik testowy nie ma poprawnego identyfikatora"
+
+msgid "A fixture medium is a file or a loop device"
+msgstr "Nośnik testowy to plik albo urządzenie loop"
+
+msgid "A flashable ZIP"
+msgstr "ZIP do wgrania"
+
+msgid "A folder copy is restored whole."
+msgstr "Kopia w folderze jest przywracana w całości."
+
+msgid "A folder copy saves the replaced partitions beside itself first: mount this card with write access in Files."
+msgstr "Kopia w folderze najpierw zapisuje obok siebie zastępowane partycje: zamontuj tę kartę z zapisem w «Plikach»."
+
+msgid "A folder of images, made before archives"
+msgstr "Folder obrazów, zrobiony przed archiwami"
+
+msgid "A GSI starts with Samsung's BOOT and vendor: flash the Samsung firmware first. Installing formats userdata for Android."
+msgstr "GSI uruchamia się z BOOT i vendor Samsunga: najpierw wgraj firmware Samsunga. Instalacja formatuje userdata dla Androida."
+
 msgid "A GSI's system.img goes into system. When the image is larger, the partition grows into the free space of super; the other partitions stay as they are."
 msgstr "system.img z GSI trafia do system. Gdy obraz jest większy, partycja rośnie w wolnym miejscu super; pozostałe zostają bez zmian."
+
+msgid "A kernel (AnyKernel3)"
+msgstr "Jądro (AnyKernel3)"
+
+msgid "A logical partition: the size of the checked image"
+msgstr "Partycja logiczna: rozmiar sprawdzonego obrazu"
+
+msgid "A member got more bytes than its size"
+msgstr "Element archiwum dostał więcej bajtów, niż wynosi jego rozmiar"
+
+msgid "A module"
+msgstr "Moduł"
+
+msgid "A module needs Android data, which stays closed here: install it in the Magisk or APatch app"
+msgstr "Moduł potrzebuje danych Androida, które tutaj pozostają zamknięte: zainstaluj go w aplikacji Magisk lub APatch"
 
 msgid "A network name has 1 to 32 bytes"
 msgstr "Nazwa sieci ma od 1 do 32 bajtów"
@@ -114,20 +213,35 @@ msgstr "Nazwa sieci ma najwyżej 32 bajty."
 msgid "A new diagnostic archive will be written to this volume. Existing archives are retained."
 msgstr "Na ten wolumin zostanie zapisane nowe archiwum diagnostyczne. Istniejące archiwa pozostaną."
 
-msgid "A new folder A22xAndroidBackups gets each chosen partition and its checksum; empty space takes no room. userdata cannot hold it: a factory reset of Android erases it."
-msgstr "Nowy folder A22xAndroidBackups otrzyma każdą wybraną partycję i jej sumę kontrolną; pusta przestrzeń nie zajmuje miejsca. Nie na userdata: przywrócenie ustawień fabrycznych Androida ją kasuje."
-
 msgid "A new folder A22xIdentityBackups is written with every partition and its checksum. Keep it off the phone too: no image or firmware download contains it."
 msgstr "Zostanie zapisany nowy folder w A22xIdentityBackups z każdą partycją i jej sumą kontrolną. Przechowuj go też poza telefonem: żaden obraz ani firmware go nie zawiera."
 
+msgid "A new partition table for an SD card or a USB drive."
+msgstr "Nowa tablica partycji dla karty SD lub dysku USB."
+
+msgid "A new system formats it for Linux"
+msgstr "Nowy system sformatuje ją dla Linuksa"
+
 msgid "A new theme always spreads as a circle, unless animations are off."
 msgstr "Nowy motyw zawsze rozchodzi się kołem, chyba że animacje są wyłączone."
+
+msgid "A newer release came out since it was shown. Review again"
+msgstr "Od wyświetlenia ukazało się nowsze wydanie. Sprawdź ponownie"
 
 msgid "A package download did not pass its check."
 msgstr "Pobrany pakiet nie przeszedł weryfikacji."
 
 msgid "A package download failed in recovery."
 msgstr "Pobieranie pakietu w recovery nie powiodło się."
+
+msgid "A partition is unexpectedly large for this kind of backup"
+msgstr "Partycja jest nieoczekiwanie duża jak na ten rodzaj kopii"
+
+msgid "A partition label does not lead to a partition"
+msgstr "Etykieta partycji nie prowadzi do partycji"
+
+msgid "A partition table: it would repartition the phone"
+msgstr "Tablica partycji: podzieliłaby telefon na nowo"
 
 msgid "A private RAM directory is required for this installation plan."
 msgstr "Ten plan instalacji wymaga prywatnego katalogu w RAM."
@@ -144,6 +258,9 @@ msgstr "W tym recovery nie ma zakwalifikowanego profilu fabrycznego."
 msgid "A required rootfs directory is missing or symlinked"
 msgstr "Brakuje wymaganego katalogu systemu głównego lub jest dowiązaniem"
 
+msgid "A reset restores the default theme, terminal colours, animation, navigation, vibration, screen timeout, brightness and refresh rate. The language, time zone, password and lock, Wi-Fi networks and keys stay."
+msgstr "Reset przywraca domyślny motyw, kolory terminala, animację, nawigację, wibracje, czas wygaszania ekranu, jasność i częstotliwość odświeżania. Język, strefa czasowa, hasło i blokada, sieci Wi-Fi i klucze zostają."
+
 msgid "A running shell was not confirmed. No additional session was started."
 msgstr "Nie potwierdzono działającej powłoki. Nie uruchomiono kolejnej sesji."
 
@@ -153,11 +270,20 @@ msgstr "Skrypt konfiguracji może mieć najwyżej 1 MiB"
 msgid "A setup script can be at most 1 MiB."
 msgstr "Skrypt konfiguracji może mieć najwyżej 1 MiB."
 
+msgid "A swap partition of this card is in use"
+msgstr "Partycja wymiany tej karty jest w użyciu"
+
 msgid "A system image on a USB stick or SD card"
 msgstr "Obraz systemu na pendrivie lub karcie SD"
 
 msgid "A text login for a USB or Bluetooth keyboard. It starts the shell picked last."
 msgstr "Logowanie tekstowe dla klawiatury USB lub Bluetooth. Uruchamia ostatnio wybraną powłokę."
+
+msgid "A tile icon would be too hard to read"
+msgstr "Ikona kafelka byłaby zbyt trudna do odczytania"
+
+msgid "A tool that makes filesystems is missing"
+msgstr "Brakuje narzędzia do tworzenia systemów plików"
 
 msgid "A touch login made of Phosh, with the on-screen keyboard and a list of the shells."
 msgstr "Logowanie dotykowe oparte na Phosh, z klawiaturą ekranową i listą powłok."
@@ -165,14 +291,20 @@ msgstr "Logowanie dotykowe oparte na Phosh, z klawiaturą ekranową i listą pow
 msgid "A touch login made of Phosh, with the on-screen keyboard and a list of the shells. Arch builds it on the phone: 30-40 minutes more."
 msgstr "Logowanie dotykowe oparte na Phosh, z klawiaturą ekranową i listą powłok. Arch buduje je na telefonie: 30-40 minut dłużej."
 
+msgid "A whole volume"
+msgstr "Cały wolumin"
+
 msgid "A Wi-Fi password has 8 to 63 characters"
 msgstr "Hasło Wi-Fi ma od 8 do 63 znaków"
 
 msgid "A Wi-Fi password has 8 to 63 characters."
 msgstr "Hasło Wi-Fi ma od 8 do 63 znaków."
 
-msgid "About %u min left"
-msgstr "Pozostało około %u min"
+msgid "a22x-recovery: the recovery's settings and keys, saved Wi-Fi networks, plans from the Android app and setup scripts."
+msgstr "a22x-recovery: ustawienia i klucze recovery, zapisane sieci Wi-Fi, plany z aplikacji Android i skrypty konfiguracji."
+
+msgid "About %u min"
+msgstr "Około %u min"
 
 msgid "About phone"
 msgstr "O telefonie"
@@ -204,6 +336,9 @@ msgstr "Dodaj system"
 msgid "Add a theme from a file"
 msgstr "Dodaj motyw z pliku"
 
+msgid "Add another ZIP"
+msgstr "Dodaj kolejny ZIP"
+
 msgid "Add colors from a file"
 msgstr "Dodaj kolory z pliku"
 
@@ -228,8 +363,26 @@ msgstr "Regulacja jasności."
 msgid "Africa"
 msgstr "Afryka"
 
+msgid "Afterwards: restart the system"
+msgstr "Potem: uruchom system ponownie"
+
+msgid "Afterwards: stay in recovery"
+msgstr "Potem: zostań w recovery"
+
 msgid "All"
 msgstr "Wszystkie"
+
+msgid "All phones"
+msgstr "Wszystkie telefony"
+
+msgid "All regions"
+msgstr "Wszystkie regiony"
+
+msgid "All types"
+msgstr "Wszystkie typy"
+
+msgid "All versions"
+msgstr "Wszystkie wersje"
 
 msgid "Allow"
 msgstr "Zezwól"
@@ -245,6 +398,9 @@ msgstr "Zezwól hasłem"
 
 msgid "Already fills the partition: %s"
 msgstr "Już zajmuje całą partycję: %s"
+
+msgid "Already the same: %s."
+msgstr "Już takie same: %s."
 
 msgid "Already unmounted"
 msgstr "Już odmontowano"
@@ -264,6 +420,9 @@ msgstr "Dozwolony komputer zostanie zapamiętany. Jeśli recovery ma hasło, ono
 msgid "An ARM64 ISO, disk image (raw, qcow2, VHD), Vagrant box or rootfs archive."
 msgstr "ISO, obraz dysku (raw, qcow2, VHD), pudełko Vagrant lub archiwum rootfs dla ARM64."
 
+msgid "An image inside a ZIP or a tar, by its name there (a ZIP: system.img or its only image by default)"
+msgstr "Obraz w ZIP lub tar, według jego nazwy (ZIP: domyślnie system.img lub jedyny obraz)"
+
 msgid "An incomplete import remains in /.a22x-systems/staging for inspection. No automatic cleanup is performed."
 msgstr "Niepełny import zostaje w /.a22x-systems/staging do sprawdzenia. Nie jest sprzątany automatycznie."
 
@@ -273,11 +432,20 @@ msgstr "Instalacja nie została ukończona"
 msgid "An installation prepared in the A22x app."
 msgstr "Instalacja przygotowana w aplikacji A22x."
 
+msgid "An installer ended with an error. Changed:"
+msgstr "Jeden z instalatorów zakończył się błędem. Zmieniono:"
+
 msgid "An interrupted RECOVERY write can require Samsung Download mode and external recovery flashing."
 msgstr "Przerwany zapis RECOVERY może wymagać trybu Samsung Download i wgrania recovery z zewnątrz."
 
+msgid "An SD card or a USB drive. A tap mounts it read-only."
+msgstr "Karta SD lub dysk USB. Dotknięcie montuje tylko do odczytu."
+
 msgid "An X11 login screen with an on-screen keyboard, made for Xfce."
 msgstr "Ekran logowania X11 z klawiaturą ekranową, przygotowany dla Xfce."
+
+msgid "and %u more"
+msgstr "i jeszcze %u"
 
 msgid "Android %s (%s)  /  %s  /  Linux %s"
 msgstr "Android %s (%s)  /  %s  /  Linux %s"
@@ -285,11 +453,44 @@ msgstr "Android %s (%s)  /  %s  /  Linux %s"
 msgid "Android archive"
 msgstr "Archiwum Androida"
 
+msgid "Android asks for a reset"
+msgstr "Android prosi o reset"
+
 msgid "Android boot image"
 msgstr "Obraz rozruchowy Androida"
 
+msgid "Android could not open its data and asks to erase it. When it failed only once, starting it again may be enough: forget the request and restart."
+msgstr "Android nie mógł otworzyć swoich danych i prosi o ich skasowanie. Jeśli zdarzyło się to raz, może wystarczyć ponowne uruchomienie: zapomnij prośbę i uruchom ponownie."
+
+msgid "Android creates it again"
+msgstr "Android utworzy ją ponownie"
+
+msgid "ANDROID DATA IS ERASED"
+msgstr "DANE ANDROIDA ZOSTANĄ USUNIĘTE"
+
+msgid "Android did not start"
+msgstr "Android nie wystartował"
+
+msgid "Android holds userdata: its copy is one archive on a card. A Linux backup needs a Linux system on this phone."
+msgstr "Na userdata jest Android: jego kopia to jedno archiwum na karcie. Kopia Linuksa wymaga systemu Linux na tym telefonie."
+
+msgid "Android image"
+msgstr "Obraz Androida"
+
+msgid "Android image installed"
+msgstr "Obraz Androida zainstalowany"
+
+msgid "Android images"
+msgstr "Obrazy Androida"
+
+msgid "Android kernel"
+msgstr "Jądro Androida"
+
 msgid "Android logical-partition container; mapping is not implemented"
 msgstr "Kontener partycji logicznych Androida; mapowanie nie jest zaimplementowane"
+
+msgid "Android matches the copy"
+msgstr "Android już odpowiada kopii"
 
 msgid "Android partitions"
 msgstr "Partycje Androida"
@@ -300,6 +501,12 @@ msgstr "Partycje Androida przywrócone i sprawdzone"
 msgid "Android partitions saved"
 msgstr "Partycje Androida zapisane"
 
+msgid "Android restarted the phone itself %s seconds after its start."
+msgstr "Android sam zrestartował telefon %s s po starcie."
+
+msgid "Android restored"
+msgstr "Android przywrócony"
+
 msgid "Android state requires its matching retained system/vendor firmware."
 msgstr "Stan Androida wymaga pasującego zachowanego firmware system/vendor."
 
@@ -309,17 +516,44 @@ msgstr "Obraz super Androida"
 msgid "Android system partitions"
 msgstr "Partycje systemowe Androida"
 
+msgid "Android uses userdata: the image is saved on the card %s"
+msgstr "Android zajmuje userdata: obraz zostanie zapisany na karcie %s"
+
 msgid "Android verified filesystem; writes are not qualified"
 msgstr "Zweryfikowany system plików Androida; zapis nie jest zakwalifikowany"
 
+msgid "Android's data is erased once when root is installed."
+msgstr "Przy instalacji roota dane Androida zostaną jednorazowo wymazane."
+
+msgid "Android's data needs userdata and metadata together: choose both, or neither"
+msgstr "Dane Androida wymagają userdata i metadata razem: wybierz obie albo żadnej"
+
+msgid "Android's kernel stopped %s seconds after its start."
+msgstr "Jądro Androida zatrzymało się %s s po starcie."
+
 msgid "Animations"
 msgstr "Animacje"
+
+msgid "Another Android is needed. Images made for older phones (Treble GSIs such as crDroid) start with this kernel, and so does Samsung's firmware."
+msgstr "Potrzebny jest inny Android. Obrazy dla starszych telefonów (Treble GSI, np. crDroid) startują z tym jądrem, tak samo firmware Samsunga."
+
+msgid "Another block device uses this card"
+msgstr "Inne urządzenie blokowe używa tej karty"
 
 msgid "Another phone"
 msgstr "Inny telefon"
 
 msgid "Antarctica"
 msgstr "Antarktyda"
+
+msgid "AOSP"
+msgstr "AOSP"
+
+msgid "APatch asks for it in its app in Android."
+msgstr "APatch pyta o niego w swojej aplikacji w Androidzie."
+
+msgid "APatch is in it"
+msgstr "zawiera APatch"
 
 msgid "App store"
 msgstr "Sklep"
@@ -345,6 +579,9 @@ msgstr "Arch"
 msgid "Architecture"
 msgstr "Architektura"
 
+msgid "archive"
+msgstr "archiwum"
+
 msgid "Archive: %s\nSize: %s\nSHA-256: %s"
 msgstr "Archiwum: %s\nRozmiar: %s\nSHA-256: %s"
 
@@ -357,6 +594,9 @@ msgstr "arm64"
 msgid "ARM64 root filesystems / shared /home / existing BOOT"
 msgstr "Główne systemy plików ARM64 / wspólny /home / obecny BOOT"
 
+msgid "Arrived over adb: %s"
+msgstr "Odebrano przez adb: %s"
+
 msgid "As in image"
 msgstr "Jak w obrazie"
 
@@ -365,6 +605,9 @@ msgstr "Jak w recovery"
 
 msgid "As in recovery (%s)"
 msgstr "Jak w recovery (%s)"
+
+msgid "As TWRP's Format Data and Samsung's recovery after Odin: Android sets up its encryption on its next start. The SD card is not touched."
+msgstr "Jak Format Data w TWRP i recovery Samsunga po Odinie: Android skonfiguruje szyfrowanie przy następnym uruchomieniu. Karta SD pozostaje nietknięta."
 
 msgid "Asia"
 msgstr "Azja"
@@ -402,11 +645,17 @@ msgstr "Autoryzowane klucze: %u  /  logowanie tylko kluczem"
 msgid "Automatic sign-in"
 msgstr "Automatyczne logowanie"
 
+msgid "AVAILABLE"
+msgstr "DOSTĘPNE"
+
 msgid "Available memory"
 msgstr "Dostępna pamięć"
 
 msgid "Available?"
 msgstr "Dostępny?"
+
+msgid "Back"
+msgstr "Wstecz"
 
 msgid "Back to display"
 msgstr "Wróć do ekranu"
@@ -447,11 +696,26 @@ msgstr "Kopię utworzono i sprawdzono."
 msgid "Backup completed and verified. Userdata remains offline."
 msgstr "Kopia ukończona i sprawdzona. Userdata pozostaje offline."
 
+msgid "Backup deleted"
+msgstr "Kopię usunięto"
+
 msgid "BACKUP DESTINATION"
 msgstr "MIEJSCE KOPII"
 
+msgid "Backup destination is read-only"
+msgstr "Miejsce na kopie jest tylko do odczytu"
+
+msgid "Backup renamed"
+msgstr "Nazwę kopii zmieniono"
+
+msgid "Backup saved"
+msgstr "Kopia zapisana"
+
 msgid "BACKUP SOURCE"
 msgstr "ŹRÓDŁO KOPII"
+
+msgid "Backup verified"
+msgstr "Kopia sprawdzona"
 
 msgid "Backups will be saved to the USB stick"
 msgstr "Kopie będą zapisywane na pendrive"
@@ -465,6 +729,9 @@ msgstr "Bateria"
 msgid "Beaver"
 msgstr "Bóbr"
 
+msgid "BEFORE INSTALLING"
+msgstr "PRZED INSTALACJĄ"
+
 msgid "Beside the current Linux"
 msgstr "Obok obecnego Linuksa"
 
@@ -477,11 +744,35 @@ msgstr "Rozmycie"
 msgid "Board revision"
 msgstr "Rewizja płyty"
 
+msgid "BOOT"
+msgstr "BOOT"
+
 msgid "Boot + used ext4 blocks\nSave the Linux kernel and root filesystem offline."
 msgstr "Boot + zajęte bloki ext4\nZapisz offline jądro Linuksa i główny system plików."
 
 msgid "BOOT and allocated ext4 blocks are read and compressed. Existing files on the destination are retained."
 msgstr "BOOT i zajęte bloki ext4 są odczytywane i kompresowane. Istniejące pliki w miejscu docelowym zostają."
+
+msgid "BOOT gets the Linux kernel when the system is in place; the BOOT there now is kept on cache."
+msgstr "BOOT dostanie jądro Linux, gdy system będzie na miejscu; obecny BOOT zostaje na cache."
+
+msgid "BOOT holds an older Linux kernel than the one this recovery was made for. A new system gets the current one; the BOOT there is kept on cache."
+msgstr "W BOOT jest starsze jądro Linux niż to, dla którego zrobiono to recovery. Nowy system dostanie aktualne; obecny BOOT zostaje na cache."
+
+msgid "BOOT holds Android's kernel. Linux starts with its own: flash a Linux BOOT image for this phone before the installation."
+msgstr "W BOOT jest jądro Androida. Linux startuje z własnym: przed instalacją wgraj obraz Linux BOOT dla tego telefonu."
+
+msgid "BOOT holds Android's kernel. The Linux BOOT for this phone (32 MiB) is downloaded first and written when the new system is in place; Android's BOOT is kept on cache."
+msgstr "W BOOT jest jądro Androida. Linux BOOT dla tego telefonu (32 MiB) jest najpierw pobierany, a zapisywany, gdy nowy system jest już na miejscu; BOOT Androida zostaje na cache."
+
+msgid "BOOT holds Android's kernel. The Linux BOOT kept on this phone is written when the new system is in place; Android's BOOT is kept on cache."
+msgstr "W BOOT jest jądro Androida. Linux BOOT przechowywany na tym telefonie jest zapisywany, gdy nowy system jest już na miejscu; BOOT Androida zostaje na cache."
+
+msgid "BOOT holds no Linux kernel for this phone. Flash a Linux BOOT image first: Install, Flash a partition, boot"
+msgstr "W BOOT nie ma jądra Linuksa dla tego telefonu. Najpierw wgraj obraz Linux BOOT: «Instalacja», «Wgraj partycję», boot"
+
+msgid "BOOT holds the kernel of Android, and this phone keeps no Linux BOOT: join Wi-Fi so that it can be downloaded, or flash one in Flash a partition"
+msgstr "W BOOT jest jądro Androida, a ten telefon nie przechowuje Linux BOOT: połącz Wi-Fi, aby go pobrać, albo wgraj go w «Wgraj partycję»"
 
 msgid "BOOT identical / no BOOT write"
 msgstr "BOOT identyczny / bez zapisu BOOT"
@@ -513,8 +804,14 @@ msgstr "BOOT przywracany na końcu, po sprawdzeniu userdata"
 msgid "BOOT source"
 msgstr "Źródło BOOT"
 
+msgid "BOOT stays as it is, and a root in it with it. Until the data is erased or the request is forgotten, a restart of the system comes back here."
+msgstr "BOOT zostaje bez zmian, a z nim root w nim. Dopóki dane nie zostaną skasowane albo prośba zapomniana, restart systemu wraca tutaj."
+
 msgid "BOOT, DTBO, vbmeta and other images"
 msgstr "BOOT, DTBO, vbmeta i inne obrazy"
+
+msgid "BOOT, super and the others, and Android's data as it lies there"
+msgstr "BOOT, super i pozostałe oraz dane Androida tak, jak leżą"
 
 msgid "BOOT, super, dtbo, vbmeta and others of this phone."
 msgstr "BOOT, super, dtbo, vbmeta i inne tego telefonu."
@@ -540,6 +837,9 @@ msgstr "Przeglądaj i edytuj pliki"
 msgid "Browser"
 msgstr "Przeglądarka"
 
+msgid "Build"
+msgstr "Kompilacja"
+
 msgid "Building for this phone"
 msgstr "Budowanie dla tego telefonu"
 
@@ -554,6 +854,21 @@ msgstr "bajtów"
 
 msgid "Cable"
 msgstr "Kabel"
+
+msgid "Cache"
+msgstr "Cache"
+
+msgid "Cache could not be wiped."
+msgstr "Nie udało się wyczyścić cache."
+
+msgid "Cache has no room to keep this BOOT"
+msgstr "W cache brak miejsca na ten BOOT"
+
+msgid "Cache wiped"
+msgstr "Cache wyczyszczony"
+
+msgid "Cache, or a whole volume before an installation"
+msgstr "Cache albo cały wolumin przed instalacją"
 
 msgid "Calculator"
 msgstr "Kalkulator"
@@ -582,6 +897,12 @@ msgstr "Anuluj wybór"
 msgid "Cancelling..."
 msgstr "Anulowanie..."
 
+msgid "Card"
+msgstr "Karta"
+
+msgid "Card partitioned"
+msgstr "Karta podzielona na partycje"
+
 msgid "Catalog"
 msgstr "Katalog"
 
@@ -596,6 +917,9 @@ msgstr "Zmień tylko ten wpis, jeśli wciąż odpowiada sprawdzonej wersji. Ta a
 
 msgid "Change password"
 msgstr "Zmień hasło"
+
+msgid "Changed:"
+msgstr "Zmieniono:"
 
 msgid "Changes only this entry. No recursive mode changes."
 msgstr "Zmienia tylko ten wpis. Bez rekurencyjnej zmiany trybu."
@@ -618,6 +942,12 @@ msgstr "Sprawdzanie i naprawa: tylko ext4"
 msgid "Check backup integrity"
 msgstr "Sprawdź spójność kopii"
 
+msgid "Check it before you rely on it."
+msgstr "Sprawdź ją, zanim na niej polegasz."
+
+msgid "Check it, or write it back to the phone."
+msgstr "Sprawdź ją albo zapisz z powrotem na telefon."
+
 msgid "Check: errors repaired"
 msgstr "Sprawdzanie: błędy naprawione"
 
@@ -639,11 +969,17 @@ msgstr "Sprawdzanie stanu..."
 msgid "Checking the backup"
 msgstr "Sprawdzanie kopii"
 
+msgid "Checking the card"
+msgstr "Sprawdzanie karty"
+
 msgid "Checking the filesystem"
 msgstr "Sprawdzanie systemu plików"
 
 msgid "Checking the firmware"
 msgstr "Sprawdzanie oprogramowania"
+
+msgid "Checking the firmware's MD5"
+msgstr "Sprawdzanie MD5 firmware"
 
 msgid "Checking the image"
 msgstr "Sprawdzanie obrazu"
@@ -668,6 +1004,9 @@ msgstr "Układ"
 
 msgid "Chip made"
 msgstr "Data produkcji układu"
+
+msgid "Choose a folder inside %s"
+msgstr "Wybierz folder w %s"
 
 msgid "Choose a mounted volume again."
 msgstr "Ponownie wybierz zamontowany wolumin."
@@ -699,6 +1038,12 @@ msgstr "Wybierz plik motywu"
 msgid "Choose an already mounted writable volume."
 msgstr "Wybierz wolumin już zamontowany do zapisu."
 
+msgid "Choose an archive inside %s"
+msgstr "Wybierz archiwum w %s"
+
+msgid "Choose an image inside this firmware file"
+msgstr "Wybierz obraz w tym pliku firmware"
+
 msgid "Choose an image of the store"
 msgstr "Wybierz zapisany obraz"
 
@@ -726,6 +1071,12 @@ msgstr "Wybierz obraz"
 msgid "Choose next volume"
 msgstr "Następny wolumin"
 
+msgid "Choose partitions of this kind of backup"
+msgstr "Wybierz partycje tego rodzaju kopii"
+
+msgid "Choose partitions that this copy holds"
+msgstr "Wybierz partycje, które ta kopia zawiera"
+
 msgid "Choose storage"
 msgstr "Wybierz pamięć"
 
@@ -734,6 +1085,15 @@ msgstr "Najpierw wybierz nośnik"
 
 msgid "Choose system image"
 msgstr "Wybierz obraz systemu"
+
+msgid "Choose the AP file"
+msgstr "Wybierz plik AP"
+
+msgid "Choose the AP file of the firmware (AP_....tar.md5)"
+msgstr "Wybierz plik AP firmware (AP_....tar.md5)"
+
+msgid "Choose the AP file of the firmware again."
+msgstr "Wybierz ponownie plik AP firmware."
 
 msgid "Choose the microSD card or USB stick with the image; one that is not mounted opens read-only."
 msgstr "Wybierz kartę microSD lub pendrive z obrazem; niezamontowana otworzy się tylko do odczytu."
@@ -744,8 +1104,14 @@ msgstr "Wybierz następny tryb rozruchu i przytrzymaj, by potwierdzić."
 msgid "Choose the next boot mode."
 msgstr "Wybierz następny tryb rozruchu."
 
+msgid "Choose the ROM"
+msgstr "Wybierz ROM"
+
 msgid "Choose the system state to save."
 msgstr "Wybierz stan systemu do zapisania."
+
+msgid "Choose the ZIP"
+msgstr "Wybierz ZIP"
 
 msgid "Choose what to install on this phone."
 msgstr "Wybierz, co zainstalować."
@@ -761,6 +1127,9 @@ msgstr "Wybierz, gdzie zapisano skrypt."
 
 msgid "Choose where the theme file is stored."
 msgstr "Wybierz, gdzie leży plik motywu."
+
+msgid "Choose where the ZIP is stored."
+msgstr "Wybierz, gdzie leży ZIP."
 
 msgid "Chromium"
 msgstr "Chromium"
@@ -782,6 +1151,9 @@ msgstr "Nazwa kodowa"
 
 msgid "Colors removed"
 msgstr "Usunięto kolory"
+
+msgid "Comes with this recovery: nothing is downloaded"
+msgstr "Część tego recovery: nic nie jest pobierane"
 
 msgid "Command running / it continues after you exit"
 msgstr "Polecenie działa / będzie działać po wyjściu"
@@ -843,14 +1215,23 @@ msgstr "Dalej"
 msgid "copied file"
 msgstr "skopiowany plik"
 
+msgid "Copies of Android on the SD card and USB drives."
+msgstr "Kopie Androida na karcie SD i dyskach USB."
+
 msgid "Copy and rename require a new destination. Delete removes a regular file or an empty folder."
 msgstr "Kopiowanie i zmiana nazwy wymagają nowego celu. Usuwanie usuwa zwykły plik lub pusty folder."
+
+msgid "Copy deleted"
+msgstr "Kopię usunięto"
 
 msgid "Copy file"
 msgstr "Kopiuj plik"
 
 msgid "Copy folder"
 msgstr "Kopiuj folder"
+
+msgid "Copy of Android"
+msgstr "Kopia Androida"
 
 msgid "Copying the system files"
 msgstr "Kopiowanie plików systemu"
@@ -873,6 +1254,9 @@ msgstr "Utwórz pusty ext4"
 msgid "Create this text file. An existing file will not be overwritten."
 msgstr "Utwórz ten plik tekstowy. Istniejący plik nie zostanie nadpisany."
 
+msgid "Current"
+msgstr "Prąd"
+
 msgid "CURRENT DISPLAY MODE"
 msgstr "BIEŻĄCY TRYB EKRANU"
 
@@ -894,11 +1278,20 @@ msgstr "Obecny userdata zgadza się z kopią. BOOT jest powiązany z pierwotną 
 msgid "Currently mounted"
 msgstr "Obecnie zamontowano"
 
+msgid "Custom ROM"
+msgstr "Własny ROM"
+
 msgid "Dark and calm, the classic look"
 msgstr "Ciemny i spokojny, klasyczny wygląd"
 
 msgid "Dark glass with northern lights"
 msgstr "Ciemne szkło z zorzą polarną"
+
+msgid "Data for Android"
+msgstr "Dane dla Androida"
+
+msgid "Data formatted for Android"
+msgstr "Dane sformatowane dla Androida"
 
 msgid "Date and time"
 msgstr "Data i godzina"
@@ -918,11 +1311,17 @@ msgstr "Usuń"
 msgid "Delete a saved system that is not running."
 msgstr "Usuń zapisany system, który nie jest uruchomiony."
 
+msgid "Delete the saved image"
+msgstr "Usuń zapisany obraz"
+
 msgid "Delete this image?"
 msgstr "Usunąć ten obraz?"
 
 msgid "Deleted"
 msgstr "Usunięto"
+
+msgid "Deleting a copy must be confirmed"
+msgstr "Usunięcie kopii trzeba potwierdzić"
 
 msgid "Deny"
 msgstr "Odmów"
@@ -966,6 +1365,12 @@ msgstr "Nie można teraz wyeksportować diagnostyki."
 msgid "Diagnostics exported"
 msgstr "Wyeksportowano diagnostykę"
 
+msgid "DID NOT START ON THIS PHONE"
+msgstr "NIE URUCHOMIŁ SIĘ NA TYM TELEFONIE"
+
+msgid "Did not start on this phone"
+msgstr "Nie uruchomił się na tym telefonie"
+
 msgid "Discard (hold)"
 msgstr "Odrzuć (przytrzymaj)"
 
@@ -999,11 +1404,17 @@ msgstr "Nie odłączaj telefonu ani nie wyjmuj nośników."
 msgid "Documents"
 msgstr "Dokumenty"
 
+msgid "DONE"
+msgstr "GOTOWE"
+
 msgid "Done"
 msgstr "Gotowe"
 
 msgid "Done: %u packages"
 msgstr "Gotowe: pakietów %u"
+
+msgid "Download"
+msgstr "Pobieranie"
 
 msgid "Download %s over Wi-Fi, checked against the catalog"
 msgstr "Pobieranie %s przez Wi-Fi, sprawdzane z katalogiem"
@@ -1011,11 +1422,23 @@ msgstr "Pobieranie %s przez Wi-Fi, sprawdzane z katalogiem"
 msgid "Download from the catalog"
 msgstr "Pobierz z katalogu"
 
+msgid "Download to the card (%s)"
+msgstr "Pobierz na kartę (%s)"
+
 msgid "Download to the phone"
 msgstr "Pobierz na telefon"
 
+msgid "Download to the phone (%s)"
+msgstr "Pobierz na telefon (%s)"
+
+msgid "Downloaded and checked first; each has a page for its installation."
+msgstr "Najpierw pobierane i sprawdzane; każdy ma stronę swojej instalacji."
+
 msgid "Downloading %s..."
 msgstr "Pobieranie %s..."
+
+msgid "Downloading the Linux BOOT"
+msgstr "Pobieranie Linux BOOT"
 
 msgid "Downloading the system image"
 msgstr "Pobieranie obrazu systemu"
@@ -1032,6 +1455,9 @@ msgstr "Każda powłoka jest instalowana z jej pakietami; ekran logowania przeł
 msgid "Each system keeps its own /etc and /var. Shared /home requires matching account IDs. A full Linux backup includes all slots."
 msgstr "Każdy system ma własne /etc i /var. Wspólny /home wymaga takich samych ID kont. Pełna kopia Linuksa obejmuje wszystkie sloty."
 
+msgid "Each ZIP's own script decides what is written. They can reach only these partitions:"
+msgstr "O tym, co zostanie zapisane, decyduje własny skrypt każdego ZIP-a. Sięgają tylko do tych partycji:"
+
 msgid "Edit text"
 msgstr "Edytuj tekst"
 
@@ -1047,8 +1473,11 @@ msgstr "EFS i IMEI albo BOOT, super i inne"
 msgid "EFS, IMEI and modem data of this phone."
 msgstr "EFS, IMEI i dane modemu tego telefonu."
 
-msgid "Elapsed %u:%02u"
-msgstr "Minęło %u:%02u"
+msgid "ELAPSED"
+msgstr "MINĘŁO"
+
+msgid "Elapsed %s"
+msgstr "Minęło: %s"
 
 msgid "Email"
 msgstr "Poczta"
@@ -1113,17 +1542,47 @@ msgstr "Wpisz hasło"
 msgid "Enter the recovery password."
 msgstr "Wpisz hasło recovery."
 
+msgid "Enter the SuperKey"
+msgstr "Wpisz SuperKey"
+
 msgid "Enter the Unix mode as four octal digits."
 msgstr "Podaj tryb Unix jako cztery cyfry ósemkowe."
 
 msgid "Erase userdata, then install from the internet or a file"
 msgstr "Wyczyść userdata, potem zainstaluj z internetu lub z pliku"
 
+msgid "Erase what is no longer needed. Nothing is erased before you hold the button."
+msgstr "Usuń to, co nie jest już potrzebne. Nic nie zostanie usunięte, zanim przytrzymasz przycisk."
+
+msgid "ERASED"
+msgstr "USUWANE"
+
 msgid "Erasing userdata"
 msgstr "Czyszczenie userdata"
 
+msgid "Erasing userdata removes every Linux system and every saved image."
+msgstr "Wymazanie userdata usuwa każdy system Linux i każdy zapisany obraz."
+
+msgid "Estimating the size"
+msgstr "Szacowanie rozmiaru"
+
 msgid "Europe"
 msgstr "Europa"
+
+msgid "Every partition already holds what the copy holds: nothing was written."
+msgstr "Każda partycja zawiera już to samo co kopia: niczego nie zapisano."
+
+msgid "Everything else on cache is deleted: update packages, logs and temporary files."
+msgstr "Wszystko inne w cache zostanie usunięte: pakiety aktualizacji, dzienniki i pliki tymczasowe."
+
+msgid "Everything is checked as it is read and read back after writing. A Linux BOOT is kept on cache first. It takes about ten minutes; then restart into Android."
+msgstr "Wszystko jest sprawdzane podczas odczytu i odczytywane ponownie po zapisie. Najpierw BOOT Linuksa zostaje zachowany w cache. Trwa to około dziesięciu minut; potem uruchom ponownie w Androidzie."
+
+msgid "Everything is checked as it is read and read back after writing. It takes a few minutes; then restart into Android."
+msgstr "Wszystko jest sprawdzane podczas odczytu i odczytywane ponownie po zapisie. Trwa to kilka minut; potem uruchom ponownie w Androidzie."
+
+msgid "Everything on this card is erased: its partitions, systems and files."
+msgstr "Wszystko na tej karcie zostanie usunięte: partycje, systemy i pliki."
 
 msgid "Everything on userdata is replaced by this image"
 msgstr "Cała zawartość userdata zostanie zastąpiona tym obrazem"
@@ -1164,11 +1623,17 @@ msgstr "Obraz systemu plików F2FS"
 msgid "Fade"
 msgstr "Zanikanie"
 
+msgid "failed"
+msgstr "błąd"
+
 msgid "February"
 msgstr "lutego"
 
 msgid "Fedora"
 msgstr "Fedora"
+
+msgid "FILE"
+msgstr "PLIK"
 
 msgid "File"
 msgstr "Plik"
@@ -1191,8 +1656,23 @@ msgstr "PRZESYŁANIE PLIKÓW / MTP"
 msgid "Files"
 msgstr "Pliki"
 
+msgid "FILES (FAT32)"
+msgstr "PLIKI (FAT32)"
+
+msgid "Files (FAT32)"
+msgstr "Pliki (FAT32)"
+
 msgid "Files / mounts"
 msgstr "Pliki / montowanie"
+
+msgid "FILES, IN THIS ORDER"
+msgstr "PLIKI, W TEJ KOLEJNOŚCI"
+
+msgid "Files, Linux and swap on an SD card"
+msgstr "Pliki, Linux i wymiana na karcie SD"
+
+msgid "Files: %s  /  %s to write"
+msgstr "Pliki: %s  /  do zapisu %s"
 
 msgid "FILESYSTEM"
 msgstr "SYSTEM PLIKÓW"
@@ -1215,17 +1695,32 @@ msgstr "Najpierw dokończ niedokończoną instalację"
 msgid "Finished"
 msgstr "Zakończono"
 
+msgid "finished"
+msgstr "gotowe"
+
+msgid "Finishing the archive"
+msgstr "Kończenie archiwum"
+
 msgid "Finishing the installation"
 msgstr "Kończenie instalacji"
 
 msgid "Firmware not reported"
 msgstr "Firmware nie zgłoszony"
 
+msgid "Firmware of the bootloader chain stays as it is"
+msgstr "Firmware łańcucha rozruchu zostaje bez zmian"
+
 msgid "Firmware or service partition; file access is not admitted"
 msgstr "Partycja firmware lub serwisowa; dostęp do plików niedozwolony"
 
+msgid "FITS THIS PHONE"
+msgstr "PASUJE DO TEGO TELEFONU"
+
 msgid "Fixed offset (%s)"
 msgstr "Stałe przesunięcie (%s)"
+
+msgid "Fixtures run script installers only"
+msgstr "Środowiska testowe uruchamiają tylko instalatory-skrypty"
 
 msgid "Flash a partition"
 msgstr "Wgraj partycję"
@@ -1233,14 +1728,32 @@ msgstr "Wgraj partycję"
 msgid "Flash BOOT"
 msgstr "Wgraj BOOT"
 
+msgid "Flash it in Samsung Download mode, then come back to Root: root is installed and Android's data erased once."
+msgstr "Wgraj go w trybie Samsung Download, potem wróć do Root: root zostanie zainstalowany, a dane Androida usunięte jeden raz."
+
+msgid "Flash it to BOOT"
+msgstr "Wgraj do BOOT"
+
+msgid "Flash it to BOOT now, or later."
+msgstr "Wgraj go do BOOT teraz lub później."
+
+msgid "Flash the Samsung firmware first: a GSI starts with Samsung's BOOT and vendor."
+msgstr "Najpierw wgraj firmware Samsunga: GSI uruchamia się z BOOT i vendor Samsunga."
+
 msgid "Flash the selected BOOT image"
 msgstr "Wgraj wybrany obraz BOOT"
+
+msgid "Flashlight"
+msgstr "Latarka"
 
 msgid "Flatpak"
 msgstr "Flatpak"
 
 msgid "Folder"
 msgstr "Folder"
+
+msgid "folder"
+msgstr "folder"
 
 msgid "Folder created"
 msgstr "Utworzono folder"
@@ -1254,11 +1767,35 @@ msgstr "Dla każdej instalowany jest pakiet nowego systemu."
 msgid "For the new system."
 msgstr "Dla nowego systemu."
 
+msgid "For this phone"
+msgstr "Dla tego telefonu"
+
 msgid "Forget"
 msgstr "Zapomnij"
 
+msgid "Forget the request"
+msgstr "Zapomnij prośbę"
+
+msgid "Format userdata and metadata for Android, as TWRP's Format Data"
+msgstr "Formatuj userdata i metadata dla Androida, jak Format Data w TWRP"
+
 msgid "Formatted"
 msgstr "Sformatowano"
+
+msgid "Formatted for Android instead, as Samsung's recovery does after Odin"
+msgstr "Zamiast tego formatowane dla Androida, jak robi to recovery Samsunga po Odinie"
+
+msgid "Formatted for Android: every Linux system and saved image is erased"
+msgstr "Formatowane dla Androida: każdy system Linux i każdy zapisany obraz zostaje usunięty"
+
+msgid "Formatted for Android: every Linux system, saved image and Android's own data"
+msgstr "Formatowane dla Androida: każdy system Linux, zapisany obraz i własne dane Androida"
+
+msgid "Formatting"
+msgstr "Formatowanie"
+
+msgid "Formatting data must be confirmed"
+msgstr "Formatowanie danych trzeba potwierdzić"
 
 msgid "Formatting erases every system and /home here. Android needs F2FS, Linux ext4."
 msgstr "Formatowanie usuwa wszystkie systemy i /home. Android wymaga F2FS, Linux ext4."
@@ -1268,6 +1805,9 @@ msgstr "Formatowanie usuwa wszystko z tego woluminu, także kopie."
 
 msgid "Formatting userdata"
 msgstr "Formatowanie userdata"
+
+msgid "Formatting userdata for Android"
+msgstr "Formatowanie userdata dla Androida"
 
 msgid "Free in super: %s"
 msgstr "Wolne w super: %s"
@@ -1311,11 +1851,23 @@ msgstr "GHz"
 msgid "Git"
 msgstr "Git"
 
+msgid "Global"
+msgstr "Globalny"
+
 msgid "GNOME locks its screen only when GDM signs in."
 msgstr "GNOME blokuje ekran tylko wtedy, gdy logowanie obsługuje GDM."
 
 msgid "GNOME's login screen with its on-screen keyboard."
 msgstr "Ekran logowania GNOME z klawiaturą ekranową."
+
+msgid "Google apps"
+msgstr "Aplikacje Google"
+
+msgid "Google's GSI with Google apps"
+msgstr "GSI Google z aplikacjami Google"
+
+msgid "Google's GSI, plain AOSP"
+msgstr "GSI Google, czysty AOSP"
 
 msgid "Graphite"
 msgstr "Grafit"
@@ -1328,6 +1880,12 @@ msgstr "Powiększanie do partycji"
 
 msgid "Grown to %s"
 msgstr "Powiększono do %s"
+
+msgid "GSI"
+msgstr "GSI"
+
+msgid "GSIs from the internet: choose the Android version and type"
+msgstr "GSI z internetu: wybierz wersję i typ Androida"
 
 msgid "history"
 msgstr "historia"
@@ -1359,6 +1917,9 @@ msgstr "Przytrzymaj 2 s: odczyt i zapis"
 msgid "Hold 2 seconds to share read-only"
 msgstr "Przytrzymaj 2 s: tylko odczyt"
 
+msgid "Hold 3 s: delete"
+msgstr "Przytrzymaj 3 s: usuń"
+
 msgid "Hold 3 seconds to delete"
 msgstr "Przytrzymaj 3 s, by usunąć"
 
@@ -1386,8 +1947,41 @@ msgstr "Przytrzymaj 3 s, by przełączyć"
 msgid "Hold 3 seconds to wipe"
 msgstr "Przytrzymaj 3 s, by wyczyścić"
 
+msgid "Hold 3 seconds: delete this copy"
+msgstr "Przytrzymaj 3 sekundy: usuń tę kopię"
+
+msgid "Hold 3 seconds: download and install"
+msgstr "Przytrzymaj 3 s: pobierz i zainstaluj"
+
+msgid "Hold 3 seconds: install"
+msgstr "Przytrzymaj 3 s: zainstaluj"
+
+msgid "Hold 3 seconds: reset the settings"
+msgstr "Przytrzymaj 3 sekundy: zresetuj ustawienia"
+
+msgid "Hold 3 seconds: restore Android"
+msgstr "Przytrzymaj 3 sekundy: przywróć Androida"
+
+msgid "Hold 5 seconds to format"
+msgstr "Przytrzymaj 5 sekund, aby sformatować"
+
+msgid "Hold 5 seconds to install"
+msgstr "Przytrzymaj 5 sekund, aby zainstalować"
+
 msgid "Hold 5 seconds to install stock"
 msgstr "Przytrzymaj 5 s, by zainstalować stock"
+
+msgid "Hold 5 seconds: erase and partition"
+msgstr "Przytrzymaj 5 sekund: wymaż i podziel"
+
+msgid "Hold 5 seconds: erase data, install root"
+msgstr "Przytrzymaj 5 s: usuń dane, zainstaluj roota"
+
+msgid "Hold 5 seconds: run the installer"
+msgstr "Przytrzymaj 5 s: uruchom instalator"
+
+msgid "Hold 5 seconds: run the installers"
+msgstr "Przytrzymaj 5 sekund: uruchom instalatory"
 
 msgid "Hold the button to save this exact snapshot. Moving outside cancels confirmation."
 msgstr "Przytrzymaj przycisk, aby zapisać dokładnie tę migawkę. Zjechanie z przycisku anuluje potwierdzenie."
@@ -1464,6 +2058,18 @@ msgstr "Włóż pendrive, a pojawi się tutaj sam."
 msgid "Insert an ext4 microSD, then tap Mount microSD."
 msgstr "Włóż microSD z ext4, a potem dotknij Zamontuj microSD."
 
+msgid "Insert an SD card or attach a USB drive, then read again."
+msgstr "Włóż kartę SD lub podłącz dysk USB i odczytaj ponownie."
+
+msgid "Insert an SD card or attach a USB drive: downloaded images are kept there."
+msgstr "Włóż kartę SD lub podłącz dysk USB: pobrane obrazy są tam przechowywane."
+
+msgid "Insert an SD card or attach a USB drive: while Android uses userdata, downloaded images are kept there"
+msgstr "Włóż kartę SD lub podłącz dysk USB: dopóki Android zajmuje userdata, pobrane obrazy są tam przechowywane"
+
+msgid "Insert the SD card or attach the USB drive that holds A22xAndroidBackups, then read again."
+msgstr "Włóż kartę SD lub podłącz dysk USB z folderem A22xAndroidBackups i odczytaj ponownie."
+
 msgid "Insert the USB stick again"
 msgstr "Włóż pendrive ponownie"
 
@@ -1497,9 +2103,6 @@ msgstr "Opcje instalacji"
 msgid "Install status"
 msgstr "Stan instalacji"
 
-msgid "Install stock firmware"
-msgstr "Zainstaluj firmware stock"
-
 msgid "Install system"
 msgstr "Zainstaluj system"
 
@@ -1527,11 +2130,26 @@ msgstr "Wynik instalacji"
 msgid "Installed over Wi-Fi: during the installation when recovery is connected, otherwise at the first start."
 msgstr "Instalowane przez Wi-Fi: podczas instalacji, gdy recovery jest połączone, inaczej przy pierwszym uruchomieniu."
 
+msgid "Installing a GSI must be confirmed"
+msgstr "Instalację GSI trzeba potwierdzić"
+
+msgid "Installing Android needs userdata for Android: every Linux system and saved image there is erased. This recovery stays, and so does the SD card."
+msgstr "Instalacja Androida wymaga userdata dla Androida: każdy system Linux i każdy zapisany tam obraz zostanie usunięty. Recovery zostaje, karta SD również."
+
 msgid "Installing apps"
 msgstr "Instalowanie aplikacji"
 
+msgid "Installing firmware must be confirmed"
+msgstr "Instalację firmware trzeba potwierdzić"
+
+msgid "Installing root must be confirmed"
+msgstr "Instalację roota trzeba potwierdzić"
+
 msgid "Installing the desktop"
 msgstr "Instalowanie środowiska"
+
+msgid "INSTEAD"
+msgstr "ZAMIAST TEGO"
 
 msgid "Internal storage"
 msgstr "Pamięć wewnętrzna"
@@ -1546,7 +2164,7 @@ msgid "It gets a root shell, copies files and can restart the phone."
 msgstr "Otrzyma powłokę root, będzie kopiować pliki i może uruchamiać telefon ponownie."
 
 msgid "It is ready: recovery has installed the desktop, apps and account. Switch to it in Systems to start it."
-msgstr "System jest gotowy: recovery zainstalowało środowisko, aplikacje i konto. Przełącz się na niego w „Systemach”, aby go uruchomić."
+msgstr "System jest gotowy: recovery zainstalowało środowisko, aplikacje i konto. Przełącz się na niego w «Systemach», aby go uruchomić."
 
 msgid "It is removed from the phone's memory. Installed systems are not affected."
 msgstr "Zostanie usunięty z pamięci telefonu. Zainstalowane systemy pozostaną bez zmian."
@@ -1554,8 +2172,23 @@ msgstr "Zostanie usunięty z pamięci telefonu. Zainstalowane systemy pozostaną
 msgid "It starts ready: recovery has installed the desktop, apps and account."
 msgstr "System uruchomi się gotowy: recovery zainstalowało środowisko, aplikacje i konto."
 
+msgid "Its Android supports this phone's vendor: Samsung's Android 12 vendor, level 5."
+msgstr "Ten Android obsługuje vendor tego telefonu: vendor Androida 12 od Samsunga, poziom 5."
+
 msgid "Its first start sets up the account, network, desktop and apps, then restarts once."
 msgstr "Przy pierwszym uruchomieniu skonfiguruje konto, sieć, pulpit i aplikacje, a potem raz uruchomi się ponownie."
+
+msgid "its installer is a program"
+msgstr "instalator to program"
+
+msgid "its installer is a script"
+msgstr "instalator to skrypt"
+
+msgid "ITS INSTALLER RUNS AS ROOT"
+msgstr "INSTALATOR DZIAŁA JAKO ROOT"
+
+msgid "Its reason: %s"
+msgstr "Jego powód: %s"
 
 msgid "Its root filesystem with its programs, /etc and /var is deleted. /home, the active system and BOOT stay. This cannot be undone."
 msgstr "Jego główny system plików z programami, /etc i /var zostanie usunięty. /home, aktywny system i BOOT zostają. Tego nie można cofnąć."
@@ -1602,8 +2235,17 @@ msgstr "Zachowaj poprzedni system do wycofania."
 msgid "Keep the verified Linux backup on the microSD card: Restore brings Linux back."
 msgstr "Zachowaj sprawdzoną kopię Linuksa na microSD: Przywracanie przywróci Linuksa."
 
+msgid "KEPT"
+msgstr "ZOSTAJE"
+
+msgid "Kept as it is"
+msgstr "Zostaje bez zmian"
+
 msgid "Kernel"
 msgstr "Jądro"
+
+msgid "Kernel and block geometry disagree"
+msgstr "Jądro i urządzenie blokowe podają różne rozmiary"
 
 msgid "Kernel and ramdisk"
 msgstr "Jądro i ramdisk"
@@ -1635,8 +2277,11 @@ msgstr "Wyjść bez zapisywania?"
 msgid "Leaving the button cancels the hold."
 msgstr "Zjechanie z przycisku anuluje."
 
-msgid "Less than a minute left"
-msgstr "Mniej niż minuta"
+msgid "LEFT"
+msgstr "POZOSTAŁO"
+
+msgid "Left as they are, locked by the bootloader: %s. Flash them in Download mode if Android does not start."
+msgstr "Pozostawione bez zmian, zablokowane przez bootloader: %s. Wgraj je w trybie Download, jeśli Android się nie uruchomi."
 
 msgid "Letters, digits, + . _ or -; at least two."
 msgstr "Litery, cyfry, + . _ lub -; co najmniej dwa."
@@ -1653,11 +2298,20 @@ msgstr "Jasne szkło na łagodnym gradiencie"
 msgid "LINK TEXT"
 msgstr "TEKST DOWIĄZANIA"
 
+msgid "Linux"
+msgstr "Linux"
+
 msgid "Linux %.85s / %.24s"
 msgstr "Linux %.85s / %.24s"
 
 msgid "Linux %s  /  %s"
 msgstr "Linux %s  /  %s"
+
+msgid "LINUX (EXT4)"
+msgstr "LINUX (EXT4)"
+
+msgid "Linux (ext4)"
+msgstr "Linux (ext4)"
 
 msgid "Linux / boot + rootfs"
 msgstr "Linux / boot + rootfs"
@@ -1713,6 +2367,45 @@ msgstr "Zablokowany"
 msgid "Logical partition in super"
 msgstr "Partycja logiczna w super"
 
+msgid "Looking for cards..."
+msgstr "Szukam kart..."
+
+msgid "Looking for copies on the cards..."
+msgstr "Szukam kopii na kartach..."
+
+msgid "Made for newer vendors, level 6 and up: it may not start here. You can try it: this recovery stays, and stock Android can be flashed again."
+msgstr "Zrobione dla nowszych vendorów, od poziomu 6: może się tu nie uruchomić. Możesz spróbować: Recovery zostaje, a stockowy Android można wgrać ponownie."
+
+msgid "Made for newer vendors: it may not start on this phone"
+msgstr "Zrobione dla nowszych vendorów: może się nie uruchomić na tym telefonie"
+
+msgid "Made on another phone"
+msgstr "Zrobiona na innym telefonie"
+
+msgid "Magisk"
+msgstr "Magisk"
+
+msgid "Magisk could not patch BOOT"
+msgstr "Magisk nie zdołał załatać BOOT"
+
+msgid "Magisk is in it"
+msgstr "zawiera Magisk"
+
+msgid "Magisk is not in the patched BOOT"
+msgstr "W załatanym BOOT nie ma Magiska"
+
+msgid "Magisk or APatch, into Android's BOOT"
+msgstr "Magisk lub APatch do BOOT Androida"
+
+msgid "Magisk or APatch, into Android's BOOT."
+msgstr "Magisk lub APatch do BOOT Androida."
+
+msgid "Magisk, a kernel or another flashable ZIP runs its own script"
+msgstr "Magisk, jądro lub inny ZIP do wgrania uruchamia własny skrypt"
+
+msgid "Magisk.apk"
+msgstr "Magisk.apk"
+
 msgid "mAh"
 msgstr "mAh"
 
@@ -1724,6 +2417,15 @@ msgstr "Główna powłoka: %s"
 
 msgid "Make a backup first if you have not already."
 msgstr "Najpierw zrób kopię, jeśli jeszcze jej nie masz."
+
+msgid "Making the partition for files"
+msgstr "Tworzenie partycji na pliki"
+
+msgid "Making the partition for Linux"
+msgstr "Tworzenie partycji dla Linuksa"
+
+msgid "Making the swap partition"
+msgstr "Tworzenie partycji wymiany"
 
 msgid "Manjaro"
 msgstr "Manjaro"
@@ -1742,6 +2444,12 @@ msgstr "Zgadza się z sumą kontrolną zapisaną razem z nim: %s"
 
 msgid "May"
 msgstr "maja"
+
+msgid "MAY NOT START"
+msgstr "MOŻE SIĘ NIE URUCHOMIĆ"
+
+msgid "May not start on this phone"
+msgstr "Może się nie uruchomić na tym telefonie"
 
 msgid "Measured archive"
 msgstr "Zmierzone archiwum"
@@ -1769,6 +2477,9 @@ msgstr "Menu i aplikacje nowego systemu. Miasto przełącza też na czas letni."
 
 msgid "Messages"
 msgstr "Wiadomości"
+
+msgid "microG"
+msgstr "microG"
 
 msgid "minimal"
 msgstr "minimalny"
@@ -1803,6 +2514,9 @@ msgstr "Zamontuj kartę SD lub pendrive z zapisem w Plikach i wróć."
 msgid "Mount read-only"
 msgstr "Zamontuj tylko do odczytu"
 
+msgid "Mount the card in Files to use it."
+msgstr "Zamontuj kartę w «Plikach», aby jej używać."
+
 msgid "Mount userdata"
 msgstr "Zamontuj userdata"
 
@@ -1824,6 +2538,9 @@ msgstr "Najpierw zamontuj userdata z zapisem: tam przechowywane są obrazy."
 msgid "Mount userdata with write access first: the installer needs it to check the space."
 msgstr "Najpierw zamontuj userdata z zapisem: instalator musi sprawdzić miejsce."
 
+msgid "Mount userdata with write access: downloaded images are kept there."
+msgstr "Zamontuj userdata z zapisem: pobrane obrazy są tam przechowywane."
+
 msgid "Mount with write access"
 msgstr "Zamontuj z zapisem"
 
@@ -1842,6 +2559,9 @@ msgstr "Zamontowano z zapisem"
 msgid "Mounted writable ext4 microSD required"
 msgstr "Wymagana microSD z ext4 zamontowana do zapisu"
 
+msgid "Mounted: tap to open"
+msgstr "Zamontowana: dotknij, by otworzyć"
+
 msgid "Music"
 msgstr "Muzyka"
 
@@ -1857,8 +2577,8 @@ msgstr "Wskaż partycję do zapisu"
 msgid "Navigation"
 msgstr "Nawigacja"
 
-msgid "Needed %s  /  available %s"
-msgstr "Potrzeba %s  /  dostępne %s"
+msgid "NEEDED"
+msgstr "POTRZEBA"
 
 msgid "Needed to change the protection."
 msgstr "Potrzebne do zmiany ochrony."
@@ -1886,6 +2606,9 @@ msgstr "Nowy folder"
 
 msgid "NEW MODE / OCTAL"
 msgstr "NOWY TRYB / ÓSEMKOWY"
+
+msgid "NEW NAME"
+msgstr "NOWA NAZWA"
 
 msgid "NEW OWNER"
 msgstr "NOWY WŁAŚCICIEL"
@@ -1917,14 +2640,23 @@ msgstr "Nowy użytkownik: %s"
 msgid "Next"
 msgstr "Dalej"
 
+msgid "Next card"
+msgstr "Następny nośnik"
+
 msgid "no"
 msgstr "nie"
+
+msgid "No answer from GitHub: connect Wi-Fi"
+msgstr "Brak odpowiedzi z GitHuba: połącz Wi-Fi"
 
 msgid "No apps chosen"
 msgstr "Nie wybrano aplikacji"
 
 msgid "No automatic replay. Partial partition writes are not atomic."
 msgstr "Bez automatycznego powtórzenia. Częściowe zapisy partycji nie są atomowe."
+
+msgid "No card found"
+msgstr "Nie znaleziono karty"
 
 msgid "No changed target is listed."
 msgstr "Nie wymieniono zmienionego celu."
@@ -1935,11 +2667,23 @@ msgstr "Obok obrazu nie zapisano sumy kontrolnej. Obraz jest ponownie sprawdzany
 msgid "No completed backups"
 msgstr "Brak ukończonych kopii"
 
+msgid "No copy of Android found"
+msgstr "Nie znaleziono kopii Androida"
+
 msgid "No copy of Android partitions on this volume."
 msgstr "Na tym woluminie nie ma kopii partycji Androida."
 
+msgid "NO COPY ON THE MOUNTED CARDS"
+msgstr "BRAK KOPII NA ZAMONTOWANYCH KARTACH"
+
+msgid "No CSC file beside the AP: prism and optics stay as they are"
+msgstr "Brak pliku CSC obok AP: prism i optics zostają bez zmian"
+
 msgid "No current executable plan is available for this operation."
 msgstr "Brak aktualnego planu wykonania dla tej operacji."
+
+msgid "No Google apps"
+msgstr "Bez aplikacji Google"
 
 msgid "No host key reported."
 msgstr "Brak klucza hosta."
@@ -1953,8 +2697,14 @@ msgstr "Nie ma jeszcze zapisanych obrazów. Pobierz obraz z katalogu albo skopiu
 msgid "No installed system on userdata"
 msgstr "Brak zainstalowanego systemu na userdata"
 
+msgid "No kernel was found in BOOT"
+msgstr "W BOOT nie znaleziono jądra"
+
 msgid "No link text returned"
 msgstr "Nie zwrócono tekstu dowiązania"
+
+msgid "No Linux: userdata holds Android"
+msgstr "Brak Linuksa: userdata zawiera Androida"
 
 msgid "No longer on its server"
 msgstr "Nie ma go już na serwerze"
@@ -1974,11 +2724,23 @@ msgstr "Brak sieci do sprawdzenia"
 msgid "No networks found. Search again, or choose Other network for a hidden one."
 msgstr "Nie znaleziono sieci. Wyszukaj ponownie lub wybierz Inna sieć dla ukrytej."
 
+msgid "No new backup folder name is free"
+msgstr "Nie ma wolnej nazwy dla nowego folderu kopii"
+
+msgid "No new backup name is free"
+msgstr "Nie ma wolnej nazwy dla nowej kopii"
+
 msgid "No package with this name."
 msgstr "Brak pakietu o tej nazwie."
 
 msgid "No partition inventory received."
 msgstr "Nie odebrano spisu partycji."
+
+msgid "No partition of this kind was found"
+msgstr "Nie znaleziono partycji tego rodzaju"
+
+msgid "No partitions"
+msgstr "Brak partycji"
 
 msgid "No power action selected."
 msgstr "Nie wybrano działania."
@@ -1986,11 +2748,20 @@ msgstr "Nie wybrano działania."
 msgid "No retry is started automatically. Inspect the backend result before another operation."
 msgstr "Żadne ponowienie nie startuje automatycznie. Sprawdź wynik backendu przed kolejną operacją."
 
+msgid "No room in RAM for the patch"
+msgstr "Brak miejsca w RAM na łatkę"
+
+msgid "no root"
+msgstr "bez roota"
+
 msgid "No saved system slots yet. Import a prepared bundle to keep the current Linux alongside another system."
 msgstr "Brak zapisanych slotów systemu. Zaimportuj przygotowany pakiet, aby zachować obecnego Linuksa obok innego systemu."
 
 msgid "No SD card is needed; the image stays saved after the installation."
 msgstr "Karta SD nie jest potrzebna; obraz pozostaje zapisany po instalacji."
+
+msgid "No SD card or USB drive"
+msgstr "Brak karty SD i dysku USB"
 
 msgid "No valid export reported"
 msgstr "Nie zgłoszono prawidłowego eksportu"
@@ -2025,6 +2796,12 @@ msgstr "Brak."
 msgid "Normal Linux boot is blocked"
 msgstr "Zwykły rozruch Linuksa jest zablokowany"
 
+msgid "Not Android's BOOT: install Android first"
+msgstr "To nie BOOT Androida: najpierw zainstaluj Androida"
+
+msgid "Not Android: flash the Samsung firmware first"
+msgstr "To nie Android: najpierw wgraj firmware Samsunga"
+
 msgid "Not available. Tap to choose storage"
 msgstr "Niedostępne. Dotknij, by wybrać pamięć"
 
@@ -2040,6 +2817,9 @@ msgstr "Nie połączono"
 msgid "Not for arm64"
 msgstr "Nie dla arm64"
 
+msgid "Not for this phone"
+msgstr "Nie dla tego telefonu"
+
 msgid "Not mountable"
 msgstr "Nie można zamontować"
 
@@ -2049,14 +2829,41 @@ msgstr "Nie zamontowano"
 msgid "Not mounted or not available"
 msgstr "Nie zamontowano lub niedostępne"
 
+msgid "Not mounted: tap to look for copies on it"
+msgstr "Niezamontowana: dotknij, by szukać"
+
+msgid "Not mounted: tap to mount and open"
+msgstr "Niezamontowana: dotknij, by otworzyć"
+
+msgid "Not now"
+msgstr "Nie teraz"
+
 msgid "Not read yet"
 msgstr "Jeszcze nie odczytano"
 
 msgid "not reported"
 msgstr "brak danych"
 
+msgid "not run"
+msgstr "nie uruchomiono"
+
+msgid "NOT WRITTEN"
+msgstr "NIEZAPISYWANE"
+
+msgid "Not written: unknown to this recovery"
+msgstr "Niezapisywane: nieznane dla Recovery"
+
+msgid "Nothing"
+msgstr "Nic"
+
+msgid "Nothing has been erased yet."
+msgstr "Nic jeszcze nie zostało usunięte."
+
 msgid "Nothing has been written yet."
 msgstr "Jeszcze nic nie zapisano."
+
+msgid "Nothing has run yet."
+msgstr "Nic jeszcze nie zostało uruchomione."
 
 msgid "Nothing is downloaded for the desktop."
 msgstr "Dla środowiska nic nie jest pobierane."
@@ -2112,20 +2919,53 @@ msgstr "wł."
 msgid "ON MICROSD"
 msgstr "NA MICROSD"
 
+msgid "On the card"
+msgstr "Na karcie"
+
+msgid "ON THE CARD NOW"
+msgstr "TERAZ NA KARCIE"
+
+msgid "On this Samsung, root needs verification off in vbmeta and Android data erased once"
+msgstr "Na tym Samsungu root wymaga wyłączonej weryfikacji w vbmeta i jednorazowego usunięcia danych Androida"
+
 msgid "On: a charger shows the battery"
 msgstr "Wł.: ładowanie pokazuje baterię"
+
+msgid "One compressed archive"
+msgstr "Jedno skompresowane archiwum"
+
+msgid "One compressed archive in A22xAndroidBackups holds every chosen partition and its checksum, and is read back. Recovery and cache are not in it. userdata cannot hold it: a factory reset of Android erases it."
+msgstr "Jedno skompresowane archiwum w A22xAndroidBackups zawiera każdą wybraną partycję z sumą kontrolną i jest odczytywane z powrotem. Recovery i cache w nim nie ma. userdata nie może go przechowywać: reset fabryczny Androida ją czyści."
 
 msgid "Only a freshly reviewed qualified Linux used-block plan can write these targets."
 msgstr "Tylko świeżo sprawdzony, zakwalifikowany plan zajętych bloków Linuksa może zapisać te cele."
 
+msgid "Only a loop device can stand in for a card"
+msgstr "W teście kartę może zastąpić tylko urządzenie loop"
+
+msgid "Only BOOT is kept"
+msgstr "Zachowywany jest tylko BOOT"
+
+msgid "Only cache is wiped this way. Erase other volumes in Files"
+msgstr "W ten sposób czyści się tylko cache. Inne woluminy usuń w Plikach"
+
+msgid "Only media with 512-byte sectors are partitioned here"
+msgstr "Tutaj dzielone są tylko nośniki z sektorami 512-bajtowymi"
+
 msgid "Only systemd distributions are supported by the current device adapter"
 msgstr "Obecny adapter urządzenia obsługuje tylko dystrybucje z systemd"
+
+msgid "Only the name changes: its files stay as they are."
+msgstr "Zmienia się tylko nazwa: pliki kopii zostają bez zmian."
 
 msgid "Only this reviewed plan can be started."
 msgstr "Można uruchomić tylko ten sprawdzony plan."
 
 msgid "Open"
 msgstr "Otwarta"
+
+msgid "Open %s for writing"
+msgstr "Otwórz %s do zapisu"
 
 msgid "Open as text"
 msgstr "Otwórz jako tekst"
@@ -2220,11 +3060,17 @@ msgstr "Strony przesuwają się w bok, bez rozmycia"
 msgid "PARTITION"
 msgstr "PARTYCJA"
 
+msgid "Partition a card"
+msgstr "Podziel kartę"
+
 msgid "Partition flashed"
 msgstr "Wgrano partycję"
 
 msgid "Partition restored"
 msgstr "Przywrócono partycję"
+
+msgid "Partitioning a card must be confirmed"
+msgstr "Podział karty trzeba potwierdzić"
 
 msgid "Partitions"
 msgstr "Partycje"
@@ -2234,6 +3080,9 @@ msgstr "Partycje już są zgodne z tą kopią"
 
 msgid "Partitions are unavailable."
 msgstr "Partycje niedostępne."
+
+msgid "PARTITIONS TO RESTORE"
+msgstr "PARTYCJE DO PRZYWRÓCENIA"
 
 msgid "Partitions to save"
 msgstr "Partycje do zapisania"
@@ -2273,6 +3122,9 @@ msgstr "Tożsamość telefonu"
 
 msgid "Phone identity saved"
 msgstr "Tożsamość telefonu zapisana"
+
+msgid "Phone memory"
+msgstr "Pamięć telefonu"
 
 msgid "Phone partitions"
 msgstr "Partycje telefonu"
@@ -2337,6 +3189,12 @@ msgstr "Przygotuj go ponownie w aplikacji albo odrzuć tutaj."
 msgid "Prepare userdata for Linux %s."
 msgstr "Przygotowanie userdata: %s Linuksa."
 
+msgid "Prepare vbmeta for Download mode"
+msgstr "Przygotuj vbmeta do trybu Download"
+
+msgid "Prepared stock bundle"
+msgstr "Przygotowany pakiet stockowy"
+
 msgid "Preparing"
 msgstr "Przygotowanie"
 
@@ -2370,6 +3228,9 @@ msgstr "Surowa partycja"
 msgid "Read"
 msgstr "Odczyt"
 
+msgid "Read again"
+msgstr "Odczytaj ponownie"
+
 msgid "Read and write"
 msgstr "Odczyt i zapis"
 
@@ -2382,8 +3243,14 @@ msgstr "Odczytywane z tego telefonu za każdym razem."
 msgid "Read only"
 msgstr "Tylko odczyt"
 
+msgid "Read the cards again"
+msgstr "Odczytaj karty ponownie"
+
 msgid "Read-only"
 msgstr "Tylko odczyt"
+
+msgid "read-only"
+msgstr "tylko odczyt"
 
 msgid "Read-only access"
 msgstr "Dostęp tylko do odczytu"
@@ -2405,6 +3272,12 @@ msgstr "Tylko odczyt: dotknij, aby włączyć zapis"
 
 msgid "Readback: screen %s, brightness %u%%. No command was repeated."
 msgstr "Odczyt: ekran %s, jasność %u%%. Żadne polecenie nie zostało powtórzone."
+
+msgid "Reading"
+msgstr "Odczyt"
+
+msgid "Reading BOOT and asking GitHub for the newest versions..."
+msgstr "Odczyt BOOT i pytanie GitHuba o najnowsze wersje..."
 
 msgid "Reading copies..."
 msgstr "Odczyt kopii..."
@@ -2433,8 +3306,14 @@ msgstr "Odczyt woluminów pamięci..."
 msgid "Reading terminal state..."
 msgstr "Odczyt stanu terminala..."
 
+msgid "Reading the card..."
+msgstr "Odczyt karty..."
+
 msgid "Reading the catalog..."
 msgstr "Odczyt katalogu..."
+
+msgid "Reading the firmware..."
+msgstr "Odczyt firmware..."
 
 msgid "Reading the partition back"
 msgstr "Odczyt kontrolny partycji"
@@ -2471,6 +3350,12 @@ msgstr "Uruchomić ponownie w recovery?"
 
 msgid "Recovery"
 msgstr "Recovery"
+
+msgid "Recovery and cache are in no copy and stay. The copy is checked first; only what differs is written, and each partition is read back."
+msgstr "Recovery i cache nie są w żadnej kopii i zostają. Najpierw kopia jest sprawdzana; zapisywane jest tylko to, co się różni, a każda partycja jest odczytywana z powrotem."
+
+msgid "Recovery and cache were not touched."
+msgstr "Recovery i cache nie zostały ruszone."
 
 msgid "Recovery copies the script into the new system and does not run it. Read it first: it gets full control of the new system."
 msgstr "Recovery kopiuje skrypt do nowego systemu i go nie uruchamia. Najpierw go przeczytaj: uzyska pełną kontrolę nad nowym systemem."
@@ -2592,6 +3477,12 @@ msgstr "Usuń"
 msgid "Remove password"
 msgstr "Usuń hasło"
 
+msgid "Remove root"
+msgstr "Usuń root"
+
+msgid "Remove root: flash the stock BOOT back"
+msgstr "Usuń roota: wgraj z powrotem fabryczny BOOT"
+
 msgid "Remove safely"
 msgstr "Bezpiecznie usuń"
 
@@ -2601,11 +3492,17 @@ msgstr "Usuń system"
 msgid "Remove this system"
 msgstr "Usuń ten system"
 
+msgid "Removed %u items and freed %s. The recovery's own folder stays: its settings, Wi-Fi networks, plans and scripts."
+msgstr "Usunięto elementów: %u, zwolniono %s. Własny folder recovery zostaje: ustawienia, sieci Wi-Fi, plany i skrypty."
+
 msgid "Removed themes are back"
 msgstr "Usunięte motywy wróciły"
 
 msgid "Rename"
 msgstr "Zmień nazwę"
+
+msgid "Rename the backup"
+msgstr "Zmień nazwę kopii"
 
 msgid "Renamed"
 msgstr "Zmieniono nazwę"
@@ -2633,6 +3530,12 @@ msgstr "Rozwiąż dowiązanie"
 
 msgid "RESOLVED INSIDE THIS VOLUME"
 msgstr "ROZWIĄZANO W TYM WOLUMINIE"
+
+msgid "Restart into Android"
+msgstr "Uruchom ponownie w Androidzie"
+
+msgid "Restart into Android. The first start takes several minutes."
+msgstr "Uruchom ponownie w Androidzie. Pierwsze uruchomienie trwa kilka minut."
 
 msgid "Restart into Samsung Download mode?"
 msgstr "Uruchomić w Samsung Download?"
@@ -2667,6 +3570,9 @@ msgstr "Przywróć partycje Androida"
 msgid "Restore BOOT last"
 msgstr "Przywróć BOOT na końcu"
 
+msgid "Restore completed"
+msgstr "Przywracanie zakończone"
+
 msgid "Restore filesystem blocks"
 msgstr "Przywróć bloki systemu plików"
 
@@ -2684,6 +3590,9 @@ msgstr "Przywróć poprzedni główny system plików z zapisanej transakcji. Wsp
 
 msgid "Restoring BOOT"
 msgstr "Przywracanie BOOT"
+
+msgid "Restoring identity partitions must be confirmed"
+msgstr "Przywracanie partycji trzeba potwierdzić"
 
 msgid "Restoring userdata"
 msgstr "Przywracanie userdata"
@@ -2751,6 +3660,9 @@ msgstr "Sprawdź dokładny cel, zanim przejdziesz dalej."
 msgid "Review the full source path before choosing it."
 msgstr "Sprawdź pełną ścieżkę źródła przed wyborem."
 
+msgid "Review the installation"
+msgstr "Przejrzyj instalację"
+
 msgid "Review userdata wipe"
 msgstr "Sprawdź czyszczenie userdata"
 
@@ -2760,6 +3672,27 @@ msgstr "Sprawdź czyszczenie"
 msgid "Roll back switch"
 msgstr "Wycofaj przełączanie"
 
+msgid "ROM from a file"
+msgstr "ROM z pliku"
+
+msgid "Root"
+msgstr "Root"
+
+msgid "Root goes into the BOOT of Android: install Android first"
+msgstr "Root trafia do BOOT Androida: najpierw zainstaluj Androida"
+
+msgid "Root installed"
+msgstr "Root zainstalowany"
+
+msgid "Root on this Samsung needs vbmeta with verification off, flashed in Download mode: prepare it first"
+msgstr "Root na tym Samsungu wymaga vbmeta z wyłączoną weryfikacją, wgranego w trybie Download: najpierw go przygotuj"
+
+msgid "Root on this Samsung needs vbmeta with verification off. The bootloader locks vbmeta while the phone runs: prepare it here, flash it in Download mode (Heimdall or Odin), then come back."
+msgstr "Root na tym Samsungu wymaga vbmeta z wyłączoną weryfikacją. Bootloader blokuje vbmeta, gdy telefon działa: przygotuj go tutaj, wgraj w trybie Download (Heimdall lub Odin) i wróć."
+
+msgid "Root on this Samsung needs verification off in vbmeta, and Android's data erased once, as the Magisk app does for Samsung. Later Magisk updates need no reset."
+msgstr "Root na tym Samsungu wymaga wyłączonej weryfikacji w vbmeta i jednorazowego usunięcia danych Androida, tak jak robi to aplikacja Magisk dla Samsunga. Późniejsze aktualizacje Magiska nie wymagają resetu."
+
 msgid "Run commands directly on this phone."
 msgstr "Uruchamiaj polecenia na tym telefonie."
 
@@ -2768,6 +3701,9 @@ msgstr "Działa"
 
 msgid "Running for"
 msgstr "Działa od"
+
+msgid "Running the installer of a ZIP must be confirmed"
+msgstr "Uruchomienie instalatora ZIP trzeba potwierdzić"
 
 msgid "Running the setup script"
 msgstr "Uruchamianie skryptu konfiguracji"
@@ -2787,14 +3723,32 @@ msgstr "Dane operatora Samsung"
 msgid "Samsung Download"
 msgstr "Samsung Download"
 
+msgid "Samsung firmware"
+msgstr "Firmware Samsunga"
+
+msgid "Samsung firmware, or Android images from the internet"
+msgstr "Firmware Samsunga lub obrazy Androida z internetu"
+
 msgid "Samsung region data"
 msgstr "Dane regionalne Samsung"
+
+msgid "Samsung's Android BOOT stays"
+msgstr "BOOT Androida od Samsunga zostaje"
+
+msgid "Samsung's BOOT %s (Android kernel %s) is kept on cache:"
+msgstr "BOOT Samsunga %s (jądro Androida %s) jest zachowany w cache:"
+
+msgid "Samsung's update data, not an image"
+msgstr "Dane aktualizacji Samsunga, nie obraz"
 
 msgid "Saturday"
 msgstr "sobota"
 
 msgid "Save a system snapshot"
 msgstr "Zapisz migawkę systemu"
+
+msgid "Save Android partitions to an SD card or a USB stick: a factory reset of Android erases userdata"
+msgstr "Zapisuj partycje Androida na karcie SD lub pendrivie: reset fabryczny Androida czyści userdata"
 
 msgid "Save or discard the editor buffer before preparing an offline operation."
 msgstr "Zapisz lub odrzuć bufor edytora przed przygotowaniem operacji offline."
@@ -2844,6 +3798,12 @@ msgstr "Zapisane obrazy"
 msgid "Saved in the phone's memory and checked, for installing later."
 msgstr "Zapisywane w pamięci telefonu po sprawdzeniu, do późniejszej instalacji."
 
+msgid "SAVED ON THE CARD"
+msgstr "ZAPISANO NA KARCIE"
+
+msgid "Saved on the card: %s"
+msgstr "Zapisano na karcie: %s"
+
 msgid "SAVED ON THE PHONE"
 msgstr "ZAPISANY NA TELEFONIE"
 
@@ -2883,17 +3843,32 @@ msgstr "WYGASZANIE EKRANU"
 msgid "Screenshot not saved"
 msgstr "Zrzut ekranu nie został zapisany"
 
+msgid "Screenshot saved in RAM until restart: no card or cache could take it"
+msgstr "Zrzut ekranu zapisano w RAM do restartu: ani karta, ani cache go nie przyjęły"
+
 msgid "Screenshot saved in RAM: no writable SD or USB"
 msgstr "Zrzut zapisany w RAM: brak SD lub USB z zapisem"
 
+msgid "Screenshot saved on cache, in a22x-recovery/screenshots"
+msgstr "Zrzut ekranu zapisano na cache, w a22x-recovery/screenshots"
+
+msgid "Screenshot saved to %s, in A22xScreenshots"
+msgstr "Zrzut ekranu zapisano na %s, w A22xScreenshots"
+
 msgid "Screenshot saved to A22xScreenshots"
 msgstr "Zrzut zapisany w A22xScreenshots"
+
+msgid "Screenshot: press Volume down and Power together. It is saved to A22xScreenshots on an SD card or a USB drive, else on cache."
+msgstr "Zrzut ekranu: naciśnij razem Głośność w dół i Zasilanie. Zapisuje się w A22xScreenshots na karcie SD lub dysku USB, a bez nich na cache."
 
 msgid "Scroll to the end before confirming."
 msgstr "Przewiń do końca przed potwierdzeniem."
 
 msgid "Scrollback"
 msgstr "Historia"
+
+msgid "SD card"
+msgstr "Karta SD"
 
 msgid "SD cards and USB sticks. Choose where backups go."
 msgstr "Karty SD i pendrive. Wybierz miejsce kopii."
@@ -2912,6 +3887,9 @@ msgstr "Wyszukiwanie sieci..."
 
 msgid "Searching the repositories..."
 msgstr "Przeszukiwanie repozytoriów..."
+
+msgid "Security patch"
+msgstr "Poprawka zabezpieczeń"
 
 msgid "Select a completed snapshot."
 msgstr "Wybierz ukończoną kopię."
@@ -3042,6 +4020,9 @@ msgstr "Spacja"
 msgid "Special file / blocked"
 msgstr "Plik specjalny / zablokowany"
 
+msgid "SPEED"
+msgstr "PRĘDKOŚĆ"
+
 msgid "SSH connection"
 msgstr "Połączenie SSH"
 
@@ -3060,11 +4041,17 @@ msgstr "SSH niedostępny"
 msgid "Start local shell"
 msgstr "Uruchom lokalną powłokę"
 
-msgid "Start the active Linux system"
-msgstr "Uruchom aktywny system Linux"
+msgid "Start the installed system: Linux or Android"
+msgstr "Uruchom zainstalowany system: Linux lub Android"
 
 msgid "Start this recovery again"
 msgstr "Uruchom to recovery ponownie"
+
+msgid "STARTED ON THIS PHONE"
+msgstr "URUCHOMIŁ SIĘ NA TYM TELEFONIE"
+
+msgid "Started on this phone"
+msgstr "Uruchomił się na tym telefonie"
 
 msgid "State"
 msgstr "Stan"
@@ -3072,11 +4059,32 @@ msgstr "Stan"
 msgid "Status unavailable"
 msgstr "Stan niedostępny"
 
+msgid "Stay in recovery (the system restarts in %u s)"
+msgstr "Zostań w recovery (restart za %u s)"
+
+msgid "STAYS"
+msgstr "ZOSTAJE"
+
 msgid "Step %u of %u"
 msgstr "Krok %u z %u"
 
 msgid "Stock Android"
 msgstr "Fabryczny Android"
+
+msgid "Stock Android from the AP and CSC files, as Odin flashes it"
+msgstr "Stockowy Android z plików AP i CSC, tak jak wgrywa go Odin"
+
+msgid "Stock Android installed"
+msgstr "Stockowy Android zainstalowany"
+
+msgid "Stock Android, a custom ROM, or an Android image from the internet."
+msgstr "Stockowy Android, własny ROM lub obraz Androida z internetu."
+
+msgid "Stock BOOT"
+msgstr "Stockowy BOOT"
+
+msgid "Stock BOOT kept"
+msgstr "Stockowy BOOT zachowany"
 
 msgid "Stock firmware from a prepared bundle."
 msgstr "Fabryczny firmware z przygotowanego pakietu."
@@ -3101,6 +4109,9 @@ msgstr "Zatrzymaj"
 
 msgid "Stop sharing"
 msgstr "Zatrzymaj udostępnianie"
+
+msgid "Stop sharing the card over USB first"
+msgstr "Najpierw zatrzymaj udostępnianie karty przez USB"
 
 msgid "Stop this operation?"
 msgstr "Zatrzymać tę operację?"
@@ -3132,8 +4143,26 @@ msgstr "Mocne"
 msgid "Sunday"
 msgstr "niedziela"
 
+msgid "super has no room for this system image."
+msgstr "W super nie ma miejsca na ten obraz system."
+
 msgid "super/"
 msgstr "super/"
+
+msgid "SUPERKEY"
+msgstr "SUPERKEY"
+
+msgid "SuperKey"
+msgstr "SuperKey"
+
+msgid "SuperKey entered: change it"
+msgstr "SuperKey wpisany: zmień"
+
+msgid "SWAP"
+msgstr "WYMIANA"
+
+msgid "Swap"
+msgstr "Wymiana"
 
 msgid "Swipe through the full source, backup and target list."
 msgstr "Przewiń pełną listę źródła, kopii i celów."
@@ -3183,11 +4212,23 @@ msgstr "Nie udało się odczytać systemów."
 msgid "Systems from the internet"
 msgstr "Systemy z internetu"
 
+msgid "Take Samsung's BOOT out of the firmware: the way back from a custom kernel"
+msgstr "Wyjmij BOOT Samsunga z firmware: droga powrotna od własnego jądra"
+
+msgid "Tap a card above: it is mounted read-only and searched. A copy is made in Backup, Phone partitions."
+msgstr "Dotknij karty powyżej: zostanie zamontowana tylko do odczytu i przeszukana. Kopię robi się w «Kopia zapasowa», «Partycje telefonu»."
+
+msgid "Tap a partition to leave it out."
+msgstr "Dotknij partycji, aby ją pominąć."
+
 msgid "Tap again to remove"
 msgstr "Dotknij ponownie, aby usunąć"
 
 msgid "Tap destination to cycle mounted writable volumes."
 msgstr "Dotknij celu, aby przełączać zamontowane zapisywalne woluminy."
+
+msgid "Tap leaves a partition out; userdata puts the data back."
+msgstr "Dotknij, aby pominąć; userdata przywraca dane."
 
 msgid "Tap New user to enter the password."
 msgstr "Dotknij «Nowy użytkownik», aby wpisać hasło."
@@ -3255,6 +4296,24 @@ msgstr "Logowanie tekstowe"
 msgid "Text saved. Reading the stored file."
 msgstr "Zapisano tekst. Odczyt pliku."
 
+msgid "The 7z archive ended early"
+msgstr "Archiwum 7z skończyło się za wcześnie"
+
+msgid "The 7z archive holds too many files"
+msgstr "Archiwum 7z zawiera zbyt wiele plików"
+
+msgid "The 7z archive is incomplete"
+msgstr "Archiwum 7z jest niekompletne"
+
+msgid "The 7z has no such image"
+msgstr "7z nie ma takiego obrazu"
+
+msgid "The 7z header is damaged"
+msgstr "Nagłówek 7z jest uszkodzony"
+
+msgid "The 7z holds no image or several: keep one image in it"
+msgstr "7z nie ma obrazu albo ma kilka: zostaw w nim jeden obraz"
+
 msgid "The action returned an incomplete or mismatched write receipt. Refresh installation status. Do not repeat the old plan."
 msgstr "Akcja zwróciła niepełne lub niezgodne potwierdzenie zapisu. Odśwież stan instalacji. Nie powtarzaj starego planu."
 
@@ -3264,8 +4323,38 @@ msgstr "Akcja zwróciła niepełne potwierdzenie. Odśwież i sprawdź rzeczywis
 msgid "The active mode is read again after each change."
 msgstr "Aktywny tryb jest odczytywany ponownie po każdej zmianie."
 
+msgid "The AP file has no super or no BOOT image."
+msgstr "Plik AP nie ma obrazu super lub BOOT."
+
+msgid "The APatch app in Android asks for this SuperKey."
+msgstr "Aplikacja APatch w Androidzie pyta o ten SuperKey."
+
+msgid "The archive could not be written"
+msgstr "Nie udało się zapisać archiwum"
+
+msgid "The archive has no manifest at its end: it is incomplete, or no copy made here"
+msgstr "Archiwum nie ma manifestu na końcu: jest niekompletne albo nie powstało tutaj"
+
+msgid "The archive holds a file its manifest does not list"
+msgstr "Archiwum zawiera plik, którego nie ma w jego manifeście"
+
+msgid "The archive holds something that is not a plain file"
+msgstr "Archiwum zawiera coś, co nie jest zwykłym plikiem"
+
 msgid "The archive is checked before the snapshot is marked complete. Moving outside the button cancels the hold."
 msgstr "Archiwum jest sprawdzane, zanim migawka zostanie oznaczona jako kompletna. Zjechanie z przycisku anuluje przytrzymanie."
+
+msgid "The archive is damaged"
+msgstr "Archiwum jest uszkodzone"
+
+msgid "The archive is not a plain file"
+msgstr "Archiwum nie jest zwykłym plikiem"
+
+msgid "The archive lacks a file its manifest lists"
+msgstr "W archiwum brakuje pliku, który jest w jego manifeście"
+
+msgid "The archive was not read to its end"
+msgstr "Archiwum nie zostało odczytane do końca"
 
 msgid "The audited phone platform profile is unavailable. Import and switching remain disabled."
 msgstr "Sprawdzony profil platformy telefonu jest niedostępny. Import i przełączanie pozostają wyłączone."
@@ -3282,14 +4371,26 @@ msgstr "Backend nie zwrócił prawidłowego wyniku powodzenia."
 msgid "The backend reported success."
 msgstr "Backend zgłosił powodzenie."
 
+msgid "The backup changed after it was checked"
+msgstr "Kopia zmieniła się po sprawdzeniu"
+
+msgid "The backup changed during the restore"
+msgstr "Kopia zmieniła się podczas przywracania"
+
 msgid "The backup does not fit on this storage. Choose one with more free space"
 msgstr "Kopia nie mieści się na tym nośniku. Wybierz taki, na którym jest więcej miejsca"
 
 msgid "The backup does not match the current Linux state."
 msgstr "Kopia nie zgadza się z obecnym stanem Linuksa."
 
+msgid "The backup file ended early"
+msgstr "Plik kopii skończył się za wcześnie"
+
 msgid "The backup matches the current Linux state."
 msgstr "Kopia zgadza się z obecnym stanem Linuksa."
+
+msgid "The backup name was taken meanwhile"
+msgstr "Nazwa kopii została w międzyczasie zajęta"
 
 msgid "The backup passed integrity verification."
 msgstr "Kopia przeszła weryfikację integralności."
@@ -3300,8 +4401,65 @@ msgstr "Urządzenie blokowe było już tylko do odczytu; to narzędzie tego nie 
 msgid "The block-level read-only guard changed; remount is required"
 msgstr "Zmieniła się blokada odczytu na poziomie bloków; wymagane ponowne montowanie"
 
+msgid "The BOOT in the firmware is damaged: its AVB hash does not match"
+msgstr "BOOT w firmware jest uszkodzony: jego skrót AVB się nie zgadza"
+
+msgid "The BOOT that was there is kept on cache:"
+msgstr "BOOT, który tam był, jest zachowany w cache:"
+
+msgid "The BOOT there is kept on cache before it is replaced. Magisk lives in the ramdisk and APatch in the kernel; their modules are installed in their apps in Android."
+msgstr "Obecny BOOT jest zachowywany w cache, zanim zostanie zastąpiony. Magisk siedzi w ramdysku, a APatch w jądrze; ich moduły instaluje się w ich aplikacjach w Androidzie."
+
+msgid "The bootloader chain is never written by this recovery"
+msgstr "Recovery nigdy nie zapisuje łańcucha rozruchu"
+
+msgid "The bootloader locks this partition while the phone runs: flash it in Samsung Download mode (Odin or Heimdall)"
+msgstr "Bootloader blokuje tę partycję, gdy telefon działa: wgraj ją w trybie Samsung Download (Odin lub Heimdall)"
+
 msgid "The bootloader, modem and calibration data are not listed and cannot be flashed here."
 msgstr "Bootloader, modem i dane kalibracji nie są tu pokazane i nie można ich tu wgrać."
+
+msgid "The bootloader, the modem and the partition table are never written here."
+msgstr "Bootloader, modem i tablica partycji nigdy nie są tu zapisywane."
+
+msgid "The bootloader, the modem, this recovery, Android's data and the recovery's settings on cache are out of its reach. The BOOT there is kept on cache first."
+msgstr "Bootloader, modem, to recovery, dane Androida i ustawienia recovery w cache są poza jego zasięgiem. Obecny BOOT jest najpierw zachowywany w cache."
+
+msgid "The card cannot be partitioned now. Read it again."
+msgstr "Karty nie można teraz podzielić. Odczytaj ją ponownie."
+
+msgid "The card cannot be read now."
+msgstr "Karty nie można teraz odczytać."
+
+msgid "The card changed after it was shown"
+msgstr "Karta zmieniła się po wyświetleniu"
+
+msgid "The card changed while it was opened"
+msgstr "Karta zmieniła się podczas otwierania"
+
+msgid "The card does not show the partitions that were written"
+msgstr "Karta nie pokazuje zapisanych partycji"
+
+msgid "The card helper did not return a result."
+msgstr "Pomocnik karty nie zwrócił wyniku."
+
+msgid "The card is mounted read-only as backup storage: disconnect it in Storage first"
+msgstr "Karta jest zamontowana tylko do odczytu jako magazyn kopii: najpierw odłącz ją w «Nośnikach»"
+
+msgid "The card is not open for writing yet: the button above opens it."
+msgstr "Karta nie jest jeszcze otwarta do zapisu: robi to przycisk powyżej."
+
+msgid "The card is too small for these partitions"
+msgstr "Karta jest za mała na te partycje"
+
+msgid "The card is too small to partition"
+msgstr "Karta jest za mała, by ją podzielić"
+
+msgid "The card is write-protected"
+msgstr "Karta jest zabezpieczona przed zapisem"
+
+msgid "The cards cannot be read now."
+msgstr "Kart nie można teraz odczytać."
 
 msgid "The catalog is empty in this recovery."
 msgstr "Katalog tego recovery jest pusty."
@@ -3323,6 +4481,12 @@ msgstr "Nie zwrócono pełnego tekstu UTF-8 ani skrótu pliku. Edycja jest wył�
 
 msgid "The compressed file is damaged"
 msgstr "Skompresowany plik jest uszkodzony"
+
+msgid "The copy changed after it was listed"
+msgstr "Kopia zmieniła się po wyświetleniu listy"
+
+msgid "The copy helper did not return a result."
+msgstr "Pomocnik kopii nie zwrócił wyniku."
 
 msgid "The current content will be saved to %s first."
 msgstr "Bieżąca zawartość zostanie najpierw zapisana na %s."
@@ -3357,8 +4521,17 @@ msgstr "Narzędzie ekranu nie zwróciło pełnego stanu."
 msgid "The display helper is not configured."
 msgstr "Narzędzie ekranu nie jest skonfigurowane."
 
+msgid "The download differs from its release. Try again."
+msgstr "Pobrany plik różni się od wydania. Spróbuj ponownie."
+
+msgid "The download is larger than its release says"
+msgstr "Pobierany plik jest większy, niż podaje wydanie"
+
 msgid "The downloaded image differs from the catalog. Try again."
 msgstr "Pobrany obraz różni się od katalogu. Spróbuj ponownie."
+
+msgid "The downloaded Linux BOOT is not the one the catalog names"
+msgstr "Pobrany Linux BOOT nie jest tym, który podaje katalog"
 
 msgid "The exact plan, source, backup, targets, journal or safety policy was not confirmed."
 msgstr "Nie potwierdzono dokładnie planu, źródła, kopii, celów, dziennika ani zasad bezpieczeństwa."
@@ -3384,6 +4557,15 @@ msgstr "Plik zmienił się podczas odczytu"
 msgid "The file has neither interface nor terminal colors"
 msgstr "Plik nie ma kolorów interfejsu ani terminala"
 
+msgid "The file inside the 7z is damaged"
+msgstr "Plik w 7z jest uszkodzony"
+
+msgid "The file is on cache:"
+msgstr "Plik jest w cache:"
+
+msgid "The file name does not name the firmware version; BOOT is still checked for this phone"
+msgstr "Nazwa pliku nie podaje wersji firmware; BOOT i tak jest sprawdzany dla tego telefonu"
+
 msgid "The file on storage has not been changed."
 msgstr "Plik w pamięci nie został zmieniony."
 
@@ -3392,6 +4574,9 @@ msgstr "Nie rozpoznano typu pliku"
 
 msgid "The filesystem could not be checked"
 msgstr "Nie udało się sprawdzić systemu plików"
+
+msgid "The filesystem could not be created"
+msgstr "Nie udało się utworzyć systemu plików"
 
 msgid "The filesystem could not be resized"
 msgstr "Nie udało się zmienić rozmiaru systemu plików"
@@ -3402,8 +4587,35 @@ msgstr "Narzędzie systemu plików nie jest skonfigurowane."
 msgid "The filesystem size could not be read"
 msgstr "Nie udało się odczytać rozmiaru systemu plików"
 
+msgid "The firmware file ended early"
+msgstr "Plik firmware skończył się za wcześnie"
+
+msgid "The firmware file holds too many entries"
+msgstr "Plik firmware zawiera zbyt wiele wpisów"
+
+msgid "The firmware file is damaged"
+msgstr "Plik firmware jest uszkodzony"
+
+msgid "The firmware file is damaged: its MD5 does not match"
+msgstr "Plik firmware jest uszkodzony: jego MD5 się nie zgadza"
+
+msgid "The firmware files changed since they were reviewed. Review them again"
+msgstr "Pliki firmware zmieniły się od przeglądu. Przejrzyj je ponownie"
+
+msgid "The firmware helper did not return a result."
+msgstr "Pomocnik firmware nie zwrócił wyniku."
+
 msgid "The fixed stock profile is not qualified for this phone. Stock installation is unavailable."
 msgstr "Stały profil fabryczny nie jest zakwalifikowany dla tego telefonu. Instalacja fabryczna jest niedostępna."
+
+msgid "The fixture medium changed while it was opened"
+msgstr "Nośnik testowy zmienił się podczas otwierania"
+
+msgid "The fixture names no media"
+msgstr "Środowisko testowe nie wskazuje żadnego nośnika"
+
+msgid "The flashlight did not answer"
+msgstr "Latarka nie odpowiedziała"
 
 msgid "The folder result was incomplete. Refresh before continuing."
 msgstr "Wynik folderu był niepełny. Odśwież, zanim przejdziesz dalej."
@@ -3429,6 +4641,9 @@ msgstr "Pomocnik kopii tożsamości nie jest skonfigurowany."
 msgid "The image changed on its server. The catalog now lists the new version: start the installation again."
 msgstr "Obraz na serwerze się zmienił. Katalog zawiera już nową wersję: rozpocznij instalację ponownie."
 
+msgid "The image changed since it was reviewed. Review it again"
+msgstr "Obraz zmienił się od przeglądu. Przejrzyj go ponownie"
+
 msgid "The image could not be downloaded. Check the Wi-Fi connection and try again."
 msgstr "Nie udało się pobrać obrazu. Sprawdź Wi-Fi i spróbuj ponownie."
 
@@ -3437,6 +4652,9 @@ msgstr "Obraz nie mieści się w tej partycji"
 
 msgid "The image does not match the checksum saved with it"
 msgstr "Obraz nie zgadza się z sumą kontrolną zapisaną razem z nim"
+
+msgid "The image does not say its Android version"
+msgstr "Obraz nie podaje swojej wersji Androida"
 
 msgid "The image ended early"
 msgstr "Obraz skończył się za wcześnie"
@@ -3452,6 +4670,15 @@ msgstr "Obraz wypełni całą partycję %s."
 
 msgid "The image has extra data at its end"
 msgstr "Obraz ma nadmiarowe dane"
+
+msgid "The image in the firmware is too large"
+msgstr "Obraz w firmware jest za duży"
+
+msgid "The image inside the ZIP is damaged"
+msgstr "Obraz w ZIP jest uszkodzony"
+
+msgid "The image inside the ZIP is encrypted"
+msgstr "Obraz w ZIP jest zaszyfrowany"
 
 msgid "The image installer did not return a valid result."
 msgstr "Instalator obrazów nie zwrócił prawidłowego wyniku."
@@ -3470,6 +4697,9 @@ msgstr "Obraz jest większy niż partycja"
 
 msgid "The image is not saved on the phone"
 msgstr "Tego obrazu nie ma na telefonie"
+
+msgid "The image kept on cache changed. Review again"
+msgstr "Obraz zachowany w cache się zmienił. Przejrzyj ponownie"
 
 msgid "The image or installation state changed since planning"
 msgstr "Obraz lub stan instalacji zmienił się od zaplanowania"
@@ -3495,17 +4725,68 @@ msgstr "Nie udało się zaplanować instalacji."
 msgid "The installed root filesystem changes. /home stays shared; each system retains its own /etc and /var. BOOT is retained."
 msgstr "Zmienia się zainstalowany główny system plików. /home pozostaje wspólny; każdy system zachowuje własne /etc i /var. BOOT zostaje."
 
+msgid "The installer ended with an error. Changed:"
+msgstr "Instalator zakończył się błędem. Zmieniono:"
+
+msgid "The installer finished"
+msgstr "Instalator zakończył pracę"
+
+msgid "The installer in this ZIP has an unusable size"
+msgstr "Instalator w tym ZIP ma nieprawidłowy rozmiar"
+
+msgid "The installer in this ZIP is a program for another processor"
+msgstr "Instalator w tym ZIP to program dla innego procesora"
+
+msgid "The installer in this ZIP is neither a script nor a program"
+msgstr "Instalator w tym ZIP nie jest ani skryptem, ani programem"
+
+msgid "The installer of this ZIP did not end in time and was stopped"
+msgstr "Instalator tego ZIP nie zakończył się na czas i został zatrzymany"
+
+msgid "The installer of this ZIP ended with an error"
+msgstr "Instalator tego ZIP zakończył się błędem"
+
 msgid "The installer result did not match the requested environment or operation."
 msgstr "Wynik instalatora nie pasował do żądanego środowiska lub operacji."
+
+msgid "The installers finished"
+msgstr "Instalatory zakończyły pracę"
 
 msgid "The interrupted transaction changed. Review the refreshed Systems screen."
 msgstr "Przerwana transakcja się zmieniła. Przejrzyj odświeżony ekran Systemów."
 
+msgid "The kernel could not read the new partition table"
+msgstr "Jądro nie mogło odczytać nowej tablicy partycji"
+
+msgid "The kernel does not show the new partitions"
+msgstr "Jądro nie pokazuje nowych partycji"
+
+msgid "The kernel in BOOT could not be patched for APatch"
+msgstr "Nie udało się załatać jądra w BOOT dla APatch"
+
+msgid "The kernel keeps this partition read-only"
+msgstr "Jądro trzyma tę partycję tylko do odczytu"
+
+msgid "THE KERNEL'S LAST LINES"
+msgstr "OSTATNIE WIERSZE JĄDRA"
+
 msgid "The last installation completed with independent readback. Boot behavior still needs a deliberate test."
 msgstr "Ostatnia instalacja zakończyła się niezależnym odczytem kontrolnym. Uruchomienie wciąż wymaga celowego testu."
 
+msgid "The last screenshot is still being saved"
+msgstr "Poprzedni zrzut ekranu jeszcze się zapisuje"
+
 msgid "The link target was not returned. No target was opened."
 msgstr "Nie zwrócono celu dowiązania. Nie otwarto żadnego celu."
+
+msgid "The Linux BOOT is kept on cache:"
+msgstr "BOOT Linuksa jest zachowany w cache:"
+
+msgid "The Linux BOOT of this plan is no longer offered: plan again"
+msgstr "Linux BOOT z tego planu nie jest już oferowany: zaplanuj ponownie"
+
+msgid "The Linux BOOT on cache changed since planning"
+msgstr "Linux BOOT na cache zmienił się od czasu planowania"
 
 msgid "The local terminal helper is not configured."
 msgstr "Narzędzie lokalnego terminala nie jest skonfigurowane."
@@ -3521,6 +4802,30 @@ msgstr "Narzędzie zarządzania nie jest skonfigurowane."
 
 msgid "The management helper returned an incomplete result."
 msgstr "Narzędzie zarządzania zwróciło niepełny wynik."
+
+msgid "The manifest inside the archive differs from the one at its end"
+msgstr "Manifest w archiwum różni się od tego na jego końcu"
+
+msgid "The manifest is not readable"
+msgstr "Manifestu nie da się odczytać"
+
+msgid "The manifest is too large"
+msgstr "Manifest jest za duży"
+
+msgid "The manifest lists a partition twice"
+msgstr "Manifest wymienia partycję dwa razy"
+
+msgid "The manifest lists an invalid partition"
+msgstr "Manifest wymienia nieprawidłową partycję"
+
+msgid "The mark that keeps this recovery did not stay in BOOT"
+msgstr "Znacznik, który zachowuje to Recovery, nie został w BOOT"
+
+msgid "The member before this one is not complete"
+msgstr "Poprzedni element archiwum nie jest kompletny"
+
+msgid "The modem stays as it is"
+msgstr "Modem zostaje bez zmian"
 
 msgid "The name uses lowercase letters, digits, - and _. The password signs in and confirms sudo."
 msgstr "Nazwa to małe litery, cyfry, - i _. Hasło służy do logowania i potwierdza sudo."
@@ -3549,6 +4854,9 @@ msgstr "Nowy system zapisano obok obecnego."
 msgid "The new system joins it at the first start."
 msgstr "Nowy system połączy się z nią przy pierwszym starcie."
 
+msgid "The newest release has no file this recovery can use"
+msgstr "Najnowsze wydanie nie ma pliku, którego to Recovery może użyć"
+
 msgid "The offline plan rechecks partition identity and state."
 msgstr "Plan offline ponownie sprawdza tożsamość i stan partycji."
 
@@ -3567,6 +4875,9 @@ msgstr "Operacja lub środowisko nie pasowały do żądanej akcji systemu."
 msgid "The operation was stopped."
 msgstr "Operację zatrzymano."
 
+msgid "The package has no such image"
+msgstr "Pakiet nie ma takiego obrazu"
+
 msgid "The package servers could not be reached."
 msgstr "Nie udało się połączyć z serwerami pakietów."
 
@@ -3582,8 +4893,20 @@ msgstr "Strona rośnie, a ta z tyłu się rozmywa"
 msgid "The partition backup did not finish."
 msgstr "Kopia zapasowa partycji nie została ukończona."
 
+msgid "The partition changed"
+msgstr "Partycja się zmieniła"
+
+msgid "The partition could not be read"
+msgstr "Nie udało się odczytać partycji"
+
 msgid "The partition could not be read back"
 msgstr "Nie można odczytać partycji"
+
+msgid "The partition does not match the backup after writing"
+msgstr "Po zapisie partycja nie zgadza się z kopią"
+
+msgid "The partition does not match the backup after writing. Restore it again"
+msgstr "Po zapisie partycja nie zgadza się z kopią. Przywróć ją ponownie"
 
 msgid "The partition does not match the image after writing"
 msgstr "Partycja nie zgadza się z obrazem po zapisie"
@@ -3591,8 +4914,20 @@ msgstr "Partycja nie zgadza się z obrazem po zapisie"
 msgid "The partition grows from %s to %s inside super."
 msgstr "Partycja urośnie w super z %s do %s."
 
+msgid "The partition is in use"
+msgstr "Partycja jest w użyciu"
+
 msgid "The partition is mounted. Unmount it in Files before writing"
 msgstr "Partycja jest zamontowana. Odmontuj ją w Plikach przed zapisem"
+
+msgid "The partition is not on the internal eMMC"
+msgstr "Partycja nie leży na wewnętrznej eMMC"
+
+msgid "The partition layout differs from the backup"
+msgstr "Układ partycji różni się od kopii"
+
+msgid "The partition name changed"
+msgstr "Nazwa partycji się zmieniła"
 
 msgid "The partitions that differ are saved to a new copy first, then written and read back."
 msgstr "Różniące się partycje są najpierw zapisywane w nowej kopii, potem zapisywane i odczytywane do sprawdzenia."
@@ -3608,6 +4943,21 @@ msgstr "Hasło ustawiono w aplikacji Androida."
 
 msgid "The passwords do not match"
 msgstr "Hasła nie są takie same"
+
+msgid "The patched BOOT does not fit its partition"
+msgstr "Załatany BOOT nie mieści się w swojej partycji"
+
+msgid "The patched BOOT has no APatch in it"
+msgstr "W załatanym BOOT nie ma APatch"
+
+msgid "The patched BOOT is not a complete boot image"
+msgstr "Załatany BOOT nie jest kompletnym obrazem rozruchowym"
+
+msgid "The patched BOOT is not for this phone"
+msgstr "Załatany BOOT nie jest dla tego telefonu"
+
+msgid "The patched BOOT was not written"
+msgstr "Załatany BOOT nie został utworzony"
 
 msgid "The phone details are not available yet."
 msgstr "Dane telefonu nie są jeszcze dostępne."
@@ -3660,8 +5010,20 @@ msgstr "Plan odrzucono"
 msgid "The private RAM work directory is unavailable."
 msgstr "Prywatny katalog roboczy w RAM jest niedostępny."
 
+msgid "The recovery's own folder stays"
+msgstr "Własny folder Recovery zostaje"
+
+msgid "The regional file is of another version than the AP"
+msgstr "Plik regionalny ma inną wersję niż AP"
+
 msgid "The removal was not confirmed. Refresh Systems."
 msgstr "Usunięcie nie zostało potwierdzone. Odśwież Systemy."
+
+msgid "The request could not be cleared"
+msgstr "Nie udało się usunąć prośby"
+
+msgid "The request is forgotten: Android starts as it is"
+msgstr "Prośba zapomniana: Android uruchomi się bez zmian"
 
 msgid "The requested %u Hz mode was not confirmed by the subsequent status read. Reported mode: %u Hz."
 msgstr "Kolejny odczyt stanu nie potwierdził żądanego trybu %u Hz. Zgłoszony tryb: %u Hz."
@@ -3672,14 +5034,29 @@ msgstr "Nie zastosowano żądanych wymiarów terminala."
 msgid "The requested USB export or stop was not confirmed. Inspect and refresh the current state before continuing."
 msgstr "Nie potwierdzono żądanego eksportu USB ani zatrzymania. Sprawdź i odśwież obecny stan, zanim przejdziesz dalej."
 
+msgid "the rest of the card"
+msgstr "reszta karty"
+
 msgid "The result of the write could not be confirmed."
 msgstr "Nie udało się potwierdzić wyniku zapisu."
 
 msgid "The reviewed restore completed and was verified. Userdata remains offline."
 msgstr "Sprawdzone przywracanie ukończono i zweryfikowano. Userdata pozostaje offline."
 
+msgid "The room for the installer could not be prepared"
+msgstr "Nie udało się przygotować odizolowanego środowiska dla instalatora"
+
 msgid "The root directory switch was interrupted. Resume finishes it; Rollback restores the previous system. The shared /home stays in place. This is a journaled sequence, not one atomic rename."
 msgstr "Przełączanie katalogu głównego zostało przerwane. Wznowienie je kończy; Wycofanie przywraca poprzedni system. Wspólny /home zostaje na miejscu. To sekwencja z dziennikiem, a nie jedna atomowa zmiana nazwy."
+
+msgid "The root helper did not return a result."
+msgstr "Pomocnik roota nie zwrócił wyniku."
+
+msgid "The saved archive lost its manifest"
+msgstr "Zapisane archiwum utraciło swój manifest"
+
+msgid "The saved copy differs from the partition"
+msgstr "Zapisana kopia różni się od partycji"
 
 msgid "The saved refresh rate was not applied"
 msgstr "Nie zastosowano zapisanej częstotliwości odświeżania"
@@ -3705,6 +5082,9 @@ msgstr "Serwer nie oferuje już tego obrazu. Wybierz inny."
 msgid "The servers did not answer; the saved versions are shown."
 msgstr "Serwery nie odpowiedziały; pokazano zapisane wersje."
 
+msgid "The settings are back to their defaults"
+msgstr "Ustawienia wróciły do domyślnych"
+
 msgid "The setup script changed since planning"
 msgstr "Skrypt konfiguracji zmienił się od zaplanowania"
 
@@ -3714,11 +5094,20 @@ msgstr "Skrypt konfiguracji musi być plikiem tekstowym"
 msgid "The shell has not stopped completely. The terminal remains open."
 msgstr "Powłoka nie zatrzymała się całkowicie. Terminal pozostaje otwarty."
 
+msgid "The size of the archive could not be estimated"
+msgstr "Nie udało się oszacować rozmiaru archiwum"
+
 msgid "The size of the checked image is required"
 msgstr "Wymagany jest rozmiar sprawdzonego obrazu"
 
+msgid "The sizes for Linux and swap are out of range"
+msgstr "Rozmiary dla Linuksa i wymiany są poza zakresem"
+
 msgid "The starting root is recovery RAM. Mount Linux in Files first, then use /mnt/volumes/userdata. The microSD backup mount is /mnt/backup."
 msgstr "Katalog startowy to RAM recovery. Najpierw zamontuj Linuksa w Plikach, potem użyj /mnt/volumes/userdata. Kopia na microSD jest montowana w /mnt/backup."
+
+msgid "The SuperKey needs 8 to 63 characters without spaces, with a letter and a digit"
+msgstr "SuperKey musi mieć od 8 do 63 znaków bez spacji, z literą i cyfrą"
 
 msgid "The switch is journaled, not fully atomic. If interrupted, return to Systems and choose Resume or Rollback. Linux boot remains blocked until the journal completes."
 msgstr "Przełączanie jest zapisywane w dzienniku, ale nie jest w pełni atomowe. Po przerwaniu wróć do Systemów i wybierz Wznów lub Wycofaj. Linux nie uruchomi się, dopóki dziennik się nie zakończy."
@@ -3762,14 +5151,56 @@ msgstr "Narzędzie przesyłania plików USB nie jest skonfigurowane."
 msgid "The USB stick could not be opened for writing."
 msgstr "Nie można otworzyć pendrive do zapisu."
 
+msgid "The volume has too little free space for the backup"
+msgstr "Wolumin ma za mało wolnego miejsca na kopię"
+
+msgid "The volume ran out of space while the archive was written"
+msgstr "Podczas zapisu archiwum na woluminie skończyło się miejsce"
+
 msgid "The whole image of all of them"
 msgstr "Cały obraz ze wszystkimi"
 
 msgid "The whole image, or one Android partition inside it."
 msgstr "Cały obraz albo jedna partycja Androida w środku."
 
+msgid "The whole log of that start goes with Export diagnostics."
+msgstr "Cały dziennik tego startu trafia do «Eksportu diagnostyki»."
+
 msgid "The write receipt could not be displayed completely. Inspect installation status."
 msgstr "Nie udało się w całości wyświetlić potwierdzenia zapisu. Sprawdź stan instalacji."
+
+msgid "The ZIP changed after it was reviewed"
+msgstr "ZIP zmienił się po sprawdzeniu"
+
+msgid "The ZIP compresses its image in a way this recovery cannot read"
+msgstr "ZIP kompresuje swój obraz w sposób, którego Recovery nie umie odczytać"
+
+msgid "The ZIP could not be read to its end"
+msgstr "ZIP nie dał się odczytać do końca"
+
+msgid "The ZIP has no such image"
+msgstr "ZIP nie ma takiego obrazu"
+
+msgid "The ZIP helper did not return a result."
+msgstr "Pomocnik ZIP nie zwrócił wyniku."
+
+msgid "The ZIP holds no AP file, or several"
+msgstr "ZIP nie ma pliku AP albo ma kilka"
+
+msgid "The ZIP holds no image or several: keep one image in it"
+msgstr "ZIP nie ma obrazu albo ma kilka: zostaw w nim jeden obraz"
+
+msgid "The ZIP holds no system image"
+msgstr "ZIP nie ma obrazu system"
+
+msgid "The ZIP is damaged"
+msgstr "ZIP jest uszkodzony"
+
+msgid "The ZIP's own script decides what is written. It can reach only these partitions:"
+msgstr "O tym, co zostanie zapisane, decyduje własny skrypt ZIP. Ma dostęp tylko do tych partycji:"
+
+msgid "THEIR INSTALLERS RUN AS ROOT"
+msgstr "INSTALATORY DZIAŁAJĄ JAKO ROOT"
 
 msgid "Theme"
 msgstr "Motyw"
@@ -3786,8 +5217,17 @@ msgstr "Usunięto motyw"
 msgid "There is no automatic reboot."
 msgstr "Brak automatycznego restartu."
 
+msgid "There is no AVB vbmeta in the vbmeta partition"
+msgstr "W partycji vbmeta nie ma AVB vbmeta"
+
 msgid "There is not enough space beside the retained system"
 msgstr "Obok zachowanego systemu brakuje miejsca"
+
+msgid "There is not enough space beside the ZIP to unpack the firmware"
+msgstr "Obok ZIP brakuje miejsca, by rozpakować firmware"
+
+msgid "There is not enough space on the card for this image"
+msgstr "Na karcie brakuje miejsca na ten obraz"
 
 msgid "There is not enough space on userdata for this image"
 msgstr "Na userdata brakuje miejsca na ten obraz"
@@ -3795,11 +5235,53 @@ msgstr "Na userdata brakuje miejsca na ten obraz"
 msgid "There was not enough free space on userdata for the packages."
 msgstr "Na userdata zabrakło wolnego miejsca na pakiety."
 
+msgid "This 7z is encrypted"
+msgstr "To 7z jest zaszyfrowane"
+
+msgid "This 7z keeps its folders elsewhere"
+msgstr "To 7z trzyma swoje foldery gdzie indziej"
+
+msgid "This 7z keeps its names elsewhere"
+msgstr "To 7z trzyma nazwy gdzie indziej"
+
+msgid "This 7z uses a method this recovery cannot read"
+msgstr "To 7z używa metody, której Recovery nie umie odczytać"
+
 msgid "This action replaces the listed targets."
 msgstr "Ta akcja zastępuje wymienione cele."
 
+msgid "This Android needs a newer kernel than the Android kernel of this phone, so Android restarts the phone on every start."
+msgstr "Ten Android wymaga nowszego jądra niż jądro Androida w tym telefonie, więc Android restartuje telefon przy każdym starcie."
+
+msgid "This Android needs kernel %s or newer. The Android kernel of this phone is older, so Android restarts the phone on every start."
+msgstr "Ten Android wymaga jądra %s lub nowszego. Jądro Androida w tym telefonie jest starsze, więc Android restartuje telefon przy każdym starcie."
+
+msgid "This backup belongs to another phone. Restoring it would give this phone a foreign identity"
+msgstr "Ta kopia należy do innego telefonu. Jej przywrócenie dałoby temu telefonowi cudzą tożsamość"
+
+msgid "This BOOT already has another root: flash the stock BOOT back first (Remove root)"
+msgstr "Ten BOOT ma już inny root: najpierw wgraj z powrotem fabryczny BOOT (Usuń root)"
+
+msgid "This BOOT already has another root: remove it first."
+msgstr "Ten BOOT ma już inny root: najpierw go usuń."
+
+msgid "This build of the recovery has no APatch"
+msgstr "Ta kompilacja recovery nie zawiera APatch"
+
+msgid "This card is no longer attached"
+msgstr "Ta karta nie jest już podłączona"
+
 msgid "This compression is not supported"
 msgstr "Ta kompresja nie jest obsługiwana"
+
+msgid "This copy is no longer listed. Go back and read the cards again."
+msgstr "Tej kopii nie ma już na liście. Wróć i odczytaj karty ponownie."
+
+msgid "This copy needs about %s, and %s has %s free. Free some room there, leave partitions out, or choose another card."
+msgstr "Ta kopia wymaga około %s, a na %s wolne jest %s. Zwolnij tam miejsce, pomiń część partycji albo wybierz inną kartę."
+
+msgid "This copy was made on another phone and is not written back here."
+msgstr "Ta kopia powstała na innym telefonie i nie jest tu zapisywana."
 
 msgid "This creates an empty filesystem, not secure erasure. The saved snapshot remains on SD. Recovery does not reboot automatically."
 msgstr "To tworzy pusty system plików, a nie bezpieczne wymazanie. Zapisana migawka zostaje na SD. Recovery nie uruchamia się ponownie automatycznie."
@@ -3809,6 +5291,12 @@ msgstr "To usuwa wybrany plik lub pusty folder. Nie można tego cofnąć."
 
 msgid "This file has no terminal colors"
 msgstr "Ten plik nie ma kolorów terminala"
+
+msgid "This file is no ROM this recovery installs. Choose a ZIP with an installer, a system image or Samsung's firmware."
+msgstr "Ten plik nie jest ROM-em, który to recovery instaluje. Wybierz ZIP z instalatorem, obraz systemu lub firmware Samsunga."
+
+msgid "This file is not a 7z archive"
+msgstr "Ten plik nie jest archiwum 7z"
 
 msgid "This file is not a DTBO image"
 msgstr "To nie jest obraz DTBO"
@@ -3825,14 +5313,35 @@ msgstr "To nie jest obraz super"
 msgid "This file is not a vbmeta image"
 msgstr "To nie jest obraz vbmeta"
 
+msgid "This file is not a ZIP or a tar"
+msgstr "Ten plik nie jest ZIP ani tar"
+
 msgid "This file is not an A22x recovery image"
 msgstr "Ten plik nie jest obrazem recovery A22x"
 
 msgid "This file is not an Android boot image"
 msgstr "Ten plik nie jest obrazem rozruchowym Androida"
 
+msgid "This firmware cannot be installed"
+msgstr "Tego firmware nie można zainstalować"
+
+msgid "This firmware has no BOOT for this phone"
+msgstr "To firmware nie ma BOOT dla tego telefonu"
+
+msgid "This firmware is made for another phone."
+msgstr "To firmware jest dla innego telefonu."
+
+msgid "This firmware's dtbo or vbmeta differ from the phone's, and the bootloader locks them here: flash the AP in Download mode (Odin)."
+msgstr "dtbo lub vbmeta tego firmware różnią się od tych w telefonie, a bootloader blokuje je tutaj: wgraj AP w trybie Download (Odin)."
+
 msgid "This folder is empty."
 msgstr "Ten folder jest pusty."
+
+msgid "This image brings no vbmeta: install a GSI ZIP with vbmeta.img first."
+msgstr "Ten obraz nie zawiera vbmeta: najpierw zainstaluj ZIP GSI z vbmeta.img."
+
+msgid "This image cannot be installed"
+msgstr "Tego obrazu nie można zainstalować"
 
 msgid "This image has no Wi-Fi program, so the desktop and apps cannot be downloaded at the first start. Choose Console without apps, or another image."
 msgstr "Ten obraz nie ma programu Wi-Fi, więc pulpitu i aplikacji nie da się pobrać przy pierwszym starcie. Wybierz Console bez aplikacji albo inny obraz."
@@ -3846,8 +5355,23 @@ msgstr "Ten obraz trzyma system na btrfs, którego to recovery nie odczyta"
 msgid "This image keeps its system on xfs, which this recovery cannot read"
 msgstr "Ten obraz trzyma system na xfs, którego to recovery nie odczyta"
 
+msgid "This installer is a program: it can map and rewrite the logical partitions of super by itself"
+msgstr "Ten instalator to program: może sam mapować i nadpisywać partycje logiczne super"
+
 msgid "This is a recovery image, not a boot image"
 msgstr "To obraz recovery, a nie obraz rozruchowy"
+
+msgid "This is an update for phones with two system slots (payload.bin). This phone has one: choose a ROM made for it, or a system image."
+msgstr "To aktualizacja dla telefonów z dwoma slotami systemu (payload.bin). Ten telefon ma jeden: wybierz ROM zrobiony dla niego lub obraz systemu."
+
+msgid "This is not a backup of this kind"
+msgstr "To nie jest kopia tego rodzaju"
+
+msgid "This is not a complete ZIP archive"
+msgstr "To nie jest kompletne archiwum ZIP"
+
+msgid "This is not a Samsung firmware file (a .tar.md5)"
+msgstr "To nie jest plik firmware Samsunga (.tar.md5)"
 
 msgid "This is not a theme file"
 msgstr "To nie jest plik motywu"
@@ -3864,8 +5388,14 @@ msgstr "Ten dziennik wymaga ręcznego sprawdzenia"
 msgid "This kernel has no driver for the detected filesystem"
 msgstr "To jądro nie ma sterownika dla wykrytego systemu plików"
 
+msgid "This kernel was built without CONFIG_KALLSYMS, which APatch needs"
+msgstr "To jądro zbudowano bez CONFIG_KALLSYMS, którego potrzebuje APatch"
+
 msgid "This key is temporary and may change on the next recovery boot."
 msgstr "Ten klucz jest tymczasowy i może się zmienić przy następnym uruchomieniu recovery."
+
+msgid "This Magisk APK lacks a file the patch needs"
+msgstr "W tym APK Magiska brakuje pliku potrzebnego do łatki"
 
 msgid "This mount is not owned by the recovery Files helper. Close its owner and unmount it before continuing."
 msgstr "To montowanie nie należy do narzędzia Pliki w recovery. Zamknij jego właściciela i odmontuj je, zanim przejdziesz dalej."
@@ -3885,6 +5415,9 @@ msgstr "Ta partycja jest za duża, by najpierw ją zapisać"
 msgid "This phone"
 msgstr "Ten telefon"
 
+msgid "This phone's partitions are laid out differently: the copy cannot be written back here."
+msgstr "Partycje tego telefonu są ułożone inaczej: kopii nie można tu zapisać."
+
 msgid "This plan expired. Return and review again."
 msgstr "Ten plan wygasł. Wróć i przejrzyj ponownie."
 
@@ -3900,11 +5433,20 @@ msgstr "To recovery nie zna wszystkich wyborów z planu."
 msgid "This recovery has no Wi-Fi driver."
 msgstr "To recovery nie ma sterownika Wi-Fi."
 
+msgid "This recovery has no zstd to pack or unpack the archive"
+msgstr "To recovery nie ma zstd do pakowania i rozpakowywania archiwum"
+
+msgid "This recovery stays"
+msgstr "Recovery zostaje"
+
 msgid "This recovery stays installed, so you can return to Linux from a backup."
 msgstr "To recovery pozostaje zainstalowane, więc możesz wrócić do Linuksa z kopii."
 
 msgid "This recovery, from a new image"
 msgstr "To recovery, z nowego obrazu"
+
+msgid "This root tool is unknown"
+msgstr "To narzędzie roota jest nieznane"
 
 msgid "This small checkpoint is separate from the full Linux BOOT and userdata backup."
 msgstr "Ten mały punkt kontrolny jest oddzielony od pełnej kopii BOOT i userdata Linuksa."
@@ -3913,16 +5455,28 @@ msgid "This step cannot be stopped safely."
 msgstr "Tego kroku nie można bezpiecznie zatrzymać."
 
 msgid "This system cannot read the saved password of this account. Choose New user with the same name and enter the password again."
-msgstr "Ten system nie może odczytać zapisanego hasła tego konta. Wybierz „Nowy użytkownik” z tą samą nazwą i wpisz hasło ponownie."
+msgstr "Ten system nie może odczytać zapisanego hasła tego konta. Wybierz «Nowy użytkownik» z tą samą nazwą i wpisz hasło ponownie."
+
+msgid "This system was set up for another kernel and firmware. Install it again, or remove it"
+msgstr "Ten system zainstalowano dla innego jądra i oprogramowania układowego. Zainstaluj go ponownie albo usuń"
 
 msgid "This uses a normal unmount. Busy filesystems are refused. The backup destination stays mounted and userdata remains offline until you choose to mount it again in Files."
 msgstr "Używane jest zwykłe odmontowanie. Zajęte systemy plików są odrzucane. Miejsce kopii pozostaje zamontowane, a userdata offline, dopóki nie zamontujesz go ponownie w Plikach."
+
+msgid "This volume cannot hold a file this large: FAT32 stops at 4 GiB. Use exFAT or ext4, or leave super out"
+msgstr "Ten wolumin nie pomieści tak dużego pliku: FAT32 kończy się na 4 GiB. Użyj exFAT lub ext4 albo pomiń super"
 
 msgid "This volume is available for reading only."
 msgstr "Ten wolumin jest dostępny tylko do odczytu."
 
 msgid "This volume is no longer available. Return to Files and refresh the list."
 msgstr "Ten wolumin nie jest już dostępny. Wróć do Plików i odśwież listę."
+
+msgid "This ZIP has no installer of its own. Images and ROM packages go through Android or Flash a partition"
+msgstr "Ten ZIP nie ma własnego instalatora. Obrazy i pakiety ROM instaluje się przez Android lub Wgraj partycję"
+
+msgid "This ZIP is in the list already"
+msgstr "Ten ZIP jest już na liście"
 
 msgid "Thursday"
 msgstr "czwartek"
@@ -3945,6 +5499,12 @@ msgstr "Panel dotykowy"
 msgid "TRANSACTION"
 msgstr "TRANSAKCJA"
 
+msgid "Tried on an SM-A226B: it restarted into the bootloader instead of starting. You can still try it: this recovery stays, and stock Android can be flashed again."
+msgstr "Sprawdzono na SM-A226B: zamiast się uruchomić, restartował do bootloadera. Mimo to można spróbować: to recovery zostaje, a fabrycznego Androida można wgrać ponownie."
+
+msgid "Tried on an SM-A226B: it started. Not everything in it was checked; this recovery stays, and stock Android can be flashed again."
+msgstr "Sprawdzono na SM-A226B: uruchomił się. Nie wszystko w nim sprawdzono; to recovery zostaje, a fabrycznego Androida można wgrać ponownie."
+
 msgid "Tuesday"
 msgstr "wtorek"
 
@@ -3956,6 +5516,9 @@ msgstr "Wyłączanie"
 
 msgid "Turning on Wi-Fi..."
 msgstr "Włączanie Wi-Fi..."
+
+msgid "Two files bring the same partition. Keep one firmware in the folder."
+msgstr "Dwa pliki zawierają tę samą partycję. Zostaw w folderze jedno firmware."
 
 msgid "Type"
 msgstr "Typ"
@@ -3978,8 +5541,17 @@ msgstr "Niedostępne"
 msgid "unavailable"
 msgstr "niedostępne"
 
+msgid "Under a minute"
+msgstr "Mniej niż minuta"
+
+msgid "Understood"
+msgstr "Rozumiem"
+
 msgid "unknown"
 msgstr "nieznane"
+
+msgid "Unknown kind of backup"
+msgstr "Nieznany rodzaj kopii"
 
 msgid "Unknown phone"
 msgstr "Nieznany telefon"
@@ -3993,6 +5565,9 @@ msgstr "Odblokowany"
 msgid "Unmount"
 msgstr "Odmontuj"
 
+msgid "Unmount the card in Files first"
+msgstr "Najpierw odmontuj kartę w «Plikach»"
+
 msgid "Unmount the volume before checking it"
 msgstr "Odmontuj wolumin przed sprawdzeniem"
 
@@ -4001,6 +5576,15 @@ msgstr "Przed planowaniem fabrycznego systemu zwykle odmontuj userdata w Plikach
 
 msgid "Unmount userdata, then review a fresh plan?"
 msgstr "Odmontować userdata i przejrzeć nowy plan?"
+
+msgid "Unpacking"
+msgstr "Rozpakowywanie"
+
+msgid "Unpacking the firmware"
+msgstr "Rozpakowywanie firmware"
+
+msgid "Unpacking the firmware must be confirmed"
+msgstr "Rozpakowanie firmware trzeba potwierdzić"
 
 msgid "Unpacking the system image"
 msgstr "Rozpakowywanie obrazu systemu"
@@ -4011,6 +5595,12 @@ msgstr "Nieobsługiwane"
 msgid "Up"
 msgstr "W górę"
 
+msgid "Up to 64 Latin letters, digits, dots, hyphens and underscores; the first is a letter or a digit."
+msgstr "Do 64 liter łacińskich, cyfr, kropek, łączników i podkreśleń; pierwszy znak to litera lub cyfra."
+
+msgid "Update packages, logs and temporary files"
+msgstr "Pakiety aktualizacji, dzienniki i pliki tymczasowe"
+
 msgid "Updated from the servers: %u"
 msgstr "Zaktualizowano z serwerów: %u"
 
@@ -4019,6 +5609,9 @@ msgstr "Adres USB niedostępny"
 
 msgid "USB debugging"
 msgstr "Debugowanie USB"
+
+msgid "USB drive"
+msgstr "Dysk USB"
 
 msgid "USB files"
 msgstr "Pliki USB"
@@ -4068,6 +5661,12 @@ msgstr "userdata / rootfs Linuksa"
 msgid "Userdata and cache could not be prepared."
 msgstr "Nie udało się przygotować userdata i cache."
 
+msgid "userdata and metadata are saved as they lie there, encrypted, and go back only to this phone, together. Android opens them only while the phone's secure chip keeps the same keys."
+msgstr "userdata i metadata są zapisywane tak, jak leżą, zaszyfrowane, i wracają tylko na ten telefon, razem. Android otworzy je tylko dopóki bezpieczny układ telefonu trzyma te same klucze."
+
+msgid "userdata and metadata are written whole: everything on userdata now, Linux systems too, is replaced. Android opens the data only while this phone's secure chip keeps the same keys."
+msgstr "userdata i metadata są zapisywane w całości: wszystko, co teraz jest na userdata, także systemy Linux, zostaje zastąpione. Android otworzy dane tylko dopóki bezpieczny układ tego telefonu trzyma te same klucze."
+
 msgid "Userdata and recovery stay unchanged. A valid BOOT header does not prove that this kernel or ramdisk boots on this phone."
 msgstr "Userdata i recovery pozostają bez zmian. Poprawny nagłówek BOOT nie dowodzi, że to jądro lub ramdisk uruchomi się na tym telefonie."
 
@@ -4076,6 +5675,15 @@ msgstr "Userdata zmieniła się podczas instalacji"
 
 msgid "Userdata changed since planning"
 msgstr "Userdata zmieniła się od zaplanowania"
+
+msgid "Userdata holds Android's data, not Linux. When the installation starts it is formatted for Linux: Android's apps and data are erased. This recovery, cache and the SD card stay."
+msgstr "Userdata zawiera dane Androida, nie Linuksa. Na początku instalacji zostanie sformatowana dla Linuksa: aplikacje i dane Androida znikną. To recovery, cache i karta SD zostają."
+
+msgid "Userdata holds Android's data, which Linux cannot use. A new system formats userdata when its installation starts: Android's apps and data are erased then, not before."
+msgstr "Userdata zawiera dane Androida, których Linux nie może używać. Nowy system formatuje userdata na początku instalacji: aplikacje i dane Androida znikają dopiero wtedy."
+
+msgid "Userdata holds Android: no images are saved there"
+msgstr "Userdata zawiera Androida: nie ma tam zapisanych obrazów"
 
 msgid "Userdata holds files but no Linux system. Format it in Files for a clean install."
 msgstr "Na userdata są pliki, ale nie ma systemu Linux. Sformatuj ją w Plikach, aby zrobić czystą instalację."
@@ -4098,11 +5706,23 @@ msgstr "Najpierw kasowane jest userdata: dane Androida, każdy system Linux i /h
 msgid "Userdata is erased first: every Linux system and /home on it. The new system is active after installation."
 msgstr "Najpierw userdata zostanie wyczyszczona: wszystkie systemy Linux i /home. Nowy system będzie aktywny po instalacji."
 
+msgid "USERDATA IS FORMATTED"
+msgstr "USERDATA ZOSTANIE SFORMATOWANA"
+
+msgid "userdata is formatted for Android and metadata erased; Android sets up its encryption on its next start. The recovery's own folder on cache stays."
+msgstr "userdata jest sformatowane dla Androida, a metadata wymazane; Android skonfiguruje szyfrowanie przy następnym uruchomieniu. Własny folder Recovery w cache zostaje."
+
 msgid "Userdata is formatted for Android. This erases every Linux system and /home on the phone."
 msgstr "Userdata zostanie sformatowane dla Androida. To usunie wszystkie systemy Linux i /home."
 
+msgid "Userdata is formatted for Linux first: Android's apps and data on it are erased. The new system is active after installation."
+msgstr "Najpierw userdata zostanie sformatowana dla Linuksa: aplikacje i dane Androida na niej znikną. Po instalacji nowy system będzie aktywny."
+
 msgid "Userdata is mounted with write access"
 msgstr "Userdata jest zamontowany do zapisu"
+
+msgid "Userdata is not ready for a new system. Systems shows why."
+msgstr "Userdata nie jest gotowa na nowy system. Powód widać w «Systemach»."
 
 msgid "Userdata is not ready for an installation. Open Systems to see why."
 msgstr "userdata nie jest gotowe do instalacji. Otwórz Systemy, aby zobaczyć dlaczego."
@@ -4122,11 +5742,38 @@ msgstr "Userdata pozostaje odmontowany po kopii"
 msgid "Userdata was not present in the fresh volume inventory. Refresh before continuing."
 msgstr "Userdata nie było w nowym spisie woluminów. Odśwież, zanim przejdziesz dalej."
 
+msgid "Userdata wiped"
+msgstr "Userdata wyczyszczono"
+
+msgid "userdata, cache or an SD card, in Files"
+msgstr "userdata, cache albo karta SD, w Plikach"
+
 msgid "V"
 msgstr "V"
 
 msgid "VALUE"
 msgstr "WARTOŚĆ"
+
+msgid "vbmeta has verification on, and the bootloader locks it here: prepare vbmeta on the Root page and flash it in Download mode first."
+msgstr "vbmeta ma włączoną weryfikację, a bootloader blokuje go tutaj: przygotuj vbmeta na stronie Root i najpierw wgraj go w trybie Download."
+
+msgid "vbmeta prepared"
+msgstr "vbmeta przygotowany"
+
+msgid "Verification is already disabled"
+msgstr "Weryfikacja jest już wyłączona"
+
+msgid "Verification is off in vbmeta and Android's data was erased: Android sets itself up again at its first start."
+msgstr "Weryfikacja w vbmeta jest wyłączona, a dane Androida usunięte: Android skonfiguruje się na nowo przy pierwszym uruchomieniu."
+
+msgid "Verification is off in vbmeta: installing, changing or removing root keeps Android's data."
+msgstr "Weryfikacja w vbmeta jest wyłączona: instalacja, zmiana lub usunięcie roota nie rusza danych Androida."
+
+msgid "Verification is on in the phone's vbmeta: flash the copy's vbmeta in Download mode before a restore."
+msgstr "W vbmeta telefonu weryfikacja jest włączona: przed przywracaniem wgraj vbmeta z kopii w trybie Download."
+
+msgid "VERIFICATION IS ON IN VBMETA"
+msgstr "WERYFIKACJA W VBMETA JEST WŁĄCZONA"
 
 msgid "VERIFIED BACKUP SOURCE"
 msgstr "SPRAWDZONE ŹRÓDŁO KOPII"
@@ -4157,6 +5804,12 @@ msgstr "Weryfikuj kopię"
 
 msgid "Verify this backup"
 msgstr "Weryfikuj tę kopię"
+
+msgid "Verify this copy"
+msgstr "Sprawdź tę kopię"
+
+msgid "Verifying"
+msgstr "Sprawdzanie"
 
 msgid "Vibration"
 msgstr "Wibracje"
@@ -4212,11 +5865,20 @@ msgstr "środa"
 msgid "WHAT HAPPENS NEXT"
 msgstr "CO DALEJ"
 
+msgid "What its kernel wrote before the phone restarted."
+msgstr "Co zapisało jego jądro przed restartem telefonu."
+
 msgid "What this system lacks for the phone is built on it (Arch: Phosh's compositor fix and Phrog), up to 45 minutes. Keep the phone powered."
 msgstr "To, czego temu systemowi brakuje dla telefonu, jest w nim budowane (Arch: poprawka kompozytora Phosh i Phrog), do 45 minut. Nie wyłączaj telefonu."
 
 msgid "When the installation starts, every Linux system and /home on userdata are erased. Make a backup first if you need them."
 msgstr "Na początku instalacji wszystkie systemy Linux i /home na userdata zostaną usunięte. W razie potrzeby najpierw zrób kopię."
+
+msgid "When this happens on every start, the installed Android does not fit the phone or its data: install another one, or format the data for Android in Wipe."
+msgstr "Jeśli dzieje się tak przy każdym starcie, zainstalowany Android nie pasuje do telefonu lub do swoich danych: zainstaluj inny albo sformatuj dane dla Androida w «Czyszczeniu»."
+
+msgid "Where is the file?"
+msgstr "Gdzie jest plik?"
 
 msgid "While the shell is open, other storage operations wait for this terminal to close."
 msgstr "Dopóki powłoka jest otwarta, inne operacje na pamięci czekają na zamknięcie tego terminala."
@@ -4242,8 +5904,23 @@ msgstr "Sieć Wi-Fi"
 msgid "Wi-Fi: %s  /  script: %s"
 msgstr "Wi-Fi: %s  /  skrypt: %s"
 
+msgid "Wipe"
+msgstr "Czyszczenie"
+
 msgid "wipe"
 msgstr "czyszczenie"
+
+msgid "Wipe cache"
+msgstr "Wyczyść cache"
+
+msgid "Wiped instead; the recovery's own folder stays"
+msgstr "Zamiast tego czyszczone; własny folder recovery zostaje"
+
+msgid "Wiping"
+msgstr "Czyszczenie"
+
+msgid "Wiping cache"
+msgstr "Czyszczenie cache"
 
 msgid "Without a network here, the saved networks of installed systems are used."
 msgstr "Bez sieci tutaj zostaną użyte zapisane sieci zainstalowanych systemów."
@@ -4287,6 +5964,18 @@ msgstr "Zapisywanie"
 msgid "Writing a partition must be confirmed"
 msgstr "Zapis partycji musi zostać potwierdzony"
 
+msgid "Writing the Linux BOOT"
+msgstr "Zapisywanie Linux BOOT"
+
+msgid "Writing the partition table"
+msgstr "Zapisywanie tablicy partycji"
+
+msgid "WRITTEN"
+msgstr "ZAPISYWANE"
+
+msgid "Written and read back: %s."
+msgstr "Zapisano i odczytano z powrotem: %s."
+
 msgid "WRITTEN TARGETS"
 msgstr "ZAPISANE CELE"
 
@@ -4305,68 +5994,12 @@ msgstr "Można już wyjąć pendrive"
 msgid "Your accounts and /home settings stay available."
 msgstr "Twoje konta i ustawienia /home pozostają dostępne."
 
+msgid "ZIP with an installer"
+msgstr "ZIP z instalatorem"
+
 msgid "Zoom"
 msgstr "Zoom"
 
 msgid "Zoom with blur"
 msgstr "Zoom z rozmyciem"
 
-msgid "Back"
-msgstr "Wstecz"
-
-msgid "A computer is connected over SSH or SFTP: close that session, then try again"
-msgstr "Komputer jest połączony przez SSH lub SFTP: zamknij tę sesję i spróbuj ponownie"
-
-msgid "A whole volume"
-msgstr "Cały wolumin"
-
-msgid "a22x-recovery: the recovery's settings and keys, saved Wi-Fi networks, plans from the Android app and setup scripts."
-msgstr "a22x-recovery: ustawienia i klucze recovery, zapisane sieci Wi-Fi, plany z aplikacji Android i skrypty konfiguracji."
-
-msgid "Cache"
-msgstr "Cache"
-
-msgid "Cache could not be wiped."
-msgstr "Nie udało się wyczyścić cache."
-
-msgid "Cache wiped"
-msgstr "Cache wyczyszczony"
-
-msgid "Cache, or a whole volume before an installation"
-msgstr "Cache albo cały wolumin przed instalacją"
-
-msgid "Erase what is no longer needed. Nothing is erased before you hold the button."
-msgstr "Usuń to, co nie jest już potrzebne. Nic nie zostanie usunięte, zanim przytrzymasz przycisk."
-
-msgid "Erasing userdata removes every Linux system and every saved image. Android's factory reset comes with the Android installer."
-msgstr "Wyczyszczenie userdata usuwa każdy system Linux i każdy zapisany obraz. Przywracanie ustawień fabrycznych Androida pojawi się razem z instalatorem Androida."
-
-msgid "Everything else on cache is deleted: update packages, logs and temporary files."
-msgstr "Wszystko inne w cache zostanie usunięte: pakiety aktualizacji, dzienniki i pliki tymczasowe."
-
-msgid "Nothing has been erased yet."
-msgstr "Nic jeszcze nie zostało usunięte."
-
-msgid "Only cache is wiped this way. Erase other volumes in Files"
-msgstr "W ten sposób czyści się tylko cache. Inne woluminy usuń w Plikach"
-
-msgid "Removed %u items and freed %s. The recovery's own folder stays: its settings, Wi-Fi networks, plans and scripts."
-msgstr "Usunięto elementów: %u, zwolniono %s. Własny folder recovery zostaje: ustawienia, sieci Wi-Fi, plany i skrypty."
-
-msgid "STAYS"
-msgstr "ZOSTAJE"
-
-msgid "Update packages, logs and temporary files"
-msgstr "Pakiety aktualizacji, dzienniki i pliki tymczasowe"
-
-msgid "userdata, cache or an SD card, in Files"
-msgstr "userdata, cache albo karta SD, w Plikach"
-
-msgid "Wipe"
-msgstr "Czyszczenie"
-
-msgid "Wipe cache"
-msgstr "Wyczyść cache"
-
-msgid "This system was set up for another kernel and firmware. Install it again, or remove it"
-msgstr "Ten system zainstalowano dla innego jądra i oprogramowania układowego. Zainstaluj go ponownie albo usuń"

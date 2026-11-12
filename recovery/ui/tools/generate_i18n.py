@@ -50,6 +50,22 @@ def main():
             if msgid in messages and SPEC.findall(msgid) != SPEC.findall(text):
                 print(f'{code}: conversions differ: {msgid!r} -> {text!r}', file=sys.stderr)
                 failed = True
+    # A translation may only use what the font draws (2026-11-11: German and Polish low quotes
+    # were shown as the replacement mark, since font_extra.h has no U+201E).
+    drawn = set(range(32, 127)) | {10}
+    found = re.search(r'extra_codepoints\[[^\]]*\]\s*=\s*\{([^}]*)\}', (ROOT / 'font_extra.h').read_text())
+    drawn.update(int(value, 16) for value in re.findall(r'0x[0-9a-fA-F]+', found.group(1)))
+    for code, catalog in catalogs.items():
+        for msgid, text in catalog.items():
+            absent = sorted({char for char in text.replace('\\n', '\n') if ord(char) not in drawn})
+            if msgid in messages and absent:
+                print(f'{code}: the font has no glyph for {absent!r} in {text!r}', file=sys.stderr)
+                failed = True
+    for msgid in messages:
+        absent = sorted({char for char in msgid.replace('\\n', '\n') if ord(char) not in drawn})
+        if absent:
+            print(f'en: the font has no glyph for {absent!r} in {msgid!r}', file=sys.stderr)
+            failed = True
     if failed:
         return 1
     with (ROOT / 'i18n_data.h').open('w') as out:

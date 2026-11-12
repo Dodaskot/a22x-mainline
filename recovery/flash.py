@@ -24,7 +24,10 @@ import stat
 import struct
 import subprocess
 import sys
+import tarfile
+import threading
 import time
+import zipfile
 import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -32,6 +35,8 @@ import bootimage
 import filesystem as fs
 import install
 import lp_metadata as lp
+import saved_boot
+import sevenzip
 from install import require
 from operation_lock import operation_lock
 
@@ -120,6 +125,8 @@ class DecodedReader:
         self.position = self.total = 0
         self.payload_bytes = self.sparse = None
         self.process = self.decoder = None
+        # Where the stream ends in the file: its end, or the end of the image inside a ZIP.
+        self.end, self.crc, self.member_crc = self.before.st_size, None, None
         if compression in ('zstd', 'lz4'):
             os.lseek(fd, 0, os.SEEK_SET)
             self.process = subprocess.Popen((ZSTD if compression == 'zstd' else LZ4, '-dc'), stdin=fd,
@@ -128,15 +135,65 @@ class DecodedReader:
             self.decoder = zlib.decompressobj(31)
         elif compression == 'xz':
             self.decoder = lzma.LZMADecompressor(format=lzma.FORMAT_XZ)
+        elif compression.startswith('tar:'):
+            # 2026-11-10: Samsung's firmware (AP_..., CSC_....tar.md5) holds its images as LZ4
+            # files inside a tar. The image is read from its place in the tar, through lz4, and
+            # nothing is unpacked beside it.
+            member = compression[4:]
+            self.position, self.end = tar_member(fd, member)
+            if member.lower().endswith('.lz4'):
+                self.process = subprocess.Popen((LZ4, '-dc'), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                                stderr=subprocess.DEVNULL)
+                self.fed = 0
+                self.feeder = threading.Thread(target=self._feed, daemon=True)
+                self.feeder.start()
+        elif compression == '7z' or compression.startswith('7z:'):
+            # 2026-11-10: LineageOS and other GSIs come as .7z; the image is decoded from it in place.
+            try:
+                files, info = sevenzip.entries(fd)
+                self.sevenzip = sevenzip.EntryReader(fd, info, sevenzip.choose(files, compression[3:] or None))
+            except sevenzip.SevenZipError as error:
+                fs.fail(error.code, str(error))
+        elif compression == 'zip' or compression.startswith('zip:'):
+            # 2026-11-10: GSIs come as ZIPs (system.img, vbmeta.img, build.prop); the image is
+            # decoded straight from the ZIP, with its CRC, and nothing is unpacked beside it.
+            _, self.position, self.end, method, self.member_crc = zip_member(fd, compression[4:] or None)
+            self.crc = 0
+            self.decoder = zlib.decompressobj(-15) if method == zipfile.ZIP_DEFLATED else None
         else:
             require(compression == 'none', 'UNSUPPORTED_COMPRESSION', 'This compression is not supported')
 
+    def _feed(self):
+        """The tar member's bytes into lz4, from where the member starts to where it ends."""
+        at = self.position
+        try:
+            while at < self.end:
+                data = os.pread(self.fd, min(1 << 20, self.end - at), at)
+                if not data:
+                    break
+                self.process.stdin.write(data)
+                at += len(data)
+                self.fed = at - self.position
+        except OSError:  # lz4 stopped early: its exit status tells
+            pass
+        finally:
+            with contextlib.suppress(OSError):
+                self.process.stdin.close()
+
     def _file(self, count):
-        data = os.pread(self.fd, count, self.position)
+        count = max(0, min(count, self.end - self.position))
+        data = os.pread(self.fd, count, self.position) if count else b''
         self.position += len(data)
         return data
 
     def _decode(self, want):
+        if getattr(self, 'sevenzip', None) is not None:
+            try:
+                return self.sevenzip.read(want)
+            except sevenzip.SevenZipError as error:
+                fs.fail(error.code, str(error))
+            except lzma.LZMAError:
+                fs.fail('INVALID_COMPRESSED_IMAGE', 'The compressed file is damaged')
         if self.process:
             return self.process.stdout.read(want)
         if self.decoder is None:
@@ -164,6 +221,8 @@ class DecodedReader:
             if not part:
                 break
             data.extend(part)
+            if self.crc is not None:
+                self.crc = zlib.crc32(part, self.crc)
         self.total += len(data)
         require(self.total <= self.limit, 'IMAGE_EXPANSION_LIMIT', 'The image is larger than the partition')
         return bytes(data)
@@ -175,13 +234,23 @@ class DecodedReader:
 
     def finish(self):
         require(not self.read(1), 'IMAGE_TRAILING_DATA', 'The image has extra data at its end')
-        if self.process:
+        if getattr(self, 'sevenzip', None) is not None:
+            try:
+                self.sevenzip.finish()
+            except sevenzip.SevenZipError as error:
+                fs.fail('INVALID_COMPRESSED_IMAGE' if error.code == 'DAMAGED_7Z' else error.code, str(error))
+        elif self.process:
             require(self.process.wait() == 0, 'INVALID_COMPRESSED_IMAGE', 'The compressed file is damaged')
+            if getattr(self, 'feeder', None) is not None:
+                self.feeder.join()
+                require(self.fed == self.end - self.position, 'SHORT_IMAGE', 'The image ended early')
         elif self.decoder is not None:
-            require(self.decoder.eof and not self.decoder.unused_data and self.position == self.before.st_size,
+            require(self.decoder.eof and not self.decoder.unused_data and self.position == self.end,
                     'IMAGE_TRAILING_DATA', 'The image has extra data at its end')
         else:
-            require(self.position == self.before.st_size, 'SHORT_IMAGE', 'The image ended early')
+            require(self.position == self.end, 'SHORT_IMAGE', 'The image ended early')
+        if self.member_crc is not None:
+            require(self.crc == self.member_crc, 'INVALID_COMPRESSED_IMAGE', 'The image inside the ZIP is damaged')
         require(fs.stamp(os.fstat(self.fd)) == fs.stamp(self.before), 'IMAGE_CHANGED', 'The file changed while it was read')
 
     def close(self):
@@ -190,10 +259,60 @@ class DecodedReader:
                 self.process.kill()
             self.process.stdout.close()
             self.process.wait()
+            if getattr(self, 'feeder', None) is not None:
+                self.feeder.join(10)
+
+
+def tar_member(fd, member):
+    """Where MEMBER's data starts and ends inside a tar. Samsung's .tar.md5 is a plain tar with
+    its MD5 written after it; tarfile stops at the tar's own end."""
+    with shared_offset(fd) as handle, tarfile.open(fileobj=handle, mode='r:') as archive:
+        try:
+            info = archive.getmember(member)
+        except KeyError:
+            fs.fail('TAR_MEMBER_MISSING', 'The package has no such image', member=member)
+        require(info.isreg() and info.size > 0, 'TAR_MEMBER_MISSING', 'The package has no such image', member=member)
+        return info.offset_data, info.offset_data + info.size
+
+
+@contextlib.contextmanager
+def shared_offset(fd):
+    """FD as a file read from its start; a dup shares the offset, so it is put back afterwards."""
+    saved = os.lseek(fd, 0, os.SEEK_CUR)
+    try:
+        with os.fdopen(os.dup(fd), 'rb') as handle:
+            handle.seek(0)
+            yield handle
+    finally:
+        os.lseek(fd, saved, os.SEEK_SET)
+
+
+def zip_member(fd, member=None):
+    """The image inside a ZIP: MEMBER when named, else system.img when there is one (a GSI also
+    carries vbmeta.img and build.prop), else its only image. Its name, where its data starts and
+    ends in the file, its method (stored or deflated) and CRC."""
+    with shared_offset(fd) as handle, zipfile.ZipFile(handle) as archive:
+        images = [i for i in archive.infolist() if not i.is_dir() and i.filename.lower().endswith('.img')]
+        if member:
+            chosen = next((i for i in images if i.filename == member), None)
+            require(chosen is not None, 'ZIP_MEMBER_MISSING', 'The ZIP has no such image', member=member)
+        else:
+            chosen = next((i for i in images if i.filename.rsplit('/', 1)[-1].lower() == 'system.img'), None)
+        if chosen is None:
+            require(len(images) == 1, 'ZIP_AMBIGUOUS', 'The ZIP holds no image or several: keep one image in it')
+            chosen = images[0]
+        require(not chosen.flag_bits & 1, 'ZIP_ENCRYPTED', 'The image inside the ZIP is encrypted')
+        require(chosen.compress_type in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED), 'UNSUPPORTED_COMPRESSION',
+                'The ZIP compresses its image in a way this recovery cannot read')
+    local = os.pread(fd, 30, chosen.header_offset)
+    require(len(local) == 30 and local[:4] == b'PK\x03\x04', 'INVALID_ZIP', 'The ZIP is damaged')
+    name_bytes, extra_bytes = struct.unpack_from('<HH', local, 26)
+    start = chosen.header_offset + 30 + name_bytes + extra_bytes
+    return chosen.filename, start, start + chosen.compress_size, chosen.compress_type, chosen.CRC
 
 
 def open_reader(fd, compression, size=0):
-    if size > install.MAX_SOURCE or os.fstat(fd).st_size > install.MAX_SOURCE or compression in ('zstd', 'xz'):
+    if size > install.MAX_SOURCE or os.fstat(fd).st_size > install.MAX_SOURCE or compression in ('zstd', 'xz') or compression[:4] in ('zip', 'zip:', 'tar:') or compression[:2] == '7z':
         return DecodedReader(fd, compression, size or install.MAX_SOURCE)
     return Lz4Reader(fd) if compression == 'lz4' else install.ImageReader(fd, compression)
 
@@ -203,8 +322,19 @@ def close_reader(reader):
         reader.close()
 
 
-def container(fd):
+def container(fd, member=None):
+    """The file's compression. A ZIP is 'zip' (its system.img, or its only image) or 'zip:NAME'
+    for MEMBER, one image chosen inside it (a GSI's vbmeta.img); a tar (Samsung's firmware) is
+    'tar:NAME', always with the image named."""
     head = os.pread(fd, 6, 0)
+    if head == sevenzip.SIGNATURE:
+        return '7z:' + member if member else '7z'
+    if head[:4] == b'PK\x03\x04':
+        return 'zip:' + member if member else 'zip'
+    if os.pread(fd, 5, 257) == b'ustar':
+        require(member, 'TAR_MEMBER_REQUIRED', 'Choose an image inside this firmware file')
+        return 'tar:' + member
+    require(not member, 'NOT_A_ZIP', 'This file is not a ZIP or a tar')
     if head[:2] == b'\x1f\x8b':
         return 'gzip'
     if head[:4] in LZ4_MAGICS:
@@ -360,12 +490,22 @@ def source_file(context, volume, token, path):
             os.close(fd)
 
 
-def rollback_volume(context, size):
-    """A mounted writable volume for the old content, removable storage first."""
+def rollback_volume(context, size, skip_cache=False, make_room=False):
+    """A mounted writable volume for the old content, removable storage first. Cache is small
+    (200 MiB): with SKIP_CACHE it is passed over (the BOOT is already kept there once), and with
+    MAKE_ROOM what lies there twice is removed before it is found full (2026-11-11)."""
     for volume in sorted(context.fs.volumes(), key=lambda v: (not v.get('external'), v['id'])):
         if (volume.get('mounted') and not volume.get('read_only') and volume.get('write_supported')
                 and volume.get('mount_owner') in ('filesystem', 'storage')):
+            cache = volume['id'] == 'cache'
+            if cache and skip_cache:
+                continue
             info = os.statvfs(volume['mountpoint'])
+            if cache and make_room and info.f_bavail * info.f_frsize < size + install.CHUNK:
+                with contextlib.suppress(fs.FilesystemError, OSError):
+                    with fs.PinnedVolume(context.fs, 'cache', writing=True) as pin:
+                        saved_boot.make_room(pin)
+                info = os.statvfs(volume['mountpoint'])
             if info.f_bavail * info.f_frsize >= size + install.CHUNK:
                 return volume
     return None
@@ -379,12 +519,13 @@ def rollback_folders(volume):
     return (ROLLBACK_FOLDER,)
 
 
-def save_rollback(context, target, progress, chunks=None):
+def save_rollback(context, target, progress, chunks=None, skip_cache=False):
     """The current content of TARGET, kept before it is written. CHUNKS: its bytes in order, for a
-    partition inside super (2026-11-10); otherwise they are read from the target's own device."""
+    partition inside super (2026-11-10); otherwise they are read from the target's own device.
+    On cache only the newest copy of a partition stays: the one written here."""
     if target['size_bytes'] > ROLLBACK_LIMIT:
         return None
-    volume = rollback_volume(context, target['size_bytes'])
+    volume = rollback_volume(context, target['size_bytes'], skip_cache, make_room=True)
     if volume is None:
         return None
     stamp = target['label'].replace('/', '-') + time.strftime('-%Y%m%d-%H%M%S', time.gmtime())
@@ -432,6 +573,8 @@ def save_rollback(context, target, progress, chunks=None):
                     raise
                 finally:
                     os.close(out)
+                if volume['id'] == 'cache':
+                    saved_boot.prune_rollbacks(folder, keep=name)
             finally:
                 os.close(folder)
     finally:
@@ -488,7 +631,7 @@ def check_logical(context, args, progress, name):
     zeroed) or larger, when super and the partition's group have room for it to grow."""
     with source_file(context, args.volume, args.volume_token, args.path) as fd:
         size = os.fstat(fd).st_size
-        compression = container(fd)
+        compression = container(fd, getattr(args, 'member', None))
         super_target, sfd, found = open_super(context)
         try:
             p = found.partition(name)
@@ -556,7 +699,7 @@ def write_logical(context, args, progress, name):
         context.check_offline([super_target])
         with source_file(context, args.volume, args.volume_token, args.path) as fd:
             require(identity(fd) == args.expected_identity, 'IMAGE_CHANGED', 'The file changed after it was checked')
-            compression = container(fd)
+            compression = container(fd, getattr(args, 'member', None))
             _, sfd, found = open_super(context, write=True)
             try:
                 current = found.size_of(found.partition(name))
@@ -619,7 +762,7 @@ def check(context, args, progress):
         return check_logical(context, args, progress, name)
     with source_file(context, args.volume, args.volume_token, args.path) as fd:
         size = os.fstat(fd).st_size
-        compression = container(fd)
+        compression = container(fd, getattr(args, 'member', None))
         label = detect(fd, compression) if args.target == 'auto' else args.target
         target = context.target(label)
         image_format = layout(fd, compression, target['size_bytes'])
@@ -652,7 +795,11 @@ def check(context, args, progress):
         small = target['size_bytes'] <= ROLLBACK_LIMIT
         identical = small and install.target_hash(context, target) == value
         volume = rollback_volume(context, target['size_bytes']) if small else None
-        if not identical and volume is None:
+        # A BOOT of this phone is always kept on cache as a saved BOOT (saved_boot.keep_current_boot):
+        # the page said it would not be saved (2026-11-11, on the phone).
+        kept = bool(label == 'boot' and not identical and volume is None
+                    and saved_boot.boot_kind(install.target_bytes(context, target))[0])
+        if not identical and volume is None and not kept:
             warnings.append('The current partition will not be saved first' if small else
                             'This partition is too large to save first')
         return {'target': {'label': label, 'size_bytes': target['size_bytes'], 'offline': offline},
@@ -660,7 +807,20 @@ def check(context, args, progress):
                           'file_bytes': size, 'payload_bytes': reader.payload_bytes, 'sha256': value, 'identity': identity(fd),
                           'checksum_file': checksum},
                 'identical': identical, 'warnings': warnings, 'contents': contents,
-                'rollback_volume': (volume.get('label') or volume['id']) if volume else None}
+                'rollback_volume': (volume.get('label') or volume['id']) if volume else ('cache' if kept else None)}
+
+
+# 2026-11-10, seen in LK's log on the phone: at every start LK write-protects the eMMC from nvram to
+# btd ([Part_WP]WP(nvram->btd)), which holds dtbo and vbmeta. Writes there from a running system are
+# dropped without an error (vbmeta read back unchanged). They change only in Samsung Download mode.
+WRITE_PROTECTED = ('dtbo', 'vbmeta')
+
+
+def write_protected(context):
+    """The partitions the bootloader locks on this phone; a fixture names its own (none by default)."""
+    if context.mode == 'device':
+        return WRITE_PROTECTED
+    return tuple((getattr(context, 'config', None) or {}).get('write_protected', ()))
 
 
 def read_back(context, target, progress):
@@ -688,11 +848,26 @@ def write(context, args, progress):
         require(not context.guard_path.exists(), 'INSTALL_PENDING', 'Finish the unfinished installation first')
         target = context.target(args.target)
         context.check_offline([target])
+        if args.target in write_protected(context):
+            # Already this image: nothing to write (the stock dtbo and vbmeta of a firmware). Another
+            # image: refused before writing, since the bootloader drops the write.
+            now = read_back(context, target, progress)
+            if now == args.expected_sha256:
+                return {'target': {'label': args.target, 'size_bytes': target['size_bytes']}, 'sha256': now, 'verified': True,
+                        'unchanged': True, 'rollback': None, 'recorded': install.record_flash(context, args.target, now),
+                        'kept_boot': None, 'kept_boot_note': None, 'keeps_recovery': False}
+            reason = 'The bootloader locks this partition while the phone runs: flash it in Samsung Download mode (Odin or Heimdall)'
+            fs.fail('PROTECTED_BY_BOOTLOADER', reason, partition=args.target)
+        # 2026-11-10: the BOOT there (Linux, or Samsung's own) is kept on cache first, the way back.
+        # Before the image is opened: it may itself lie on cache, which is remounted for the copy
+        # (on the phone the copy failed while the image held cache open).
+        kept = saved_boot.keep_current_boot(context, progress, args.expected_sha256) if args.target == 'boot' else None
         with source_file(context, args.volume, args.volume_token, args.path) as fd:
             require(identity(fd) == args.expected_identity, 'IMAGE_CHANGED', 'The file changed after it was checked')
-            compression = container(fd)
+            compression = container(fd, getattr(args, 'member', None))
             image_format = layout(fd, compression, target['size_bytes'])
-            rollback = save_rollback(context, target, progress)
+            # A BOOT kept on cache as a saved BOOT is not kept there a second time.
+            rollback = save_rollback(context, target, progress, skip_cache=bool(kept and (kept['kept'] or kept.get('note') == 'identical')))
             writer = context.open_target(target, write=True)
             reader = open_reader(fd, compression, target['size_bytes'])
             digest, position = hashlib.sha256(), 0
@@ -714,10 +889,15 @@ def write(context, args, progress):
         observed = read_back(context, target, progress)
         require(observed == args.expected_sha256, 'READBACK_MISMATCH',
                 'The partition does not match the image after writing', rollback=rollback)
+        # 2026-11-10: an Android BOOT gets the mark that keeps this recovery (saved_boot.keep_recovery):
+        # Samsung's Android otherwise puts its own recovery back at its next start.
+        marked = saved_boot.keep_recovery(context, target) if args.target == 'boot' else None
         # A normal boot then knows this BOOT (or vbmeta, dtbo) was put there on purpose.
-        recorded = install.record_flash(context, args.target, observed)
+        recorded = install.record_flash(context, args.target, marked['sha256'] if marked else observed)
         return {'target': {'label': args.target, 'size_bytes': target['size_bytes']}, 'sha256': observed,
-                'verified': True, 'rollback': rollback, 'recorded': recorded}
+                'verified': True, 'rollback': rollback, 'recorded': recorded, 'kept_boot': kept['kept'] if kept else None,
+                'kept_boot_note': kept.get('note') if kept and not kept['kept'] else None,
+                'keeps_recovery': bool(marked)}
 
 
 def parser():
@@ -733,6 +913,7 @@ def parser():
         command.add_argument('--volume', required=True)
         command.add_argument('--volume-token', required=True)
         command.add_argument('--path', required=True)
+        command.add_argument('--member', help='An image inside a ZIP or a tar, by its name there (a ZIP: system.img or its only image by default)')
     write_command = commands.choices['write']
     write_command.add_argument('--expected-sha256', required=True)
     write_command.add_argument('--expected-identity', required=True)

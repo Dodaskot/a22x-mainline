@@ -115,7 +115,13 @@ class Phone:
 
     def battery(self):
         folder = Path('sys/class/power_supply/battery')
-        return {name: self.text(folder / name) for name in ('status', 'capacity', 'voltage_now', 'current_now', 'charge_full_design', 'technology')}
+        found = {name: self.text(folder / name) for name in ('status', 'capacity', 'voltage_now', 'current_now', 'charge_full_design', 'technology')}
+        # The interface's own estimate (2026-11-11): the kernel's level is counted from one reading
+        # taken under load at the start, and can be far off. One number is shown everywhere.
+        level = number(self.text('run/a22x-recovery/battery-level'))
+        if level is not None and 0 <= level <= 100:
+            found['capacity'] = str(level)
+        return found
 
     def panel(self):
         for connector in self.glob('sys/class/drm/card*-*'):
@@ -191,6 +197,7 @@ def describe(root='/'):
         maker = ' '.join(item for item in (STORAGE_MAKERS.get(number(phone.text(internal / 'manfid'), 16) or 0, ''), phone.text(internal / 'name')) if item)
     voltage = number(battery['voltage_now'])
     design = number(battery['charge_full_design'])
+    flow = number(battery['current_now'])
     status = battery['status']
     sections = [
         {'title': 'Device', 'rows': rows(
@@ -211,6 +218,7 @@ def describe(root='/'):
         {'title': 'Battery', 'rows': rows(
             ('Level', battery['capacity'], '%'), ('State', status if status in BATTERY_STATES else '', ''),
             ('Voltage', f'{voltage / 1000000:.2f}' if voltage else '', 'V'),
+            ('Current', f'{flow / 1000:+.0f}' if flow is not None else '', 'mA'),
             ('Design capacity', str(design // 1000) if design else '', 'mAh'), ('Type', battery['technology'], ''))},
         {'title': 'Software', 'rows': rows(
             ('Recovery', recovery_version(phone), ''),

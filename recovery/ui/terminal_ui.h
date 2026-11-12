@@ -313,7 +313,8 @@ static bool terminal_action(App*a,int id){
     if(!terminal_screen(a))return false;
     if(a->terminal_expected==2)return true; /* Wait for status-only stop confirmation. */
     if(a->job.pid&&!terminal_background_job(a->job.kind))return true;
-    if(id==A_BACK||id==A_TERM_CLOSE){if(terminal_session_open(a))terminal_leave(a);screen(a,HOME);terminal_pump(a);return true;}
+    /* The terminal opens over any page (swipe up and hold): Back returns to that page, as it was left. */
+    if(id==A_BACK||id==A_TERM_CLOSE){enum Screen from=came_from(a,HOME);if(terminal_session_open(a))terminal_leave(a);screen(a,from);terminal_pump(a);return true;}
     if(id==A_TERM_REFRESH){a->terminal_pending=J_TERM_STATUS;a->terminal_pending_after=0;a->terminal_paused=false;a->terminal_reason[0]=0;a->terminal_expected=0;terminal_pump(a);return true;}
     if(id==A_TERM_START){
         if(a->fs_dirty||a->fs_new_file){terminal_failure(a,"UNSAVED_EDITS","Save or discard the file editor before starting this shell.");return true;}

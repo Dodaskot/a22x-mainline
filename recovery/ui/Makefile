@@ -5,7 +5,7 @@ LDLIBS ?= -lm
 CROSS_COMPILE ?= aarch64-linux-gnu-
 # MT6833 has Cortex-A76 and A55 cores, which share this instruction set.
 ARM64_TUNE ?= -O3 -mcpu=cortex-a76 -fno-semantic-interposition
-UI_HEADERS = json_min.h font_data.h font_extra.h clock_font.h native_canvas.h i18n_data.h flash_ui.h theme.h theme_files.h theme_assets.h kinetic_scroll.h terminal_model.h terminal_ui.h terminal_font.h systems_ui.h install_types.h install_ui.h wifi_ui.h installer_ui.h images_ui.h adb_ui.h packages_ui.h identity_ui.h android_plan_ui.h wipe_ui.h screenshot_ui.h charger_ui.h shells_ui.h locale_ui.h zones_data.h app_icons_data.h
+UI_HEADERS = androidlog_ui.h json_min.h font_data.h font_extra.h clock_font.h native_canvas.h i18n_data.h flash_ui.h theme.h theme_files.h theme_assets.h kinetic_scroll.h terminal_model.h terminal_ui.h terminal_font.h systems_ui.h install_types.h install_ui.h wifi_ui.h installer_ui.h images_ui.h adb_ui.h packages_ui.h identity_ui.h android_plan_ui.h wipe_ui.h android_ui.h card_ui.h copies_ui.h source_ui.h screenshot_ui.h charger_ui.h shells_ui.h locale_ui.h zones_data.h app_icons_data.h
 
 all: a22x-recovery-ui
 
@@ -29,6 +29,9 @@ test: a22x-recovery-ui
 
 integration: a22x-recovery-ui
 	python3 tools/test_integration.py
+
+card-ui-integration: a22x-recovery-ui
+	python3 tools/test_card_ui.py
 
 files-integration: a22x-recovery-ui
 	python3 tools/test_filesystem_integration.py
@@ -85,6 +88,15 @@ identity-ui-test: test_identity_ui.c recovery_ui.c json_min.c $(UI_HEADERS)
 
 identity-ui-integration: identity-ui-test
 	python3 tools/test_identity_ui.py
+
+flash-chain-test: test_flash_chain.c recovery_ui.c json_min.c $(UI_HEADERS)
+	$(CC) $(CFLAGS) test_flash_chain.c json_min.c $(LDFLAGS) -o flash-chain-test $(LDLIBS)
+	mkdir -p flash-chain-work && ./flash-chain-test flash-chain-work
+
+# Where Back leads: every page through its buttons, and the reads that end after a page was left.
+nav-ui-test: test_nav_ui.c recovery_ui.c json_min.c $(UI_HEADERS)
+	$(CC) $(CFLAGS) test_nav_ui.c json_min.c $(LDFLAGS) -o nav-ui-test $(LDLIBS)
+	mkdir -p nav-ui-work && ./nav-ui-test nav-ui-work
 
 catalog-chain-test: test_catalog_chain.c recovery_ui.c json_min.c $(UI_HEADERS)
 	$(CC) $(CFLAGS) test_catalog_chain.c json_min.c $(LDFLAGS) -o catalog-chain-test $(LDLIBS)

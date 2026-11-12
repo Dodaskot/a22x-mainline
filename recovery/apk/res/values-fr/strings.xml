@@ -16,10 +16,10 @@
     <string name="partition_line">%1$s : %2$s, l’image demande %3$s</string>
     <string name="partition_missing">introuvable</string>
     <string name="install_title">Installer</string>
-    <string name="install_text">Choisissez ce qui est écrit : le recovery, le BOOT ou les deux.</string>
+    <string name="install_text">Choisissez ce qui est écrit : le recovery maintenant, et le BOOT Linux pour plus tard.</string>
     <string name="option_recovery">A22x Recovery %1$s · %2$s</string>
-    <string name="option_boot">BOOT Linux %1$s · %2$s</string>
-    <string name="boot_warning">Android ne démarre pas avec ce BOOT : il démarre le système Linux installé par le recovery. Votre BOOT actuel est d’abord enregistré, et le recovery peut le réécrire (Installer → Flasher une partition → boot).</string>
+    <string name="option_boot">BOOT Linux %1$s · %2$s, conservé pour le recovery</string>
+    <string name="boot_warning">La partition BOOT n’est pas touchée : ce BOOT Linux est conservé sur cache, et le recovery l’écrit quand il installe un système Linux. D’ici là, Android continue de démarrer.</string>
     <string name="install">Installer</string>
     <string name="working">En cours :</string>
     <string name="sha">SHA-256 %1$s…</string>
@@ -29,6 +29,7 @@
     <string name="confirm_backup">Le contenu actuel est d’abord enregistré dans %1$s, et chaque partition est relue après l’écriture.</string>
     <string name="cancel">Annuler</string>
     <string name="done_flash">%1$s écrit et relu. L’ancien contenu est dans %2$s.</string>
+    <string name="done_keep">Le BOOT Linux est conservé sur cache pour le recovery. Android démarre comme avant.</string>
     <string name="failed">Non fait : %1$s</string>
     <string name="wifi_title">Wi-Fi pour le recovery</string>
     <string name="wifi_text">Le recovery le lit une fois à son prochain démarrage, garde le réseau comme clé WPA et supprime le fichier.</string>

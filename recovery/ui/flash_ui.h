@@ -12,6 +12,12 @@ static const char*flash_target_label(const App*a){
     return a->flash_selected>=0&&a->flash_selected<(int)a->flash_target_count?a->flash_targets[a->flash_selected].label:"";
 }
 static enum Screen flash_home(const App*a){return a->flash_restore?LIST:FLASH;}
+/* After an image that was refused or reviewed: the folder it was chosen in, to choose another
+ * (2026-11-10, as TWRP returns to its list of files); else the list of partitions. */
+static enum Screen flash_repick(App*a,enum Screen from){
+    if(from!=FILE_BROWSER||!current_volume(a)||!current_volume(a)->mounted)return flash_home(a);
+    a->flash_pick=true;return FILE_BROWSER;
+}
 static bool start_flash_job(App*a,int kind){
     if(a->job.pid||a->preview||!flash_job(kind))return false;
     char*args[20];int n=0;args[n++]=a->python;args[n++]=a->flash_helper;
@@ -34,7 +40,7 @@ static void complete_flash_job(App*a,const Json*j,int kind,bool ok){
         char code[96]="FLASH_FAILED",message[384]="The helper did not return a result.";
         if(j){int error=json_get(j,0,"error");if(error>=0){jstring(j,error,"code",code,sizeof(code));jstring(j,error,"message",message,sizeof(message));}}
         if(kind==J_FLASH_TARGETS){a->flash_known=false;copy(a->flash_reason,sizeof(a->flash_reason),message);a->dirty=true;return;}
-        a->flash_review_valid=false;files_problem(a,code,message,flash_home(a));return;
+        a->flash_review_valid=false;files_problem(a,code,message,kind==J_FLASH_CHECK?flash_repick(a,nav_top(a)):flash_home(a));return;
     }
     if(kind==J_FLASH_TARGETS){
         a->flash_target_count=0;int list=json_get(j,0,"targets");if(list<0||j->tokens[list].type!=J_ARRAY)return;
@@ -44,13 +50,22 @@ static void complete_flash_job(App*a,const Json*j,int kind,bool ok){
             if(t->label[0])a->flash_target_count++;
         }
         a->flash_super_free=json_uint(j,json_get(j,0,"super_free_bytes"),0);
-        a->flash_known=a->flash_target_count>0;a->flash_reason[0]=0;a->dirty=true;return;
+        a->flash_known=a->flash_target_count>0;a->flash_reason[0]=0;a->dirty=true;
+        /* "Flash it to BOOT" after the stock BOOT was taken out of the firmware (2026-11-10): the
+           partitions are known now, so BOOT is chosen and the kept copy checked like any image. */
+        if(a->flash_after_targets){
+            a->flash_after_targets=false;a->flash_selected=-1;
+            for(unsigned int n=0;n<a->flash_target_count;n++)if(!strcmp(a->flash_targets[n].label,"boot"))a->flash_selected=(int)n;
+            /* Not for a page that was left while the partitions were read. */
+            if(a->flash_selected>=0&&!a->nav_hold)start_flash_job(a,J_FLASH_CHECK);
+        }
+        return;
     }
     if(kind==J_FLASH_CHECK){
         int image=json_get(j,0,"image"),target=json_get(j,0,"target");char label[24]={0};if(target>=0)jstring(j,target,"label",label,sizeof(label));
         /* The helper chose the partition in Restore; anything but these two is refused here as well. */
         bool known=a->flash_restore?(!strcmp(label,"userdata")||!strcmp(label,"boot")):!strcmp(label,flash_target_label(a));
-        if(image<0||!known){files_problem(a,"INVALID_FLASH_REVIEW","The helper did not describe the image.",flash_home(a));return;}
+        if(image<0||!known){files_problem(a,"INVALID_FLASH_REVIEW","The helper did not describe the image.",flash_repick(a,nav_top(a)));return;}
         if(a->flash_restore)copy(a->flash_label,sizeof(a->flash_label),label);
         a->flash_offline=json_bool(j,json_get(j,target,"offline"),1)!=0;a->flash_checksum[0]=0;
         a->flash_logical=json_bool(j,json_get(j,target,"logical"),0)==1;a->flash_size_now=json_uint(j,json_get(j,target,"size_bytes"),0);
@@ -72,7 +87,7 @@ static void complete_flash_job(App*a,const Json*j,int kind,bool ok){
             char line[160];if(json_string(j,i,line,sizeof(line))<=0)continue;if(a->flash_warnings[0])append(a->flash_warnings,sizeof(a->flash_warnings),"\n");append(a->flash_warnings,sizeof(a->flash_warnings),tr(line));
         }
         a->flash_review_valid=valid_sha256(a->flash_sha)&&valid_sha256(a->flash_identity)&&(!a->flash_logical||a->flash_payload>0);
-        if(!a->flash_review_valid){files_problem(a,"INVALID_FLASH_REVIEW","The helper did not describe the image.",flash_home(a));return;}
+        if(!a->flash_review_valid){files_problem(a,"INVALID_FLASH_REVIEW","The helper did not describe the image.",flash_repick(a,nav_top(a)));return;}
         screen(a,FLASH_REVIEW);return;
     }
     char expected[80]={0};jstring(j,0,"sha256",expected,sizeof(expected));a->flash_review_valid=false;
@@ -80,6 +95,10 @@ static void complete_flash_job(App*a,const Json*j,int kind,bool ok){
     a->successful=true;copy(a->status,sizeof(a->status),a->flash_restore?"Partition restored":"Partition flashed");char kept[PATH_LEN]={0};int rollback=json_get(j,0,"rollback");
     if(rollback>=0&&j->tokens[rollback].type==J_OBJECT){char volume[96]={0},path[256]={0};jstring(j,rollback,"volume",volume,sizeof(volume));jstring(j,rollback,"path",path,sizeof(path));snprintf(kept,sizeof(kept),"\n\n%s\n%s: %s",T("The old content was saved here:"),volume,path);}
     snprintf(a->message,sizeof(a->message),T("%s was written and read back. Every byte matches the image.%s"),flash_target_label(a),kept);
+    /* The BOOT that was there, kept on cache first (2026-11-10): the way back. */
+    {char saved[PATH_LEN]={0};jstring(j,0,"kept_boot",saved,sizeof(saved));
+     if(saved[0]){append(a->message,sizeof(a->message),"\n\n");append(a->message,sizeof(a->message),tr("The BOOT that was there is kept on cache:"));
+         append(a->message,sizeof(a->message),"\n");append(a->message,sizeof(a->message),saved);}}
     /* A Linux copy usually comes with its own kernel; it belongs on BOOT too. */
     if(a->flash_restore&&!strcmp(a->flash_label,"userdata")){append(a->message,sizeof(a->message),"\n\n");append(a->message,sizeof(a->message),T("If the backup also has a BOOT image, restore it the same way before starting Linux."));}
     a->result_return=flash_home(a);screen(a,RESULT);
@@ -102,7 +121,7 @@ static void render_flash(App*a){
         text(a,644-text_width(size,0),y+36,0,MUTED,size);icon(a,ICON_CHEVRON,646,y+35,30,MUTED);register_button(a,r,action,ui_free(a),0);
         y+=110;
     }
-    wrapped(a,40,y+14,640,0,MUTED,"The bootloader, modem and calibration data are not listed and cannot be flashed here.",3);
+    text_tile(a,y+14,0,MUTED,"The bootloader, modem and calibration data are not listed and cannot be flashed here.",3);
 }
 /* super: the whole image (as Odin's AP has it) or one logical partition inside (a GSI's system). */
 static void render_flash_super(App*a){
@@ -120,7 +139,7 @@ static void render_flash_super(App*a){
         register_button(a,r,A_FLASH_TARGET+(int)n,ui_free(a),0);y+=124;
     }
     char free_[64];human_bytes(a->flash_super_free,free_,sizeof(free_));snprintf(line,sizeof(line),T("Free in super: %s"),free_);text(a,40,y+10,0,MUTED,line);
-    wrapped(a,40,y+60,640,0,MUTED,"A GSI's system.img goes into system. When the image is larger, the partition grows into the free space of super; the other partitions stay as they are.",5);
+    text_tile(a,y+60,0,MUTED,"A GSI's system.img goes into system. When the image is larger, the partition grows into the free space of super; the other partitions stay as they are.",5);
 }
 static void render_flash_review(App*a){
     char size[64],line[160];human_bytes(a->flash_bytes,size,sizeof(size));
@@ -133,7 +152,7 @@ static void render_flash_review(App*a){
     int y=700;
     if(a->flash_contents[0]){raw_text(true);y+=wrapped(a,40,y,640,0,GREEN,a->flash_contents,2)+16;raw_text(false);}
     /* Nothing is written then: no size change and no copy are announced (2026-11-10). */
-    if(a->flash_identical)y+=wrapped(a,40,y,640,1,GREEN,"This image is already on the partition. There is nothing to flash.",3)+16;
+    if(a->flash_identical)y+=text_tile(a,y,1,GREEN,"This image is already on the partition. There is nothing to flash.",3)+16;
     if(a->flash_logical&&!a->flash_identical){
         char now[48],after[48];human_bytes(a->flash_size_now,now,sizeof(now));human_bytes(a->flash_size_after,after,sizeof(after));
         if(a->flash_size_after>a->flash_size_now)snprintf(line,sizeof(line),T("The partition grows from %s to %s inside super."),now,after);
@@ -143,16 +162,17 @@ static void render_flash_review(App*a){
     }
     if(a->flash_restore){
         if(a->flash_checksum[0]){snprintf(line,sizeof(line),T("Matches the checksum saved with it: %s"),a->flash_checksum);y+=wrapped(a,40,y,640,0,GREEN,line,2)+16;}
-        else y+=wrapped(a,40,y,640,0,MUTED,"No checksum was saved next to this image. The image is checked again while it is written.",3)+16;
+        else y+=text_tile(a,y,0,MUTED,"No checksum was saved next to this image. The image is checked again while it is written.",3)+16;
     }
-    if(a->flash_warnings[0])y+=wrapped(a,40,y,640,0,a->flash_offline?ORANGE:RED,a->flash_warnings,5)+16;
-    if(a->flash_rollback[0]&&!a->flash_identical){snprintf(line,sizeof(line),T("The current content will be saved to %s first."),a->flash_rollback);y+=wrapped(a,40,y,640,0,MUTED,line,2)+16;}
-    wrapped(a,40,y,640,0,MUTED,"Recovery stays on the phone, so you can come back here and flash again.",3);
+    if(a->flash_warnings[0])y+=text_tile(a,y,0,a->flash_offline?ORANGE:RED,a->flash_warnings,5)+16;
+    if(a->flash_rollback[0]&&!a->flash_identical){snprintf(line,sizeof(line),T("The current content will be saved to %s first."),a->flash_rollback);y+=text_tile(a,y,0,MUTED,line,2)+16;}
+    text_tile(a,y,0,MUTED,"Recovery stays on the phone, so you can come back here and flash again.",3);
     button(a,(Rect){28,1320,664,104},a->flash_restore?"Hold 3 seconds to restore":"Hold 3 seconds to flash",A_FLASH_CONFIRM,ui_free(a)&&a->flash_review_valid&&!a->flash_identical&&a->flash_offline,true,3000);
 }
 /* Choosing a file only reads, so the picker offers nothing that changes storage. */
 static bool pick_action(App*a,int id,void(*chosen)(App*)){
-    if(id==A_FS_VOLUME||(id==A_BACK&&a->screen==FILE_BROWSER&&!strcmp(a->fs_path,"/"))){screen(a,FILE_VOLUMES);return true;}
+    /* A card chosen in the sheet returns to the sheet; the other pickers to their page of volumes. */
+    if(id==A_FS_VOLUME||(id==A_BACK&&a->screen==FILE_BROWSER&&!strcmp(a->fs_path,"/"))){if(!source_back(a))screen(a,FILE_VOLUMES);return true;}
     if(id>=A_FS_VOLUME_ITEM&&id<A_FS_VOLUME_ITEM+a->volume_count){
         int index=id-A_FS_VOLUME_ITEM;const FileVolume*v=&a->volumes[index];if(!flash_source_allowed(v))return true;
         bool mounted=v->mounted;select_volume(a,index);
@@ -198,11 +218,20 @@ static bool flash_action(App*a,int id){
         a->flash_selected=id-A_FLASH_TARGET;a->flash_pick=true;a->volume_scroll=0;a->fs_inventory_destination=FILE_VOLUMES;screen(a,FILE_VOLUMES);start_files_job(a,J_FS_INVENTORY);return true;
     }
     if(a->flash_pick){
-        if(id==A_FLASH_CANCEL_PICK||(id==A_BACK&&a->screen==FILE_VOLUMES)){a->flash_pick=false;screen(a,flash_home(a));return true;}
-        return pick_action(a,id,flash_chosen);
+        /* Samsung's firmware is chosen with the same picker (2026-11-10): its AP file. */
+        /* Back to the page the image was asked for on: the partitions, those inside super, or Restore. */
+        if((id==A_FLASH_CANCEL_PICK||(id==A_BACK&&a->screen==FILE_VOLUMES))&&a->zip_adding&&a->zip_count){
+            a->zip_adding=false;a->flash_pick=a->samsung_pick=a->stock_boot_pick=a->zip_pick=a->rom_pick=false;
+            zip_item_to_review(a,&a->zip_queue[a->zip_count-1]);a->zip_known=true;screen(a,ZIP_REVIEW);return true;
+        }
+        if(id==A_FLASH_CANCEL_PICK||(id==A_BACK&&a->screen==FILE_VOLUMES)){bool firmware=a->samsung_pick||a->zip_pick||a->rom_pick;enum Screen from=came_from_picker(a,flash_home(a));a->flash_pick=a->samsung_pick=a->stock_boot_pick=a->zip_pick=a->rom_pick=false;screen(a,firmware?ANDROID_MENU:from);return true;}
+        return pick_action(a,id,a->rom_pick?rom_chosen:(a->zip_pick?zip_chosen:(a->samsung_pick?(a->stock_boot_pick?stock_boot_chosen:samsung_chosen):flash_chosen)));
     }
     if(id==A_FLASH_CONFIRM&&a->screen==FLASH_REVIEW){if(a->flash_review_valid&&!a->flash_identical)start_flash_job(a,J_FLASH_WRITE);return true;}
-    if(id==A_BACK&&(a->screen==FLASH||a->screen==FLASH_REVIEW)){screen(a,a->screen==FLASH?OS_MENU:flash_home(a));return true;}
+    /* Flash a partition also opens from Root and after a stock BOOT was taken out: Back returns there. */
+    if(id==A_BACK&&a->screen==FLASH){reopen(a,came_from(a,OS_MENU));return true;}
+    /* The review returns to the folder the image was chosen in, to choose another. */
+    if(id==A_BACK&&a->screen==FLASH_REVIEW){reopen(a,flash_repick(a,came_from(a,flash_home(a))));return true;}
     return false;
 }
 #endif

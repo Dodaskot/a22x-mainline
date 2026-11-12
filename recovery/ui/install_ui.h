@@ -425,7 +425,7 @@ static bool install_action(App*a,int id){
     if(id==A_INSTALL_CONFIRM&&a->screen==INSTALL_PLAN){start_install_job(a,J_INSTALL_EXECUTE);return true;}
     if(id==A_INSTALL_POWER&&a->screen==INSTALL_RESULT){screen(a,POWER);return true;}
     if(id==A_BACK&&(a->screen==INSTALL||a->screen==INSTALL_PLAN||a->screen==INSTALL_RESULT)){
-        enum Screen from=a->screen;install_forget_plan(a);m->review_resume=false;screen(a,from==INSTALL?OS_MENU:INSTALL);if(from!=INSTALL)start_install_job(a,J_INSTALL_STATUS);return true;
+        enum Screen from=a->screen,back=from==INSTALL?came_from(a,OS_MENU):INSTALL;install_forget_plan(a);m->review_resume=false;reopen(a,back);if(from!=INSTALL)start_install_job(a,J_INSTALL_STATUS);return true;
     }
     return false;
 }

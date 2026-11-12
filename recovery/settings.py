@@ -35,8 +35,10 @@ LOCK_WAIT = 3.0
 # timezone: a tz database zone (Europe/Berlin) for the recovery clock with summer time; empty keeps
 # the fixed utc_offset (2026-11-09).
 DEFAULTS = {'language': 'en', 'theme': 'graphite', 'terminal': 'auto', 'storage': 'sd', 'vibration': 2, 'timeout': 2, 'utc_offset': 0,
-            'refresh': 0, 'brightness': 0, 'animation': 'zoom', 'lock': 1, 'access': 1, 'navigation': 0, 'timezone': ''}
-TEXT_KEYS = ('language', 'theme', 'terminal', 'storage', 'animation', 'timezone')
+            'refresh': 0, 'brightness': 0, 'animation': 'zoom', 'lock': 1, 'access': 1, 'navigation': 0, 'timezone': '',
+            'torch': 0,  # the flashlight's level; 0: not chosen yet
+            'android_log': ''}  # the id of the failed start of Android the owner has read about (android_log.py)
+TEXT_KEYS = ('language', 'theme', 'terminal', 'storage', 'animation', 'timezone', 'android_log')
 ANIMATIONS = ('zoom', 'blur', 'slide', 'fade', 'dissolve', 'off')
 
 
@@ -51,6 +53,8 @@ def valid(key, value):
         return value in ('sd', 'usb')
     if key == 'animation':
         return value in ANIMATIONS
+    if key == 'android_log':
+        return re.fullmatch(r'(?:[0-9a-f]{16})?', value) is not None
     if key == 'timezone':
         return value == '' or (len(value) <= 64 and re.fullmatch(r'[A-Z][A-Za-z_]+(?:/[A-Za-z0-9_+-]+){1,2}', value) is not None)
     if not re.fullmatch(r'-?[0-9]{1,4}', value):
@@ -59,7 +63,8 @@ def valid(key, value):
     return {'vibration': 0 <= number <= 3, 'timeout': 0 <= number <= 5,
             'utc_offset': -720 <= number <= 840 and number % 15 == 0,
             'refresh': number in (0, 60, 90), 'brightness': 0 <= number <= 100,
-            'lock': 0 <= number <= 2, 'access': number in (0, 1), 'navigation': 0 <= number <= 2}.get(key, False)
+            'lock': 0 <= number <= 2, 'access': number in (0, 1), 'navigation': 0 <= number <= 2,
+            'torch': 0 <= number <= 255}.get(key, False)
 
 
 @contextlib.contextmanager

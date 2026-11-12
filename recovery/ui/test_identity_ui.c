@@ -39,12 +39,26 @@ int main(int argc,char**argv){
     /* userdata is skipped when choosing the next volume: Android's factory reset erases it. */
     render(a);ICHECK(test_press(a,A_ID_DEST_NEXT,50)&&!strcmp(a->id_volume_id,"sdcard-p1"));
     render(a);ICHECK(test_press(a,A_ID_BACKUP,2100));settle(a);
-    ICHECK(a->screen==IDENTITY&&!strncmp(a->id_done,"/A22xAndroidBackups/android-",28));
-    char folder[PATH_LEN*2];snprintf(folder,sizeof(folder),"%s/sd%s/boot.img",argv[1],a->id_done);ICHECK(access(folder,R_OK)==0);
-    snprintf(folder,sizeof(folder),"%s/sd%s/super.img",argv[1],a->id_done);ICHECK(access(folder,R_OK)==0);
-    snprintf(folder,sizeof(folder),"%s/sd%s/vbmeta.img",argv[1],a->id_done);ICHECK(access(folder,F_OK)!=0);
-    ICHECK(test_press(a,A_ID_RESTORE_OPEN,50)&&a->screen==IDENTITY_RESTORE);settle(a);
-    ICHECK(a->id_backup_count==1&&a->id_backups[0].same&&a->id_backups[0].parts==2);
+    /* 2026-11-11: a copy of Android is one compressed archive, and nothing half-written is left beside it. */
+    size_t done=strlen(a->id_done);
+    ICHECK(a->screen==IDENTITY&&!strncmp(a->id_done,"/A22xAndroidBackups/android-",28)&&done>8&&!strcmp(a->id_done+done-8,".tar.zst"));
+    char folder[PATH_LEN*2];snprintf(folder,sizeof(folder),"%s/sd%s",argv[1],a->id_done);
+    struct stat packed;ICHECK(stat(folder,&packed)==0&&S_ISREG(packed.st_mode)&&packed.st_size>0&&packed.st_size<(1<<20));
+    /* Its copies are restored from the Restore page, in Android's category: the page of the copy
+       names its two partitions, checks it, restores it (nothing differs) and deletes it by a hold. */
+    ICHECK(test_press(a,A_ID_RESTORE_OPEN,50)&&a->screen==LIST&&list_android(a));for(int n=0;n<3;n++)settle(a);
+    ICHECK(a->copies_known&&a->copy_count==1&&a->copies[0].archive&&a->copies[0].same&&a->copies[0].writable&&a->copies[0].parts==2);
+    ICHECK(!strcmp(a->copies[0].labels[0],"boot")&&!strcmp(a->copies[0].labels[1],"super")&&!strcmp(a->copies[0].path,a->id_done)&&a->copies[0].file_bytes==(uint64_t)packed.st_size);
+    ICHECK(test_press(a,A_COPY_ITEM,50)&&a->screen==COPY_DETAIL);
+    ICHECK(test_press(a,A_COPY_VERIFY,50));settle(a);
+    ICHECK(a->screen==RESULT&&a->successful&&a->result_return==COPY_DETAIL&&test_press(a,A_DONE,50)&&a->screen==COPY_DETAIL);
+    ICHECK(test_press(a,A_COPY_RESTORE,3100));settle(a);
+    ICHECK(a->screen==RESULT&&a->successful&&strstr(a->message,"nothing was written")&&test_press(a,A_DONE,50)&&a->screen==COPY_DETAIL);
+    render(a);b=test_button(a,A_COPY_DELETE);ICHECK(b&&b->enabled&&b->hold_ms==3000);
+    ICHECK(test_press(a,A_COPY_DELETE,2500)&&!a->job.pid&&access(folder,R_OK)==0);
+    ICHECK(test_press(a,A_COPY_DELETE,3100));for(int n=0;n<3;n++)settle(a);
+    ICHECK(a->screen==LIST&&a->successful&&a->copies_known&&a->copy_count==0&&a->copy_pick==-1&&access(folder,F_OK)!=0);
+    ICHECK(access(manifest,R_OK)==0); /* The identity copy made first is another kind and stays. */
     action(a,A_BACK);ICHECK(a->screen==IDENTITY);
     action(a,A_BACK);ICHECK(a->screen==BACKUP);
     printf("{\"ok\":true,\"checks\":%u}\n",checks);free(a->pixels);free(a);return 0;

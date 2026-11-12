@@ -162,10 +162,19 @@ def vbmeta(blob, verify=True):
             and descriptors_offset + descriptors_size <= aux_size and hash_offset + hash_size <= auth_size,
             'VBMETA_INVALID', 'The vbmeta blocks lie outside the image')
     aux = blob[256 + auth_size:256 + auth_size + aux_size]
-    checked = False
+    checked = flags_changed = False
     if verify and algorithm in AVB_HASHES:
         digest = hashlib.new(AVB_HASHES[algorithm], blob[:256] + aux).digest()
-        require(hash_size == len(digest) and blob[256 + hash_offset:256 + hash_offset + hash_size] == digest,
+        stored = blob[256 + hash_offset:256 + hash_offset + hash_size]
+        if stored != digest and flags & 2:
+            # 2026-11-10: a signed vbmeta whose flags alone were set (verification off: Magisk's
+            # putInt(120, 3) for Samsung, this recovery's root): its hash fits the header with flags 0.
+            original = bytearray(blob[:256])
+            struct.pack_into('>I', original, 120, 0)
+            flags_changed = hashlib.new(AVB_HASHES[algorithm], bytes(original) + aux).digest() == stored
+            if flags_changed:
+                digest = stored
+        require(hash_size == len(digest) and stored == digest,
                 'VBMETA_DAMAGED', 'The vbmeta hash does not match its contents')
         checked = True
     descriptors, at, end = [], descriptors_offset, descriptors_offset + descriptors_size
@@ -185,7 +194,7 @@ def vbmeta(blob, verify=True):
             descriptors.append({'kind': {0: 'property', 1: 'hashtree', 3: 'kernel_cmdline', 4: 'chain'}.get(tag, 'other')})
         at += 16 + following
     return {'size': 256 + auth_size + aux_size, 'algorithm': algorithm, 'hash_checked': checked, 'flags': flags,
-            'descriptors': descriptors}
+            'flags_changed': flags_changed, 'descriptors': descriptors}
 
 
 def avb_footer(data):
@@ -276,7 +285,21 @@ def kernel_info(blob):
     release = re.search(rb'Linux version (\S{1,64}) ', image) if image else None
     trees = fdts(appended.lstrip(b'\0')) if appended.lstrip(b'\0')[:4] == FDT_MAGIC.to_bytes(4, 'big') else []
     return {'compression': compression, 'verified': verified, 'trees': trees,
-            'release': release.group(1).decode('utf-8', 'replace') if release else None}
+            'release': release.group(1).decode('utf-8', 'replace') if release else None,
+            'kernelpatch': kernelpatch_version(image) if image else None}
+
+
+KERNELPATCH_MAGIC = b'KP1158\0\0'
+
+
+def kernelpatch_version(image):
+    """The version of KernelPatch (what APatch puts into a kernel, 2026-11-11) in an unpacked arm64
+    Image, or None: its image starts with the magic, then the version as bytes (0, patch, minor, major)."""
+    at = image.find(KERNELPATCH_MAGIC)
+    if at < 0 or at + 12 > len(image):
+        return None
+    _, patch, minor, major = image[at + 8:at + 12]
+    return '%d.%d.%d' % (major, minor, patch)
 
 
 def cpio_files(raw, wanted):
@@ -298,10 +321,25 @@ def cpio_files(raw, wanted):
     return found
 
 
+def cpio_names(raw):
+    """The names of a newc cpio archive, as written there."""
+    at = 0
+    while at + 110 <= len(raw) and raw[at:at + 6] in (b'070701', b'070702'):
+        try:
+            size, name_size = int(raw[at + 54:at + 62], 16), int(raw[at + 94:at + 102], 16)
+        except ValueError:
+            return
+        name = raw[at + 110:at + 110 + name_size].rstrip(b'\0')
+        if name == b'TRAILER!!!':
+            return
+        yield name
+        at = (((at + 110 + name_size + 3) & ~3) + size + 3) & ~3
+
+
 def ramdisk_info(blob):
     """Compression and the build properties of a ramdisk."""
     if not blob:
-        return {'compression': None, 'verified': True, 'props': {}}
+        return {'compression': None, 'verified': True, 'props': {}, 'magisk': False}
     if blob[:2] == b'\x1f\x8b':
         stream = zlib.decompressobj(31)
         try:
@@ -325,7 +363,9 @@ def ramdisk_info(blob):
             key, _, value = line.partition('=')
             if key.strip() in PROP_KEYS and key.strip() not in props:
                 props[key.strip()] = value.strip()[:160]
-    return {'compression': compression, 'verified': verified, 'props': props}
+    # Magisk keeps its config at .backup/.magisk in the ramdisk it patched (2026-11-10).
+    magisk = any(name in (b'.backup/.magisk', b'./.backup/.magisk') for name in cpio_names(raw)) if raw else None
+    return {'compression': compression, 'verified': verified, 'props': props, 'magisk': magisk}
 
 
 def device_of(trees, props, board=''):
@@ -374,7 +414,10 @@ def inspect_boot(data, partition='boot'):
             'android': header['os'], 'kernel': {key: kernel[key] for key in ('compression', 'verified', 'release')},
             'ramdisk_compression': ramdisk['compression'], 'props': ramdisk['props'],
             'device': device, 'avb': {'present': bool(footer), 'state': avb_state},
-            'mainline': linux.startswith('7.') or '-a22x' in linux, 'image_bytes': header['end']}
+            'mainline': linux.startswith('7.') or '-a22x' in linux, 'image_bytes': header['end'],
+            # Root in this BOOT: Magisk lives in the ramdisk, APatch (KernelPatch) in the kernel.
+            'root': 'magisk' if ramdisk['magisk'] else ('apatch' if kernel['kernelpatch'] else ''),
+            'kernelpatch': kernel['kernelpatch'] or ''}
 
 
 def inspect_dtbo(data):

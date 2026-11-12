@@ -11,6 +11,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import adbd  # noqa: E402
@@ -89,6 +90,29 @@ class TestKeys(unittest.TestCase):
             thread.join()
         self.assertEqual(answers, [True, False])
         self.assertEqual(list(base.iterdir()), [])
+
+
+class TestSideloadNotice(unittest.TestCase):
+    """2026-11-11: what arrived over adb sideload is told to the interface, which opens a ZIP's
+    review at once, as TWRP's sideload installs it."""
+
+    def test_the_record_names_the_file_its_volume_and_its_kind(self):
+        import json
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / 'adb'
+            place = {'folder': Path(temporary), 'volume': 'sdcard-p1', 'token': 'a' * 64, 'dir': '/.a22x-images'}
+            for name in ('sideload-20261111-000000.zip', 'sideload-20261111-000001-boot.img', 'sideload-20261111-000002.tar.gz'):
+                adbd.announce_sideload(base, place, name, 1234)
+                time.sleep(0.002)
+            records = sorted(base.glob('sideload-*.json'))
+            self.assertEqual(len(records), 3)
+            self.assertEqual([p.name for p in base.iterdir() if p.name.startswith('.')], [])
+            seen = [json.loads(p.read_text()) for p in records]
+            self.assertEqual([(r['file'], r['kind']) for r in seen], [('sideload-20261111-000000.zip', 'zip'),
+                             ('sideload-20261111-000001-boot.img', 'image'), ('sideload-20261111-000002.tar.gz', 'system')])
+            self.assertEqual(seen[0], {'file': 'sideload-20261111-000000.zip', 'volume': 'sdcard-p1', 'token': 'a' * 64,
+                                       'path': '/.a22x-images/sideload-20261111-000000.zip', 'kind': 'zip', 'size': 1234})
+            adbd.announce_sideload(None, place, 'x.zip', 1)  # No folder for requests: nothing to tell.
 
 
 class TestUsbFunction(unittest.TestCase):
@@ -215,6 +239,14 @@ class TestWithTheAdbClient(unittest.TestCase):
         self.assertEqual(target.read_bytes(), data)
         self.assertEqual(self.adb('pull', str(target), str(back)).returncode, 0)
         self.assertEqual(back.read_bytes(), data)
+        # A file that cannot be written out is not "pushed" (2026-11-12: an image came back with
+        # 16 MiB of zeros in it): the flush fails, adb says so, and nothing is left under the name.
+        lost = Path(self.tmp.name) / 'lost.bin'
+        with mock.patch.object(adbd.os, 'fsync', side_effect=OSError(28, 'No space left on device')):
+            failed = self.adb('push', str(source), str(lost))
+        self.assertNotEqual(failed.returncode, 0)
+        self.assertIn('No space left on device', failed.stdout + failed.stderr)
+        self.assertFalse(lost.exists() or Path(str(lost) + '.adb-part').exists())
         listing = self.adb('shell', 'ls ' + self.tmp.name).stdout
         self.assertIn('remote.bin', listing)
         self.assertEqual(self.adb('exec-out', 'printf raw').stdout, 'raw')

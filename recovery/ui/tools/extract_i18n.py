@@ -9,16 +9,21 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCES = ('recovery_ui.c', 'systems_ui.h', 'install_ui.h', 'wifi_ui.h', 'installer_ui.h', 'images_ui.h', 'adb_ui.h', 'packages_ui.h', 'identity_ui.h', 'android_plan_ui.h', 'wipe_ui.h', 'screenshot_ui.h', 'charger_ui.h', 'shells_ui.h', 'locale_ui.h', 'terminal_ui.h', 'flash_ui.h', 'theme.h')
-HELPERS = ('../flash.py', '../themes.py', '../sysinfo.py')
-WORDS = {'unavailable', 'mounted', 'offline', 'raw', 'active', 'yes', 'no', 'live', 'history', 'on', 'off', 'unknown',
+SOURCES = ('recovery_ui.c', 'systems_ui.h', 'install_ui.h', 'wifi_ui.h', 'installer_ui.h', 'images_ui.h', 'adb_ui.h', 'packages_ui.h', 'identity_ui.h', 'android_plan_ui.h', 'wipe_ui.h', 'androidlog_ui.h', 'android_ui.h', 'card_ui.h', 'copies_ui.h', 'source_ui.h', 'screenshot_ui.h', 'charger_ui.h', 'shells_ui.h', 'locale_ui.h', 'terminal_ui.h', 'flash_ui.h', 'theme.h')
+HELPERS = ('../flash.py', '../themes.py', '../sysinfo.py', '../samsung_firmware.py', '../android_gsi.py', '../saved_boot.py', '../sevenzip.py', '../root.py', '../bcb.py', '../clock.py', '../zip_install.py', '../sdcard.py', '../identity_backup.py', '../partition_archive.py')
+WORDS = {'archive', 'folder', 'read-only', 'finished', 'failed', 'not run', 'unavailable', 'mounted', 'offline', 'raw', 'active', 'yes', 'no', 'live', 'history', 'on', 'off', 'unknown',
          'backup', 'wipe', 'restore', '30 s', 'minimal', 'signed', 'none', 'arm64',
          'Europe', 'America', 'Asia', 'Africa', 'Australia', 'Pacific', 'Atlantic', 'Antarctica', 'Arctic'}
-NOT_TEXT = {r'\x89PNG\r\n\x1a\n', 'IHDR', 'IDAT', 'IEND', 'en_US', 'uk_UA', 'de_DE', 'fr_FR', 'pl_PL', 'es_ES', 'it_IT', 'pt_BR', 'nl_NL', 'cs_CZ', 'ro_RO', 'tr_TR', 'ru_RU', 'English', 'Deutsch', 'Français', 'Polski', 'Español', 'Italiano', 'Português', 'Nederlands', 'Čeština', 'Română', 'Türkçe', 'UTC%s', 'UTC%s / %s', 'GDM', 'SDDM', 'LightDM', 'Phrog', '%s  /  Recovery %s', 'Galaxy A22 5G', 'Catppuccin Mocha', 'Catppuccin Latte', 'Dracula', 'Nord', 'Tokyo Night', 'Gruvbox Dark', 'Gruvbox Light', 'Solarized Dark', 'Solarized Light', '%.1000s/A22xBackups', 'SUBSYSTEM=power_supply', 'Charging', 'Full', 'DEVPATH=', 'SUBSYSTEM=block', 'not attached', '(no result buffer)', 'Example external repository', 'ext4 microSD - illustrative preview', 'ABC', 'EN', 'UK',
+NOT_TEXT = {'—', '%4d-%2d-%2dT%2d:%2d:%2dZ', 'recovery-%s.png', r'\x89PNG\r\n\x1a\n', 'IHDR', 'IDAT', 'IEND', 'en_US', 'uk_UA', 'de_DE', 'fr_FR', 'pl_PL', 'es_ES', 'it_IT', 'pt_BR', 'nl_NL', 'cs_CZ', 'ro_RO', 'tr_TR', 'ru_RU', 'English', 'Deutsch', 'Français', 'Polski', 'Español', 'Italiano', 'Português', 'Nederlands', 'Čeština', 'Română', 'Türkçe', 'UTC%s', 'UTC%s / %s', 'GDM', 'SDDM', 'LightDM', 'Phrog', '%s  /  Recovery %s', 'Galaxy A22 5G', 'Catppuccin Mocha', 'Catppuccin Latte', 'Dracula', 'Nord', 'Tokyo Night', 'Gruvbox Dark', 'Gruvbox Light', 'Solarized Dark', 'Solarized Light', '%.1000s/A22xBackups', 'SUBSYSTEM=power_supply', 'Charging', 'Full', 'DEVPATH=', 'SUBSYSTEM=block', 'not attached', '(no result buffer)', 'Example external repository', 'ext4 microSD - illustrative preview', 'ABC', 'EN', 'UK',
             'Esc', 'Tab', 'PYTHONUNBUFFERED', 'INSTALL-STOCK-', 'partclone-ext4-v2+zstd', 'LUKS', 'Plasma', 'Xfce', 'UTC%c%d', 'UTC%c%d:%02d', 'TZ', 'UTC0',
             'SM-A226B  /  Recovery 0.6', 'A22x Recovery', 'Mainline Recovery', 'USB SSH', 'microSD', 'Android', 'Console', '%u Hz', '60 Hz', '90 Hz', 'Ctrl+C', 'Ctrl+D', 'GiB', 'KiB', 'MiB', 'TiB', 'GNOME', 'Phosh', 'Sxmo', 'Lomiri', 'Del', 'saved\\n', 'FILE TEST', 'PREVIEW', 'SHA-256'}
 # Messages from the backup backend that a person is likely to meet.
-BACKEND_TEXT = {'There was not enough free space on userdata for the packages.', 'The package servers could not be reached.', 'A package download did not pass its check.', 'There is not enough space on userdata for this image', 'Choose an image of the store', 'The image is not saved on the phone', 'The image store on userdata is not a folder', 'This system cannot read the saved password of this account. Choose New user with the same name and enter the password again.', 'Shared files require the same group names and GIDs', 'Shared home requires the same user name, UID, primary GID and home path', 'Platform file permissions or owner differ', 'Required kernel, firmware or device adapter file differs', 'Required platform symlink differs', 'A required rootfs directory is missing or symlinked', 'Only systemd distributions are supported by the current device adapter', 'The backup does not fit on this storage. Choose one with more free space', 
+BACKEND_TEXT = {'BOOT holds no Linux kernel for this phone. Flash a Linux BOOT image first: Install, Flash a partition, boot',  # distro.py boot_identity (2026-11-11)
+                # distro.py boot_for_linux and the two steps after it (2026-11-11).
+                'BOOT holds the kernel of Android, and this phone keeps no Linux BOOT: join Wi-Fi so that it can be downloaded, or flash one in Flash a partition',
+                'The Linux BOOT of this plan is no longer offered: plan again', 'The downloaded Linux BOOT is not the one the catalog names',
+                'The Linux BOOT on cache changed since planning',
+                'Insert an SD card or attach a USB drive: while Android uses userdata, downloaded images are kept there', 'There is not enough space on the card for this image', 'The card is mounted read-only as backup storage: disconnect it in Storage first', 'A FAT32 card cannot hold a file of 4 GiB or more', 'A backup with this name already exists', 'Backup destination is read-only', 'The copy changed after it was listed', 'There was not enough free space on userdata for the packages.', 'The package servers could not be reached.', 'A package download did not pass its check.', 'There is not enough space on userdata for this image', 'Choose an image of the store', 'The image is not saved on the phone', 'The image store on userdata is not a folder', 'This system cannot read the saved password of this account. Choose New user with the same name and enter the password again.', 'Shared files require the same group names and GIDs', 'Shared home requires the same user name, UID, primary GID and home path', 'Platform file permissions or owner differ', 'Required kernel, firmware or device adapter file differs', 'Required platform symlink differs', 'A required rootfs directory is missing or symlinked', 'Only systemd distributions are supported by the current device adapter', 'The backup does not fit on this storage. Choose one with more free space', 
                 # filesystem.py check (TWRP's "Repair file system", 2026-11-09).
                 'The check found errors it could not repair', 'The filesystem could not be checked',
                 'Unmount the volume before checking it', 'This recovery checks and repairs ext2, ext3 and ext4 only',
@@ -102,8 +107,14 @@ def interface_text(path):
 
 def helper_text(path):
     text = path.read_text()
-    found = re.findall(r"'([A-Z][a-z][^'\n]*)'", text) + re.findall(r"f?'([A-Z][a-z][^'\n]*)'", text)
-    return [value for value in found if (' ' in value or value in ('Writing',)) and '{' not in value and value not in NOT_TEXT]
+    # "A partition table: ..." too: a sentence may begin with "A " (2026-11-10).
+    found = re.findall(r"'([A-Z](?:[a-z]| [a-z])[^'\n]*)'", text)
+    # A message with an apostrophe is written in double quotes (2026-11-11: "Samsung's Android BOOT
+    # stays" was shown in English in every language). Command help and docstrings are not messages.
+    for line in text.splitlines():
+        if 'help=' not in line and '"""' not in line and not line.lstrip().startswith('#'):
+            found += [value for value in re.findall(r'"([A-Z](?:[a-z]| [a-z])[^"\n]*)"', line) if "'" in value and not value.endswith(': ')]
+    return [value for value in found if (' ' in value or value in ('Writing', 'Reading')) and '{' not in value and value not in NOT_TEXT]
 
 
 def phone_words(path):

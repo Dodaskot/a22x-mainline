@@ -45,9 +45,9 @@ static void render_adb_request(App*a){
     text(a,160,264,2,TEXT,"ADB connection");
     raw_text(true);ellipsis(a,160,326,500,1,MUTED,a->adb_comment[0]?a->adb_comment:a->adb_peer);raw_text(false);
     wrapped(a,52,394,616,0,MUTED,"It gets a root shell, copies files and can restart the phone.",2);
-    text(a,40,520,0,ORANGE,"KEY FINGERPRINT");raw_text(true);wrapped(a,40,562,640,0,TEXT,a->adb_fingerprint,2);raw_text(false);
-    wrapped(a,40,664,640,1,TEXT,"Allow this computer only if you started this yourself.",3);
-    wrapped(a,40,794,640,0,MUTED,"An allowed computer is remembered. When the recovery has a password, it is asked as well.",3);
+    rounded(a,(Rect){28,502,664,142},24,PANEL);text(a,52,518,0,ORANGE,"KEY FINGERPRINT");raw_text(true);wrapped(a,52,558,616,0,TEXT,a->adb_fingerprint,2);raw_text(false);
+    int y=676;y+=text_tile(a,y,1,ORANGE,"Allow this computer only if you started this yourself.",3)+16;
+    text_tile(a,y,0,MUTED,"An allowed computer is remembered. When the recovery has a password, it is asked as well.",3);
     button(a,(Rect){28,1190,664,90},"Deny",A_ADB_DENY,true,false,0);button(a,(Rect){28,1320,664,102},"Allow",A_ADB_ALLOW,true,true,0);
 }
 

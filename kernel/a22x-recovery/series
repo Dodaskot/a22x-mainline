@@ -4,3 +4,5 @@
 0004-drm-mediatek-change-the-refresh-rate-through-the-DSI.patch
 0005-drm-mediatek-draw-the-A22x-recovery-boot-splash.patch
 0006-drm-mediatek-draw-the-recovery-boot-splash-in-the-sa.patch
+0007-power-supply-mt6359-fuel-gauge-check-the-start-again.patch
+0008-power-supply-mt6359-fuel-gauge-say-what-the-RTC-core.patch

@@ -1,0 +1,67 @@
+From c30ac5b6501b3faed3fbe723a6ac19e6486e620c Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Thu, 12 Nov 2026 01:44:17 +0100
+Subject: [PATCH 8/8] power: supply: mt6359-fuel-gauge: say what the RTC core
+ holds after a store
+
+The percent written to RTC_AL_HOU reads back, yet a restart finds the
+value Android wrote before. At the first store of a start the driver now
+reloads the RTC's registers from its core (BBPU key and reload bit, as
+the vendor's rtc_reload does) and logs what the register reads then.
+
+On SM-A226B (recovery kernel #127):
+
+  kept 66% in the RTC: reads 0xc20d, after a reload 0xe00d (BBPU 0x1)
+
+So the write stays in the write buffer and never reaches the core: the
+two keys written to RTC_PROT do not open the write interface here, or
+the trigger does not take. The start of the count stays judged by the
+voltage until this is understood.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_011X51ML8nmkZnA9U8adKvGD
+---
+ drivers/power/supply/mt6359-fuel-gauge.c | 20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/power/supply/mt6359-fuel-gauge.c b/drivers/power/supply/mt6359-fuel-gauge.c
+index a2e6f3996af2..fb4978c64fb1 100644
+--- a/drivers/power/supply/mt6359-fuel-gauge.c
++++ b/drivers/power/supply/mt6359-fuel-gauge.c
+@@ -58,6 +58,8 @@
+ #define RTC_PROT_UNLOCK1		0x586a
+ #define RTC_PROT_UNLOCK2		0x9136
+ #define RTC_BBPU_CBUSY			BIT(6)
++#define RTC_BBPU_RELOAD			BIT(5)
++#define RTC_BBPU_KEY			0x4300
+ #define RTC_AL_HOU_FG_MASK		GENMASK(15, 8)
+ #define RTC_FG_SOC_VALID		BIT(7)
+ #define RTC_FG_SOC_MASK			GENMASK(6, 0)
+@@ -318,8 +320,22 @@ static void mt6359_fg_store_capacity(struct mt6359_fg *fg, int cap)
+ 	if (fg->rtc_error)
+ 		return;
+ 	regmap_read(fg->regmap, MT6359_RTC_AL_HOU, &back);
+-	if (fg->stored < 0)
+-		dev_info(fg->dev, "kept %d%% in the RTC, which reads %#x\n", cap, back);
++	if (fg->stored < 0) {
++		unsigned int bbpu = 0, core = 0;
++
++		/*
++		 * What reads back is the write buffer. A reload brings the
++		 * registers of the RTC core into it (the vendor's rtc_reload):
++		 * what reads then is what a restart will find.
++		 */
++		regmap_read(fg->regmap, MT6359_RTC_BBPU, &bbpu);
++		regmap_write(fg->regmap, MT6359_RTC_BBPU,
++			     (bbpu & 0xff) | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
++		mt6359_fg_rtc_trigger(fg);
++		regmap_read(fg->regmap, MT6359_RTC_AL_HOU, &core);
++		dev_info(fg->dev, "kept %d%% in the RTC: reads %#x, after a reload %#x (BBPU %#x)\n",
++			 cap, back, core, bbpu);
++	}
+ 	fg->stored = cap;
+ }
+ 
+-- 
+2.56.0
+

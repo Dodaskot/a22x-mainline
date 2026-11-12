@@ -1286,3 +1286,21 @@ with a hold. Files are removed by descriptor, so a symbolic link is removed and 
 followed, and the volume is left as it was found. On the phone it removed eight leftovers of
 Android (update and backup folders, Magisk's log, the stock recovery's logs, 8.1 MiB) and kept
 the recovery's folder file for file.
+
+**Removing a system the switch refuses (build 149).** A system set up for another kernel and
+firmware is refused by a switch, as it should be, but the only Remove button sat on the switch
+page, so exactly such an old system could not be removed. The refusal now offers "Remove this
+system", the removal page names the system tapped in the list, and the message says what to
+do: install it again, or remove it. Two old test systems were removed this way on the phone.
+
+**Run 16: Debian 13 with Phosh and GNOME and a text login.** Added beside the other systems
+from the catalog (the review counted 6.6 of 7.7 GiB needed with the new estimate for the
+shells), set up inside the recovery in about nine minutes, switched to and started: no failed
+units, Ukrainian, Kyiv time. The text login on VT7 uses Terminus 32x16 and its Cyrillic reads
+well; signing in with a virtual keyboard started Phosh, "Switch to GNOME" in Phosh's grid led
+back to the login and then to GNOME Shell 48, and the running shell's launcher hides itself.
+One cosmetic issue stays: the password prompt comes from Linux-PAM inside greetd, which does
+not set a locale, so it reads "Password:" in English.
+
+**A restart after flashing (build 150).** After a flash of the recovery or BOOT, the result
+page offers the restart, as TWRP's Reboot System does, through the same hold as the Power page.

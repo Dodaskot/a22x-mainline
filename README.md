@@ -27,15 +27,18 @@ system asks for it. Kernel #122 is kernel #107 plus six commits: branch
 ([v145](releases/v145/README.md)).
 
 **[A22x recovery](recovery/README.md)** ([українською](recovery/README.uk.md))
-is a Linux recovery for the RECOVERY partition, with its own kernel #123
+is a Linux recovery for the RECOVERY partition, with its own kernel #127
 (branch [`a22x-recovery`](https://github.com/Dodaskot/linux-a22x/tree/a22x-recovery)).
 From its touch interface it installs Debian, Ubuntu, Fedora, Arch Linux ARM,
 Manjaro, Mobian or postmarketOS from a catalog or a file. You choose the
 desktop and extra shells (Phosh, GNOME, Plasma Mobile, Xfce, Sxmo, Lomiri), the
 sign-in screen, the language, the account and the apps. Several systems can
 stay side by side with a shared `/home` and switch in both directions. The
-recovery README lists what works and the known problems; Android installation
-is not ready yet.
+recovery README lists what works and the known problems, with screenshots and
+the [test results](recovery/docs/TEST_RESULTS.md). It also installs Android:
+Samsung's firmware, GSIs and ROM files. The recovery image for any SM-A226B and
+the installer app are published with the releases of
+[a22x-recovery](https://github.com/Dodaskot/a22x-recovery/releases).
 
 v144 (kernel #107) added the minimal charging screen, kept kernel logs on
 UART instead of the display, and carried the MT6359 power-off and
@@ -122,7 +125,7 @@ for per-workload scores, driver changes and validation limits.
 kernel/patches/   143 patches on top of Linux v7.2 (git am), with series file
                   (same source as linux-a22x branch a22x / kernel #107)
 kernel/a22x-boot/ 6 patches above #107: BOOT kernel #122 (branch a22x-boot)
-kernel/a22x-recovery/ 6 patches above #107: recovery kernel #123 (branch a22x-recovery)
+kernel/a22x-recovery/ 8 patches above #107: recovery kernel #127 (branch a22x-recovery)
 kernel/config/    a22x-boot-k121.config, a22x-recovery-k120.config, a22x-v144.config (#107),
                   historical v135 config + fragments
 kernel/build.sh   clone v7.2, apply the series, build Image.gz/DTBs/modules

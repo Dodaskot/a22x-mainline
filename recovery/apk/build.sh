@@ -23,14 +23,21 @@ cp "$RECOVERY_IMG" "$work/assets/recovery.img"
 cp "$BOOT_IMG" "$work/assets/boot.img"
 # The recovery's catalog, for the Plan card (2026-11-10): the same images its install pages offer.
 cp "$here/../catalog.json" "$work/assets/catalog.json"
-python3 - "$work/assets" "$RECOVERY_VERSION" "$BOOT_VERSION" <<'P'
+python3 - "$work/assets" "$RECOVERY_VERSION" "$BOOT_VERSION" "$here/.." <<'P'
 import hashlib, json, os, sys
-folder, recovery, boot = sys.argv[1:4]
+folder, recovery, boot, source = sys.argv[1:5]
+sys.path.insert(0, source)
+import bootimage
 def entry(name, version):
     path = os.path.join(folder, name + '.img')
     with open(path, 'rb') as f:
-        digest = hashlib.sha256(f.read()).hexdigest()
-    return {'asset': name + '.img', 'size': os.path.getsize(path), 'sha256': digest, 'version': version}
+        data = f.read()
+    found = {'asset': name + '.img', 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest(), 'version': version}
+    if name == 'boot':
+        # The kernel release the recovery looks for when it takes a kept Linux BOOT (2026-11-11).
+        found['release'] = bootimage.linux_release(data) or ''
+        assert found['release'], 'BOOT_IMG holds no Linux kernel release'
+    return found
 with open(os.path.join(folder, 'images.json'), 'w') as f:
     json.dump({'recovery': entry('recovery', recovery), 'boot': entry('boot', boot)}, f, indent=1)
 P

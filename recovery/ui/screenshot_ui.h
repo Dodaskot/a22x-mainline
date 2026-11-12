@@ -1,6 +1,8 @@
-/* Screenshots as in TWRP (2026-11-09): Power + Volume down saves the screen as PNG to
-   A22xScreenshots on a mounted writable SD card or USB drive, else to RAM. The PNG uses
-   stored deflate blocks: no compression library in the static UI, and the file stays exact. */
+/* Screenshots as in TWRP (2026-11-09): Power + Volume down saves the screen as PNG.
+   Since 2026-11-11 the two keys are taken in either order, and screenshot.py packs the picture with
+   zlib and places it: A22xScreenshots on an SD card or a USB drive (mounted for the moment when it
+   is not), else a22x-recovery/screenshots on cache, else RAM. Without that helper the interface
+   writes the PNG itself with stored deflate blocks, exact but large, to a writable card or RAM. */
 
 static uint32_t png_crc(uint32_t crc,const unsigned char*p,size_t n){
     static uint32_t table[256];static bool ready=false;
@@ -45,11 +47,78 @@ static bool screenshot_folder(char*out,size_t size,bool*removable){
     }
     snprintf(out,size,"/run/a22x-recovery/screenshots");return !mkdir(out,0700)||errno==EEXIST;
 }
+/* The rows as PNG wants them before they are packed: a filter byte and RGB. Each row is written
+   against the row above (Up) or the pixel before (Sub), whichever leaves the smaller numbers: flat
+   areas and gradients then pack to almost nothing. */
+static bool write_scanlines(const char*path,const uint32_t*frame,int width,int height){
+    size_t row=(size_t)width*3;unsigned char*now=malloc(row),*above=calloc(row,1),*up=malloc(row+1),*sub=malloc(row+1);
+    FILE*f=now&&above&&up&&sub?fopen(path,"wbx"):NULL;bool ok=f!=NULL;
+    for(int y=0;ok&&y<height;y++){
+        for(int x=0;x<width;x++){uint32_t c=frame[(size_t)y*width+x];now[x*3]=(unsigned char)(c>>16);now[x*3+1]=(unsigned char)(c>>8);now[x*3+2]=(unsigned char)c;}
+        unsigned long weight_up=0,weight_sub=0;up[0]=2;sub[0]=1;
+        for(size_t i=0;i<row;i++){
+            unsigned char u=(unsigned char)(now[i]-above[i]),s=(unsigned char)(now[i]-(i>=3?now[i-3]:0));
+            up[1+i]=u;sub[1+i]=s;weight_up+=u<128?u:256u-u;weight_sub+=s<128?s:256u-s;
+        }
+        ok=fwrite(weight_up<=weight_sub?up:sub,1,row+1,f)==row+1;memcpy(above,now,row);
+    }
+    if(f)ok=fclose(f)==0&&ok;
+    free(now);free(above);free(up);free(sub);if(!ok&&f)unlink(path);
+    return ok;
+}
+/* The helper is started beside whatever runs: it packs the picture and says where it put it. */
+static bool screenshot_hand_over(App*a,const uint32_t*frame,int width,int height,const char*stamp){
+    if(a->preview||!a->shot_helper[0]||access(a->shot_helper,R_OK)||!private_workdir(a->workdir))return false;
+    snprintf(a->shot_raw,sizeof(a->shot_raw),"%s/shot-%ld-%u.raw",a->workdir,(long)getpid(),++a->shot_sequence);
+    snprintf(a->shot_result,sizeof(a->shot_result),"%s.json",a->shot_raw);unlink(a->shot_raw);unlink(a->shot_result);
+    if(!write_scanlines(a->shot_raw,frame,width,height))return false;
+    char w[16],h[16],name[64];snprintf(w,sizeof(w),"%d",width);snprintf(h,sizeof(h),"%d",height);snprintf(name,sizeof(name),"recovery-%s.png",stamp);
+    char*args[20];int n=0;args[n++]=a->python;args[n++]="-B";args[n++]=a->shot_helper;
+    if(a->device)args[n++]="--device";else{args[n++]="--fixture";args[n++]=a->fixture;}
+    args[n++]="save";args[n++]="--raw";args[n++]=a->shot_raw;args[n++]="--width";args[n++]=w;args[n++]="--height";args[n++]=h;
+    args[n++]="--name";args[n++]=name;args[n++]="--result";args[n++]=a->shot_result;args[n]=NULL;
+    pid_t pid=fork();if(pid<0){unlink(a->shot_raw);return false;}
+    if(!pid){
+        /* Like the settings: no storage lease and no input descriptor goes along; what it prints is not read. */
+        int null=open("/dev/null",O_WRONLY);if(null>=0){dup2(null,STDOUT_FILENO);dup2(null,STDERR_FILENO);}
+        (void)close_range(3,~0u,0);unsetenv("A22X_RECOVERY_LOCK_FD");execv(a->python,args);_exit(2);
+    }
+    a->shot_pid=pid;a->shot_deadline=a->now+SHOT_TIMEOUT_MS;return true;
+}
+/* The helper has ended: its word on where the picture is becomes the toast. */
+static void screenshot_poll(App*a){
+    if(a->shot_flash){if(a->now<a->shot_flash||a->now-a->shot_flash>=SHOT_FLASH_MS)a->shot_flash=0;a->dirty=true;}
+    if(!a->shot_pid)return;
+    int status=0;pid_t got=waitpid(a->shot_pid,&status,WNOHANG);
+    if(!got){if(a->now<a->shot_deadline)return;kill(a->shot_pid,SIGKILL);(void)waitpid(a->shot_pid,&status,0);}
+    a->shot_pid=0;unlink(a->shot_raw);
+    char data[1024]={0},where[16]={0},label[96]={0},note[240];
+    int fd=open(a->shot_result,O_RDONLY|O_NOFOLLOW|O_CLOEXEC);ssize_t n=fd>=0?read(fd,data,sizeof(data)-1):-1;if(fd>=0)close(fd);
+    unlink(a->shot_result);
+    JsonToken t[48];Json j;
+    if(n>0&&json_parse(&j,data,t,48)>0&&t[0].type==J_OBJECT&&json_bool(&j,json_get(&j,0,"ok"),0)==1){jstring(&j,0,"where",where,sizeof(where));jstring(&j,0,"label",label,sizeof(label));}
+    fprintf(stderr,"[recovery-ui:screenshot] helper where=%s\n",where[0]?where:"none");
+    if(!strcmp(where,"card")){snprintf(note,sizeof(note),T("Screenshot saved to %s, in A22xScreenshots"),label);toast(a,note);}
+    else if(!strcmp(where,"cache"))toast(a,"Screenshot saved on cache, in a22x-recovery/screenshots");
+    else if(!strcmp(where,"ram"))toast(a,"Screenshot saved in RAM until restart: no card or cache could take it");
+    else toast(a,"Screenshot not saved");
+    a->toast_icon=ICON_DISPLAY;
+}
+/* Whatever needs storage next waits for a screenshot that is still being placed (a second at most). */
+static void screenshot_wait(App*a){
+    for(int n=0;a->shot_pid&&n<400;n++){a->now=milliseconds();screenshot_poll(a);if(a->shot_pid){struct timespec pause={0,10000000};nanosleep(&pause,NULL);}}
+}
 static void take_screenshot(App*a){
+    if(a->shot_pid){toast(a,"The last screenshot is still being saved");return;}
     int width=1080,height=2408;uint32_t*frame=malloc((size_t)width*height*sizeof(*frame));
     char folder[PATH_LEN],path[PATH_LEN+64],stamp[32];bool removable=false;time_t now=time(NULL);struct tm tm;
+    localtime_r(&now,&tm);strftime(stamp,sizeof(stamp),"%Y%m%d-%H%M%S",&tm);
+    if(frame&&compose_native(a,frame,width,height,0,4,width,2400)){
+        a->shot_flash=a->now?a->now:1;a->dirty=true;
+        if(screenshot_hand_over(a,frame,width,height,stamp)){free(frame);return;}
+    }
     bool ok=frame&&compose_native(a,frame,width,height,0,4,width,2400)&&screenshot_folder(folder,sizeof(folder),&removable);
-    if(ok){localtime_r(&now,&tm);strftime(stamp,sizeof(stamp),"%Y%m%d-%H%M%S",&tm);
+    if(ok){
         for(int n=0;n<100;n++){snprintf(path,sizeof(path),n?"%s/recovery-%s-%d.png":"%s/recovery-%s.png",folder,stamp,n);if(access(path,F_OK))break;}
         ok=write_png(path,frame,width,height);}
     free(frame);

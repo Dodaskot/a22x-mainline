@@ -480,6 +480,14 @@ def service_sync(stream, service):
                 else:
                     raise Closed('unexpected sync message')
             if fd is not None:
+                # 2026-11-12, on the owner's phone: a pushed recovery image read back with 16 MiB of
+                # zeros in its middle after the volume was mounted again, though adb had said "pushed"
+                # and the file hashed right from memory. What cannot be written must be said here.
+                if problem is None:
+                    try:
+                        os.fsync(fd)
+                    except OSError as exc:
+                        problem = f'{target}: {exc.strerror}'
                 os.close(fd)
             if problem is None:
                 try:
@@ -521,26 +529,27 @@ SIDELOAD_EXTENSIONS = {('tar', 'gzip'): '.tar.gz', ('tar', 'xz'): '.tar.xz', ('t
 
 @contextlib.contextmanager
 def sideload_store(size, log=None):
-    """The image store on a Linux userdata, for a file of SIZE bytes: userdata is mounted for the
-    transfer when needed, under the recovery's operation lock like any other storage job. None when
-    there is no such userdata, no room, or another job holds the storage."""
+    """Where a file of SIZE bytes arriving over adb goes, under the recovery's operation lock like
+    any other storage job: the image store on a Linux userdata, else a card's store or cache
+    (2026-11-11, while Android holds userdata). Yields {'folder', 'volume', 'token', 'dir'}, or None
+    when there is no place with room, or another job holds the storage."""
     override = os.environ.get('A22X_ADB_SIDELOAD_DIR')
     if override:
-        yield Path(override)
+        yield {'folder': Path(override), 'volume': os.environ.get('A22X_ADB_SIDELOAD_VOLUME', ''), 'token': '', 'dir': ''}
         return
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import distro
     import filesystem as fs
     with contextlib.ExitStack() as stack:
-        folder = None
+        place = None
         try:
             context = fs.DeviceContext()
             stack.enter_context(context.operation_lock())
-            folder = stack.enter_context(distro.sideload_store(context, size))
+            place = stack.enter_context(distro.sideload_place(context, size))
         except (OSError, ValueError, fs.FilesystemError) as exc:
             if log:
                 log('sideload refused:', getattr(exc, 'code', '') or type(exc).__name__, str(exc)[:160])
-        yield folder
+        yield place
 
 
 def partition_image(head):
@@ -595,16 +604,36 @@ def service_sideload(stream, service):
     if not 0 < size <= SIDELOAD_LIMIT or not 4096 <= block <= MAX_PAYLOAD:
         stream.write(b'FAILFAIL')
         return
-    with sideload_store(size, stream.c.log) as folder:
-        if folder is None:
+    with sideload_store(size, stream.c.log) as place:
+        if place is None:
             stream.write(b'FAILFAIL')
             return
+        folder = place['folder']
         if os.environ.get('A22X_ADB_SIDELOAD_DIR'):
             vfs = os.statvfs(folder)
             if vfs.f_bavail * vfs.f_frsize < size + (256 << 20):
                 stream.write(b'FAILFAIL')
                 return
-        receive_sideload(stream, folder, size, block)
+        name = receive_sideload(stream, folder, size, block)
+        if name and place['volume']:
+            announce_sideload(getattr(stream.c.approve, 'base', None), place, name, size)
+
+
+def announce_sideload(base, place, name, size):
+    """Tell the interface what arrived (2026-11-11): it opens a ZIP's review at once, as TWRP's
+    sideload installs it, and names any other file. sideload-<time>.json beside the key requests."""
+    if base is None:
+        return
+    kind = 'zip' if name.endswith('.zip') else ('image' if name.endswith('.img') else 'system')
+    record = {'file': name, 'volume': place['volume'], 'token': place['token'], 'path': place['dir'] + '/' + name,
+              'kind': kind, 'size': size}
+    base = Path(base)
+    with contextlib.suppress(OSError):
+        base.mkdir(mode=0o700, parents=True, exist_ok=True)
+        stamp = '%d-%s' % (time.time_ns(), os.urandom(3).hex())
+        temporary = base / ('.sideload-' + stamp)
+        temporary.write_text(json.dumps(record))
+        temporary.replace(base / ('sideload-%s.json' % stamp))
 
 
 def receive_sideload(stream, folder, size, block):
@@ -632,6 +661,7 @@ def receive_sideload(stream, folder, size, block):
         os.replace(part, target)
         done = True
         stream.write(b'DONEDONE')
+        return target.name
     finally:
         if fd is not None:
             os.close(fd)

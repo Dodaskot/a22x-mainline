@@ -24,8 +24,15 @@ final class Payload {
         final long size;
         final String sha256;
         final String version;
+        /** The kernel release of a Linux BOOT; empty for other images. */
+        final String release;
 
         Image(String label, String asset, long size, String sha256, String version) {
+            this(label, asset, size, sha256, version, "");
+        }
+
+        Image(String label, String asset, long size, String sha256, String version, String release) {
+            this.release = release == null ? "" : release;
             this.label = label;
             this.asset = asset;
             this.size = size;
@@ -43,7 +50,7 @@ final class Payload {
         Map<String, Object> item = (Map<String, Object>) all.get(label);
         if (item == null) throw new IOException("no " + label + " image in this APK");
         return new Image(label, (String) item.get("asset"), ((Number) item.get("size")).longValue(),
-                (String) item.get("sha256"), (String) item.get("version"));
+                (String) item.get("sha256"), (String) item.get("version"), (String) item.get("release"));
     }
 
     private static String read(InputStream in) throws IOException {

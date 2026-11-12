@@ -17,6 +17,9 @@ static bool start_images_job(App*a,int kind,const char*argument){
 
 static void parse_store(App*a,const Json*j){
     a->saved_count=0;a->saved_free=json_uint(j,json_get(j,0,"free_bytes"),0);
+    a->store_volume[0]=a->store_token[0]=a->store_label[0]=a->store_reason[0]=0;
+    jstring(j,0,"store_volume",a->store_volume,sizeof(a->store_volume));jstring(j,0,"store_token",a->store_token,sizeof(a->store_token));
+    jstring(j,0,"store_label",a->store_label,sizeof(a->store_label));jstring(j,0,"store_reason",a->store_reason,sizeof(a->store_reason));
     int list=json_get(j,0,"images");
     if(list>=0&&j->tokens[list].type==J_ARRAY)for(int i=list+1;i<json_next(j,list)&&a->saved_count<STORE_MAX;i=json_next(j,i)){
         StoredImage*s=&a->saved[a->saved_count];memset(s,0,sizeof(*s));
@@ -28,16 +31,18 @@ static void parse_store(App*a,const Json*j){
     a->saved_known=true;
 }
 
+/* The store is on a card: Android holds userdata, so a download has no place on the phone itself. */
+static bool store_on_card(const App*a){return a->saved_known&&a->store_volume[0]&&strcmp(a->store_volume,"userdata")!=0;}
 static void complete_images_job(App*a,const Json*j,int kind,bool ok){
     if(!ok){
         /* Without a mounted userdata the list stays unknown; the page asks for the mount. */
         if(kind==J_IMAGES){a->saved_known=false;a->dirty=true;return;}
         char code[96]="IMAGES_FAILED",message[512]="The image store did not return a valid result.";
         if(j){int e=json_get(j,0,"error");jstring(j,e,"code",code,sizeof(code));jstring(j,e,"message",message,sizeof(message));}
-        a->saved_delete=0;files_problem(a,code,message,SYSTEMS_IMAGES);return;
+        a->saved_delete=0;files_problem(a,code,message,a->screen==ANDROID_IMAGE?ANDROID_IMAGE:SYSTEMS_IMAGES);return;
     }
     parse_store(a,j);a->saved_delete=0;
-    if(kind==J_IMAGES_DOWNLOAD){char saved[208];jstring(j,0,"saved",saved,sizeof(saved));snprintf(a->saved_note,sizeof(a->saved_note),T("Saved on the phone: %s"),saved);}
+    if(kind==J_IMAGES_DOWNLOAD){char saved[208];jstring(j,0,"saved",saved,sizeof(saved));snprintf(a->saved_note,sizeof(a->saved_note),store_on_card(a)?T("Saved on the card: %s"):T("Saved on the phone: %s"),saved);}
     else if(kind==J_IMAGES_DELETE)copy(a->saved_note,sizeof(a->saved_note),tr("The image was deleted."));
     a->dirty=true;
 }
@@ -64,7 +69,7 @@ static void render_images(App*a){
     a->page_scroll=(int64_t)scroll_clamp((double)a->page_scroll,(double)page_max_scroll(a));int y=232-(int)a->page_scroll;
     a->clip_active=true;a->clip=page_viewport(a);
     if(!ready){
-        y+=wrapped(a,40,y,640,0,ORANGE,"Mount userdata with write access first: the images are kept there.",3)+16;
+        y+=text_tile(a,y+12,0,ORANGE,"Mount userdata with write access first: the images are kept there.",3)+12;
         button(a,(Rect){28,y,664,84},"Mount userdata",A_SYS_MOUNT,free_ui&&systems_can_mount(a),false,0);y+=108;
     }else{
         button(a,(Rect){28,y,664,96},"Download from the catalog",A_IMAGES_CATALOG,free_ui,false,0);y+=116;
@@ -72,7 +77,7 @@ static void render_images(App*a){
             raw_text(true);ellipsis(a,40,y,640,0,MUTED,line);raw_text(false);y+=44;}
         if(a->saved_note[0]){raw_text(true);ellipsis(a,40,y,640,0,GREEN,a->saved_note);raw_text(false);y+=44;}
         if(!a->saved_known){wrapped(a,40,y+8,640,0,MUTED,"Reading the saved images...",2);y+=72;}
-        else if(!a->saved_count){y+=wrapped(a,40,y+8,640,0,MUTED,"No images are saved yet. Download one from the catalog, or copy an image into the .a22x-images folder of userdata with USB files.",5)+24;}
+        else if(!a->saved_count){y+=text_tile(a,y+20,0,MUTED,"No images are saved yet. Download one from the catalog, or copy an image into the .a22x-images folder of userdata with USB files.",5)+16;}
         for(unsigned int i=0;i<a->saved_count;i++){
             const StoredImage*s=&a->saved[i];unsigned int tone=s->family[0]?catalog_tone(s->family):3;
             Rect r={28,y,560,112};surface(a,r,24,PANEL,A_IMAGE_ITEM+(int)i);
@@ -112,7 +117,7 @@ static bool images_action(App*a,int id){
     if(id==A_BACK){screen(a,SYSTEMS_NEW);return true;}
     if(id==A_IMAGES_CATALOG){
         if(!ui_free(a))return true;
-        a->catalog_saving=true;a->catalog_family=0;a->catalog_page=0;a->page_scroll=0;a->catalog_checked=a->catalog_check_done=false;
+        a->catalog_saving=true;a->catalog_only=1;a->catalog_return=HOME;a->catalog_family=0;a->catalog_page=0;a->page_scroll=0;a->catalog_checked=a->catalog_check_done=false;
         screen(a,SYSTEMS_CATALOG);start_catalog_job(a);return true;
     }
     if(id>=A_IMAGE_ITEM&&id<A_IMAGE_ITEM+(int)STORE_MAX){unsigned int n=(unsigned int)(id-A_IMAGE_ITEM);if(n<a->saved_count&&ui_free(a)&&systems_ready(a))store_choose(a,&a->saved[n]);return true;}

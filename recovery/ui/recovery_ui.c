@@ -81,6 +81,9 @@
 #define DISPLAY_CONTROL_TIMEOUT 5000u
 #define POWER_SHORT_PRESS_MS 1500u
 #define POWER_MENU_MS 700u
+#define SHOT_CHORD_MS 1500u   /* Volume down may be held this long before Power makes a screenshot of it */
+#define SHOT_FLASH_MS 260u
+#define SHOT_TIMEOUT_MS 20000u
 #define NAV_EDGE 26
 #define NAV_BOTTOM 1530
 #define NAV_BACK_DISTANCE 90
@@ -91,6 +94,8 @@
 #define NAV_LIFT_LIMIT 96
 #define NAV_PULL_LIMIT 110
 #define NAV_SETTLE_MS 220u
+/* The pages passed on the way to the open one: Back returns along them (2026-11-10). */
+#define NAV_TRAIL 16
 #define USB_VOLUME_ROWS 6
 #include "install_types.h"
 
@@ -98,7 +103,7 @@
 enum Screen { HOME, SPLASH, FLASH, FLASH_REVIEW, LANGUAGE, THEME, TERMINAL_THEME, ANIMATIONS, LOCKSCREEN, ACCESS_REQUEST, OS_MENU, SYSTEMS_SETUP, BACKUP, LIST, DETAIL, PLAN, PROGRESS, RESULT, STORAGE, SYSTEM, POWER, POWER_CONFIRM, POWER_MENU, TOOLS, TOOLS_EXPORT, DISPLAY_SETTINGS, PREPARE_FILESYSTEM, USB_FILES, TERMINAL, SYSTEMS, SYSTEMS_PLAN, SYSTEMS_RECOVER,
     INSTALL, INSTALL_PLAN, INSTALL_RESULT,
     FILE_VOLUMES, FILE_VOLUME, FILE_BROWSER, FILE_INFO, FILE_TEXT, FILE_EDIT, FILE_PROMPT, FILE_CONFIRM, FILE_DISCARD, SYSTEMS_EXTRAS, SYSTEMS_DONE, WIFI, SYSTEMS_NEW, SYSTEMS_CATALOG,
-    SYSTEMS_APP_LIST, SYSTEMS_SEARCH, IDENTITY, IDENTITY_RESTORE, SYSTEMS_SHELLS, SYSTEMS_LOCALE, SYSTEMS_TIMEZONE, SYSTEMS_REMOVE, SYSTEMS_IMAGES, ADB_REQUEST, APLAN, FLASH_SUPER, ICON_SHEET, WIPE, WIPE_REVIEW };
+    SYSTEMS_APP_LIST, SYSTEMS_SEARCH, IDENTITY, IDENTITY_RESTORE, SYSTEMS_SHELLS, SYSTEMS_LOCALE, SYSTEMS_TIMEZONE, SYSTEMS_REMOVE, SYSTEMS_IMAGES, ADB_REQUEST, APLAN, FLASH_SUPER, ICON_SHEET, WIPE, WIPE_REVIEW, ANDROID_MENU, SAMSUNG_REVIEW, ANDROID_IMAGE, ROOT_PAGE, ZIP_REVIEW, CARD_PAGE, COPY_DETAIL, ANDROID_LOG };
 enum Action { A_BACK=1,A_BACKUP,A_RESTORE,A_VERIFY,A_STORAGE,A_SYSTEM,A_POWER,A_REVIEW_BACKUP,A_REVIEW_RESTORE,A_VERIFY_ONE,A_CONFIRM,A_DONE,A_LIST_PREV,A_LIST_NEXT,A_REBOOT,A_SHUTDOWN,A_POWER_CONFIRM,A_MOUNT,A_UMOUNT,A_REFRESH,
     A_FILES,A_FS_PREV,A_FS_NEXT,A_FS_OPEN,A_FS_MOUNT_RO,A_FS_MOUNT_RW,A_FS_UNMOUNT,A_FS_UP,A_FS_VOLUME,A_FS_REFRESH,
     A_FS_READ,A_FS_EDIT,A_FS_NEW_FILE,A_FS_MKDIR,A_FS_RENAME,A_FS_COPY,A_FS_DELETE,A_FS_PROMPT_NEXT,A_FS_CONFIRM,
@@ -110,20 +115,35 @@ enum Action { A_BACK=1,A_BACKUP,A_RESTORE,A_VERIFY,A_STORAGE,A_SYSTEM,A_POWER,A_
     A_TERMINAL=500,A_TERM_REFRESH,A_TERM_START,A_TERM_CLOSE,A_TERM_LIVE,A_TERM_TAB,A_TERM_ESCAPE,A_TERM_INTERRUPT,A_TERM_EOF,A_TERM_LEFT,A_TERM_UP,A_TERM_DOWN,A_TERM_RIGHT,
     A_SYSTEMS=600,A_SYS_REFRESH,A_SYS_FILES,A_SYS_IMPORT,A_SYS_USE_MANIFEST,A_SYS_CANCEL_PICK,A_SYS_PLAN_CONFIRM,A_SYS_PLAN_PREV,A_SYS_PLAN_NEXT,A_SYS_RESUME,A_SYS_ROLLBACK,A_SYS_RECOVER_CONFIRM,A_SYS_REMOVE,A_SYS_REMOVE_CONFIRM,A_SYS_SLOT=700,
     A_INSTALL=800,A_INSTALL_REFRESH,A_INSTALL_BOOT,A_INSTALL_STOCK,A_INSTALL_SOURCE,A_INSTALL_BACKUP,A_INSTALL_REVIEW,A_INSTALL_USE_SOURCE,A_INSTALL_CANCEL_PICK,A_INSTALL_PATH_PREV,A_INSTALL_PATH_NEXT,A_INSTALL_CONFIRM,A_INSTALL_FILES,A_INSTALL_RESULT_DONE,A_INSTALL_POWER,A_INSTALL_PENDING=900,
-    A_FS_VOLUME_ITEM=1000,A_FS_ENTRY=2000,A_FS_ENTRY_MENU=2100,A_KB_KEY=3000,A_OS=5000,A_TIMEOUT=5010,A_SYS_DESKTOP=5020,A_SYS_ACCOUNT_KEEP=5030,A_SYS_ACCOUNT_NEW,A_SYS_SETUP_NEXT,A_SYS_FIELD_USER,A_SYS_FIELD_PASS,A_FLASH=5070,A_FS_FORMAT_EXT4=5040,A_FS_FORMAT_VFAT,A_FS_FORMAT_F2FS,A_FS_CHECK,A_FS_RESIZE,A_JOB_CANCEL=5050,A_JOB_KEEP,A_JOB_CANCEL_YES,A_LOCK_SET=5060,A_LOCK_CLEAR,A_FLASH_TARGET=5200,A_FLASH_CONFIRM=5220,A_FLASH_CANCEL_PICK,A_RESTORE_IMAGE,A_LANGUAGE,A_LANGUAGE_ITEM=5240,A_VIBRATION=5260,A_TZ_DOWN=5270,A_TZ_UP,A_THEME=5280,A_TERMINAL_THEME=5300,A_USB_EJECT=5330,A_ANIMATIONS=5340,A_ANIMATION_ITEM=5350,A_LOCK_MODE=5360,A_ACCESS_TOGGLE=5370,A_ACCESS_ALLOW,A_ACCESS_DENY,A_THEME_ITEM=5400,A_TERMINAL_THEME_ITEM=5440,A_THEME_ADD=5480,A_TERMINAL_ADD,A_THEME_USE,A_THEME_RESTORE,A_THEME_CANCEL_PICK,A_LOCK_KEYBOARD,A_THEME_REMOVE=5500,A_NAV_MODE=5520,A_NAV_BACK=5530,A_NAV_HOME,A_NAV_TERMINAL,A_MENU_CLOSE,A_USB_VOLUME_RO=5540,A_USB_VOLUME_RW=5560,A_USB_VOLUME_OFF=5580,A_SYS_WIFI=5600,A_SYS_WIFI_CLEAR,A_SYS_SCRIPT,A_SYS_SCRIPT_CLEAR,A_SYS_USE_SCRIPT,A_SYS_FIELD_SSID,A_SYS_FIELD_WIFI_PASS,A_SYS_APP=5880,A_SYS_MOUNT=5640,A_SYS_MOUNT_RO,A_SYS_MOUNT_RW,A_SYS_MOUNT_CANCEL,A_SYS_DONE_RESTART=5650,A_SYS_DONE_SYSTEMS,A_SYS_DONE_HOME,ICON_LINUX=5100,ICON_PHONE,ICON_FLASH,ICON_CHEVRON,ICON_BACK,ICON_TUNE,ICON_LANGUAGE,ICON_VIBRATE,ICON_DISPLAY,ICON_CLOCK,ICON_LOCK,ICON_THEME,ICON_USB,ICON_KEYBOARD,ICON_ERASE,ICON_TRASH,ICON_NAV,ICON_WIFI,ICON_BROWSER,
+    A_FS_VOLUME_ITEM=1000,A_FS_ENTRY=2000,A_FS_ENTRY_MENU=2100,A_KB_KEY=3000,A_OS=5000,A_TIMEOUT=5010,A_SYS_DESKTOP=5020,A_SYS_ACCOUNT_KEEP=5030,A_SYS_ACCOUNT_NEW,A_SYS_SETUP_NEXT,A_SYS_FIELD_USER,A_SYS_FIELD_PASS,A_FLASH=5070,A_FS_FORMAT_EXT4=5040,A_FS_FORMAT_VFAT,A_FS_FORMAT_F2FS,A_FS_CHECK,A_FS_RESIZE,A_JOB_CANCEL=5050,A_JOB_KEEP,A_JOB_CANCEL_YES,A_LOCK_SET=5060,A_LOCK_CLEAR,A_FLASH_TARGET=5200,A_FLASH_CONFIRM=5220,A_FLASH_CANCEL_PICK,A_RESTORE_IMAGE,A_LANGUAGE,A_LANGUAGE_ITEM=5240,A_VIBRATION=5260,A_TZ_DOWN=5270,A_TZ_UP,A_THEME=5280,A_TERMINAL_THEME=5300,A_USB_EJECT=5330,A_ANIMATIONS=5340,A_ANIMATION_ITEM=5350,A_LOCK_MODE=5360,A_ACCESS_TOGGLE=5370,A_ACCESS_ALLOW,A_ACCESS_DENY,A_THEME_ITEM=5400,A_TERMINAL_THEME_ITEM=5440,A_THEME_ADD=5480,A_TERMINAL_ADD,A_THEME_USE,A_THEME_RESTORE,A_THEME_CANCEL_PICK,A_LOCK_KEYBOARD,A_THEME_REMOVE=5500,A_NAV_MODE=5520,A_NAV_BACK=5530,A_NAV_HOME,A_NAV_TERMINAL,A_MENU_CLOSE,A_USB_VOLUME_RO=5540,A_USB_VOLUME_RW=5560,A_USB_VOLUME_OFF=5580,A_SYS_WIFI=5600,A_SYS_WIFI_CLEAR,A_SYS_SCRIPT,A_SYS_SCRIPT_CLEAR,A_SYS_USE_SCRIPT,A_SYS_FIELD_SSID,A_SYS_FIELD_WIFI_PASS,A_SYS_APP=5880,A_SYS_MOUNT=5640,A_SYS_MOUNT_RO,A_SYS_MOUNT_RW,A_SYS_MOUNT_CANCEL,A_SYS_DONE_RESTART=5650,A_SYS_DONE_SYSTEMS,A_SYS_DONE_HOME,ICON_LINUX=5100,ICON_PHONE,ICON_FLASH,ICON_CHEVRON,ICON_BACK,ICON_TUNE,ICON_LANGUAGE,ICON_VIBRATE,ICON_DISPLAY,ICON_CLOCK,ICON_LOCK,ICON_THEME,ICON_USB,ICON_KEYBOARD,ICON_ERASE,ICON_TRASH,ICON_NAV,ICON_WIFI,ICON_BROWSER,ICON_TORCH,
     A_WIFI=5700,A_WIFI_SCAN,A_WIFI_DISCONNECT,A_WIFI_HIDDEN,A_WIFI_FIELD_SSID,A_WIFI_FIELD_PASS,A_WIFI_PAGE_PREV,A_WIFI_PAGE_NEXT,A_WIFI_FORGET,A_WIFI_NET=5720,
     A_HOME_THEME=5760,A_BROWSER,
-    A_SYS_NEW=5770,A_NEW_INTERNET,A_NEW_FILE,A_CATALOG_WIFI,A_CATALOG_PREV,A_CATALOG_NEXT,A_HOME_CATALOG,A_CATALOG_FAMILY=5780,A_CATALOG_ITEM=5800,
+    A_SYS_NEW=5770,A_NEW_INTERNET,A_NEW_FILE,A_CATALOG_WIFI,A_CATALOG_PREV,A_CATALOG_NEXT,A_HOME_CATALOG,A_CATALOG_FAMILY=5780,
     A_APPS_OPEN=5830,A_PKG_OPEN,A_PKG_QUERY,A_PKG_PREV,A_PKG_NEXT,A_APPS_DONE,A_PKG_DONE,A_PKG_FAMILY=5840,A_PKG_RESULT=5850,A_IDENTITY=5950,A_ID_DEST_NEXT,A_ID_BACKUP,A_ID_RESTORE_OPEN,A_ID_RESTORE,A_ID_ITEM=5960,A_CHARGER_ON=5970,A_CHARGER_OFF,
     A_SHELL_ITEM=5980,A_GREETER_ITEM=5990,A_SHELLS_NEXT=6000,A_LOCALE_OPEN=6010,A_TZ_OPEN,A_TZ_RECOVERY,A_TZ_PICK,A_LOCALE_ITEM=6020,
     A_TZ_REGION=6040,A_TZ_ITEM=6100,
-    A_NEW_SAVED=7000,A_IMAGES_CATALOG,A_IMAGE_DELETE_CONFIRM,A_IMAGE_DELETE_CANCEL,A_IMAGE_ITEM=7010,A_IMAGE_DELETE=7030,A_ADB_ALLOW=7050,A_ADB_DENY,A_ID_KIND=7100,A_ID_PART=7110,A_APLAN=7130,A_APLAN_REVIEW,A_APLAN_EDIT,A_APLAN_FORGET,A_FLASH_SUPER=7140,A_WIPE=7150,A_WIPE_CACHE,A_WIPE_VOLUMES,A_WIPE_CONFIRM };
+    A_NEW_SAVED=7000,A_IMAGES_CATALOG,A_IMAGE_DELETE_CONFIRM,A_IMAGE_DELETE_CANCEL,A_IMAGE_ITEM=7010,A_IMAGE_DELETE=7030,A_ADB_ALLOW=7050,A_ADB_DENY,A_ID_KIND=7100,A_ID_PART=7110,A_APLAN=7130,A_APLAN_REVIEW,A_APLAN_EDIT,A_APLAN_FORGET,A_FLASH_SUPER=7140,A_WIPE=7150,A_WIPE_CACHE,A_WIPE_VOLUMES,A_WIPE_CONFIRM,A_WIPE_ANDROID,
+    A_ANDROID=7160,A_SAMSUNG,A_SAMSUNG_CONFIRM,A_ANDROID_CATALOG,A_ANDROID_DOWNLOAD,A_ANDROID_INSTALL,A_ANDROID_DELETE,A_STOCK_BOOT,A_STOCK_BOOT_FLASH,A_ROOT,A_ROOT_REMOVE,A_ROOT_PREPARE,
+    A_CATALOG_CATEGORY=7170,A_CATALOG_VERSION=7180,A_CATALOG_KIND=7190,A_CATALOG_REGION=7200,A_CATALOG_FIT=7210,
+    A_ROOT_INSTALL=7220 /* ..7223 */,A_ROOT_KEY=7230 /* ..7233: the SuperKey of a tool that needs one */,A_ROOT_KEY_FIELD=7240,A_ZIP=7250,A_ZIP_CONFIRM,A_BACKUP_RENAME=7260,A_BACKUP_DELETE,A_BACKUP_NAME_FIELD,A_ID_DELETE,A_SETTINGS_RESET,
+    A_CARD=7270,A_CARD_NEXT,A_CARD_APPLY,A_CARD_LINUX=7280 /* ..7284 */,A_CARD_SWAP=7290 /* ..7293 */,
+    A_CATALOG_ITEM=7300 /* ..7389: CATALOG_MAX images, Linux and Android (2026-11-10) */,
+    /* 2026-11-11: Restore and Verify in two categories, the copies of Android's partitions, the sheet
+       that asks where a file is, and a ROM chosen from a file. */
+    A_LIST_CATEGORY=7400 /* ..7401 */,A_COPY_VERIFY=7404,A_COPY_RESTORE,A_COPY_DELETE,A_COPY_REFRESH,A_COPY_ITEM=7410 /* ..7433 */,
+    A_COPY_MOUNT=7440 /* ..7443 */,A_COPY_PART=7450 /* ..7457 */,A_SOURCE_REFRESH=7460,A_SOURCE_CANCEL,A_ANDROID_FILE,A_NEW_FORMAT,
+    A_TORCH=7480,A_TORCH_DOWN,A_TORCH_UP,A_TORCH_ON,A_TORCH_OFF,A_TORCH_BAR,A_RESET_LATER,A_RESET_FORGET,A_BACKUP_ANDROID,A_ID_MOUNT,
+    A_ZIP_ADD,A_ZIP_RESTART,A_ZIP_STAY,A_ZIP_REMOVE /* ..+ZIP_QUEUE-1, below A_SOURCE_ITEM */,
+    A_SOURCE_ITEM=7500 /* ..7579: MAX_VOLUMES */,
+    A_ALOG_OK=7590,A_ALOG_IMAGES,A_ALOG_STOCK };
 enum JobKind { J_NONE,J_INVENTORY,J_LIST,J_BACKUP_PLAN,J_RESTORE_PLAN,J_BACKUP,J_VERIFY,J_RESTORE,J_STORAGE_INVENTORY,J_MOUNT,J_UMOUNT,
     J_FS_INVENTORY,J_FS_MOUNT,J_FS_UNMOUNT,J_FS_LIST,J_FS_READ,J_FS_WRITE,J_FS_MKDIR,J_FS_RENAME,J_FS_COPY,J_FS_DELETE,
     J_FS_STAT,J_FS_CHMOD,J_FS_CHOWN,J_FS_RESOLVE,J_FS_COPY_TREE,J_FS_FORMAT,J_FS_CHECK,J_FS_RESIZE,J_TOOLS_STATUS,J_TOOLS_EXPORT,J_DISPLAY_STATUS,J_DISPLAY_SET,J_WIPE_PLAN,J_WIPE,J_USB_STATUS,J_USB_START,J_USB_STOP,
     J_TERM_STATUS,J_TERM_START,J_TERM_READ,J_TERM_WRITE,J_TERM_RESIZE,J_TERM_STOP,J_SYS_STATUS,J_SYS_IMPORT_PLAN,J_SYS_SWITCH_PLAN,J_SYS_IMPORT,J_SYS_SWITCH,J_SYS_RECOVER,J_SYS_REMOVE,
     J_INSTALL_STATUS,J_INSTALL_BOOT_PLAN,J_INSTALL_STOCK_PLAN,J_INSTALL_RESUME_PLAN,J_INSTALL_EXECUTE,J_FLASH_TARGETS,J_FLASH_CHECK,J_FLASH_WRITE,J_USB_SYNC,J_USB_BACKUP,J_USB_EJECT,J_SYS_ACCOUNT_USER,J_SYS_ACCOUNT_PASS,J_SYS_WIFI_SSID,J_SYS_WIFI_PASS,J_LOCK_ENTER,J_LOCK_SET,J_LOCK_OLD,J_LOCK_CONFIRM,J_LOCK_ACCESS,J_SYSINFO,J_THEME_IMPORT,J_THEME_REMOVE,J_THEME_RESTORE,
-    J_WIFI_STATUS,J_WIFI_SCAN,J_WIFI_CONNECT,J_WIFI_DISCONNECT,J_WIFI_FORGET,J_WIFI_SSID,J_WIFI_PASS,J_CATALOG,J_CATALOG_CHECK,J_PKG_SEARCH,J_PKG_QUERY,J_ID_LIST,J_ID_BACKUP,J_ID_BACKUPS,J_ID_RESTORE,J_CHARGER,J_IMAGES,J_IMAGES_DOWNLOAD,J_IMAGES_DELETE,J_APLAN_SHOW,J_APLAN_PREPARE,J_APLAN_FORGET,J_WIPE_CACHE };
+    J_WIFI_STATUS,J_WIFI_SCAN,J_WIFI_CONNECT,J_WIFI_DISCONNECT,J_WIFI_FORGET,J_WIFI_SSID,J_WIFI_PASS,J_CATALOG,J_CATALOG_CHECK,J_PKG_SEARCH,J_PKG_QUERY,J_ID_LIST,J_ID_BACKUP,J_ID_BACKUPS,J_ID_RESTORE,J_ID_DELETE,J_CHARGER,J_IMAGES,J_IMAGES_DOWNLOAD,J_IMAGES_DELETE,J_APLAN_SHOW,J_APLAN_PREPARE,J_APLAN_FORGET,J_WIPE_CACHE,J_SAMSUNG_INSPECT,J_SAMSUNG_INSTALL,J_ANDROID_RESET,J_STOCK_BOOT,J_SAMSUNG_UNPACK,J_ROOT_LIST,J_ROOT_INSTALL,J_ROOT_PREPARE,J_ZIP_INSPECT,J_ZIP_RUN,J_BACKUP_RENAME,J_BACKUP_DELETE,J_CARD_LIST,J_CARD_APPLY,
+    J_COPY_LIST,J_COPY_VERIFY,J_COPY_RESTORE,J_COPY_DELETE,J_ROM_KIND,
+    J_ROOT_SUPERKEY /* a prompt, not a job: APatch's SuperKey */,J_BACKUP_NAME /* a prompt: the new name of a backup */ };
 enum ScrollSurface { SCROLL_NONE,SCROLL_FOLDER,SCROLL_VOLUMES,SCROLL_TEXT,SCROLL_PROMPT,SCROLL_TERMINAL,SCROLL_SYSTEMS,SCROLL_TOOLS,SCROLL_INSTALL_REVIEW,SCROLL_INSTALL_PENDING,SCROLL_PAGE };
 enum DisplayCommand { DC_NONE,DC_STATUS,DC_BRIGHTNESS,DC_BLANK,DC_WAKE,DC_TOGGLE };
 
@@ -136,6 +156,9 @@ typedef struct { char label[40],value[72],unit[12];unsigned char section; } SysR
 #define TRANSITION_DEPTH 8
 #define TRANSITION_OPEN_MS 320u
 #define TRANSITION_BACK_MS 260u
+/* Zoom with blur takes a little longer: the frost has to be seen (2026-11-10). */
+#define TRANSITION_BLUR_OPEN_MS 400u
+#define TRANSITION_BLUR_BACK_MS 330u
 #define TRANSITION_THEME_MS 560u
 #define TRANSITION_FADE_MS 240u
 #define TRANSITION_DISSOLVE_MS 420u
@@ -147,12 +170,23 @@ enum AnimationStyle { ANIM_ZOOM,ANIM_BLUR,ANIM_SLIDE,ANIM_FADE,ANIM_DISSOLVE,ANI
 static const char*const animation_codes[ANIMATION_COUNT]={"zoom","blur","slide","fade","dissolve","off"};
 enum LockFlow { LF_NONE,LF_SET,LF_CHANGE,LF_REMOVE,LF_MODE,LF_ACCESS };
 /* Two finished frames and a moving shape between them: no page is drawn again while it runs. */
-typedef struct { enum TransitionKind kind;bool armed,active;uint64_t started,worst;unsigned int duration,frames;Rect origin;int glyph,cx,cy;bool blur;uint32_t*from,*to,*soft_from,*soft_to; } Transition;
+typedef struct { enum TransitionKind kind;bool armed,active;uint64_t started,worst;unsigned int duration,frames;Rect origin;int glyph,cx,cy;bool blur;uint32_t*from,*to,*soft_from,*soft_to;int page_from,page_to; } Transition;
 typedef struct { int from,to;Rect origin;int glyph; } TransitionStep;
 #define FLASH_TARGETS 20  /* A_FLASH_TARGET..A_FLASH_CONFIRM-1: the partitions and those inside super. */
 typedef struct { char label[32],title[64];uint64_t bytes,room;bool logical; } FlashTarget;
 typedef struct { char path[PATH_LEN],name[192],profile[64],created[80],schema[64],workflow[64]; uint64_t bytes; } BackupEntry;
 typedef struct { char label[64],path[PATH_LEN]; uint64_t bytes; bool available,mounted; } PartitionEntry;
+/* A copy of Android's partitions on a card (identity_backup.py --kind android copies): an archive or,
+   made before 2026-11-11, a folder; and a card that holds none yet because it is not mounted. */
+#define COPIES_MAX 24
+#define COPY_PARTS 10
+/* ZIPs with installers that one hold runs one after another (2026-11-11). */
+#define ZIP_QUEUE 6
+#define ZIP_RESTART_MS 10000u
+typedef struct { char volume[96],token[80],path[PATH_LEN],name[208],sha[72],title[128],what[16],installer[16],changed[160];uint64_t size;unsigned int files;int state; /* 0 waits, 1 finished, 2 failed */ } ZipItem;
+#define COPY_WAITING 4
+typedef struct { char volume[32],token[72],place[64],path[256],created[32],sha[72],labels[COPY_PARTS][24]; unsigned int parts; uint64_t bytes,file_bytes; bool archive,writable,same; } PhoneCopy;
+typedef struct { char id[32],token[72],label[64],fs[16]; uint64_t bytes; } CopyVolume;
 typedef struct {
     char id[128],label[160],fs_type[40],mountpoint[PATH_LEN],reason[384],read_only_reason[384],token[256],mount_owner[40];
     bool mounted,read_only,mountable,write_supported;
@@ -187,8 +221,20 @@ typedef struct {
 #define WIFI_MAX 32u
 typedef struct { char ssid[132],hex[72],security[16],band[16];unsigned int bars;bool secure,supported,connected,saved; } WifiNet;
 /* One image of the installer catalog (installer_ui.h). */
-#define CATALOG_MAX 24u
-typedef struct { char id[48],name[64],version[24],family[24],file[96],desktop[16],notes[48];uint64_t size;bool minimal,reachable,unavailable,signed_; } CatalogImage;
+#define CATALOG_MAX 90u  /* A_CATALOG_ITEM..A_CATALOG_ITEM+89 */
+/* Android images too (2026-11-10): category gsi or port, Android version, type (aosp, gms,
+   lineage...), region, the build and its security patch, and whether it fits this phone. */
+typedef struct { char id[48],name[64],version[24],family[24],file[96],desktop[16],notes[48],category[12],android[8],variant[16],region[16],build[40],patch[16],fit_note[96];
+    uint64_t size,system_bytes;bool minimal,reachable,unavailable,signed_,fits;int tried; /* 1: started on this phone model, -1: did not */ } CatalogImage;
+typedef struct { char name[64],file[12],action[12],target[24],reason[96];uint64_t size; } SamsungRow;
+typedef struct { char id[24],name[32],version[24],sha256[72],reason[128],error[48],published[16];uint64_t size;bool supported,bundled,needs_key; } RootTool;
+#define ROOT_TOOLS 4u
+/* A removable medium as sdcard.py lists it (2026-11-11, Partition a card). */
+#define CARD_DISKS 4u
+#define CARD_PARTS 6u
+typedef struct { char id[32],name[64],kind[8],token[72],table[8],busy_code[32],busy[160];uint64_t size,usable,align,min_files;unsigned int part_count;
+    struct { unsigned int number;uint64_t size;char fs[16],label[40]; } parts[CARD_PARTS]; } CardDisk;
+#define SAMSUNG_ROWS 48u
 #define STORE_MAX 16u
 typedef struct { char file[208],path[232],name[64],version[32],family[16];uint64_t size;bool checked; } StoredImage;
 typedef struct { char name[64],version[48],summary[128];int available; } PkgResult;
@@ -212,7 +258,8 @@ typedef struct {
     unsigned int ssh_port,ssh_keys;
     int tools_volume_index;
     int charger_asked;bool charger_known,charger_off;char charger_note[200];
-    int id_volume_index,id_kind;uint32_t id_off;char id_labels_arg[256];bool id_known,id_list_after;
+    bool id_mounting; /* the card is being opened for writing from the page of a copy */
+    int id_volume_index,id_kind;uint32_t id_off,id_optional; /* id_optional: Android's own data, in a copy only when chosen */char id_labels_arg[256];bool id_known,id_list_after;
     /* The installation prepared in the Android app (android_plan_ui.h, 2026-11-10). */
     bool aplan_asked,aplan_known,aplan_present,aplan_valid,aplan_opened,aplan_pending,aplan_used,aplan_forget_after,aplan_script_present,aplan_erase,aplan_edit;
     char aplan_sha[72],aplan_catalog[64],aplan_name[96],aplan_version[48],aplan_file[160],aplan_user[40],aplan_hash[140],aplan_script[72],aplan_locale[16],aplan_zone[64],aplan_desktop_id[16],aplan_greeter_id[16],aplan_source[72],aplan_error[320],aplan_helper[PATH_LEN],systems_password_hash[140];
@@ -228,7 +275,9 @@ typedef struct {
     double display_actual_hz;
     char display_reason[512],display_note[256];
     bool display_light_known,display_brightness_supported,display_blank_supported,display_blank_known,display_blanked;
-    int battery_percent;bool battery_charging,battery_refresh;int queued_action;enum Screen queued_screen;unsigned int saved_hz,saved_brightness,restore_hz,restore_brightness;bool restore_status_asked,display_restoring,storage_prefers_usb;int toast_icon;uint64_t progress_mark_at,progress_mark_done;char progress_mark_phase[128];char toast[120];uint64_t toast_until,hotplug_at,usb_cable_check,usb_cable_lost_at;bool hotplug_pending,usb_cable_seen;unsigned int hotplug_retries;
+    int battery_percent;bool battery_charging,battery_refresh;
+    /* The interface's own estimate of the charge: see update_battery. */
+    double battery_estimate,battery_ocv,battery_ohm;long battery_counted,battery_uv,battery_ua;uint64_t battery_at;unsigned int battery_samples;bool battery_estimated;int queued_action;enum Screen queued_screen;unsigned int saved_hz,saved_brightness,restore_hz,restore_brightness;bool restore_status_asked,display_restoring,storage_prefers_usb;int toast_icon;uint64_t progress_mark_at,progress_mark_done;char progress_mark_phase[128];char toast[120];uint64_t toast_until,hotplug_at,usb_cable_check,usb_cable_lost_at;bool hotplug_pending,usb_cable_seen;unsigned int hotplug_retries;
     bool job_cancel_asked,job_cancelled,locked,lock_enabled,flash_known,flash_pick,flash_review_valid,flash_identical,flash_restore,flash_offline,settings_dirty;
     FlashTarget flash_targets[FLASH_TARGETS];unsigned int flash_target_count,vibration,haptic_active;int flash_selected,haptic_fd,haptic_id,utc_offset,clock_minute;uint64_t flash_bytes,settings_changed_at,hold_felt_at;
     char flash_helper[PATH_LEN],flash_volume[96],flash_volume_token[80],flash_path[PATH_LEN],flash_name[256],flash_kind[96],flash_contents[256],flash_sha[80],flash_identity[80],flash_rollback[96],flash_warnings[512],flash_reason[256],flash_label[24],flash_checksum[96];
@@ -284,11 +333,31 @@ typedef struct {
     bool prepare_known,prepare_mounted,prepare_owned,prepare_unmounting;
     char prepare_token[256],prepare_mountpoint[PATH_LEN],prepare_reason[384];
     BackupEntry backups[MAX_BACKUPS]; int backup_count,selected_backup,list_page;
+    /* Restore and Verify: Linux snapshots, or the copies of Android's partitions (2026-11-11). */
+    int list_category,copy_pick;PhoneCopy copies[COPIES_MAX];unsigned int copy_count,copy_waiting_count,copy_off;CopyVolume copy_waiting[COPY_WAITING];
+    bool copies_known,copy_mounting,copy_list_after;char copy_helper[PATH_LEN],copy_error[256],copy_labels_arg[COPY_PARTS*24+8];
+    /* The sheet that asks where a file is: SD cards and USB drives, mounted on a tap. */
+    bool source_sheet,source_known,rom_pick,gsi_file,rom_origin;
+    /* Screenshot: Power with Volume down, in either order; screenshot.py packs the PNG and places it. */
+    pid_t shot_pid;char shot_helper[PATH_LEN],shot_raw[PATH_LEN+48],shot_result[PATH_LEN+56];uint64_t shot_flash,shot_deadline,voldown_at;
+    unsigned int shot_sequence;bool voldown_held;int voldown_focus;
+    /* The flashlight: the camera's LED as the kernel's LED class shows it, in torch mode. */
+    char torch_path[PATH_LEN];unsigned int torch_max,torch_level,torch_saved;bool torch_checked,torch_available,torch_on;
+    char backup_new_name[72];bool backup_relist; /* Rename and delete of a finished backup (2026-11-11). */
+    int64_t tools_content; /* The height of Settings as last drawn. */
+    /* Where saved images are (2026-11-11): userdata, or a card when Android holds userdata. */
+    char store_volume[32],store_token[72],store_label[64],store_reason[200];
+    uint64_t sideload_checked; /* The last look for a file sideloaded over adb. */
+    char card_helper[PATH_LEN],card_error[256],card_linux_arg[16],card_swap_arg[16];CardDisk cards[CARD_DISKS];unsigned int card_count,card_linux,card_swap;int card_index;bool card_known;
     Button buttons[MAX_BUTTONS]; int button_count,focus;
     bool pointer_down,pointer_requires_release; int pressed_action,pressed_hold,pressed_glyph; Rect pressed_rect;
     /* The key just pressed shows above the finger; Delete held down repeats (2026-11-08). */
     uint32_t kb_bubble_cp; Rect kb_bubble_rect; uint64_t kb_bubble_until,kb_repeat_at; bool kb_repeated,kb_drawn;
     Transition tr;TransitionStep tr_steps[TRANSITION_DEPTH];int tr_depth;bool animate;
+    /* Back returns to the page this one was opened from (2026-11-10), not to a fixed parent:
+       the pages passed on the way, Home first. nav_hold: a read ends for a page already left. */
+    enum Screen nav_trail[NAV_TRAIL];int nav_depth;bool nav_backing,nav_hold;
+    enum Screen job_page;bool job_page_mark,job_orphan,job_completing;
     unsigned int splash_percent,splash_from,animation,lock_mode,lock_pending_mode,access_mode,lock_failures;int lock_flow,lock_start_y,lock_drag,lock_kept_kind,access_kind;
     uint64_t job_started,nav_settle_end,lock_wait_until,lock_shake_until,access_checked;int nav_settle_kind,nav_settle_amount;enum Screen lock_return,access_return;bool lock_frame_pending,lock_opened,lock_keyboard,lock_digits,tools_export_next,terminal_autostart,power_held,gesture_ready,gesture_terminal,usb_volumes_known,usb_mounting,usb_refresh_after;unsigned int nav_mode;int gesture,gesture_x0,gesture_y0,gesture_x,gesture_y,gesture_anchor_y,usb_rows[USB_VOLUME_ROWS],usb_row_count;uint64_t gesture_still_at;uint32_t*menu_backdrop;enum Screen menu_return;char usb_want[128];pid_t settings_pid;uint64_t settings_retry_at;uint32_t*lock_backdrop;
     char lock_note[96],lock_old[128],lock_new[128],lock_kept[PATH_LEN],access_id[40],access_channel[8],access_peer[72],access_prompt[PATH_LEN];
@@ -319,7 +388,7 @@ typedef struct {
     int fs_prompt_kind,fs_destination_index;
     unsigned int fs_confirm_page;
     uint32_t keyboard_keys[56]; int keyboard_count;
-    int pointer_x,pointer_y;
+    int pointer_x,pointer_y;bool tapped; /* the action in hand was started by a finger, not by a key */
     /* Recovery Wi-Fi (wifi_ui.h); the password stays in memory only while it is joined. */
     char wifi_helper[PATH_LEN],wifi_ssid[132],wifi_ssid_hex[72],wifi_address[48],wifi_password[130],wifi_error[256];
     char wifi_edit_ssid[132],wifi_edit_hex[72],wifi_edit_password[130],wifi_password_file[PATH_LEN];
@@ -328,9 +397,36 @@ typedef struct {
     /* Installer (installer_ui.h): the catalog, and a new system from it or from a file. */
     CatalogImage catalog[CATALOG_MAX];unsigned int catalog_count,catalog_family,catalog_page;bool catalog_known,catalog_https,catalog_network,catalog_after_status,wifi_from_catalog;
     /* The check of the servers that follows each opening of the catalog (2026-11-08). */
-    StoredImage saved[STORE_MAX];unsigned int saved_count,saved_delete;uint64_t saved_free;bool saved_known,catalog_saving;char saved_note[160],saved_argument[208]; /* Images saved on the phone; saved_delete counts from 1. */
+    StoredImage saved[STORE_MAX];unsigned int saved_count,saved_delete;uint64_t saved_free;bool saved_known,catalog_saving;
+    /* The catalog's filters (2026-11-10): category, Android version, type, region, fits this phone. */
+    unsigned int catalog_category,catalog_version,catalog_kind,catalog_region;bool catalog_all_phones;enum Screen catalog_return;int android_selected;
+    unsigned int catalog_only; /* 0: both categories (opened from Home); 1: Linux only; 2: Android only (2026-11-11) */
+    bool systems_foreign;      /* userdata holds no Linux (Android's data): a new system formats it */
+    bool systems_boot_android; /* BOOT holds no Linux kernel for the platform modules: a new system could not start */
+    /* Android's request in misc to erase its data, read by init at the start (bcb.json): asked: the page opened for it;
+       prompt: Android could not open its data (it did not ask from its settings). */
+    bool reset_asked,reset_prompt,reset_checked,reset_page;
+    /* How Android's last start ended (android_log.py, read by init): the page opens once for each failed start. */
+    bool alog_checked;uint64_t alog_since;unsigned int alog_seconds,alog_line_count;
+    char alog_code[20],alog_needs[12],alog_reason[124],alog_detail[204],alog_id[20],alog_seen[20],alog_lines[6][184];
+    char systems_boot_source[12]; /* cache or download: where an installation takes the Linux BOOT from then; empty: nowhere */
+    bool systems_boot_outdated; /* BOOT holds a Linux kernel, but not the release this recovery was made for */
+    /* Samsung's firmware (samsung_firmware.py): the chosen AP and the reviewed plan. */
+    char samsung_helper[PATH_LEN],samsung_volume[96],samsung_token[80],samsung_path[PATH_LEN],samsung_build[32],samsung_plan[80],samsung_warnings[768],samsung_blockers[384],samsung_files[96];
+    SamsungRow samsung_rows[SAMSUNG_ROWS];unsigned int samsung_row_count;uint64_t samsung_write_bytes;bool samsung_known,samsung_pick,android_installed,android_gsi,wipe_android,stock_boot_pick,flash_after_targets;char stock_boot_path[PATH_LEN],stock_boot_token[80];
+    /* Root (root.py): the tools with their newest version, BOOT's state, the stock BOOT on cache. */
+    char root_helper[PATH_LEN],root_boot_kind[16],root_boot_release[64],root_stock_path[PATH_LEN],root_cache_token[80];
+    RootTool root_tools[ROOT_TOOLS];unsigned int root_count;int root_selected;bool root_known,root_boot_magisk,root_needs_reset,root_verification;
+    /* APatch (2026-11-11): the root BOOT carries ("magisk", "apatch" or none), and the SuperKey typed for
+       the tool root_key_tool: in memory until the install starts, then in a file of the private RAM folder. */
+    char root_boot_root[16],root_superkey[72],root_key_file[PATH_LEN];int root_key_tool;
+    /* A ZIP that installs itself (zip_install.py, 2026-11-11): the chosen file and what its review said. */
+    char zip_helper[PATH_LEN],zip_volume[96],zip_token[80],zip_path[PATH_LEN],zip_name[208],zip_sha[72],zip_title[128],zip_what[16],zip_installer[16],zip_warnings[512],zip_parts[160];
+    uint64_t zip_size;unsigned int zip_files;bool zip_pick,zip_known;
+    /* The list of ZIPs to run: zip_adding: the picker is open for one more; zip_restart: restart the system when all finished. */
+    ZipItem zip_queue[ZIP_QUEUE];unsigned int zip_count,zip_at,zip_restart_shown;bool zip_adding,zip_restart,zip_ran;uint64_t zip_restart_at;char gsi_helper[PATH_LEN];char saved_note[160],saved_argument[208]; /* Images saved on the phone; saved_delete counts from 1. */
     bool catalog_checked,catalog_check_done;unsigned int catalog_servers,catalog_updated,catalog_gone,catalog_failed;char catalog_problem[120];
-    bool systems_wipe,systems_plan_erase,systems_adding;char systems_remote_id[48];uint64_t systems_plan_download;
+    bool systems_wipe,systems_plan_erase,systems_plan_format,systems_plan_boot,systems_adding;char systems_remote_id[48];uint64_t systems_plan_download;
     Job job;
 } App;
 
@@ -382,28 +478,39 @@ static void render_systems(App*a);
 static void render_systems_plan(App*a);
 static void render_systems_recover(App*a);static void render_systems_remove(App*a);
 static void render_wifi(App*a);static void wifi_settings_row(App*a,int y,bool enabled);static bool wifi_action(App*a,int id);
-static bool images_job(int kind);static void render_systems_new(App*a);static void render_catalog(App*a);static void render_images(App*a);static bool images_action(App*a,int id);static void open_images(App*a);static void adb_poll(App*a);static void render_adb_request(App*a);static bool adb_action(App*a,int id);static bool start_images_job(App*a,int kind,const char*argument);static bool installer_action(App*a,int id);static bool start_catalog_job(App*a);
+static bool images_job(int kind);static void render_systems_new(App*a);static void render_catalog(App*a);static void render_android_menu(App*a);static void render_samsung_review(App*a);static void render_android_image(App*a);static void open_android_image(App*a,int n);static void render_root(App*a);static void render_superkey_prompt(App*a);static void render_zip_review(App*a);static void render_card(App*a);static void sideload_poll(App*a);static void zip_chosen(App*a);static bool start_flash_job(App*a,int kind);static void render_images(App*a);static bool images_action(App*a,int id);static void open_images(App*a);static void adb_poll(App*a);static void render_adb_request(App*a);static bool adb_action(App*a,int id);static bool start_images_job(App*a,int kind,const char*argument);static bool installer_action(App*a,int id);static bool start_catalog_job(App*a);
 static void complete_catalog_job(App*a,const Json*j,bool ok,bool check);static void render_package_prompt(App*a);static void render_systems_apps(App*a);static void render_package_search(App*a);static void render_apps_card(App*a,int y);static void complete_package_search(App*a,const Json*j,bool ok);static void render_identity(App*a);static void render_identity_restore(App*a);static void render_aplan(App*a);static void render_wipe(App*a);static void render_wipe_review(App*a);static bool systems_ready(const App*a);static const char*flash_target_label(const App*a);static int render_aplan_card(App*a,int y);static void render_flash_super(App*a);static void render_icon_sheet(App*a);static void android_plan_tick(App*a);static int render_charger_card(App*a,int y,bool free_ui);static void identity_inventory(App*a);static void installer_card(App*a,Rect r,unsigned int tone,int glyph,const char*title,const char*note,int action,bool enabled);
 static void render_systems_shells(App*a);static int shells_append_args(const App*a,char**args,int n);static void shells_summary(const App*a,char*out,size_t size);static bool shells_offered(const App*a);static unsigned int shells_extra(const App*a);static int locale_append_args(const App*a,char**args,int n);static void locale_summary(const App*a,char*out,size_t size);static void render_locale_card(App*a,int y);static void render_systems_locale(App*a);static void render_systems_timezone(App*a);
 static void render_systems_manifest(App*a);static void render_systems_done(App*a);static void render_systems_extras(App*a);static void render_systems_script(App*a);static void systems_wifi_focus(App*a,int kind);
 static void render_systems_setup(App*a);
+static void render_copies(App*a,int top);static void render_copy_detail(App*a);static void open_copies(App*a);static bool copy_job(int kind);static bool start_copy_job(App*a,int kind);
+static void screenshot_poll(App*a);static void screenshot_wait(App*a);static void take_screenshot(App*a);
+static void render_source_sheet(App*a);static void source_open(App*a);static bool source_listed(const App*a,const FileVolume*v);static bool source_back(App*a);static bool source_pick(const App*a);
 static bool systems_action(App*a,int id);static bool systems_mount_screen(int screen_);static void catalog_choose(App*a,const CatalogImage*c);
 static bool start_systems_job(App*a,int kind);
 static int complete_systems_job(App*a,const Json*j,int kind,bool ok);
 static Rect tools_viewport(void){return(Rect){28,230,664,1254};}
 /* USB files keeps its main button in place under the list, so its list ends higher. */
-static int page_height(const App*a){return a->screen==USB_FILES?1070:(a->screen==SYSTEMS_SEARCH?1086:1254);}
-static Rect page_viewport(const App*a){return(Rect){28,230,664,page_height(a)};}
-static bool page_scrolls(const App*a){return a->screen==THEME||a->screen==TERMINAL_THEME||a->screen==SYSTEM||a->screen==USB_FILES||a->screen==SYSTEMS_CATALOG||a->screen==SYSTEMS_SEARCH||a->screen==SYSTEMS_TIMEZONE;}
+/* The Android review keeps its hold button under the list (2026-11-10), and the image page two buttons. */
+static int page_height(const App*a){return a->screen==LIST?860:(a->screen==USB_FILES?1070:(a->screen==SYSTEMS_SEARCH?1086:(a->screen==SAMSUNG_REVIEW?1074:(a->screen==ANDROID_IMAGE?960:1254))));}
+/* Restore and Verify keep their two categories above what scrolls (2026-11-11). */
+static int page_top(const App*a){return a->screen==LIST?316:230;}
+static Rect page_viewport(const App*a){return(Rect){28,page_top(a),664,page_height(a)};}
+static bool page_scrolls(const App*a){return (a->screen==LIST&&a->list_category==1&&!a->install.pick_backup)||a->screen==ROOT_PAGE||a->screen==SAMSUNG_REVIEW||a->screen==ANDROID_IMAGE||a->screen==THEME||a->screen==TERMINAL_THEME||a->screen==SYSTEM||a->screen==USB_FILES||a->screen==SYSTEMS_CATALOG||a->screen==SYSTEMS_SEARCH||a->screen==SYSTEMS_TIMEZONE;}
 static int64_t page_max_scroll(const App*a){return a->page_content>page_height(a)?a->page_content-page_height(a):0;}
-static int64_t tools_max_scroll(const App*a){return 1308+212+(a->lock_enabled?188:0);}
+/* The page measures itself when it is drawn (2026-11-11: a fixed sum left an empty stretch below
+   the last card wherever the charging card was absent); the sum serves only before the first frame. */
+static int64_t tools_max_scroll(const App*a){
+    if(!a->tools_content)return 1308+212+268+(a->lock_enabled?188:0);
+    int64_t most=a->tools_content-1254;return most>0?most:0;
+}
 static void page_scroll_to(App*a,int64_t value){a->page_scroll=(int64_t)scroll_clamp((double)value,(double)page_max_scroll(a));a->focus=-1;a->button_count=0;a->dirty=true;}
 static void tools_scroll_to(App*a,int64_t value){a->tools_scroll=(int64_t)scroll_clamp((double)value,(double)tools_max_scroll(a));a->focus=-1;a->button_count=0;a->dirty=true;}
 static bool install_job(int kind){return kind>=J_INSTALL_STATUS&&kind<=J_INSTALL_EXECUTE;}
 static bool wifi_job(int kind){return kind>=J_WIFI_STATUS&&kind<=J_WIFI_FORGET;}
 /* These only read state. The page stays usable while they run: a tap waits for the
  * result instead of the whole page going grey. */
-static bool job_quiet(int kind){return wifi_job(kind)||kind==J_APLAN_SHOW||kind==J_APLAN_PREPARE||kind==J_APLAN_FORGET||kind==J_IMAGES||kind==J_CATALOG||kind==J_CATALOG_CHECK||kind==J_PKG_SEARCH||kind==J_ID_LIST||kind==J_ID_BACKUPS||kind==J_CHARGER||kind==J_SYSINFO||kind==J_TOOLS_STATUS||kind==J_DISPLAY_STATUS||kind==J_DISPLAY_SET||kind==J_USB_STATUS||kind==J_SYS_STATUS||kind==J_INSTALL_STATUS||kind==J_STORAGE_INVENTORY||kind==J_FS_INVENTORY||kind==J_FS_LIST||kind==J_LIST||kind==J_FLASH_TARGETS||kind==J_USB_SYNC||kind==J_TERM_STATUS||kind==J_TERM_STOP;}
+static bool job_quiet(int kind){return wifi_job(kind)||kind==J_APLAN_SHOW||kind==J_APLAN_PREPARE||kind==J_APLAN_FORGET||kind==J_IMAGES||kind==J_CATALOG||kind==J_CATALOG_CHECK||kind==J_PKG_SEARCH||kind==J_ID_LIST||kind==J_ID_BACKUPS||kind==J_CHARGER||kind==J_SYSINFO||kind==J_TOOLS_STATUS||kind==J_DISPLAY_STATUS||kind==J_DISPLAY_SET||kind==J_USB_STATUS||kind==J_SYS_STATUS||kind==J_INSTALL_STATUS||kind==J_STORAGE_INVENTORY||kind==J_FS_INVENTORY||kind==J_FS_LIST||kind==J_LIST||kind==J_FLASH_TARGETS||kind==J_USB_SYNC||kind==J_TERM_STATUS||kind==J_TERM_STOP||kind==J_CARD_LIST||kind==J_COPY_LIST||kind==J_ROM_KIND;}
 enum { NAV_GESTURES,NAV_BUTTONS,NAV_OFF };
 enum { GESTURE_NONE,GESTURE_BACK,GESTURE_BOTTOM };
 static bool flash_job(int kind){return kind>=J_FLASH_TARGETS&&kind<=J_FLASH_WRITE;}
@@ -422,7 +529,7 @@ static bool start_install_job(App*a,int kind);
 static int complete_install_job(App*a,const Json*j,int kind,bool ok);
 static void complete_flash_job(App*a,const Json*j,int kind,bool ok);
 static void action(App*a,int id);
-static void update_battery(App*a);
+static void update_battery(App*a);static void reset_request_poll(App*a);static void render_android_log(App*a);static void android_log_poll(App*a);static bool android_log_action(App*a,int id);static void zip_item_to_review(App*a,const ZipItem*it);static void settings_save(App*a,bool wait);
 static long sysfs_number(const char*path,long fallback);
 static void complete_usb_sync(App*a,const Json*j,bool ok);
 static void complete_usb_backup(App*a,const Json*j,bool ok);
@@ -486,6 +593,17 @@ static void rectangle(App *a,Rect r,uint32_t color){
     if(r.h>0&&y1==y0)y1++;
     canvas_rect(a->pixels,canvas_bounds(a),x0,y0,x1,y1,color,255);
 }
+/* The theme's backdrop, or its plain ground, once more over a part of the page. */
+static void backdrop_again(App*a,Rect r){
+    int x0=nx(r.x),y0=nx(r.y),x1=nx(r.x+r.w),y1=nx(r.y+r.h);
+    if(x0<0)x0=0;
+    if(y0<0)y0=0;
+    if(x1>NW)x1=NW;
+    if(y1>NH)y1=NH;
+    if(x1<=x0||y1<=y0)return;
+    if(ui_theme->backdrop&&a->backdrop)for(int y=y0;y<y1;y++)memcpy(a->pixels+(size_t)y*NW+x0,a->backdrop+(size_t)y*NW+x0,(size_t)(x1-x0)*sizeof(uint32_t));
+    else canvas_rect(a->pixels,canvas_bounds(a),x0,y0,x1,y1,BG,255);
+}
 static void gradient(App*a,Rect r,int radius,uint32_t top,uint32_t bottom){canvas_rounded(a->pixels,canvas_bounds(a),nx(r.x),nx(r.y),nx(r.x+r.w),nx(r.y+r.h),(float)radius*1.5f,top,bottom,255);}
 static void veil(App*a,Rect r,int radius,uint32_t color,unsigned int alpha){canvas_rounded(a->pixels,canvas_bounds(a),nx(r.x),nx(r.y),nx(r.x+r.w),nx(r.y+r.h),(float)radius*1.5f,color,color,alpha);}
 /* Surfaces carry a one-pixel lighter edge, so cards read as raised on the dark page. */
@@ -505,6 +623,9 @@ static void rounded(App *a,Rect r,int radius,uint32_t color){
 static void vector_line(App*a,int x0,int y0,int x1,int y1,int width,uint32_t color){canvas_capsule(a->pixels,canvas_bounds(a),(float)x0*1.5f,(float)y0*1.5f,(float)x1*1.5f,(float)y1*1.5f,(float)width*1.5f,color);}
 static void vector_circle(App*a,int cx,int cy,int radius,int width,uint32_t color){canvas_ring(a->pixels,canvas_bounds(a),(float)cx*1.5f,(float)cy*1.5f,(float)radius*1.5f,(float)width*1.5f,color);}
 static void vector_rectangle(App*a,Rect r,uint32_t color){rectangle(a,r,color);}
+static void vector_arc(App*a,int cx,int cy,int radius,int width,float start,float sweep,uint32_t color){
+    canvas_arc(a->pixels,canvas_bounds(a),(float)cx*1.5f,(float)cy*1.5f,(float)radius*1.5f,(float)width*1.5f,start,sweep,color);
+}
 static void line(App *a,int x0,int y0,int x1,int y1,int width,uint32_t color){
     if(y0==y1)rectangle(a,(Rect){x0<x1?x0:x1,y0-width/2,abs(x1-x0),width},color);
     else if(x0==x1)rectangle(a,(Rect){x0-width/2,y0<y1?y0:y1,width,abs(y1-y0)},color);
@@ -564,6 +685,7 @@ static void text(App *a,int x,int y,int font,uint32_t color,const char *s){
     while(*s){uint32_t cp=utf8_next(&s);draw_glyph(a,b,pen,top,font,color,cp);pen+=codepoint_advance(cp,font);}
 }
 static void centered(App*a,Rect r,int font,uint32_t color,const char*s){text(a,r.x+(r.w-text_width(s,font))/2,r.y+(r.h-(int[]){24,31,40,59}[font])/2,font,color,s);}
+static bool wrap_measuring; /* wrapped() counts lines without drawing them. */
 static int wrapped(App*a,int x,int y,int width,int font,uint32_t color,const char*src,int max_lines){
     src=tr(src);const int height=(int[]){28,36,46,64}[font];char row[2048];int lines=0;const char*p=src;
     while(lines<max_lines){
@@ -578,11 +700,25 @@ static int wrapped(App*a,int x,int y,int width,int font,uint32_t color,const cha
             used+=advance;end=p;next=p;
         }
         size_t n=(size_t)(end-start);if(n>=sizeof(row))n=utf8_prefix(start,sizeof(row)-1);
-        memcpy(row,start,n);row[n]=0;bool raw=ui_raw;ui_raw=true;text(a,x,y+height*lines,font,color,row);ui_raw=raw;lines++;
+        memcpy(row,start,n);row[n]=0;if(!wrap_measuring){bool raw=ui_raw;ui_raw=true;text(a,x,y+height*lines,font,color,row);ui_raw=raw;}lines++;
         if(!*next)break;
         p=next;
     }
     return lines*height;
+}
+/* A paragraph of a page in a tile of its own (2026-11-11: the owner asked for the text of the
+   pages in tiles). The text starts where the paragraph did; a warning gets a bar of its colour. */
+static int text_tile(App*a,int y,int font,uint32_t color,const char*src,int max_lines);
+/* The height wrapped() would take, for a card drawn before its text. */
+static int wrapped_height(App*a,int width,int font,const char*src,int max_lines){
+    wrap_measuring=true;int height=wrapped(a,0,0,width,font,0,src,max_lines);wrap_measuring=false;return height;
+}
+static int text_tile(App*a,int y,int font,uint32_t color,const char*src,int max_lines){
+    int h=wrapped_height(a,604,font,src,max_lines);bool accent=color!=MUTED&&color!=TEXT;
+    rounded(a,(Rect){28,y-16,664,h+32},22,PANEL);
+    if(accent)rounded(a,(Rect){38,y-2,5,h+4},3,color);
+    wrapped(a,accent?60:52,y,accent?600:612,font,accent?color:color,src,max_lines);
+    return h+32;
 }
 static void ellipsis(App*a,int x,int y,int width,int font,uint32_t color,const char*src){
     src=tr(src);char out[512];size_t n=utf8_prefix(src,sizeof(out)-4);memcpy(out,src,n);out[n]=0;
@@ -637,6 +773,8 @@ static void icon(App*a,int id,int x,int y,int size,uint32_t c){
     case ICON_DISPLAY:icon_ring(a,x,y,size,c,24,24,9);ICON_PATH(24,5,24,9);ICON_PATH(24,39,24,43);ICON_PATH(5,24,9,24);ICON_PATH(39,24,43,24);ICON_PATH(10,10,13,13);ICON_PATH(35,35,38,38);ICON_PATH(38,10,35,13);ICON_PATH(13,35,10,38);break;
     case ICON_CLOCK:icon_ring(a,x,y,size,c,24,24,18);ICON_PATH(24,13,24,24,32,29);break;
     case ICON_BROWSER:icon_ring(a,x,y,size,c,24,24,18);ICON_PATH(24,11,29,24,24,37,19,24,24,11);break;
+    /* A hand torch, head up: the head, the barrel and its switch. */
+    case ICON_TORCH:ICON_PATH(13,7,35,7,31,19,17,19,13,7);ICON_PATH(17,19,17,42,31,42,31,19);ICON_PATH(24,26,24,32);break;
     case ICON_WIFI:for(int r=8;r<=26;r+=9)icon_arc(a,x,y,size,c,24,40,r,225,315);ICON_PATH(24,40,24,40);break;
     case ICON_LOCK:ICON_PATH(10,22,38,22,38,42,10,42,10,22);icon_arc(a,x,y,size,c,24,17,10,180,360);ICON_PATH(14,17,14,22);ICON_PATH(34,17,34,22);break;
     case ICON_THEME:icon_ring(a,x,y,size,c,24,24,18);ICON_PATH(24,6,24,42);ICON_PATH(24,12,33,14);ICON_PATH(24,20,41,21);ICON_PATH(24,28,41,28);ICON_PATH(24,36,33,35);break;
@@ -771,11 +909,100 @@ static void bento_tile(App*a,Rect r,unsigned int tone,int id,const char*title,co
     text(a,r.x+22,top,font,TEXT,title);if(subtitle)ellipsis(a,r.x+22,top+50,r.w-40,0,tonal?TEXT:MUTED,subtitle);
     register_button(a,r,id,ui_free(a),0);button_glyph(a,id,id);
 }
-/* The way to the phone's details sits in the date line, so it takes no room of its own. */
+/* The flashlight (2026-11-11, the owner's request; TWRP and OrangeFox have one): the camera's LED in
+   torch mode, through the kernel's LED class. A22X_RECOVERY_TORCH names the LED's folder for tests. */
+static void toast(App*a,const char*message);
+static bool torch_value(const char*folder,const char*name,unsigned int*out){
+    char path[PATH_LEN+32],value[24]={0};snprintf(path,sizeof(path),"%s/%s",folder,name);
+    int fd=open(path,O_RDONLY|O_CLOEXEC);if(fd<0)return false;
+    ssize_t n=read(fd,value,sizeof(value)-1);close(fd);if(n<=0)return false;
+    *out=(unsigned int)strtoul(value,NULL,10);return true;
+}
+static bool torch_ready(App*a){
+    if(a->torch_checked)return a->torch_available;
+    a->torch_checked=true;if(a->preview)return a->torch_available;
+    char found[PATH_LEN]={0};const char*named=getenv("A22X_RECOVERY_TORCH");
+    if(named&&*named)copy(found,sizeof(found),named);
+    else if(a->device){
+        DIR*d=opendir("/sys/class/leds");struct dirent*e;
+        while(d&&(e=readdir(d)))if(strstr(e->d_name,"flash")||strstr(e->d_name,"torch")){snprintf(found,sizeof(found),"/sys/class/leds/%.200s",e->d_name);break;}
+        if(d)closedir(d);
+    }
+    unsigned int most=0,now=0;
+    if(!found[0]||!torch_value(found,"max_brightness",&most)||!most||!torch_value(found,"brightness",&now))return false;
+    /* A light that is on already (the interface was started again) is shown as on. */
+    /* The level chosen before is kept in the settings; the first time it is the middle one. */
+    copy(a->torch_path,sizeof(a->torch_path),found);a->torch_max=most;a->torch_on=now>0;
+    a->torch_level=now>0?now:(a->torch_saved>=1&&a->torch_saved<=most?a->torch_saved:(most+1)/2);
+    return a->torch_available=true;
+}
+/* The level is written and read back: the page shows what the LED took, not what was asked. */
+static void torch_set(App*a,bool on,unsigned int level){
+    if(!torch_ready(a))return;
+    if(level<1)level=1;
+    if(level>a->torch_max)level=a->torch_max;
+    unsigned int want=on?level:0,back=~0u;bool written=a->preview;
+    if(!a->preview){
+        char path[PATH_LEN+32],value[16];snprintf(path,sizeof(path),"%s/brightness",a->torch_path);int n=snprintf(value,sizeof(value),"%u",want);
+        int fd=open(path,O_WRONLY|O_CLOEXEC);if(fd>=0){written=write(fd,value,(size_t)n)==n;close(fd);}
+        written=written&&torch_value(a->torch_path,"brightness",&back)&&back==want;
+    }
+    fprintf(stderr,"[recovery-ui:torch] want=%u ok=%d\n",want,written);
+    if(!written){if(back!=~0u)a->torch_on=back>0;toast(a,"The flashlight did not answer");a->toast_icon=ICON_TORCH;a->dirty=true;return;}
+    a->torch_on=on;if(on)a->torch_level=level;a->dirty=true;
+}
+/* The brightness (2026-11-11): a level is taken at once when the light is on, else it waits for the
+   next time. It is kept in the settings. */
+static void torch_choose(App*a,unsigned int level){
+    if(!torch_ready(a))return;
+    if(level<1)level=1;
+    if(level>a->torch_max)level=a->torch_max;
+    if(level==a->torch_level)return;
+    if(a->torch_on)torch_set(a,true,level);else{a->torch_level=level;a->dirty=true;}
+    if(a->torch_level==level&&a->torch_saved!=level){a->torch_saved=level;settings_changed(a);}
+}
+static void torch_step(App*a,int by){if(torch_ready(a)&&(by>0||a->torch_level>1))torch_choose(a,by>0?a->torch_level+1:a->torch_level-1);}
+/* The settings may be read after the first frame has asked for the LED: the level kept in them is
+   taken then, unless the light is on and shows another. */
+static void torch_remembered(App*a){
+    if(a->torch_checked&&a->torch_available&&!a->torch_on&&a->torch_saved>=1&&a->torch_saved<=a->torch_max&&a->torch_level!=a->torch_saved){a->torch_level=a->torch_saved;a->dirty=true;}
+}
+/* A power action takes the light with it, whoever lit it: nothing else is sure to switch the LED off
+   before the phone resets or goes dark. */
+static void torch_leave(App*a){
+    unsigned int now=0;
+    if(a->preview||!torch_ready(a)||!torch_value(a->torch_path,"brightness",&now))return;
+    if(now||a->torch_on)torch_set(a,false,a->torch_level);
+}
+/* The level under a finger on the bar: the level whose end of the fill reaches it. */
+static unsigned int torch_bar_level(const App*a,Rect r,int x){
+    int span=r.w-8,at=x-(r.x+4);
+    if(span<1||!a->torch_max)return a->torch_level;
+    if(at<=0)return 1;
+    if(at>=span)return a->torch_max;
+    unsigned int level=(unsigned int)(((int64_t)at*a->torch_max+span-1)/span);
+    return level<1?1:(level>a->torch_max?a->torch_max:level);
+}
+/* The level as a bar with its number. A touch on it takes the level under the finger. */
+static void torch_bar(App*a,Rect r){
+    char value[24];snprintf(value,sizeof(value),"%u / %u",a->torch_level,a->torch_max);
+    rounded(a,r,r.h/2,PANEL2);
+    int fill=a->torch_max?(int)((unsigned int)(r.w-8)*a->torch_level/a->torch_max):0;if(fill<r.h-8)fill=r.h-8;
+    rounded(a,(Rect){r.x+4,r.y+4,fill,r.h-8},(r.h-8)/2,a->torch_on?ORANGE:ORANGE_DARK);
+    if(pressed(a,A_TORCH_BAR))veil(a,r,r.h/2,0xffffffu,16);
+    raw_text(true);centered(a,r,1,TEXT,value);raw_text(false);
+    register_button(a,r,A_TORCH_BAR,true,0);
+}
+/* The way to the phone's details sits in the date line, so it takes no room of its own; the
+   flashlight, when the phone has one this kernel drives, sits beside it. */
 static void home_device(App*a){
     const char*name=a->sys_model[0]?a->sys_model:"About phone";int width=text_width(name,0)+88,x=692-width,y=152;Rect r={x,y,width,48};
     surface(a,r,24,PANEL,A_SYSTEM);icon(a,ICON_PHONE,x+14,y+10,28,ORANGE);text(a,x+50,y+10,0,TEXT,name);icon(a,ICON_CHEVRON,x+width-32,y+13,22,MUTED);
     register_button(a,(Rect){x,y-12,width,72},A_SYSTEM,ui_free(a),0);
+    if(torch_ready(a)){
+        Rect t={x-64,y,52,48};surface(a,t,24,a->torch_on?ORANGE:PANEL,A_TORCH);icon(a,ICON_TORCH,t.x+11,t.y+9,30,a->torch_on?ui_theme->on_accent:ORANGE);
+        register_button(a,(Rect){t.x-8,y-12,t.w+12,72},A_TORCH,true,0);button_glyph(a,A_TORCH,ICON_TORCH);
+    }
 }
 /* The nine small tiles at the bottom of the home page share one size and layout: the icon,
    the title at the same height in all of them, and a short note under it (2026-11-08). */
@@ -841,7 +1068,7 @@ static const struct{int id;const char*name;}sheet_icons[]={
     {A_POWER,"power"},{A_SYSTEM,"phone_info"},{ICON_LINUX,"terminal"},{ICON_PHONE,"phone"},{ICON_FLASH,"flash"},{ICON_CHEVRON,"chevron"},
     {ICON_BACK,"back"},{ICON_TUNE,"tune"},{ICON_LANGUAGE,"language"},{ICON_VIBRATE,"vibrate"},{ICON_DISPLAY,"display"},{ICON_CLOCK,"clock"},
     {ICON_LOCK,"lock"},{ICON_THEME,"theme"},{ICON_USB,"usb"},{ICON_KEYBOARD,"keyboard"},{ICON_ERASE,"erase"},{ICON_TRASH,"trash"},
-    {ICON_NAV,"navigation"},{ICON_WIFI,"wifi"},{ICON_BROWSER,"browser"}};
+    {ICON_NAV,"navigation"},{ICON_WIFI,"wifi"},{ICON_BROWSER,"browser"},{ICON_TORCH,"torch"}};
 static void render_icon_sheet(App*a){
     rounded(a,(Rect){0,0,720,1600},0,0x000000u);
     for(unsigned int n=0;n<sizeof(sheet_icons)/sizeof(sheet_icons[0]);n++)icon(a,sheet_icons[n].id,8+(int)(n%6)*118,8+(int)(n/6)*118,96,0xffffffu);
@@ -850,7 +1077,7 @@ static void render_os(App*a){
     heading(a,"Install","Choose what to install on this phone.",true);
     int y=render_aplan_card(a,242);  /* A plan from the Android app comes first (2026-11-10). */
     os_card(a,y,150,ICON_LINUX,"Operating system","Linux from SD or USB stick, switch systems",A_SYSTEMS,PANEL);
-    os_card(a,y+166,150,ICON_PHONE,"Android","Install stock firmware",A_INSTALL,PANEL);
+    os_card(a,y+166,150,ICON_PHONE,"Android","Samsung firmware, or Android images from the internet",A_ANDROID,PANEL);
     os_card(a,y+332,150,ICON_FLASH,"Flash a partition","BOOT, DTBO, vbmeta and other images",A_FLASH,PANEL);
     /* TWRP's Wipe beside its Install (2026-11-10). */
     os_card(a,y+498,150,ICON_TRASH,"Wipe","Cache, or a whole volume before an installation",A_WIPE,PANEL);
@@ -859,8 +1086,16 @@ static void render_backup(App*a){
     heading(a,"Backup","Choose the system state to save.",true);
     const char*profiles[]={"linux","recovery"};
     const char*descriptions[]={"Boot + used ext4 blocks\nSave the Linux kernel and root filesystem offline.","Recovery partition only\nKeep a copy of this independent recovery."};
+    /* Android holds userdata: there is no Linux to save, and the copy of Android comes first. */
+    if(a->systems_foreign&&!strcmp(a->profile,"linux"))copy(a->profile,sizeof(a->profile),"recovery");
     for(int i=0;i<2;i++){
-        Rect r={28,242+i*204,664,180};bool selected=!strcmp(a->profile,profiles[i]);rounded(a,r,24,selected?ORANGE_DARK:PANEL);
+        Rect r={28,242+i*204,664,180};
+        if(i==0&&a->systems_foreign){
+            rounded(a,r,24,PANEL);icon_tile(a,ICON_PHONE,48,r.y+26,64,ICON_FILL);text(a,134,r.y+22,2,TEXT,"Android");
+            wrapped(a,134,r.y+82,480,0,MUTED,"BOOT, super and the others, and Android's data as it lies there",3);icon(a,ICON_CHEVRON,640,r.y+74,32,MUTED);
+            register_button(a,r,A_BACKUP_ANDROID,ui_free(a),0);continue;
+        }
+        bool selected=!strcmp(a->profile,profiles[i]);rounded(a,r,24,selected?ORANGE_DARK:PANEL);
         if(selected)gradient(a,(Rect){r.x+8,r.y+25,5,r.h-50},3,ORANGE,ORANGE);
         text(a,54,r.y+22,2,TEXT,profile_title(profiles[i]));wrapped(a,54,r.y+82,568,0,MUTED,descriptions[i],3);
         vector_circle(a,646,r.y+43,13,2,selected?ORANGE:MUTED);if(selected)vector_circle(a,646,r.y+43,7,7,ORANGE);
@@ -868,9 +1103,10 @@ static void render_backup(App*a){
     }
     {Rect r={28,650,664,120};rounded(a,r,24,PANEL);icon_tile(a,ICON_PHONE,46,r.y+20,56,ICON_FILL);text(a,120,r.y+18,1,TEXT,"Phone partitions");
      ellipsis(a,120,r.y+64,500,0,MUTED,"EFS and IMEI, or BOOT, super and others");icon(a,ICON_CHEVRON,640,r.y+44,32,MUTED);register_button(a,r,A_IDENTITY,ui_free(a),0);}
-    wrapped(a,40,800,640,0,MUTED,"Linux backup saves allocated ext4 blocks with compression. The next screen reviews userdata before normal unmount.",3);
+    text_tile(a,800,0,MUTED,a->systems_foreign?"Android holds userdata: its copy is one archive on a card. A Linux backup needs a Linux system on this phone.":
+              "Linux backup saves allocated ext4 blocks with compression. The next screen reviews userdata before normal unmount.",3);
     destination(a,930);
-    wrapped(a,40,1106,640,0,MUTED,!strcmp(a->profile,"linux")&&!a->linux_backup_available&&a->inventory_ok?"Compact Linux backup tools are unavailable in this recovery. Refresh system status to check availability.":"Planning measures the compressed size and checks free space on the destination. Userdata stays offline afterward.",5);
+    text_tile(a,1106,0,MUTED,!strcmp(a->profile,"linux")&&!a->linux_backup_available&&a->inventory_ok?"Compact Linux backup tools are unavailable in this recovery. Refresh system status to check availability.":"Planning measures the compressed size and checks free space on the destination. Userdata stays offline afterward.",5);
     button(a,(Rect){28,1322,664,94},"Review backup",A_REVIEW_BACKUP,ui_free(a)&&a->repository_count>0&&(strcmp(a->profile,"linux")||a->linux_backup_available||a->preview),true,0);
 }
 static bool backup_is_linux_v2(const BackupEntry*e){return !strcmp(e->schema,"a22x.backup.v2")&&!strcmp(e->workflow,"linux-partclone-v2")&&!strcmp(e->profile,"linux");}
@@ -880,35 +1116,51 @@ static void render_prepare(App*a){
     text(a,52,328,1,!a->prepare_known?MUTED:(a->prepare_mounted?ORANGE:GREEN),!a->prepare_known?"Reading current mount state...":(a->prepare_mounted?"Currently mounted":"Already unmounted"));
     wrapped(a,52,386,602,0,MUTED,a->prepare_mountpoint[0]?a->prepare_mountpoint:"The offline plan rechecks partition identity and state.",4);
     wrapped(a,40,624,640,1,TEXT,a->prepare_mounted?"Unmount userdata, then review a fresh plan?":"Review a fresh plan with userdata offline?",4);
-    wrapped(a,40,802,640,0,MUTED,"This uses a normal unmount. Busy filesystems are refused. The backup destination stays mounted and userdata remains offline until you choose to mount it again in Files.",6);
-    if(a->prepare_reason[0])wrapped(a,40,1034,640,0,ORANGE,a->prepare_reason,5);
+    text_tile(a,802,0,MUTED,"This uses a normal unmount. Busy filesystems are refused. The backup destination stays mounted and userdata remains offline until you choose to mount it again in Files.",6);
+    if(a->prepare_reason[0])text_tile(a,1034,0,ORANGE,a->prepare_reason,5);
     button(a,(Rect){28,1204,664,78},"Refresh mount state",A_PREPARE_REFRESH,ui_free(a),false,0);
     bool admitted=a->prepare_known&&(!a->prepare_mounted||a->prepare_owned)&&a->prepare_token[0];
     button(a,(Rect){28,1320,664,104},a->prepare_mounted?"Hold to unmount and review":"Review offline plan",A_PREPARE_CONTINUE,admitted&&ui_free(a),true,a->prepare_mounted?1000:0);
 }
+static void list_categories(App*a,int y);static bool list_android(const App*a);
+/* Rows of Linux snapshots on a page: five below the two categories, six where a backup is chosen for the old installer. */
+static int list_rows(const App*a){return a->install.pick_backup?6:5;}
 static void render_list(App*a){
-    heading(a,a->install.pick_backup?"Linux backup":(a->list_for_verify?"Verify backup":"Restore"),a->install.pick_backup?"Explicitly select a Linux v2 snapshot for this installation.":"Select a completed snapshot.",true);
-    if(!a->backup_count){rounded(a,(Rect){28,246,664,360},26,PANEL);icon(a,A_STORAGE,315,275,90,ORANGE);centered(a,(Rect){48,388,624,60},2,TEXT,"No completed backups");wrapped(a,62,478,596,1,MUTED,a->message[0]?a->message:"Choose an SD card or USB stick.",4);}
-    for(int n=0;n<6;n++){
-        int i=a->list_page*6+n;if(i>=a->backup_count)break;BackupEntry*e=&a->backups[i];Rect r={28,238+n*164,664,146};rounded(a,r,16,PANEL);
-        ellipsis(a,52,r.y+18,598,1,TEXT,e->name);char bytes[64],meta[256];human_bytes(e->bytes,bytes,sizeof(bytes));snprintf(meta,sizeof(meta),"%s  /  %s",tr(profile_title(e->profile)),e->bytes?bytes:tr("size in manifest"));text(a,52,r.y+64,0,MUTED,meta);ellipsis(a,52,r.y+100,598,0,MUTED,e->created);
+    bool android=list_android(a);int rows=list_rows(a),top=a->install.pick_backup?238:316;
+    heading(a,a->install.pick_backup?"Linux backup":(a->list_for_verify?"Verify backup":"Restore"),a->install.pick_backup?"Explicitly select a Linux v2 snapshot for this installation.":(android?"Copies of Android on the SD card and USB drives.":"Select a completed snapshot."),true);
+    if(!a->install.pick_backup)list_categories(a,232);
+    if(android){render_copies(a,top);return;}
+    if(!a->backup_count){rounded(a,(Rect){28,top+8,664,360},26,PANEL);icon(a,A_STORAGE,315,top+37,90,ORANGE);centered(a,(Rect){48,top+150,624,60},2,TEXT,"No completed backups");wrapped(a,62,top+240,596,1,MUTED,a->message[0]?a->message:"Choose an SD card or USB stick.",4);}
+    for(int n=0;n<rows;n++){
+        int i=a->list_page*rows+n;if(i>=a->backup_count)break;BackupEntry*e=&a->backups[i];Rect r={28,top+n*164,664,146};rounded(a,r,16,PANEL);
+        raw_text(true);ellipsis(a,52,r.y+18,598,1,TEXT,e->name);raw_text(false);char bytes[64],meta[256];human_bytes(e->bytes,bytes,sizeof(bytes));snprintf(meta,sizeof(meta),"%s  /  %s",tr(profile_title(e->profile)),e->bytes?bytes:tr("size in manifest"));text(a,52,r.y+64,0,MUTED,meta);ellipsis(a,52,r.y+100,598,0,MUTED,e->created);
         register_button(a,r,A_BACKUP_ITEM+i,ui_free(a)&&(!a->install.pick_backup||(backup_is_linux_v2(e)&&e->path[0]=='/')),0);
     }
     /* Restore also takes a partition image: a dd copy of userdata, a boot image, plain or compressed. */
     bool images=!a->install.pick_backup&&!a->list_for_verify;int pager=images?1212:1260;
-    if(a->backup_count>6){button(a,(Rect){28,pager,320,images?60:72},"Previous",A_LIST_PREV,a->list_page>0,false,0);button(a,(Rect){372,pager,320,images?60:72},"Next",A_LIST_NEXT,(a->list_page+1)*6<a->backup_count,false,0);}
+    if(a->backup_count>rows){button(a,(Rect){28,pager,320,images?60:72},"Previous",A_LIST_PREV,a->list_page>0,false,0);button(a,(Rect){372,pager,320,images?60:72},"Next",A_LIST_NEXT,(a->list_page+1)*rows<a->backup_count,false,0);}
     if(images)button(a,(Rect){28,1282,664,76},"Restore a partition image",A_RESTORE_IMAGE,ui_free(a),true,0);
     button(a,(Rect){28,1370,664,72},a->install.pick_backup?"Cancel backup selection":"Choose storage",a->install.pick_backup?A_INSTALL_CANCEL_PICK:A_STORAGE,ui_free(a),false,0);
 }
+/* The rule of the backend's validate_name, and a name that differs from the one it has. */
+static bool backup_name_ok(const App*a,const char*s){
+    size_t n=strlen(s);if(!n||n>64||strstr(s,".partial-"))return false;
+    for(size_t i=0;i<n;i++){unsigned char c=(unsigned char)s[i];bool plain=(c>='0'&&c<='9')||(c>='A'&&c<='Z')||(c>='a'&&c<='z');if(!plain&&!(i&&(c=='.'||c=='_'||c=='-')))return false;}
+    return a->selected_backup>=0&&a->selected_backup<a->backup_count&&strcmp(s,a->backups[a->selected_backup].name)!=0;
+}
 static void render_detail(App*a){
     BackupEntry*e=&a->backups[a->selected_backup];heading(a,"Saved snapshot","Inspect before restoring.",true);
-    rounded(a,(Rect){28,242,664,410},26,PANEL);icon(a,A_BACKUP,54,265,72,ORANGE);text(a,54,370,2,TEXT,profile_title(e->profile));wrapped(a,54,432,600,1,TEXT,e->name,3);wrapped(a,54,536,600,0,MUTED,e->created,2);
+    rounded(a,(Rect){28,242,664,410},26,PANEL);icon(a,A_BACKUP,54,265,72,ORANGE);text(a,54,370,2,TEXT,profile_title(e->profile));
+    raw_text(true);wrapped(a,54,432,600,1,TEXT,e->name,3);raw_text(false);wrapped(a,54,536,600,0,MUTED,e->created,2);
     char bytes[64];human_bytes(e->bytes,bytes,sizeof(bytes));text(a,54,596,0,MUTED,e->bytes?bytes:"Size available during verification");
-    wrapped(a,40,708,640,0,MUTED,e->path,5);
+    raw_text(true);wrapped(a,40,676,640,0,MUTED,e->path,3);raw_text(false);
     if(backup_is_linux_v2(e)){
-        wrapped(a,40,888,640,0,MUTED,"Linux used-block snapshot. Wipe empties userdata only and requires this backup to match its current contents. Boot and recovery are preserved.",5);
-        button(a,(Rect){28,1068,664,88},"Review userdata wipe",A_REVIEW_WIPE,ui_free(a),false,0);
-    }else if(!strcmp(e->profile,"android"))wrapped(a,40,944,640,1,ORANGE,"Android state requires its matching retained system/vendor firmware.",4);
+        text_tile(a,786,0,MUTED,"Linux used-block snapshot. Wipe empties userdata only and requires this backup to match its current contents. Boot and recovery are preserved.",5);
+        button(a,(Rect){28,984,664,80},"Review userdata wipe",A_REVIEW_WIPE,ui_free(a),false,0);
+    }else if(!strcmp(e->profile,"android"))text_tile(a,820,1,ORANGE,"Android state requires its matching retained system/vendor firmware.",4);
+    /* 2026-11-11, as TWRP's Restore page: a finished backup is renamed or deleted here. */
+    button(a,(Rect){28,1088,252,80},"Rename",A_BACKUP_RENAME,ui_free(a),false,0);
+    button(a,(Rect){292,1088,400,80},"Hold 3 s: delete",A_BACKUP_DELETE,ui_free(a),false,3000);
     button(a,(Rect){28,1192,664,92},"Verify this backup",A_VERIFY_ONE,ui_free(a),false,0);
     button(a,(Rect){28,1318,664,96},"Review restore",A_REVIEW_RESTORE,ui_free(a),true,0);
 }
@@ -926,7 +1178,7 @@ static void render_plan(App*a){
         wrapped(a,52,808,604,0,TEXT,destructive?a->plan_targets:"BOOT and allocated ext4 blocks are read and compressed. Existing files on the destination are retained.",5);
         const char*boot=a->plan_wipe?"BOOT preserved / userdata becomes empty ext4":(!strcmp(a->plan_boot_action,"restore-last")?"BOOT restored last, after userdata verification":(a->plan_restore?"BOOT identical / no BOOT write":"Userdata stays unmounted after backup"));ellipsis(a,52,948,604,0,MUTED,boot);
         if(!a->plan_can_execute){text(a,40,1030,0,ORANGE,"PLAN IS BLOCKED");wrapped(a,40,1070,640,0,MUTED,a->blockers[0]?a->blockers:"The backend did not admit this operation.",7);}
-        else wrapped(a,40,1044,640,0,MUTED,a->plan_wipe?"This creates an empty filesystem, not secure erasure. The saved snapshot remains on SD. Recovery does not reboot automatically.":(a->plan_restore?"Userdata is restored and checked first. Keep power and SD connected. Recovery does not reboot automatically.":"The archive is checked before the snapshot is marked complete. Moving outside the button cancels the hold."),7);
+        else text_tile(a,1044,0,MUTED,a->plan_wipe?"This creates an empty filesystem, not secure erasure. The saved snapshot remains on SD. Recovery does not reboot automatically.":(a->plan_restore?"Userdata is restored and checked first. Keep power and SD connected. Recovery does not reboot automatically.":"The archive is checked before the snapshot is marked complete. Moving outside the button cancels the hold."),7);
         button(a,(Rect){28,1320,664,104},a->plan_can_execute?(a->plan_wipe?"Hold 3 seconds to wipe":(a->plan_restore?"Hold 3 seconds to restore":"Hold 2 seconds to back up")):"Operation not available",A_CONFIRM,a->plan_can_execute&&ui_free(a),true,destructive?3000:2000);return;
     }
     rounded(a,(Rect){28,242,664,228},26,PANEL);text(a,52,263,2,TEXT,profile_title(a->profile));char bytes[64];human_bytes(a->plan_bytes,bytes,sizeof(bytes));text(a,52,320,1,ORANGE,bytes);wrapped(a,52,375,600,0,MUTED,a->plan_parts,3);
@@ -934,7 +1186,7 @@ static void render_plan(App*a){
     if(a->plan_restore){rounded(a,(Rect){28,800,664,180},18,ui_theme->danger);text(a,52,816,1,RED,"Targets to replace");wrapped(a,52,860,604,0,MUTED,a->plan_targets[0]?a->plan_targets:"Target paths were not provided by the backend.",4);}
     else{rounded(a,(Rect){28,800,664,180},24,PANEL);text(a,52,822,1,TEXT,"Offline snapshot");wrapped(a,52,872,604,0,MUTED,"A completed manifest is published only after the archive and its decoded hash have been verified.",3);}
     if(!a->plan_can_execute){text(a,40,1030,0,ORANGE,"PLAN IS BLOCKED");wrapped(a,40,1070,640,0,MUTED,a->blockers[0]?a->blockers:"Backend did not admit this operation.",7);}
-    else{char id[180];snprintf(id,sizeof(id),T("Plan %.20s"),a->plan_id);text(a,40,1040,0,MUTED,id);wrapped(a,40,1092,640,0,MUTED,a->plan_restore?"Release after the hold bar is complete. Moving outside the button cancels confirmation.":"Hold the button to save this exact snapshot. Moving outside cancels confirmation.",4);}
+    else{char id[180];snprintf(id,sizeof(id),T("Plan %.20s"),a->plan_id);text(a,40,1040,0,MUTED,id);text_tile(a,1092,0,MUTED,a->plan_restore?"Release after the hold bar is complete. Moving outside the button cancels confirmation.":"Hold the button to save this exact snapshot. Moving outside cancels confirmation.",4);}
     button(a,(Rect){28,1320,664,104},a->plan_can_execute?(a->plan_restore?"Hold 3 seconds to restore":"Hold 2 seconds to back up"):"Operation not available",A_CONFIRM,a->plan_can_execute&&ui_free(a),true,a->plan_restore?3000:2000);
 }
 static const char*phase_label(const App*a,const char*phase){
@@ -942,55 +1194,125 @@ static const char*phase_label(const App*a,const char*phase){
         {"check-ext4","Checking the filesystem"},{"compress-boot","Saving BOOT"},{"verify-before-write","Checking the backup"},{"write-used-blocks","Restoring userdata"},{"write-boot","Restoring BOOT"},{"readback-used-blocks","Checking restored data"},{"readback-boot","Checking BOOT"}};
     if(!strcmp(phase,"compact-compress"))return a->job.kind==J_BACKUP?"Compressing userdata":"Measuring the backup size";
     static const char*const imports[][2]={{"image-download","Downloading the system image"},{"image-erase","Erasing userdata"},{"image-unpack","Unpacking the system image"},{"image-copy","Copying the system files"},
-        {"image-adapt","Adding phone support"},{"image-provision","Setting up the new system"},{"image-check","Checking the new system"},{"image-finish","Finishing the installation"}};
+        {"image-adapt","Adding phone support"},{"image-provision","Setting up the new system"},{"image-check","Checking the new system"},{"image-finish","Finishing the installation"},{"image-boot-download","Downloading the Linux BOOT"},{"image-boot","Writing the Linux BOOT"}};
     for(unsigned int n=0;n<sizeof(imports)/sizeof(imports[0]);n++)if(!strcmp(phase,imports[n][0]))return imports[n][1];
+    /* Samsung's firmware and the Android pages (2026-11-10): samsung_firmware.py and android_gsi.py. */
+    static const char*const android[][2]={{"Unpacking","Unpacking the firmware"},{"Verifying","Checking the firmware's MD5"},
+        {"Wiping","Wiping cache"},{"Formatting","Formatting userdata for Android"}};
+    for(unsigned int n=0;n<sizeof(android)/sizeof(android[0]);n++)if(!strcmp(phase,android[n][0]))return android[n][1];
+    /* Partition a card (2026-11-11): sdcard.py. */
+    static const char*const card[][2]={{"card-table","Writing the partition table"},{"card-files","Making the partition for files"},
+        {"card-linux","Making the partition for Linux"},{"card-swap","Making the swap partition"},{"card-check","Checking the card"}};
+    for(unsigned int n=0;n<sizeof(card)/sizeof(card[0]);n++)if(!strcmp(phase,card[n][0]))return card[n][1];
     for(unsigned int n=0;n<sizeof(names)/sizeof(names[0]);n++)if(!strcmp(phase,names[n][0]))return names[n][1];
     return phase;
 }
-/* Speed is measured from the start of the current phase, so a slow check does not skew it. */
-static bool progress_eta(const App*a,char*out,size_t size){
+/* The work page in tiles (2026-11-11, the owner's request with a photo of it): a ring with the
+   share done, then what it is, how much, how fast and how long, each in a tile of its own. The
+   banner at the bottom keeps only what can be done about the work. */
+static void stat_tile(App*a,Rect r,const char*label,const char*value,uint32_t color){
+    rounded(a,r,22,PANEL);text(a,r.x+20,r.y+16,0,MUTED,label);ellipsis(a,r.x+20,r.y+54,r.w-40,1,color,value);
+}
+static void note_card(App*a,int y,int glyph,uint32_t ink,const char*message){
+    int lines=wrapped_height(a,520,0,message,4),h=lines+48<92?92:lines+48;
+    rounded(a,(Rect){28,y,664,h},24,PANEL);gradient(a,(Rect){46,y+(h-56)/2,56,56},17,ICON_FILL,ICON_FILL);icon(a,glyph,57,y+(h-56)/2+11,34,ink);
+    wrapped(a,124,y+(h-lines)/2,544,0,TEXT,message,4);
+}
+static void progress_elapsed(const App*a,char*out,size_t size){
+    uint64_t s=a->job_started&&a->now>a->job_started?(a->now-a->job_started)/1000u:0;
+    if(s>=3600)snprintf(out,size,"%u:%02u:%02u",(unsigned int)(s/3600),(unsigned int)(s/60%60),(unsigned int)(s%60));
+    else snprintf(out,size,"%u:%02u",(unsigned int)(s/60),(unsigned int)(s%60));
+}
+/* Speed and time left are measured from the start of the current phase, as progress_eta. */
+static bool progress_speed(const App*a,char*out,size_t size){
+    uint64_t elapsed=a->now>a->progress_mark_at?a->now-a->progress_mark_at:0,done=a->progress_done>a->progress_mark_done?a->progress_done-a->progress_mark_done:0;
+    if(elapsed<3000||!done)return false;
+    char bytes[48];human_bytes(done*1000u/elapsed,bytes,sizeof(bytes));snprintf(out,size,"%s/s",bytes);return true;
+}
+static bool progress_left(const App*a,char*out,size_t size){
     uint64_t elapsed=a->now>a->progress_mark_at?a->now-a->progress_mark_at:0,done=a->progress_done>a->progress_mark_done?a->progress_done-a->progress_mark_done:0;
     if(!a->progress_total||elapsed<5000||!done||a->progress_done>=a->progress_total)return false;
     uint64_t seconds=(a->progress_total-a->progress_done)*elapsed/done/1000u;
-    if(seconds<60)copy(out,size,"Less than a minute left");else snprintf(out,size,T("About %u min left"),(unsigned int)((seconds+59)/60));
+    if(seconds<60)copy(out,size,tr("Under a minute"));else snprintf(out,size,T("About %u min"),(unsigned int)((seconds+59)/60));
     return true;
 }
 static void render_progress(App*a){
     heading(a,"Working",NULL,false);
+    char elapsed[32];progress_elapsed(a,elapsed,sizeof(elapsed));
+    const float top=-1.5707963f,turn=6.2831853f;
     /* Packages installed in the new root: steps of the first-start script, not bytes (2026-11-08). */
     if(!strcmp(a->progress_phase,"image-provision")){
         static const char*const steps[]={"Preparing the new system","Installing the desktop","Installing apps","Building for this phone","Running the setup script","Done"};
         unsigned int step=a->progress_done<5?(unsigned int)a->progress_done:5u;char line[96];
-        icon_tile(a,A_OS,CW/2-80,420,160,ICON_FILL);
-        centered(a,(Rect){28,630,664,64},2,TEXT,phase_label(a,a->progress_phase));
-        centered(a,(Rect){28,704,664,48},1,ORANGE,steps[step]);
-        snprintf(line,sizeof(line),T("Step %u of %u"),step+1u,6u);centered(a,(Rect){28,766,664,44},0,MUTED,line);
-        uint64_t seconds=a->job_started&&a->now>a->job_started?(a->now-a->job_started)/1000u:0;char elapsed[80];
-        snprintf(elapsed,sizeof(elapsed),T("Elapsed %u:%02u"),(unsigned int)(seconds/60),(unsigned int)(seconds%60));
-        if(a->job.pid)centered(a,(Rect){28,866,664,40},0,MUTED,elapsed);
-        wrapped(a,64,920,592,1,MUTED,step==3?"What this system lacks for the phone is built on it (Arch: Phosh's compositor fix and Phrog), up to 45 minutes. Keep the phone powered.":
-                "Packages come over the recovery's Wi-Fi: this takes 10-30 minutes. Keep the phone powered.",4);
+        Rect hero={28,232,664,220};rounded(a,hero,28,PANEL);
+        int cx=hero.x+112,cy=hero.y+110;vector_circle(a,cx,cy,78,12,LINE);vector_arc(a,cx,cy,78,12,top,turn*(float)step/5.f,ORANGE);icon(a,A_OS,cx-30,cy-30,60,ORANGE);
+        int label=wrapped_height(a,428,1,phase_label(a,a->progress_phase),2);
+        wrapped(a,hero.x+220,hero.y+36,428,1,TEXT,phase_label(a,a->progress_phase),2);
+        snprintf(line,sizeof(line),T("Step %u of %u"),step+1u,6u);text(a,hero.x+220,hero.y+48+label,1,ORANGE,line);
+        if(a->job.pid){char shown[96];snprintf(shown,sizeof(shown),T("Elapsed %s"),elapsed);text(a,hero.x+220,hero.y+100+label,0,MUTED,shown);}
+        Rect list={28,hero.y+hero.h+16,664,6*62+28};rounded(a,list,28,PANEL);
+        for(unsigned int n=0;n<6;n++){
+            int y=list.y+14+(int)n*62,mx=70,my=y+31;bool done=n<step,current=n==step;
+            if(done){vector_circle(a,mx,my,15,15,ORANGE);vector_line(a,mx-7,my,mx-2,my+6,3,ON_ORANGE);vector_line(a,mx-2,my+6,mx+8,my-6,3,ON_ORANGE);}
+            else if(current){vector_circle(a,mx,my,15,4,ORANGE);vector_circle(a,mx,my,6,6,ORANGE);}
+            else vector_circle(a,mx,my,15,3,LINE);
+            if(n<5)vector_line(a,mx,my+19,mx,my+43,2,done?ORANGE:LINE);
+            ellipsis(a,108,y+14,560,1,current?TEXT:(done?TEXT:MUTED),steps[n]);
+        }
+        note_card(a,list.y+list.h+16,ICON_WIFI,ORANGE,step==3?"What this system lacks for the phone is built on it (Arch: Phosh's compositor fix and Phrog), up to 45 minutes. Keep the phone powered.":
+                  "Packages come over the recovery's Wi-Fi: this takes 10-30 minutes. Keep the phone powered.");
         return;
     }
+    Rect hero={28,232,664,476};rounded(a,hero,28,PANEL);
+    int cx=CW/2,cy=hero.y+186,radius=138,width=16;
+    vector_circle(a,cx,cy,radius,width,LINE);
     if(a->progress_total){
-        uint64_t done=a->progress_done>a->progress_total?a->progress_total:a->progress_done;char percent[16];snprintf(percent,sizeof(percent),"%u%%",(unsigned int)(done*100/a->progress_total));
-        centered(a,(Rect){0,470,CW,90},3,ORANGE,percent);
-    }else icon_tile(a,A_OS,CW/2-80,420,160,ICON_FILL);
-    centered(a,(Rect){28,630,664,64},2,TEXT,a->progress_phase[0]?phase_label(a,a->progress_phase):"Waiting for backend");
-    raw_text(true);centered(a,(Rect){28,704,664,48},1,MUTED,a->progress_part);raw_text(false);
-    /* How long it has run, and how long it may still take, on the same line. */
-    {uint64_t seconds=a->job_started&&a->now>a->job_started?(a->now-a->job_started)/1000u:0;char line[200],eta[80];
-     snprintf(line,sizeof(line),T("Elapsed %u:%02u"),(unsigned int)(seconds/60),(unsigned int)(seconds%60));
-     if(a->progress_total&&progress_eta(a,eta,sizeof(eta))){append(line,sizeof(line),"  /  ");append(line,sizeof(line),tr(eta));}
-     if(a->job.pid)centered(a,(Rect){28,866,664,40},0,MUTED,line);}
-    if(a->progress_total){char done[64],total[64],msg[160];human_bytes(a->progress_done,done,sizeof(done));human_bytes(a->progress_total,total,sizeof(total));snprintf(msg,sizeof(msg),"%s / %s",done,total);centered(a,(Rect){28,766,664,44},0,MUTED,msg);}
-    wrapped(a,64,920,592,1,MUTED,"Keep the phone powered and storage connected.",4);
+        uint64_t done=a->progress_done>a->progress_total?a->progress_total:a->progress_done;char percent[16];
+        snprintf(percent,sizeof(percent),"%u%%",(unsigned int)(done*100/a->progress_total));
+        vector_arc(a,cx,cy,radius,width,top,turn*(float)((double)done/(double)a->progress_total),ORANGE);
+        centered(a,(Rect){cx-radius,cy-44,radius*2,88},3,TEXT,percent);
+    }else{
+        /* Nothing to count yet: a quarter of the ring turns. */
+        vector_arc(a,cx,cy,radius,width,top+turn*(float)(a->now%1600u)/1600.f,1.6f,ORANGE);icon(a,A_OS,cx-36,cy-36,72,ORANGE);
+    }
+    centered(a,(Rect){48,hero.y+346,624,56},2,TEXT,a->progress_phase[0]?phase_label(a,a->progress_phase):"Waiting for backend");
+    if(a->progress_part[0]){
+        int w=text_width(a->progress_part,0)+56;if(w>600)w=600;Rect chip={cx-w/2,hero.y+410,w,44};rounded(a,chip,22,PANEL2);
+        raw_text(true);if(text_width(a->progress_part,0)<=w-24)centered(a,chip,0,MUTED,a->progress_part);else ellipsis(a,chip.x+16,chip.y+8,chip.w-32,0,MUTED,a->progress_part);raw_text(false);
+    }
+    int y=hero.y+hero.h+16;
+    if(a->progress_total){
+        char done[48],total[48],bytes[112],speed[48],left[64];human_bytes(a->progress_done>a->progress_total?a->progress_total:a->progress_done,done,sizeof(done));
+        human_bytes(a->progress_total,total,sizeof(total));snprintf(bytes,sizeof(bytes),"%s / %s",done,total);
+        bool fast=progress_speed(a,speed,sizeof(speed)),known=progress_left(a,left,sizeof(left));
+        stat_tile(a,(Rect){28,y,324,112},"DONE",bytes,TEXT);stat_tile(a,(Rect){368,y,324,112},"SPEED",fast?speed:"—",fast?TEXT:MUTED);y+=128;
+        stat_tile(a,(Rect){28,y,324,112},"ELAPSED",elapsed,TEXT);stat_tile(a,(Rect){368,y,324,112},"LEFT",known?left:"—",known?ORANGE:MUTED);y+=128;
+    }else{stat_tile(a,(Rect){28,y,664,112},"ELAPSED",elapsed,TEXT);y+=128;}
+    note_card(a,y,ICON_PHONE,ORANGE,"Keep the phone powered and storage connected.");
 }
 static void render_result(App*a){
-    heading(a,a->successful?"Completed":"Not completed",a->status,false);icon(a,a->successful?A_VERIFY:A_SYSTEM,302,272,116,a->successful?GREEN:RED);
-    bool diagnostic=a->result_return==TOOLS||a->result_return==TOOLS_EXPORT;
-    wrapped(a,48,484,624,diagnostic?0:2,TEXT,a->message[0]?a->message:(a->successful?"The backend reported success.":"The backend did not report a successful result."),diagnostic?18:8);
-    if(!a->successful)wrapped(a,48,1050,624,0,MUTED,"No retry is started automatically. Inspect the backend result before another operation.",4);
+    /* In tiles (2026-11-11): what happened beside its sign, then the message, its first paragraph
+       apart from the details that follow it. The text is translated whole before it is split. */
+    heading(a,a->successful?"Completed":"Not completed",NULL,false);
+    bool diagnostic=a->result_return==TOOLS||a->result_return==TOOLS_EXPORT,second=!a->successful&&a->systems_remove_offer;
+    second=second||(a->successful&&a->result_return==FLASH&&!a->flash_restore&&a->allow_power&&(!strcmp(flash_target_label(a),"recovery")||!strcmp(flash_target_label(a),"boot")));
+    second=second||(a->successful&&a->result_return==ANDROID_MENU&&((a->android_installed&&a->allow_power)||a->stock_boot_path[0]));
+    second=second||(a->successful&&a->zip_ran&&a->allow_power);
+    int limit=second?1190:1304;
+    Rect hero={28,232,664,150};rounded(a,hero,28,PANEL);gradient(a,(Rect){46,hero.y+19,112,112},34,ICON_FILL,ICON_FILL);
+    icon(a,a->successful?A_VERIFY:A_SYSTEM,67,hero.y+40,70,a->successful?GREEN:RED);
+    const char*status=tr(a->status[0]?a->status:(a->successful?"Completed":"Not completed"));
+    {raw_text(true);int h=wrapped_height(a,486,1,status,3);wrapped(a,182,hero.y+(hero.h-h)/2,486,1,a->successful?TEXT:RED,status,3);raw_text(false);}
+    char full[sizeof(a->message)];copy(full,sizeof(full),tr(a->message[0]?a->message:(a->successful?"The backend reported success.":"The backend did not report a successful result.")));
+    char*details=strstr(full,"\n\n");if(details){*details=0;details+=2;while(*details=='\n')details++;if(!*details)details=NULL;}
+    int y=hero.y+hero.h+16,font=diagnostic?0:1,line=diagnostic?28:36;
+    raw_text(true);
+    {int room=(limit-y-(details?140:16)-48)/line;if(room<2)room=2;int h=wrapped_height(a,616,font,full,room);
+     rounded(a,(Rect){28,y,664,h+48},24,PANEL);wrapped(a,52,y+24,616,font,TEXT,full,room);y+=h+48+16;}
+    if(details&&limit-y>=100){int room=(limit-y-48)/28,h=wrapped_height(a,616,0,details,room);
+        rounded(a,(Rect){28,y,664,h+48},24,PANEL);wrapped(a,52,y+24,616,0,MUTED,details,room);y+=h+48+16;}
+    raw_text(false);
+    if(!a->successful&&limit-y>=110)note_card(a,y,A_SYSTEM,ORANGE,"No retry is started automatically. Inspect the backend result before another operation.");
     /* "Back to files" only for the file pages themselves (2026-11-10): the same pages choosing an
        image, and the pages listed after them (Wi-Fi, systems, backups of identity...), say "Back". */
     bool files=a->result_return>=FILE_VOLUMES&&a->result_return<=FILE_DISCARD,picking=a->flash_pick||a->install.pick_source||a->theme_pick||a->systems_pick_manifest;
@@ -1005,6 +1327,14 @@ static void render_result(App*a){
         if(recovery||!strcmp(label,"boot"))button(a,(Rect){28,1206,664,96},recovery?"Reboot recovery":"Reboot system",recovery?A_REBOOT_RECOVERY:A_REBOOT,
                                                   ui_free(a)&&(recovery||(!a->systems_reboot_blocked&&!a->install.reboot_blocked)),false,0);
     }
+    /* After stock Android the next step is its first start (2026-11-10). */
+    /* After installers: the restart that was asked for counts down and can be stopped; otherwise it is offered, as TWRP offers it. */
+    if(a->successful&&a->zip_ran&&a->allow_power&&a->zip_restart_at){
+        char label[96];unsigned int left=a->zip_restart_at>a->now?(unsigned int)((a->zip_restart_at-a->now+999)/1000):0;
+        snprintf(label,sizeof(label),T("Stay in recovery (the system restarts in %u s)"),left);raw_text(true);button(a,(Rect){28,1206,664,96},label,A_ZIP_STAY,true,true,0);raw_text(false);
+    }else if(a->successful&&a->zip_ran&&a->allow_power)button(a,(Rect){28,1206,664,96},"Reboot system",A_REBOOT,ui_free(a)&&!a->systems_reboot_blocked&&!a->install.reboot_blocked,false,0);
+    else if(a->successful&&a->result_return==ANDROID_MENU&&a->android_installed&&a->allow_power)button(a,(Rect){28,1206,664,96},"Restart into Android",A_REBOOT,ui_free(a),false,0);
+    else if(a->successful&&a->result_return==ANDROID_MENU&&a->stock_boot_path[0])button(a,(Rect){28,1206,664,96},"Flash it to BOOT",A_STOCK_BOOT_FLASH,ui_free(a),false,0);
     button(a,(Rect){28,1320,664,102},files&&!picking?"Back to files":(a->result_return==USB_FILES?"Back to USB files":(a->result_return==PREPARE_FILESYSTEM?"Back to preparation":(a->result_return==DISPLAY_SETTINGS?"Back to display":(a->result_return==TOOLS||a->result_return==TOOLS_EXPORT?"Back to tools":(a->result_return==HOME?"Back to recovery":"Back"))))),A_DONE,true,true,0);
 }
 static bool repository_needs_setup(const App*a,int index){return a->repository_volume[index][0]&&(a->repository_read_only[index]||access(a->repositories[index],F_OK));}
@@ -1026,7 +1356,7 @@ static void render_storage(App*a){
         y+=222;
     }
     if(!stick)wrapped(a,40,y+6,640,0,MUTED,"Insert a USB stick and it appears here by itself.",2);
-    wrapped(a,40,1390,640,0,MUTED,"The destination must be external to the partitions being saved or restored. Format volumes in Files.",3);
+    text_tile(a,1390,0,MUTED,"The destination must be external to the partitions being saved or restored. Format volumes in Files.",3);
 }
 /* One line of the details: what it is on the left, the value on the right. */
 static void system_row(App*a,int y,const SysRow*row){
@@ -1085,17 +1415,28 @@ static void render_power_menu(App*a){
         gradient(a,(Rect){r.x+26,r.y+31,88,88},44,fill,fill);icon(a,glyphs[n],r.x+46,r.y+51,48,ink);
         ellipsis(a,r.x+140,r.y+52,420,text_width(labels[n],2)<=420?2:1,enabled?TEXT:MUTED,labels[n]);register_button(a,r,actions[n],enabled,0);
     }
+    if(torch_ready(a)){
+        /* The flashlight, above the four ways to leave: a tap switches it and the menu stays. */
+        Rect r={70,290,580,120};surface(a,r,44,a->torch_on?ORANGE_DARK:PANEL,A_TORCH);
+        gradient(a,(Rect){r.x+26,r.y+22,76,76},38,a->torch_on?ORANGE:ui_theme->tile_fill[1],a->torch_on?ORANGE:ui_theme->tile_fill[1]);icon(a,ICON_TORCH,r.x+44,r.y+40,40,a->torch_on?ui_theme->on_accent:ui_theme->tile_ink[1]);
+        char state[48];snprintf(state,sizeof(state),"%s, %u/%u",tr(a->torch_on?"On":"Off"),a->torch_level,a->torch_max);
+        text(a,r.x+128,r.y+22,1,TEXT,"Flashlight");raw_text(true);text(a,r.x+128,r.y+66,0,a->torch_on?GREEN:MUTED,state);raw_text(false);
+        /* Dimmer and brighter first: they lie on the pill, and the pill itself switches. */
+        button(a,(Rect){r.x+r.w-196,r.y+24,84,72},"−",A_TORCH_DOWN,a->torch_level>1,false,0);
+        button(a,(Rect){r.x+r.w-100,r.y+24,84,72},"+",A_TORCH_UP,a->torch_level<a->torch_max,false,0);
+        register_button(a,r,A_TORCH,true,0);
+    }
     centered(a,(Rect){40,1140,640,44},0,TEXT,a->job.pid?"Operation in progress":(terminal_session_open(a)&&a->terminal_busy?"The command running in the terminal will be stopped.":"Tap outside to close"));
     register_button(a,(Rect){0,0,CW,CH},A_MENU_CLOSE,true,0);
 }
 static void render_power(App*a){
     heading(a,"Power","Choose the next boot mode.",true);
     const char*labels[]={"Reboot system","Reboot recovery","Samsung Download","Power off"};
-    const char*notes[]={"Start the active Linux system","Start this recovery again","Mode for flashing from a computer","Turn the phone off"};
+    const char*notes[]={"Start the installed system: Linux or Android","Start this recovery again","Mode for flashing from a computer","Turn the phone off"};
     const int actions[]={A_REBOOT,A_REBOOT_RECOVERY,A_REBOOT_DOWNLOAD,A_SHUTDOWN},glyphs[]={ICON_LINUX,A_OS,A_RESTORE,A_POWER};
     for(int n=0;n<4;n++)row_card(a,250+n*166,150,glyphs[n],labels[n],notes[n],actions[n],PANEL,a->allow_power&&ui_free(a)&&(n!=0||(!a->systems_reboot_blocked&&!a->install.reboot_blocked)));
-    if(a->systems_reboot_blocked||a->install.reboot_blocked)wrapped(a,40,930,640,0,RED,a->install.reboot_blocked?"Inspect the pending image installation in Settings before booting.":"Complete or roll back the pending system switch before booting Linux.",3);
-    wrapped(a,40,1020,640,0,MUTED,a->allow_power?"Choose the next boot mode, then hold to confirm. Completed writes are synchronized and recovery mounts are unmounted by the supervisor.":"Power actions are disabled in this build configuration.",4);
+    if(a->systems_reboot_blocked||a->install.reboot_blocked)text_tile(a,930,0,RED,a->install.reboot_blocked?"Inspect the pending image installation in Settings before booting.":"Complete or roll back the pending system switch before booting Linux.",3);
+    text_tile(a,1020,0,MUTED,a->allow_power?"Choose the next boot mode, then hold to confirm. Completed writes are synchronized and recovery mounts are unmounted by the supervisor.":"Power actions are disabled in this build configuration.",4);
 }
 static const char*power_confirmation(int intent){
     switch(intent){case 200:return "Restart into the installed system?";case 201:return "Power off the phone?";
@@ -1124,6 +1465,16 @@ static void render_tools(App*a){
     const char*levels[]={"Off","Light","Medium","Strong"};
     for(unsigned int n=0;n<4;n++)button(a,(Rect){46+(int)n*158,y+88,150,72},levels[n],A_VIBRATION+(int)n,free_ui,a->vibration==n,0);
     y+=192;settings_row(a,y,ICON_DISPLAY,"Display","Refresh rate, timeout and brightness",A_DISPLAY,free_ui);y+=116;
+    if(torch_ready(a)){
+        /* The switch, and under it the brightness in every level the LED has. */
+        rounded(a,(Rect){28,y,664,268},24,PANEL);icon_tile(a,ICON_TORCH,46,y+16,56,ICON_FILL);text(a,120,y+26,1,TEXT,"Flashlight");
+        button(a,(Rect){46,y+88,306,72},"On",A_TORCH_ON,true,a->torch_on,0);
+        button(a,(Rect){368,y+88,306,72},"Off",A_TORCH_OFF,true,!a->torch_on,0);
+        button(a,(Rect){46,y+176,96,72},"−",A_TORCH_DOWN,a->torch_level>1,false,0);
+        torch_bar(a,(Rect){154,y+176,412,72});
+        button(a,(Rect){578,y+176,96,72},"+",A_TORCH_UP,a->torch_level<a->torch_max,false,0);
+        y+=280;
+    }
     y+=render_charger_card(a,y,free_ui);
     wifi_settings_row(a,y,free_ui);y+=116;
     char now[16],date[96],zone[48],line[144];clock_text(a,now,sizeof(now),date,sizeof(date));
@@ -1150,6 +1501,13 @@ static void render_tools(App*a){
     rounded(a,(Rect){28,y,664,264},24,PANEL);text(a,52,y+24,0,ORANGE,"SERVER HOST KEY FINGERPRINT");
     wrapped(a,52,y+72,606,0,TEXT,a->ssh_fingerprint[0]?a->ssh_fingerprint:"No host key reported.",3);
     wrapped(a,52,y+168,606,0,MUTED,a->ssh_ephemeral?"This key is temporary and may change on the next recovery boot.":"Compare this fingerprint before accepting the SSH host key.",3);
+    /* 2026-11-11, as TWRP's Restore defaults. */
+    y+=284;
+    /* 2026-11-11: the screenshot keys, said where settings are looked for. */
+    y+=12+text_tile(a,y+12,0,MUTED,"Screenshot: press Volume down and Power together. It is saved to A22xScreenshots on an SD card or a USB drive, else on cache.",4);
+    wrapped(a,40,y,640,0,MUTED,"A reset restores the default theme, terminal colours, animation, navigation, vibration, screen timeout, brightness and refresh rate. The language, time zone, password and lock, Wi-Fi networks and keys stay.",5);
+    y+=160;button(a,(Rect){28,y,664,84},"Hold 3 seconds: reset the settings",A_SETTINGS_RESET,free_ui,false,3000);
+    {int64_t content=y+84+28+o-230;if(content!=a->tools_content){a->tools_content=content;if(a->tools_scroll>tools_max_scroll(a)){a->tools_scroll=tools_max_scroll(a);a->dirty=true;}}}
     a->clip_active=false;scroll_indicator(a,(Rect){698,230,5,1254},a->tools_scroll,(int64_t)tools_max_scroll(a)+1254,ORANGE);
 }
 static void theme_backdrop(App*a){
@@ -1227,7 +1585,7 @@ static void render_animations(App*a){
         text(a,r.x+28,r.y+30,1,TEXT,names[n]);ellipsis(a,r.x+28,r.y+86,540,0,MUTED,notes[n]);
         vector_circle(a,644,r.y+80,17,4,selected?ORANGE:MUTED);if(selected)vector_circle(a,644,r.y+80,8,8,ORANGE);register_button(a,r,action,ui_free(a),0);
     }
-    wrapped(a,40,1300,640,0,MUTED,"A new theme always spreads as a circle, unless animations are off.",2);
+    text_tile(a,1300,0,MUTED,"A new theme always spreads as a circle, unless animations are off.",2);
 }
 static int clock_index(char c){return c==':'?10:(c>='0'&&c<='9'?c-'0':0);}
 static void clock_draw(App*a,int center,int top,uint32_t color,const char*s){
@@ -1256,7 +1614,7 @@ static void render_access(App*a){
     {const char*cable=tr("Cable");raw_text(true);ellipsis(a,160,326,500,1,MUTED,a->access_peer[0]?a->access_peer:cable);raw_text(false);}
     wrapped(a,52,394,616,0,MUTED,"It can read and change everything here.",2);
     wrapped(a,40,520,640,1,TEXT,"Allow this computer only if you started this yourself.",3);
-    wrapped(a,40,650,640,0,MUTED,"Access stays open until the phone locks or restarts. The computer never sees the password.",3);
+    text_tile(a,650,0,MUTED,"Access stays open until the phone locks or restarts. The computer never sees the password.",3);
     button(a,(Rect){28,1190,664,90},"Deny",A_ACCESS_DENY,true,false,0);button(a,(Rect){28,1320,664,102},"Allow with password",A_ACCESS_ALLOW,true,true,0);
 }
 static void terminal_card(App*a,const TerminalScheme*t,const ThemeFile*f,int y,int action){
@@ -1307,7 +1665,7 @@ static void render_usb(App*a){
         text(a,40,y+8,0,ORANGE,"VOLUMES");y+=46;
         for(int k=0;k<a->usb_row_count;k++){
             const FileVolume*v=&a->volumes[a->usb_rows[k]];bool free_row=stopped&&ui_free(a);rounded(a,(Rect){28,y,664,112},24,PANEL);
-            ellipsis(a,52,y+16,v->mounted?440:300,1,TEXT,v->label[0]?v->label:v->id);
+            raw_text(true);ellipsis(a,52,y+16,v->mounted?440:300,1,TEXT,v->label[0]?v->label:v->id);raw_text(false);
             ellipsis(a,52,y+66,v->mounted?440:300,0,v->mounted?GREEN:MUTED,v->mounted?(v->read_only||!v->write_supported?"Mounted read-only":"Mounted with write access"):"Not mounted");
             if(v->mounted)button(a,(Rect){500,y+20,174,72},"Unmount",A_USB_VOLUME_OFF+k,free_row,false,0);
             else{button(a,(Rect){356,y+20,150,72},"Read",A_USB_VOLUME_RO+k,free_row,false,0);button(a,(Rect){516,y+20,158,72},"Hold: write",A_USB_VOLUME_RW+k,free_row&&v->write_supported,false,1000);}
@@ -1388,11 +1746,11 @@ static void render_tools_export(App*a){
     heading(a,"Export diagnostics","Choose an already mounted writable volume.",true);
     FileVolume*v=a->tools_volume_index>=0&&a->tools_volume_index<a->volume_count?&a->volumes[a->tools_volume_index]:NULL;
     rounded(a,(Rect){28,252,664,300},24,PANEL);text(a,52,278,0,ORANGE,"DESTINATION VOLUME");
-    wrapped(a,52,328,606,1,TEXT,v?(v->label[0]?v->label:v->id):"No mounted writable volume",3);
+    raw_text(v!=NULL);wrapped(a,52,328,606,1,TEXT,v?(v->label[0]?v->label:v->id):"No mounted writable volume",3);raw_text(false);
     if(v){ellipsis(a,52,450,606,0,MUTED,v->id);ellipsis(a,52,492,606,0,MUTED,v->mountpoint);}
     button(a,(Rect){28,592,664,88},"Choose next volume",A_TOOLS_DEST_NEXT,ui_free(a)&&v,false,0);
-    wrapped(a,40,760,640,1,MUTED,v?"A new diagnostic archive will be written to this volume. Existing archives are retained.":"Open Files, select a supported volume and enable write access, then return here.",5);
-    wrapped(a,40,1008,640,0,MUTED,"Diagnostic logs may include filenames, hardware identifiers and network details. Inspect the archive before sharing it.",4);
+    text_tile(a,760,1,MUTED,v?"A new diagnostic archive will be written to this volume. Existing archives are retained.":"Open Files, select a supported volume and enable write access, then return here.",5);
+    text_tile(a,1008,0,MUTED,"Diagnostic logs may include filenames, hardware identifiers and network details. Inspect the archive before sharing it.",4);
     button(a,(Rect){28,1320,664,104},"Hold 2 seconds to export",A_TOOLS_EXPORT_CONFIRM,ui_free(a)&&v&&v->mounted&&!v->read_only&&v->write_supported&&v->token[0],true,2000);
 }
 static FileVolume*current_volume(App*a){
@@ -1403,7 +1761,7 @@ static FileVolume*current_volume(App*a){
 static bool files_writable(App*a){FileVolume*v=current_volume(a);return v&&v->mounted&&!v->read_only&&v->write_supported;}
 static bool file_is_directory(const FileEntry*e){return !strcmp(e->type,"directory")||!strcmp(e->type,"dir");}
 static bool file_is_regular(const FileEntry*e){return !strcmp(e->type,"file")||!strcmp(e->type,"regular");}
-static bool file_is_executable(const FileEntry*e){return file_is_regular(e)&&e->mode[0]&&(strtoul(e->mode,NULL,8)&0111u);}
+static bool file_is_executable(const FileEntry*e){return file_is_regular(e)&&e->metadata_supported&&e->mode[0]&&(strtoul(e->mode,NULL,8)&0111u);}
 static uint32_t file_color(const FileEntry*e){return file_is_directory(e)?ORANGE:(file_is_executable(e)?GREEN:(file_is_regular(e)?FILE_BLUE:(!strcmp(e->type,"symlink")?LINK_PURPLE:MUTED)));}
 static const char*file_type_label(const FileEntry*e){return file_is_directory(e)?"Folder":(file_is_executable(e)?"Executable":(file_is_regular(e)?"File":(!strcmp(e->type,"symlink")?"Symbolic link":"Special file / blocked")));}
 static void file_icon(App*a,const FileEntry*e,int x,int y){
@@ -1465,12 +1823,12 @@ static void volume_icon(App*a,const FileVolume*v,int x,int y){
     }
 }
 static void render_file_volumes(App*a){
-    heading(a,a->theme_pick?"Theme file":a->install.pick_source?"Image source":(a->flash_pick?"Image source":(a->systems_pick_manifest?(a->systems_pick_script?"Setup script source":"System image source"):"Files")),a->theme_pick?"Choose where the theme file is stored.":a->flash_pick?"Choose where the image is stored.":a->install.pick_source?"Select writable ext4 microSD. The source remains unchanged.":(a->systems_pick_manifest?(a->systems_pick_script?"Choose where the script is stored.":"Choose the microSD card or USB stick with the image; one that is not mounted opens read-only."):"Swipe to browse volumes. Open read-only by default."),true);a->volume_scroll=(int64_t)scroll_clamp((double)a->volume_scroll,(double)volume_max_scroll(a));
+    heading(a,a->theme_pick?"Theme file":a->install.pick_source?"Image source":(a->flash_pick?(a->zip_pick?"ZIP with an installer":(a->samsung_pick?(a->stock_boot_pick?"Stock BOOT":"Samsung firmware"):"Image source")):(a->systems_pick_manifest?(a->systems_pick_script?"Setup script source":"System image source"):"Files")),a->theme_pick?"Choose where the theme file is stored.":a->flash_pick?(a->zip_pick?"Choose where the ZIP is stored.":"Choose where the image is stored."):a->install.pick_source?"Select writable ext4 microSD. The source remains unchanged.":(a->systems_pick_manifest?(a->systems_pick_script?"Choose where the script is stored.":"Choose the microSD card or USB stick with the image; one that is not mounted opens read-only."):"Swipe to browse volumes. Open read-only by default."),true);a->volume_scroll=(int64_t)scroll_clamp((double)a->volume_scroll,(double)volume_max_scroll(a));
     int first=(int)(a->volume_scroll/VOLUME_ROW_HEIGHT);a->clip_active=true;a->clip=volume_viewport();
     for(int i=first;i<a->volume_count;i++){
         int y=VOLUME_LIST_TOP+(int)((int64_t)i*VOLUME_ROW_HEIGHT-a->volume_scroll);if(y>=VOLUME_LIST_BOTTOM)break;FileVolume*v=&a->volumes[i];
         Rect r={28,y,664,142};rounded(a,r,24,PANEL);volume_icon(a,v,49,y+45);
-        ellipsis(a,116,r.y+14,550,1,volume_color(v),v->label[0]?v->label:v->id);
+        raw_text(true);ellipsis(a,116,r.y+14,550,1,volume_color(v),v->label[0]?v->label:v->id);raw_text(false);
         char linebuf[256],size[64];human_bytes(v->bytes,size,sizeof(size));
         snprintf(linebuf,sizeof(linebuf),"%s  /  %.24s  /  %s",tr(volume_type_label(v)),v->fs_type[0]?v->fs_type:tr("raw"),v->bytes?size:tr("size unknown"));
         ellipsis(a,116,r.y+58,550,0,MUTED,linebuf);
@@ -1487,7 +1845,8 @@ static void render_file_volumes(App*a){
     files_note(a,1444);
 }
 static void render_file_volume(App*a){
-    FileVolume*v=current_volume(a);heading(a,"Volume",v?(v->label[0]?v->label:v->id):"Volume unavailable",true);
+    FileVolume*v=current_volume(a);heading(a,"Volume",v?NULL:"Volume unavailable",true);
+    if(v){raw_text(true);wrapped(a,104,164,CW-134,0,MUTED,v->label[0]?v->label:v->id,2);raw_text(false);}
     if(!v){wrapped(a,48,290,624,1,MUTED,"This volume is no longer available. Return to Files and refresh the list.",5);return;}
     rounded(a,(Rect){28,240,664,350},24,PANEL);
     text(a,52,262,0,ORANGE,"FILESYSTEM");text(a,52,302,2,TEXT,v->fs_type[0]?v->fs_type:"Not mountable");
@@ -1522,12 +1881,12 @@ static void render_file_volume(App*a){
             return;
         }
     }
-    wrapped(a,40,1270,640,0,MUTED,"Encrypted Android data needs a working decryption service. Raw boot images and firmware partitions cannot be browsed as folders.",5);
+    text_tile(a,1270,0,MUTED,"Encrypted Android data needs a working decryption service. Raw boot images and firmware partitions cannot be browsed as folders.",5);
     files_note(a,1444);
 }
 static void render_file_browser(App*a){
     FileVolume*v=current_volume(a);char sub[256];snprintf(sub,sizeof(sub),"%.150s  /  %s",v?(v->label[0]?v->label:v->id):tr("Volume"),tr(files_writable(a)?"Writable":"Read-only"));
-    heading(a,a->theme_pick?"Choose a theme file":a->install.pick_source?(a->install.stock_selected?"Stock manifest":"BOOT image"):(a->flash_pick?"Choose image":(a->systems_pick_manifest?(a->systems_pick_script?"Choose a setup script":"Choose system image"):"Files")),sub,true);rounded(a,(Rect){28,230,664,94},14,PANEL);wrapped(a,46,246,628,0,TEXT,a->fs_path,2);
+    heading(a,a->theme_pick?"Choose a theme file":a->install.pick_source?(a->install.stock_selected?"Stock manifest":"BOOT image"):(a->flash_pick?(a->rom_pick?"Choose the ROM":(a->zip_pick?"Choose the ZIP":(a->samsung_pick?"Choose the AP file":"Choose image"))):(a->systems_pick_manifest?(a->systems_pick_script?"Choose a setup script":"Choose system image"):"Files")),sub,true);rounded(a,(Rect){28,230,664,94},14,PANEL);wrapped(a,46,246,628,0,TEXT,a->fs_path,2);
     button(a,(Rect){28,340,208,64},"Up",A_FS_UP,ui_free(a)&&strcmp(a->fs_path,"/"),false,0);
     button(a,(Rect){256,340,208,64},"Volume",A_FS_VOLUME,ui_free(a),false,0);
     button(a,(Rect){484,340,208,64},"Refresh",A_FS_REFRESH,ui_free(a),false,0);
@@ -1540,7 +1899,8 @@ static void render_file_browser(App*a){
         int n=(int)(index-a->file_offset);FileEntry*e=&a->files[n];
         bool usable=file_is_directory(e)||file_is_regular(e);
         {uint32_t bar=file_color(e);gradient(a,(Rect){35,r.y+20,5,62},3,bar,bar);}file_icon(a,e,48,r.y+30);
-        ellipsis(a,96,r.y+13,476,1,file_color(e),e->name);
+        /* A file's name is never translated (2026-11-11: the folder "backup" was listed as a word of the interface). */
+        raw_text(true);ellipsis(a,96,r.y+13,476,1,file_color(e),e->name);raw_text(false);
         char desc[128],bytes[64];human_bytes(e->size,bytes,sizeof(bytes));snprintf(desc,sizeof(desc),"%s%s%s",tr(file_type_label(e)),file_is_regular(e)?"  /  ":"",file_is_regular(e)?bytes:"");
         ellipsis(a,96,r.y+62,476,0,MUTED,desc);
         register_button(a,(Rect){r.x,r.y,548,r.h},A_FS_ENTRY+n,ui_free(a)&&usable,0);
@@ -1570,7 +1930,7 @@ static void render_file_info(App*a){
     if(a->install.pick_source){render_install_source(a);return;}
     if(a->systems_pick_manifest){if(a->systems_pick_script)render_systems_script(a);else render_systems_manifest(a);return;}
     heading(a,"File actions",file_type_label(&a->fs_selected),true);rounded(a,(Rect){28,242,664,354},24,PANEL);
-    wrapped(a,52,264,608,1,TEXT,a->fs_selected.name,2);wrapped(a,52,354,608,0,MUTED,a->fs_selected.path,3);
+    raw_text(true);wrapped(a,52,264,608,1,TEXT,a->fs_selected.name,2);wrapped(a,52,354,608,0,MUTED,a->fs_selected.path,3);raw_text(false);
     char bytes[64],metadata[192];human_bytes(a->fs_selected.size,bytes,sizeof(bytes));text(a,52,456,0,ORANGE,bytes);
     snprintf(metadata,sizeof(metadata),"Mode %s  /  UID %llu  /  GID %llu",a->fs_selected.mode[0]?a->fs_selected.mode:"unknown",(unsigned long long)a->fs_selected.uid,(unsigned long long)a->fs_selected.gid);
     wrapped(a,52,506,608,0,TEXT,metadata,2);
@@ -1589,9 +1949,9 @@ static void render_file_info(App*a){
         button(a,(Rect){28,850,320,88},"Permissions",A_FS_CHMOD,metadata_ok,false,0);
         button(a,(Rect){372,850,320,88},"Owner / group",A_FS_CHOWN,metadata_ok,false,0);
         button(a,(Rect){28,962,664,88},"Delete",A_FS_DELETE,ui_free(a)&&ordinary&&files_writable(a),false,0);
-        wrapped(a,40,1094,640,0,MUTED,a->fs_selected.metadata_reason[0]?a->fs_selected.metadata_reason:"Copy and rename require a new destination. Delete removes a regular file or an empty folder.",4);
+        text_tile(a,1094,0,MUTED,a->fs_selected.metadata_reason[0]?a->fs_selected.metadata_reason:"Copy and rename require a new destination. Delete removes a regular file or an empty folder.",4);
         files_note(a,1220);
-        if(!files_writable(a))wrapped(a,40,1260,640,0,ORANGE,current_volume(a)&&current_volume(a)->write_supported?"Read-only volume. Enable writes in Volume.":"This volume is available for reading only.",2);
+        if(!files_writable(a))text_tile(a,1260,0,ORANGE,current_volume(a)&&current_volume(a)->write_supported?"Read-only volume. Enable writes in Volume.":"This volume is available for reading only.",2);
     }
     button(a,(Rect){28,1358,664,82},"Volume settings",A_FS_VOLUME,ui_free(a),false,0);
 }
@@ -1852,9 +2212,20 @@ static void render_account_prompt(App*a){
     button(a,(Rect){28,1370,256,84},"Cancel",A_BACK,ui_free(a),false,0);
     button(a,(Rect){304,1370,388,84},naming?"Next":(joining?"Connect":"Done"),A_FS_PROMPT_NEXT,ui_free(a)&&ready,true,0);
 }
+static void render_backup_name_prompt(App*a){
+    heading(a,"Rename the backup","Only the name changes: its files stay as they are.",true);
+    account_field(a,236,"NEW NAME",a->fs_prompt,false,true,A_BACKUP_NAME_FIELD);
+    bool ready=backup_name_ok(a,a->fs_prompt);
+    wrapped(a,40,394,640,0,a->fs_prompt[0]&&!ready?ORANGE:MUTED,"Up to 64 Latin letters, digits, dots, hyphens and underscores; the first is a letter or a digit.",3);
+    render_keyboard(a);
+    button(a,(Rect){28,1370,256,84},"Cancel",A_BACK,ui_free(a),false,0);
+    button(a,(Rect){304,1370,388,84},"Rename",A_FS_PROMPT_NEXT,ui_free(a)&&ready,true,0);
+}
 static void render_file_prompt(App*a){
     if(lock_kind(a->fs_prompt_kind)){render_lock_prompt(a);return;}
     if(a->fs_prompt_kind==J_PKG_QUERY){render_package_prompt(a);return;}
+    if(a->fs_prompt_kind==J_ROOT_SUPERKEY){render_superkey_prompt(a);return;}
+    if(a->fs_prompt_kind==J_BACKUP_NAME){render_backup_name_prompt(a);return;}
     if(a->fs_prompt_kind>=J_SYS_ACCOUNT_USER){render_account_prompt(a);return;}
     const char*title=a->fs_prompt_kind==J_SYS_ACCOUNT_USER?"User name":(a->fs_prompt_kind==J_SYS_ACCOUNT_PASS?"Password":(a->fs_prompt_kind==J_FS_WRITE?"New text file":files_operation_title(a->fs_prompt_kind)));
     bool metadata=a->fs_prompt_kind==J_FS_CHMOD||a->fs_prompt_kind==J_FS_CHOWN;
@@ -1909,7 +2280,22 @@ static bool job_cancellable(int kind){return kind==J_IMAGES_DOWNLOAD||kind==J_BA
 static void render_job_banner(App*a){
     if(!a->job.pid||!job_long(a->job.kind))return;
     bool can=job_cancellable(a->job.kind);int h=can?(a->job_cancel_asked?300:250):190,y=1470-h;
-    /* Everything behind the banner stays visible but disabled while a job runs. */
+    if(a->screen==PROGRESS){
+        /* The page above shows the work itself (2026-11-11): the share and the phase were here twice. */
+        if(!can||a->job_cancelled){
+            Rect r={28,1360,664,76};rounded(a,r,24,PANEL);icon(a,a->job_cancelled?ICON_CLOCK:ICON_LOCK,50,r.y+20,36,MUTED);
+            ellipsis(a,104,r.y+24,568,0,MUTED,a->job_cancelled?"Cancelling...":"This step cannot be stopped safely.");return;
+        }
+        if(a->job_cancel_asked){
+            Rect r={28,1232,664,206};rounded(a,r,26,PANEL);text(a,52,r.y+26,1,ORANGE,"Stop this operation?");
+            button(a,(Rect){52,r.y+98,296,84},"Keep going",A_JOB_KEEP,true,false,0);button(a,(Rect){372,r.y+98,296,84},"Stop",A_JOB_CANCEL_YES,true,true,0);return;
+        }
+        button(a,(Rect){28,1352,664,84},"Cancel",A_JOB_CANCEL,true,false,0);return;
+    }
+    /* Everything behind the banner stays visible but disabled while a job runs; under the banner
+       itself the backdrop is painted again, so that the page's own button does not show through the
+       glass (2026-11-11: the download button stood behind Cancel). */
+    backdrop_again(a,(Rect){0,y-14,CW,h+28});
     rounded(a,(Rect){20,y,680,h},26,PANEL);
     ellipsis(a,48,y+22,624,1,TEXT,a->job_cancelled?"Cancelling...":(a->progress_phase[0]?phase_label(a,a->progress_phase):"Working"));
     Rect track={48,y+78,624,12};rounded(a,track,6,LINE);
@@ -1972,6 +2358,8 @@ static bool nav_open(const App*a){
 }
 /* What going back means on this page: the arrow it shows, or the button that ends it. */
 static int nav_back_action(const App*a){
+    /* The sheet that asks where a file is covers the page's own Back: Back closes the sheet. */
+    if(a->source_sheet)return A_BACK;
     for(int n=0;n<a->button_count;n++)if(a->buttons[n].enabled&&a->buttons[n].action==A_BACK)return A_BACK;
     for(int n=0;n<a->button_count;n++)if(a->buttons[n].enabled&&a->buttons[n].action==A_DONE)return A_DONE;
     return 0;
@@ -2019,7 +2407,7 @@ static void render(App*a){
     case POWER_CONFIRM:heading(a,"Power action",NULL,true);wrapped(a,40,350,640,2,TEXT,power_confirmation(a->power_intent),4);if(terminal_session_open(a)&&a->terminal_busy)wrapped(a,40,640,640,1,RED,"The command running in the terminal will be stopped.",3);button(a,(Rect){28,1220,664,110},"Hold 2 seconds to confirm",A_POWER_CONFIRM,a->allow_power&&!a->job.pid&&a->power_intent>=200&&a->power_intent<=203&&(a->power_intent!=200||(!a->systems_reboot_blocked&&!a->install.reboot_blocked)),true,2000);break;
     case TOOLS:render_tools(a);break;case TOOLS_EXPORT:render_tools_export(a);break;case DISPLAY_SETTINGS:render_display(a);break;case WIFI:render_wifi(a);break;case SYSTEMS_NEW:render_systems_new(a);break;case SYSTEMS_IMAGES:render_images(a);break;case ADB_REQUEST:render_adb_request(a);break;case SYSTEMS_CATALOG:render_catalog(a);break;
     case TERMINAL:render_terminal(a);break;
-    case SYSTEMS:render_systems(a);break;case SYSTEMS_EXTRAS:render_systems_extras(a);break;case SYSTEMS_SHELLS:render_systems_shells(a);break;case SYSTEMS_LOCALE:render_systems_locale(a);break;case SYSTEMS_TIMEZONE:render_systems_timezone(a);break;case SYSTEMS_APP_LIST:render_systems_apps(a);break;case SYSTEMS_SEARCH:render_package_search(a);break;case IDENTITY:render_identity(a);break;case APLAN:render_aplan(a);break;case FLASH_SUPER:render_flash_super(a);break;case ICON_SHEET:render_icon_sheet(a);break;case WIPE:render_wipe(a);break;case WIPE_REVIEW:render_wipe_review(a);break;case IDENTITY_RESTORE:render_identity_restore(a);break;case SYSTEMS_DONE:render_systems_done(a);break;case SYSTEMS_PLAN:render_systems_plan(a);break;case SYSTEMS_RECOVER:render_systems_recover(a);break;case SYSTEMS_REMOVE:render_systems_remove(a);break;
+    case SYSTEMS:render_systems(a);break;case SYSTEMS_EXTRAS:render_systems_extras(a);break;case SYSTEMS_SHELLS:render_systems_shells(a);break;case SYSTEMS_LOCALE:render_systems_locale(a);break;case SYSTEMS_TIMEZONE:render_systems_timezone(a);break;case SYSTEMS_APP_LIST:render_systems_apps(a);break;case SYSTEMS_SEARCH:render_package_search(a);break;case IDENTITY:render_identity(a);break;case APLAN:render_aplan(a);break;case FLASH_SUPER:render_flash_super(a);break;case ICON_SHEET:render_icon_sheet(a);break;case WIPE:render_wipe(a);break;case ANDROID_MENU:render_android_menu(a);break;case SAMSUNG_REVIEW:render_samsung_review(a);break;case ANDROID_IMAGE:render_android_image(a);break;case ROOT_PAGE:render_root(a);break;case ZIP_REVIEW:render_zip_review(a);break;case CARD_PAGE:render_card(a);break;case COPY_DETAIL:render_copy_detail(a);break;case WIPE_REVIEW:render_wipe_review(a);break;case ANDROID_LOG:render_android_log(a);break;case IDENTITY_RESTORE:render_identity_restore(a);break;case SYSTEMS_DONE:render_systems_done(a);break;case SYSTEMS_PLAN:render_systems_plan(a);break;case SYSTEMS_RECOVER:render_systems_recover(a);break;case SYSTEMS_REMOVE:render_systems_remove(a);break;
     case INSTALL:render_install(a);break;case INSTALL_PLAN:render_install_review(a,false);break;case INSTALL_RESULT:render_install_review(a,true);break;
     case FILE_VOLUMES:render_file_volumes(a);break;case FILE_VOLUME:render_file_volume(a);break;case FILE_BROWSER:render_file_browser(a);break;
     case FILE_INFO:render_file_info(a);break;case FILE_TEXT:render_file_text(a,false);break;case FILE_EDIT:render_file_text(a,true);break;
@@ -2031,16 +2419,78 @@ static void render(App*a){
     key_bubble(a);
     ui_theme=chosen;
     render_toast(a);
+    /* The moment a screenshot is taken: the page lights up and settles (the picture itself was composed before). */
+    if(a->shot_flash&&a->now>=a->shot_flash&&a->now-a->shot_flash<SHOT_FLASH_MS)veil(a,(Rect){0,0,CW,CH},0,0xffffffu,(int)(96-96*(a->now-a->shot_flash)/SHOT_FLASH_MS));
     if(a->focus>=0&&a->focus<a->button_count){Rect r=a->buttons[a->focus].r;line(a,r.x+10,r.y+5,r.x+r.w-10,r.y+5,2,ORANGE);line(a,r.x+10,r.y+r.h-5,r.x+r.w-10,r.y+r.h-5,2,ORANGE);}
     a->dirty=false;
 }
 static void cancel_pointer(App*a){a->gesture=GESTURE_NONE;a->gesture_ready=a->gesture_terminal=false;a->nav_settle_end=0;stop_inertia(a,"cancel");if(a->pointer_down)a->pointer_requires_release=true;a->pressed_action=0;a->pointer_down=false;a->display_brightness_drag=false;a->scroll_touch=a->scroll_moved=a->scroll_dragging=a->scroll_stop_tap=false;a->scroll_surface=SCROLL_NONE;a->dirty=true;}
+/* The page under a finger changed or was read again: what the finger pressed is gone. A navigation
+ * gesture belongs to no page and goes on (2026-11-11, on the phone: Home swiped while the volumes
+ * were still read was dropped when that read ended). */
+static void page_changed(App*a){
+    if(a->gesture&&a->pointer_down){a->pressed_action=0;a->dirty=true;return;}
+    cancel_pointer(a);
+}
+static bool files_screen(enum Screen s){return s>=FILE_VOLUMES&&s<=FILE_DISCARD;}
+/* Where the user is, whatever covers it for now: the lock, the power menu, a question from a computer. */
+static enum Screen nav_page(const App*a){
+    if(a->locked)return a->lock_return;
+    return a->screen==POWER_MENU?a->menu_return:(a->screen==ADB_REQUEST?a->adb_return:(a->screen==ACCESS_REQUEST?a->access_return:a->screen));
+}
+/* Shown in passing (a progress, a result, a question, a prompt, the lock): never a place to go back to. */
+static bool nav_passing(enum Screen s){
+    return s==SPLASH||s==PROGRESS||s==RESULT||s==LOCKSCREEN||s==ACCESS_REQUEST||s==ADB_REQUEST||s==POWER_MENU||s==POWER_CONFIRM||
+           s==FILE_PROMPT||s==FILE_CONFIRM||s==FILE_DISCARD||s==SYSTEMS_DONE||s==INSTALL_RESULT||s==ICON_SHEET;
+}
+/* Can be opened again as it was left: a menu, a list, a page of settings, a folder. A review, an
+ * editor or a step of a setup is reached only through the pages before it. */
+static bool nav_stays(enum Screen s){
+    switch(s){
+    case HOME:case OS_MENU:case ANDROID_MENU:case TOOLS:case BACKUP:case SYSTEMS:case WIPE:case ROOT_PAGE:case STORAGE:case SYSTEM:case POWER:
+    case FLASH:case FLASH_SUPER:case SYSTEMS_NEW:case SYSTEMS_CATALOG:case SYSTEMS_IMAGES:case ANDROID_IMAGE:case APLAN:case INSTALL:case LIST:
+    case USB_FILES:case TOOLS_EXPORT:case DISPLAY_SETTINGS:case WIFI:case THEME:case TERMINAL_THEME:case ANIMATIONS:case LANGUAGE:case IDENTITY:
+    case FILE_VOLUMES:case FILE_VOLUME:case FILE_BROWSER:case TERMINAL:case CARD_PAGE:return true;
+    default:return false;
+    }
+}
+/* The trail of pages: Home starts it again, a page already on it ends it there, any other joins it. */
+static void nav_visit(App*a,enum Screen s){
+    if(s==HOME){a->nav_trail[0]=HOME;a->nav_depth=1;return;}
+    if(nav_passing(s))return;
+    for(int n=0;n<a->nav_depth;n++)if(a->nav_trail[n]==s){a->nav_depth=n+1;return;}
+    if(a->nav_depth==NAV_TRAIL){memmove(a->nav_trail+1,a->nav_trail+2,(NAV_TRAIL-2)*sizeof(a->nav_trail[0]));a->nav_depth--;}
+    a->nav_trail[a->nav_depth++]=s;
+}
+/* The page this one was opened from, when it can be opened again as it was left; else the usual parent. */
+static enum Screen came_from(const App*a,enum Screen parent){
+    if(a->nav_depth<2||a->nav_trail[a->nav_depth-1]!=a->screen)return parent;
+    enum Screen from=a->nav_trail[a->nav_depth-2];return nav_stays(from)?from:parent;
+}
+/* The page a file was being chosen for: the last one before the pages of files. */
+static enum Screen came_from_picker(const App*a,enum Screen parent){
+    if(!a->nav_depth||a->nav_trail[a->nav_depth-1]!=a->screen)return parent;
+    for(int n=a->nav_depth-1;n>=0;n--)if(!files_screen(a->nav_trail[n]))return nav_stays(a->nav_trail[n])?a->nav_trail[n]:parent;
+    return parent;
+}
+/* The page under a progress or a result: the last one that was opened to stay. */
+static enum Screen nav_top(const App*a){return a->nav_depth?a->nav_trail[a->nav_depth-1]:HOME;}
 /* While locked no page opens but the lock pages. Whatever asks for one, a finished operation
  * included, simply gets it after the unlock: this is the one door, so nothing can go around it. */
 static void screen(App*a,enum Screen s){
+    /* A read that ends for a page the user has left opens nothing: the data is kept, the page is not. */
+    if(a->nav_hold){a->dirty=true;return;}
     if(a->locked&&s!=LOCKSCREEN&&s!=ACCESS_REQUEST&&s!=POWER_MENU&&!(s==FILE_PROMPT&&lock_kind(a->fs_prompt_kind))){if(s!=FILE_PROMPT)a->lock_return=s;a->dirty=true;return;}
-    a->screen=s;a->focus=-1;a->button_count=0;cancel_pointer(a);a->dirty=true;
+    /* A result stands for the page it returns to: what opens from it comes after that page. */
+    if(a->screen==RESULT&&s!=RESULT)nav_visit(a,a->result_return);
+    /* Going back, the page that is left leaves the trail, wherever its handler goes. */
+    if(a->nav_backing&&s!=a->screen&&a->nav_depth>1&&a->nav_trail[a->nav_depth-1]==a->screen)a->nav_depth--;
+    nav_visit(a,s);
+    a->screen=s;a->focus=-1;a->button_count=0;a->dirty=true;
+    /* A question, the lock or a result takes the touch away entirely. */
+    if(nav_passing(s))cancel_pointer(a);else page_changed(a);
 }
+static void reopen(App*a,enum Screen s);
 static void problem(App*a,const char*code,const char*message){
     /* The helper that refused cannot know the reason is a shell left running. */
     if(a->terminal_left&&terminal_session_open(a)&&!strcmp(code,"OPERATION_BUSY"))message="A command is running in the terminal and holds storage. Wait for it to end, or stop it in the terminal.";
@@ -2051,6 +2501,26 @@ static const char*job_name(int kind){
     if(kind==J_APLAN_PREPARE)return "android-plan-prepare";
     if(kind==J_APLAN_FORGET)return "android-plan-forget";
     if(kind==J_WIPE_CACHE)return "wipe-cache";
+    if(kind==J_ANDROID_RESET)return "android-reset";
+    if(kind==J_STOCK_BOOT)return "stock-boot";
+    if(kind==J_SAMSUNG_UNPACK)return "samsung-unpack";
+    if(kind==J_ROOT_LIST)return "root-list";
+    if(kind==J_ROOT_INSTALL)return "root-install";
+    if(kind==J_ROOT_PREPARE)return "root-prepare";
+    if(kind==J_ZIP_INSPECT)return "zip-inspect";
+    if(kind==J_ZIP_RUN)return "zip-run";
+    if(kind==J_BACKUP_RENAME)return "rename-backup";
+    if(kind==J_BACKUP_DELETE)return "delete-backup";
+    if(kind==J_ID_DELETE)return "identity-delete";
+    if(kind==J_CARD_LIST)return "card-list";
+    if(kind==J_COPY_LIST)return "copies-list";
+    if(kind==J_COPY_VERIFY)return "copy-verify";
+    if(kind==J_COPY_RESTORE)return "copy-restore";
+    if(kind==J_COPY_DELETE)return "copy-delete";
+    if(kind==J_ROM_KIND)return "rom-kind";
+    if(kind==J_CARD_APPLY)return "card-apply";
+    if(kind==J_SAMSUNG_INSPECT)return "samsung-inspect";
+    if(kind==J_SAMSUNG_INSTALL)return "samsung-install";
     if(kind==J_IMAGES)return "systems-images";
     if(kind==J_IMAGES_DOWNLOAD)return "systems-images-download";
     if(kind==J_IMAGES_DELETE)return "systems-images-delete";
@@ -2078,6 +2548,7 @@ static bool private_workdir(const char*path){
     return S_ISDIR(s.st_mode)&&s.st_uid==geteuid()&&!(s.st_mode&0022);
 }
 static bool launch_job(App*a,int kind,char*const*args){
+    screenshot_wait(a);
     int out[2],err[2];
     if(pipe2(out,O_CLOEXEC)<0){problem(a,"PIPE_FAILED",strerror(errno));return false;}
     if(pipe2(err,O_CLOEXEC)<0){close(out[0]);close(out[1]);problem(a,"PIPE_FAILED",strerror(errno));return false;}
@@ -2097,10 +2568,12 @@ static bool launch_job(App*a,int kind,char*const*args){
     if(!a->job.output)a->job.overflow=true;
     a->job_started=milliseconds();a->progress_done=a->progress_total=0;a->progress_mark_phase[0]=0;copy(a->progress_phase,sizeof(a->progress_phase),"Preparing");a->progress_part[0]=0;copy(a->last_backend_operation,sizeof(a->last_backend_operation),job_name(kind));
     a->result_return=HOME;
+    /* Its page is the one the action that started it ends on; a job started by another job's end keeps that job's page. */
+    if(!a->job_completing){a->job_orphan=false;a->job_page_mark=true;}
     if(kind==J_FS_LIST){a->pressed_action=0;a->button_count=0;a->focus=-1;}
     else if(!terminal_background_job(kind))stop_inertia(a,"operation");
-    if(!terminal_job(kind)&&kind!=J_INSTALL_STATUS&&kind!=J_SYS_STATUS&&kind!=J_INVENTORY&&kind!=J_STORAGE_INVENTORY&&kind!=J_FS_INVENTORY&&kind!=J_FS_LIST&&kind!=J_TOOLS_STATUS&&kind!=J_DISPLAY_STATUS&&kind!=J_DISPLAY_SET&&kind!=J_USB_STATUS&&kind!=J_FLASH_TARGETS&&kind!=J_USB_SYNC&&kind!=J_USB_BACKUP&&kind!=J_USB_EJECT&&kind!=J_SYSINFO&&!wifi_job(kind)&&kind!=J_CATALOG&&kind!=J_CATALOG_CHECK&&kind!=J_PKG_SEARCH&&kind!=J_ID_LIST&&kind!=J_ID_BACKUPS&&kind!=J_CHARGER&&!images_job(kind)&&kind!=J_APLAN_SHOW&&kind!=J_APLAN_PREPARE&&kind!=J_APLAN_FORGET)screen(a,PROGRESS);
-    else if(kind==J_INVENTORY)copy(a->status,sizeof(a->status),"Reading device inventory...");
+    if(!terminal_job(kind)&&kind!=J_INSTALL_STATUS&&kind!=J_SYS_STATUS&&kind!=J_INVENTORY&&kind!=J_STORAGE_INVENTORY&&kind!=J_FS_INVENTORY&&kind!=J_FS_LIST&&kind!=J_TOOLS_STATUS&&kind!=J_DISPLAY_STATUS&&kind!=J_DISPLAY_SET&&kind!=J_USB_STATUS&&kind!=J_FLASH_TARGETS&&kind!=J_USB_SYNC&&kind!=J_USB_BACKUP&&kind!=J_USB_EJECT&&kind!=J_SYSINFO&&!wifi_job(kind)&&kind!=J_CATALOG&&kind!=J_CATALOG_CHECK&&kind!=J_PKG_SEARCH&&kind!=J_ID_LIST&&kind!=J_ID_BACKUPS&&kind!=J_CHARGER&&!images_job(kind)&&kind!=J_APLAN_SHOW&&kind!=J_APLAN_PREPARE&&kind!=J_APLAN_FORGET&&kind!=J_ROOT_LIST&&kind!=J_CARD_LIST&&kind!=J_COPY_LIST&&kind!=J_ROM_KIND)screen(a,PROGRESS);
+    else if(kind==J_INVENTORY&&a->screen!=RESULT)copy(a->status,sizeof(a->status),"Reading device inventory...");
     if(!terminal_background_job(kind))a->dirty=true;
     return true;
 }
@@ -2127,6 +2600,9 @@ static bool start_job(App*a,int kind){
         if(snprintf(a->plan_path,sizeof(a->plan_path),"%s/plan-%ld-%u.json",a->workdir,(long)getpid(),++a->plan_sequence)>=(int)sizeof(a->plan_path)){problem(a,"PATH_TOO_LONG","Runtime plan path is too long.");return false;}
         args[n++]="--backup";args[n++]=a->backups[a->selected_backup].path;args[n++]="--output";args[n++]=a->plan_path;
     }else if(kind==J_VERIFY){args[n++]="--backup";args[n++]=a->backups[a->selected_backup].path;}
+    else if(kind==J_BACKUP_RENAME){args[n++]="--backup";args[n++]=a->backups[a->selected_backup].path;args[n++]="--name";args[n++]=a->backup_new_name;}
+    /* A backup is deleted only under its own name: the backend compares it with the folder it loads. */
+    else if(kind==J_BACKUP_DELETE){args[n++]="--backup";args[n++]=a->backups[a->selected_backup].path;args[n++]="--confirm";args[n++]=a->backups[a->selected_backup].name;}
     else if(kind==J_BACKUP||kind==J_RESTORE||kind==J_WIPE){
         int expected=kind==J_BACKUP?J_BACKUP_PLAN:(kind==J_WIPE?J_WIPE_PLAN:J_RESTORE_PLAN);
         if(!a->plan_can_execute||a->plan_kind!=expected||!a->token[0]||!a->plan_path[0]){problem(a,"PLAN_NOT_ADMITTED","No current executable plan is available for this operation.");return false;}
@@ -2470,7 +2946,7 @@ static void parse_file_volumes(App*a,const Json*j){
     qsort(a->volumes,(size_t)a->volume_count,sizeof(a->volumes[0]),volume_order);
     a->volume_index=-1;for(int i=0;i<a->volume_count;i++)if(!strcmp(a->volumes[i].id,a->volume_id))a->volume_index=i;
     a->volume_scroll=(int64_t)scroll_clamp((double)a->volume_scroll,(double)volume_max_scroll(a));
-    a->button_count=0;a->focus=-1;cancel_pointer(a);
+    a->button_count=0;a->focus=-1;page_changed(a);
 }
 static void tools_select_volume(App*a,int index){
     a->tools_volume_index=index;a->tools_volume_id[0]=a->tools_volume_token[0]=0;
@@ -2527,6 +3003,7 @@ static int complete_files_job(App*a,const Json*j,int kind){
     a->successful=true;
     if(kind==J_FS_INVENTORY){
         parse_file_volumes(a,j);
+        if(a->source_sheet){a->source_known=true;a->dirty=true;return J_NONE;}
         if(a->fs_inventory_destination==PREPARE_FILESYSTEM&&a->prepare_job!=J_NONE){prepare_inventory(a);return J_NONE;}
         if(a->fs_inventory_destination==USB_FILES){a->usb_volumes_known=true;a->dirty=true;screen(a,USB_FILES);return J_NONE;}
         if(a->fs_inventory_destination==IDENTITY){identity_inventory(a);return J_NONE;}
@@ -2567,6 +3044,11 @@ static int complete_files_job(App*a,const Json*j,int kind){
         char result[16],size[32];jstring(j,0,"result",result,sizeof(result));human_bytes(json_uint(j,json_get(j,0,"bytes_after"),0),size,sizeof(size));
         snprintf(a->fs_status,sizeof(a->fs_status),!strcmp(result,"grown")?T("Grown to %s"):T("Already fills the partition: %s"),size);
         a->fs_inventory_destination=FILE_VOLUME;reset_browser(a);return J_FS_INVENTORY;
+    }else if(kind==J_FS_MOUNT&&a->id_mounting){
+        /* Back on the page of the copy: the volumes are read again and the card is chosen. */
+        a->id_mounting=false;a->fs_inventory_destination=IDENTITY;screen(a,IDENTITY);return J_FS_INVENTORY;
+    }else if(kind==J_FS_MOUNT&&a->copy_mounting){
+        a->copy_mounting=false;a->copies_known=false;a->copy_list_after=true;screen(a,LIST);return J_NONE;
     }else if(kind==J_FS_MOUNT&&a->systems_mounting){
         a->systems_mounting=false;a->systems_known=false;a->systems_reason[0]=0;a->systems_refresh_after=true;
         screen(a,systems_mount_screen((int)a->systems_mount_return)?a->systems_mount_return:SYSTEMS);return J_NONE;
@@ -2813,6 +3295,7 @@ static void complete_theme_job(App*a,const Json*j,int kind,bool ok){
 }
 static void theme_file_chosen(App*a){start_theme_job(a,J_THEME_IMPORT);}
 #include "terminal_ui.h"
+#include "source_ui.h"
 #include "systems_ui.h"
 #include "install_ui.h"
 #include "wifi_ui.h"
@@ -2826,8 +3309,17 @@ static void theme_file_chosen(App*a){start_theme_job(a,J_THEME_IMPORT);}
 #include "locale_ui.h"
 #include "android_plan_ui.h"
 #include "wipe_ui.h"
+#include "androidlog_ui.h"
+#include "android_ui.h"
+#include "card_ui.h"
+#include "copies_ui.h"
+/* The reply of the job that has just ended is freed, and only it. A handler may start the next
+   job, which then owns a->job with a buffer of its own (2026-11-11: exporting diagnostics from
+   Home reads the status and then the volumes; the second read lost its buffer to the first one's
+   clean-up and ended as BACKEND_FAILED). */
+static void job_reply_done(App*a,char*ended){if(a->job.output==ended)a->job.output=NULL;free(ended);}
 static void complete_job(App*a){
-    Job*j=&a->job;int kind=j->kind,next_files_job=J_NONE;bool next_display_status=false,next_usb_status=false;JsonToken*tok=calloc(8192,sizeof(*tok));Json doc;bool parsed=tok&&j->output&&!j->overflow&&json_parse(&doc,j->output,tok,8192)>0&&tok[0].type==J_OBJECT;
+    Job*j=&a->job;char*const ended=j->output;int kind=j->kind,next_files_job=J_NONE;bool next_display_status=false,next_usb_status=false;JsonToken*tok=calloc(8192,sizeof(*tok));Json doc;bool parsed=tok&&j->output&&!j->overflow&&json_parse(&doc,j->output,tok,8192)>0&&tok[0].type==J_OBJECT;
     if(terminal_background_job(kind)){} /* Shell input/output never enter UI diagnostics. */
     else if(file_job(kind)||kind==J_TOOLS_STATUS||kind==J_TOOLS_EXPORT||kind>=J_USB_STATUS)fprintf(stderr,"[recovery-ui:%s] exit=%d; result details omitted from log\n",job_name(kind),WIFEXITED(j->status)?WEXITSTATUS(j->status):-1);
     else fprintf(stderr,"[recovery-ui:%s] exit=%d result=%s\n",job_name(kind),WIFEXITED(j->status)?WEXITSTATUS(j->status):-1,j->output?j->output:"(no result buffer)");
@@ -2835,15 +3327,17 @@ static void complete_job(App*a){
     if(kind==J_CATALOG_CHECK&&!ok)fprintf(stderr,"[recovery-ui:catalog-check] parsed=%d used=%zu overflow=%d status=%d head=%.60s\n",parsed,j->used,j->overflow,j->status,j->output?j->output:"-");
     j->pid=0;a->job_cancel_asked=false;
     if(a->job_cancelled){
-        a->job_cancelled=false;free(tok);free(j->output);j->output=NULL;a->successful=false;copy(a->status,sizeof(a->status),"Operation cancelled");copy(a->message,sizeof(a->message),"The operation was stopped.");
+        a->job_cancelled=false;free(tok);job_reply_done(a,ended);a->successful=false;copy(a->status,sizeof(a->status),"Operation cancelled");copy(a->message,sizeof(a->message),"The operation was stopped.");
         if(kind==J_SYS_IMPORT)systems_forget_plan(a);
-        a->result_return=kind==J_SYS_IMPORT?SYSTEMS:kind==J_IMAGES_DOWNLOAD?SYSTEMS_IMAGES:(kind==J_FLASH_CHECK?FLASH:(kind==J_FS_COPY||kind==J_FS_COPY_TREE?FILE_BROWSER:HOME));screen(a,RESULT);return;
+        /* A download has no progress page: it returns to the page it was started on (2026-11-10). */
+        enum Screen here=nav_page(a);
+        a->result_return=kind==J_SYS_IMPORT?SYSTEMS:kind==J_IMAGES_DOWNLOAD?(here==ANDROID_IMAGE||here==SYSTEMS_CATALOG?here:SYSTEMS_IMAGES):(kind==J_FLASH_CHECK?FLASH:(kind==J_FS_COPY||kind==J_FS_COPY_TREE?FILE_BROWSER:HOME));screen(a,RESULT);return;
     }
-    if(terminal_job(kind)){complete_terminal_job(a,parsed?&doc:NULL,kind,ok);free(tok);if(j->output){memset(j->output,0,j->used);free(j->output);j->output=NULL;}return;}
-    if(systems_job(kind)){int next=complete_systems_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;if(next)start_systems_job(a,next);
+    if(terminal_job(kind)){complete_terminal_job(a,parsed?&doc:NULL,kind,ok);free(tok);if(j->output){memset(j->output,0,j->used);job_reply_done(a,ended);}return;}
+    if(systems_job(kind)){int next=complete_systems_job(a,parsed?&doc:NULL,kind,ok);free(tok);job_reply_done(a,ended);if(next)start_systems_job(a,next);
         if(kind==J_SYS_STATUS&&a->catalog_after_status&&!a->job.pid){a->catalog_after_status=false;start_catalog_job(a);}
         /* Userdata mounted from the saved images page: its list is read now. */
-        if(kind==J_SYS_STATUS&&a->screen==SYSTEMS_IMAGES&&!a->job.pid&&systems_ready(a)&&!a->saved_known)start_images_job(a,J_IMAGES,NULL);
+        if(kind==J_SYS_STATUS&&(a->screen==SYSTEMS_IMAGES||a->screen==ANDROID_IMAGE)&&!a->job.pid&&(systems_ready(a)||a->screen==ANDROID_IMAGE)&&!a->saved_known)start_images_job(a,J_IMAGES,NULL);
         /* The image chosen before userdata was mounted goes on to the install pages. */
         if(kind==J_SYS_STATUS&&a->catalog_pending&&a->screen==SYSTEMS_CATALOG&&!a->job.pid){
             unsigned int n=a->catalog_pending-1;a->catalog_pending=0;
@@ -2856,41 +3350,57 @@ static void complete_job(App*a){
        reply is taken off it first. Freeing j->output afterwards dropped the check's own buffer and
        every check then reported that the servers did not answer (2026-11-08, found on the phone). */
     if(kind==J_CATALOG||kind==J_CATALOG_CHECK){char*reply=j->output;j->output=NULL;complete_catalog_job(a,parsed?&doc:NULL,ok,kind==J_CATALOG_CHECK);free(tok);free(reply);return;}
-    if(kind==J_CHARGER){complete_charger_job(a,parsed?&doc:NULL,ok);free(tok);free(j->output);j->output=NULL;return;}
-    if(images_job(kind)){complete_images_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;return;}
+    if(kind==J_CHARGER){complete_charger_job(a,parsed?&doc:NULL,ok);free(tok);job_reply_done(a,ended);return;}
+    if(images_job(kind)){complete_images_job(a,parsed?&doc:NULL,kind,ok);free(tok);job_reply_done(a,ended);return;}
     /* Preparing a plan starts the status of Systems from its completion: that new job owns a->job,
        so this reply is taken off it first, as for the catalog. */
     if(aplan_job(kind)){char*reply=j->output;j->output=NULL;complete_aplan_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(reply);return;}
-    if(wipe_job(kind)){complete_wipe_job(a,parsed?&doc:NULL,ok);free(tok);free(j->output);j->output=NULL;return;}
-    if(kind==J_ID_LIST||kind==J_ID_BACKUP||kind==J_ID_BACKUPS||kind==J_ID_RESTORE){complete_identity_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;return;}
-    if(kind==J_PKG_SEARCH){complete_package_search(a,parsed?&doc:NULL,ok);free(tok);free(j->output);j->output=NULL;return;}
-    if(wifi_job(kind)){int next=complete_wifi_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;if(next)start_wifi_job(a,next);return;}
-    if(kind==J_USB_SYNC){complete_usb_sync(a,parsed?&doc:NULL,ok);free(tok);free(j->output);j->output=NULL;return;}
-    if(kind==J_USB_BACKUP){complete_usb_backup(a,parsed?&doc:NULL,ok);free(tok);free(j->output);j->output=NULL;return;}
-    if(kind==J_USB_EJECT){complete_usb_eject(a,parsed?&doc:NULL,ok);free(tok);free(j->output);j->output=NULL;return;}
-    if(flash_job(kind)){complete_flash_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;return;}
-    if(kind==J_SYSINFO){if(ok)complete_sysinfo(a,&doc);free(tok);free(j->output);j->output=NULL;return;}
-    if(theme_job(kind)){complete_theme_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;return;}
-    if(install_job(kind)){int next=complete_install_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(j->output);j->output=NULL;if(next)start_install_job(a,next);return;}
+    if(wipe_job(kind)){complete_wipe_job(a,parsed?&doc:NULL,ok);free(tok);job_reply_done(a,ended);return;}
+    /* An unpacked firmware ZIP starts the review of its AP: that new job owns a->job (2026-11-10). */
+    if(samsung_job(kind)){char*reply=j->output;j->output=NULL;complete_samsung_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(reply);return;}
+    if(root_job(kind)){char*reply=j->output;j->output=NULL;complete_root_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(reply);return;}
+    if(zip_job(kind)){char*reply=j->output;j->output=NULL;complete_zip_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(reply);return;}
+    if(card_job(kind)){char*reply=j->output;j->output=NULL;complete_card_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(reply);return;}
+    /* A deleted copy reads the cards again: that job owns a->job, so this reply is taken off it first. */
+    if(copy_job(kind)){char*reply=j->output;j->output=NULL;complete_copy_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(reply);return;}
+    /* A deleted copy reads the list again: that job owns a->job, so this reply is taken off it first. */
+    if(kind==J_ID_LIST||kind==J_ID_BACKUP||kind==J_ID_BACKUPS||kind==J_ID_RESTORE||kind==J_ID_DELETE){char*reply=j->output;j->output=NULL;complete_identity_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(reply);return;}
+    if(kind==J_PKG_SEARCH){complete_package_search(a,parsed?&doc:NULL,ok);free(tok);job_reply_done(a,ended);return;}
+    if(wifi_job(kind)){int next=complete_wifi_job(a,parsed?&doc:NULL,kind,ok);free(tok);job_reply_done(a,ended);if(next)start_wifi_job(a,next);return;}
+    if(kind==J_USB_SYNC){complete_usb_sync(a,parsed?&doc:NULL,ok);free(tok);job_reply_done(a,ended);return;}
+    if(kind==J_USB_BACKUP){complete_usb_backup(a,parsed?&doc:NULL,ok);free(tok);job_reply_done(a,ended);return;}
+    if(kind==J_USB_EJECT){complete_usb_eject(a,parsed?&doc:NULL,ok);free(tok);job_reply_done(a,ended);return;}
+    /* The list of partitions can start the check of a chosen image (2026-11-10, "Flash it to BOOT"):
+       that new job owns a->job, so this reply is taken off it first, as for the catalog. */
+    if(flash_job(kind)){char*reply=j->output;j->output=NULL;complete_flash_job(a,parsed?&doc:NULL,kind,ok);free(tok);free(reply);return;}
+    if(kind==J_SYSINFO){if(ok)complete_sysinfo(a,&doc);free(tok);job_reply_done(a,ended);return;}
+    if(theme_job(kind)){complete_theme_job(a,parsed?&doc:NULL,kind,ok);free(tok);job_reply_done(a,ended);return;}
+    if(install_job(kind)){int next=complete_install_job(a,parsed?&doc:NULL,kind,ok);free(tok);job_reply_done(a,ended);if(next)start_install_job(a,next);return;}
     if(!ok){
         char code[128]="BACKEND_FAILED",msg[1536]="The backend did not return a valid success result.";
         if(parsed){int err=json_get(&doc,0,"error");if(err>=0){if(doc.tokens[err].type==J_OBJECT){jstring(&doc,err,"code",code,sizeof(code));jstring(&doc,err,"message",msg,sizeof(msg));}else if(doc.tokens[err].type==J_STRING)json_string(&doc,err,msg,sizeof(msg));}}
         if(j->overflow)copy(msg,sizeof(msg),"Backend output exceeded the bounded result buffer.");
-        if(kind==J_INVENTORY){copy(a->status,sizeof(a->status),code);copy(a->message,sizeof(a->message),msg);a->inventory_ok=false;a->dirty=true;}
+        /* A result on screen keeps its own words (2026-11-10: the reason the phone stayed in recovery was lost here). */
+        if(kind==J_INVENTORY){if(a->screen!=RESULT){copy(a->status,sizeof(a->status),code);copy(a->message,sizeof(a->message),msg);}a->inventory_ok=false;a->dirty=true;}
         else if(file_job(kind)){
             if(a->prepare_job!=J_NONE&&a->fs_inventory_destination==PREPARE_FILESYSTEM){a->prepare_unmounting=false;files_problem(a,code,msg,PREPARE_FILESYSTEM);}
             /* The list of volumes only helps: sharing what is mounted works without it. */
             else if(kind==J_FS_INVENTORY&&a->fs_inventory_destination==USB_FILES){a->usb_volumes_known=true;a->usb_refresh_after=false;a->volume_count=0;a->dirty=true;}
+            /* The sheet says that no card was found, and offers to read again. */
+            else if(kind==J_FS_INVENTORY&&a->source_sheet){a->source_known=true;a->volume_count=0;a->dirty=true;}
             else if(a->usb_mounting){a->usb_mounting=false;files_problem(a,code,msg,USB_FILES);}
             else if(a->systems_mounting){a->systems_mounting=false;files_problem(a,code,msg,SYSTEMS);}
+            else if(a->copy_mounting){a->copy_mounting=false;files_problem(a,code,msg,LIST);}
+            else if(a->id_mounting){a->id_mounting=false;files_problem(a,code,msg,IDENTITY);}
             else files_problem(a,code,msg,kind==J_FS_INVENTORY&&a->fs_inventory_destination==TOOLS_EXPORT?TOOLS:file_error_return(kind));
         }
-        else if(kind==J_TOOLS_STATUS||kind==J_TOOLS_EXPORT){if(kind==J_TOOLS_STATUS){a->tools_known=false;a->logs_export_available=false;}files_problem(a,code,msg,TOOLS);}
+        else if(kind==J_TOOLS_STATUS||kind==J_TOOLS_EXPORT){if(kind==J_TOOLS_STATUS){a->tools_known=false;a->logs_export_available=false;}files_problem(a,code,msg,kind==J_TOOLS_EXPORT?HOME:TOOLS);}
         else if(kind==J_DISPLAY_STATUS||kind==J_DISPLAY_SET){a->display_known=false;a->display_hz=a->display_requested_hz=0;a->display_actual_hz=0;if(a->display_restoring)display_restore_failed(a);else files_problem(a,code,msg,DISPLAY_SETTINGS);}
         else if(kind>=J_USB_STATUS&&kind<=J_USB_STOP){a->usb_known=false;a->usb_expected=0;files_problem(a,code,msg,USB_FILES);}
         else if(kind==J_LIST&&a->install.pick_backup)files_problem(a,code,msg,INSTALL);
+        else if(kind==J_BACKUP_RENAME||kind==J_BACKUP_DELETE){memset(a->backup_new_name,0,sizeof(a->backup_new_name));files_problem(a,code,msg,DETAIL);}
         else problem(a,code,msg);
-    }else if(kind==J_INVENTORY){parse_inventory(a,&doc);a->inventory_ok=true;copy(a->status,sizeof(a->status),a->device?"Device inventory received":"Regular-file test environment");a->successful=true;a->message[0]=0;a->dirty=true;}
+    }else if(kind==J_INVENTORY){parse_inventory(a,&doc);a->inventory_ok=true;if(a->screen!=RESULT){copy(a->status,sizeof(a->status),a->device?"Device inventory received":"Regular-file test environment");a->successful=true;a->message[0]=0;}a->dirty=true;}
     else if(file_job(kind))next_files_job=complete_files_job(a,&doc,kind);
     else if(kind==J_TOOLS_STATUS||kind==J_TOOLS_EXPORT){if(!complete_tools_job(a,&doc,kind))files_problem(a,"INVALID_TOOLS_RESULT","The management helper returned an incomplete result.",TOOLS);}
     else if(kind==J_DISPLAY_SET){a->display_known=false;a->display_hz=0;a->display_actual_hz=0;next_display_status=true;}
@@ -2924,13 +3434,23 @@ static void complete_job(App*a){
     }
     else if(kind>=J_STORAGE_INVENTORY&&kind<=J_UMOUNT){parse_storage(a,&doc);screen(a,STORAGE);}
     else if(kind==J_LIST){a->message[0]=0;parse_list(a,&doc);screen(a,LIST);}
+    else if(kind==J_BACKUP_RENAME||kind==J_BACKUP_DELETE){
+        /* The list is read again: a renamed backup sorts elsewhere and a deleted one is gone. */
+        toast(a,kind==J_BACKUP_RENAME?"Backup renamed":"Backup deleted");a->toast_icon=A_BACKUP;a->successful=true;
+        memset(a->backup_new_name,0,sizeof(a->backup_new_name));a->backup_relist=true;
+    }
     else if(kind==J_BACKUP_PLAN||kind==J_RESTORE_PLAN||kind==J_WIPE_PLAN)parse_plan(a,&doc,kind);
-    else{a->successful=true;copy(a->status,sizeof(a->status),job_name(kind));copy(a->message,sizeof(a->message),kind==J_BACKUP?(a->plan_linux_v2?"Backup completed and verified. Userdata remains offline.":"Backup completed and verified."):(kind==J_VERIFY?"The backup passed integrity verification.":(kind==J_WIPE?"Userdata is now an empty ext4 filesystem. Boot and the SD snapshot were preserved.":"The reviewed restore completed and was verified. Userdata remains offline.")));a->plan_can_execute=a->plan_linux_admitted=false;a->token[0]=0;screen(a,RESULT);}
-    free(tok);free(j->output);j->output=NULL;a->dirty=true;
+    else{a->successful=true;
+        /* The title says what was done (2026-11-11: it was the name of the helper's command, "verify"). */
+        copy(a->status,sizeof(a->status),kind==J_BACKUP?"Backup saved":(kind==J_VERIFY?"Backup verified":(kind==J_WIPE?"Userdata wiped":"Restore completed")));
+        copy(a->message,sizeof(a->message),kind==J_BACKUP?(a->plan_linux_v2?"Backup completed and verified. Userdata remains offline.":"Backup completed and verified."):(kind==J_VERIFY?"The backup passed integrity verification.":(kind==J_WIPE?"Userdata is now an empty ext4 filesystem. Boot and the SD snapshot were preserved.":"The reviewed restore completed and was verified. Userdata remains offline.")));a->plan_can_execute=a->plan_linux_admitted=false;a->token[0]=0;screen(a,RESULT);}
+    free(tok);job_reply_done(a,ended);a->dirty=true;
+    if(a->backup_relist){a->backup_relist=false;a->list_for_verify=false;if(!start_job(a,J_LIST))screen(a,LIST);return;}
     if(kind==J_FS_WRITE&&a->fs_request.text_file[0]){unlink(a->fs_request.text_file);a->fs_request.text_file[0]=0;}
     if(next_files_job!=J_NONE)start_files_job(a,next_files_job);
     else if(kind==J_FS_INVENTORY&&a->id_list_after){a->id_list_after=false;start_identity_job(a,J_ID_LIST);}
     else if(a->systems_refresh_after){a->systems_refresh_after=false;start_systems_job(a,J_SYS_STATUS);}
+    else if(a->copy_list_after){a->copy_list_after=false;if(!start_copy_job(a,J_COPY_LIST))a->copies_known=true;}
     else if(kind==J_FS_INVENTORY&&a->prepare_unmounting&&a->screen==PREPARE_FILESYSTEM){
         a->prepare_unmounting=false;
         if(a->prepare_known&&!a->prepare_mounted&&a->prepare_token[0])start_job(a,a->prepare_job);
@@ -2943,8 +3463,17 @@ static void complete_job(App*a){
     else if(next_usb_status)start_usb_job(a,J_USB_STATUS);
     else if(kind==J_FS_LIST&&a->screen==FILE_BROWSER&&a->successful)browser_maybe_load(a);
 }
+/* A read that fills the page it was started for. When the user has left that page before it
+ * ends (Home, or a Back that needs no read), its end opens nothing: 2026-11-10, the list of
+ * volumes came back over the home page, and Back from it led home instead of the picker's menu. */
+static bool job_page_read(int kind){
+    return kind==J_FS_INVENTORY||kind==J_FS_LIST||kind==J_SYS_STATUS||kind==J_STORAGE_INVENTORY||kind==J_LIST||kind==J_USB_STATUS||kind==J_TOOLS_STATUS||
+           kind==J_FLASH_TARGETS||kind==J_INSTALL_STATUS||kind==J_ID_LIST||kind==J_ID_BACKUPS||kind==J_APLAN_PREPARE||kind==J_CARD_LIST||kind==J_COPY_LIST;
+}
+static void tap_action(App*a,int id);
 static void poll_job(App*a){
     Job*j=&a->job;if(!j->pid)return;char data[8192];
+    if(a->job_page_mark){a->job_page_mark=false;a->job_page=nav_page(a);}
     for(int stream=0;stream<2;stream++){
         int fd=stream?j->fderr:j->fdout;bool*eof=stream?&j->err_eof:&j->out_eof;if(*eof)continue;
         for(;;){ssize_t n=read(fd,data,sizeof(data));if(n==0){*eof=true;close(fd);break;}if(n<0){if(errno!=EAGAIN&&errno!=EWOULDBLOCK&&errno!=EINTR){*eof=true;close(fd);}break;}
@@ -2954,8 +3483,14 @@ static void poll_job(App*a){
     }
     if(!j->reaped){pid_t got=waitpid(j->pid,&j->status,WNOHANG);if(got==j->pid)j->reaped=true;}
     if(j->reaped&&j->out_eof&&j->err_eof){
+        a->job_orphan=a->job_orphan||(job_page_read(j->kind)&&nav_page(a)!=a->job_page);
+        a->job_completing=true;a->nav_hold=a->job_orphan;
         complete_job(a);
-        if(a->queued_action&&!a->job.pid){int id=a->queued_action;a->queued_action=0;if(a->queued_screen==a->screen)action(a,id);}
+        a->nav_hold=a->job_completing=false;
+        /* A job started by this end belongs to the page it ended on, and stays without one if this had none. */
+        if(a->job.pid)a->job_page=nav_page(a);else a->job_orphan=false;
+        /* A tap that waited for the read is made now, with its page transition. */
+        if(a->queued_action&&!a->job.pid){int id=a->queued_action;a->queued_action=0;if(a->queued_screen==a->screen)tap_action(a,id);}
     }
 }
 static bool relative_path(const char*source,char*out,size_t capacity){
@@ -3099,10 +3634,12 @@ static bool files_action(App*a,int id){
     }
     if(id>=A_FS_ENTRY_MENU&&id<A_FS_ENTRY_MENU+a->file_count){a->fs_selected=a->files[id-A_FS_ENTRY_MENU];a->fs_link_resolved=false;screen(a,FILE_INFO);start_files_job(a,J_FS_STAT);return true;}
     if(id>=A_KB_KEY&&id<A_KB_KEY+a->keyboard_count&&(a->screen==FILE_EDIT||a->screen==FILE_PROMPT)){insert_character(a,a->keyboard_keys[id-A_KB_KEY]);return true;}
-    if(id==A_BACK&&a->screen>=FILE_VOLUMES){
-        if(a->screen==FILE_VOLUMES)screen(a,HOME);
-        else if(a->screen==FILE_VOLUME)screen(a,FILE_VOLUMES);
-        else if(a->screen==FILE_BROWSER){if(strcmp(a->fs_path,"/")){parent_path(a->fs_path);reset_browser(a);start_files_job(a,J_FS_LIST);}else screen(a,FILE_VOLUME);}
+    if(id==A_BACK&&files_screen(a->screen)){
+        /* Files opens from Home, Systems, Wipe and Install: Back returns there (2026-11-10: it always went home). */
+        if(a->screen==FILE_VOLUMES)reopen(a,came_from(a,HOME));
+        /* The volume's page opened from a folder returns to the folder while the volume is still mounted. */
+        else if(a->screen==FILE_VOLUME){if(came_from(a,FILE_VOLUMES)==FILE_BROWSER&&current_volume(a)&&current_volume(a)->mounted)reopen(a,FILE_BROWSER);else screen(a,FILE_VOLUMES);}
+        else if(a->screen==FILE_BROWSER){if(strcmp(a->fs_path,"/")){parent_path(a->fs_path);reset_browser(a);start_files_job(a,J_FS_LIST);}else screen(a,came_from(a,FILE_VOLUME)==FILE_VOLUMES?FILE_VOLUMES:FILE_VOLUME);}
         else if(a->screen==FILE_CONFIRM)screen(a,a->fs_confirm_from);
         else if(a->screen==FILE_EDIT)leave_editor(a);
         else if(a->screen==FILE_DISCARD)screen(a,FILE_EDIT);
@@ -3225,7 +3762,7 @@ static void complete_usb_sync(App*a,const Json*j,bool ok){
     bool added=mounted>=0&&j->tokens[mounted].type==J_ARRAY&&mounted+1<json_next(j,mounted),removed=dropped>=0&&j->tokens[dropped].type==J_ARRAY&&dropped+1<json_next(j,dropped);
     usb_repositories(a,j);
     if(added)toast(a,"USB stick connected");else if(removed)toast(a,"USB stick removed");
-    if(removed&&!strncmp(a->volume_id,"usb-",4)&&a->screen>=FILE_VOLUMES){a->volume_index=-1;a->volume_id[0]=0;screen(a,FILE_VOLUMES);}
+    if(removed&&!strncmp(a->volume_id,"usb-",4)&&files_screen(a->screen)){a->volume_index=-1;a->volume_id[0]=0;screen(a,FILE_VOLUMES);}
     if((added||removed)&&a->screen==FILE_VOLUMES){a->fs_inventory_destination=FILE_VOLUMES;start_files_job(a,J_FS_INVENTORY);}
 }
 /* Rebinding the gadget with a stick in the port drops the controller out of host mode,
@@ -3306,6 +3843,22 @@ static void hotplug_tick(App*a){
     }
     access_poll(a);
     adb_poll(a);
+    sideload_poll(a);
+    reset_request_poll(a);
+    android_log_poll(a);
+    /* The restart asked for after the last installer: it counts down on the result page, and leaving the page stops it. */
+    if(a->zip_restart_at){
+        if(a->screen!=RESULT)a->zip_restart_at=0;
+        else if(a->now>=a->zip_restart_at){
+            /* A read that runs in the background is waited for: the restart follows it. */
+            if(!a->job.pid){
+                a->zip_restart_at=0;
+                if(a->allow_power&&!a->systems_reboot_blocked&&!a->install.reboot_blocked){if(a->settings_dirty)settings_save(a,true);a->power_intent=200;a->exit_code=200;a->running=false;}
+                a->dirty=true;
+            }
+        }else{unsigned int left=(unsigned int)((a->zip_restart_at-a->now+999)/1000);if(left!=a->zip_restart_shown){a->zip_restart_shown=left;a->dirty=true;}}
+    }
+    screenshot_poll(a);
     if(a->battery_refresh){a->battery_refresh=false;update_battery(a);a->dirty=true;}
     wifi_state_poll(a);
     if(a->toast_until&&a->now>=a->toast_until){a->toast_until=0;a->dirty=true;}
@@ -3343,6 +3896,9 @@ static void settings_load(App*a){
     apply_recovery_tz(a);
     char motion[12]={0};jstring(&j,0,"animation",motion,sizeof(motion));for(unsigned int n=0;n<ANIMATION_COUNT;n++)if(!strcmp(motion,animation_codes[n]))a->animation=n;
     a->nav_mode=(unsigned int)json_uint(&j,json_get(&j,0,"navigation"),0);if(a->nav_mode>NAV_OFF)a->nav_mode=NAV_GESTURES;
+    a->torch_saved=(unsigned int)json_uint(&j,json_get(&j,0,"torch"),0);if(a->torch_saved>255)a->torch_saved=0;
+    jstring(&j,0,"android_log",a->alog_seen,sizeof(a->alog_seen));
+    torch_remembered(a);
     a->lock_mode=(unsigned int)json_uint(&j,json_get(&j,0,"lock"),1);if(a->lock_mode>2)a->lock_mode=1;a->access_mode=json_uint(&j,json_get(&j,0,"access"),1)!=0;
     a->lock_enabled=json_bool(&j,json_get(&j,0,"password"),0)==1;a->lock_digits=json_bool(&j,json_get(&j,0,"password_digits"),0)==1;a->locked=a->lock_enabled&&a->lock_mode>0;
 }
@@ -3368,7 +3924,8 @@ static void settings_save(App*a,bool wait){
     char refresh[8],brightness[8];snprintf(refresh,sizeof(refresh),"%u",a->saved_hz);snprintf(brightness,sizeof(brightness),"%u",a->saved_brightness);
     char vibration[8],timeout[8],offset[16];snprintf(vibration,sizeof(vibration),"%u",a->vibration);snprintf(timeout,sizeof(timeout),"%u",a->screen_timeout_index);snprintf(offset,sizeof(offset),"%d",a->utc_offset);
     char lock[8],access[8],navigation[8];snprintf(lock,sizeof(lock),"%u",a->lock_mode);snprintf(access,sizeof(access),"%u",a->access_mode);snprintf(navigation,sizeof(navigation),"%u",a->nav_mode);
-    char*args[36]={a->python,"-B",(char*)settings_helper,"set","--navigation",navigation,"--animation",(char*)animation_codes[a->animation],"--lock",lock,"--access",access,"--language",(char*)language_codes[ui_language],"--theme",(char*)ui_theme->code,"--terminal",(char*)ui_terminal->code,"--storage",a->storage_prefers_usb?"usb":"sd","--refresh",refresh,"--brightness",brightness,"--vibration",vibration,"--timeout",timeout,"--utc-offset",offset,"--timezone",recovery_zone(a)?(char*)tz_zones[a->recovery_tz].id:"",NULL};
+    char torch[8];snprintf(torch,sizeof(torch),"%u",a->torch_saved>255?0u:a->torch_saved);
+    char*args[38]={a->python,"-B",(char*)settings_helper,"set","--navigation",navigation,"--animation",(char*)animation_codes[a->animation],"--lock",lock,"--access",access,"--language",(char*)language_codes[ui_language],"--theme",(char*)ui_theme->code,"--terminal",(char*)ui_terminal->code,"--storage",a->storage_prefers_usb?"usb":"sd","--refresh",refresh,"--brightness",brightness,"--vibration",vibration,"--timeout",timeout,"--utc-offset",offset,"--timezone",recovery_zone(a)?(char*)tz_zones[a->recovery_tz].id:"","--torch",torch,"--android-log",a->alog_seen,NULL};
     pid_t pid=fork();if(pid<0)return;
     if(!pid){(void)close_range(3,~0u,0);unsetenv("A22X_RECOVERY_LOCK_FD");execv(a->python,args);_exit(2);}
     if(wait)waitpid(pid,NULL,0);else a->settings_pid=pid;
@@ -3457,8 +4014,50 @@ static void lock_cancel(App*a){
     int kind=a->fs_prompt_kind;memset(a->fs_prompt,0,sizeof(a->fs_prompt));a->prompt_cursor=0;a->lock_note[0]=0;
     if(kind==J_LOCK_ENTER)screen(a,LOCKSCREEN);else if(kind==J_LOCK_ACCESS)screen(a,ACCESS_REQUEST);else lock_done(a);
 }
-static void action(App*a,int id){
+/* A page seen before, opened again with the read that keeps it current. */
+static void reopen(App*a,enum Screen s){
+    screen(a,s);if(a->screen!=s)return;
+    if(s==SYSTEMS)start_systems_job(a,J_SYS_STATUS);
+    else if(s==FILE_BROWSER)start_files_job(a,J_FS_LIST);
+    /* Root is read again: what was flashed meanwhile ("Remove root") changed what BOOT carries. */
+    else if(s==ROOT_PAGE){a->root_known=false;start_root_job(a,J_ROOT_LIST);}
+    /* The card is read again: it may have been partitioned, mounted or pulled out meanwhile. */
+    else if(s==CARD_PAGE){a->card_known=false;start_card_job(a,J_CARD_LIST);}
+}
+/* Settings back to their defaults (2026-11-11). The language and the time zone stay: they say who
+ * uses the phone, not how the recovery behaves. So do the password, the lock mode and the access
+ * from a computer: a reset of looks must neither lock the owner out nor open the phone. Brightness
+ * and refresh rate are no longer kept, so the next start of the recovery comes up with its own. */
+static void settings_reset(App*a){
+    (void)theme_select(a,themes[0].code);(void)terminal_select("auto");a->storage_prefers_usb=false;
+    a->vibration=2;a->screen_timeout_index=SCREEN_TIMEOUT_DEFAULT;a->animation=0;a->nav_mode=NAV_GESTURES;
+    a->saved_hz=a->saved_brightness=0;
+    settings_changed(a);toast(a,"The settings are back to their defaults");
+}
+/* A finished backup is renamed or deleted on its page; the settings are reset on theirs. */
+static bool manage_action(App*a,int id){
+    if(a->screen==FILE_PROMPT&&a->fs_prompt_kind==J_BACKUP_NAME){
+        bool done=(id==A_FS_PROMPT_NEXT||id==A_KB_ENTER)&&backup_name_ok(a,a->fs_prompt);
+        if(id==A_BACKUP_NAME_FIELD||((id==A_FS_PROMPT_NEXT||id==A_KB_ENTER)&&!done))return true;
+        if(id!=A_BACK&&!done)return false; /* The keys of the keyboard. */
+        if(done)copy(a->backup_new_name,sizeof(a->backup_new_name),a->fs_prompt);
+        memset(a->fs_prompt,0,sizeof(a->fs_prompt));a->prompt_cursor=0;a->fs_prompt_kind=0;screen(a,DETAIL);
+        if(done&&!start_job(a,J_BACKUP_RENAME))memset(a->backup_new_name,0,sizeof(a->backup_new_name));
+        return true;
+    }
+    if(id==A_SETTINGS_RESET&&a->screen==TOOLS){if(ui_free(a))settings_reset(a);return true;}
+    if(a->screen!=DETAIL||a->job.pid||a->selected_backup<0||a->selected_backup>=a->backup_count)return false;
+    if(id==A_BACKUP_RENAME){
+        a->fs_prompt_kind=J_BACKUP_NAME;copy(a->fs_prompt,sizeof(a->fs_prompt),a->backups[a->selected_backup].name);
+        a->prompt_cursor=strlen(a->fs_prompt);a->prompt_scroll=0;screen(a,FILE_PROMPT);return true;
+    }
+    if(id==A_BACKUP_DELETE){(void)start_job(a,J_BACKUP_DELETE);return true;}
+    return false;
+}
+static void action_run(App*a,int id){
     if(a->screen==POWER_MENU){
+        if(id==A_TORCH){haptic(a,1);torch_set(a,!a->torch_on,a->torch_level);return;}
+        if(id==A_TORCH_DOWN||id==A_TORCH_UP){haptic(a,1);torch_step(a,id==A_TORCH_UP?1:-1);return;}
         int intent=id==A_REBOOT?200:(id==A_SHUTDOWN?201:(id==A_REBOOT_RECOVERY?202:(id==A_REBOOT_DOWNLOAD?203:0)));
         if(!intent){a->screen=a->menu_return;a->button_count=0;a->focus=-1;a->dirty=true;return;}
         if(!a->allow_power||a->job.pid||(intent==200&&(a->systems_reboot_blocked||a->install.reboot_blocked)))return;
@@ -3473,9 +4072,18 @@ static void action(App*a,int id){
     }
     if(lock_prompting(a)){if(id==A_BACK)lock_cancel(a);else if(id==A_LOCK_KEYBOARD){a->lock_keyboard=!a->lock_keyboard;a->dirty=true;}else if(id==A_FS_PROMPT_NEXT||id==A_KB_ENTER)lock_submit(a);else(void)files_action(a,id);return;}
     if(a->locked)return;
+    /* The flashlight waits for nothing: it is no job and touches no storage. */
+    if(id==A_TORCH){torch_set(a,!a->torch_on,a->torch_level);return;}
+    if(id==A_TORCH_DOWN||id==A_TORCH_UP){torch_step(a,id==A_TORCH_UP?1:-1);return;}
+    if(id==A_TORCH_ON||id==A_TORCH_OFF){if((id==A_TORCH_ON)!=a->torch_on)torch_set(a,id==A_TORCH_ON,a->torch_level);return;}
+    /* Stopping the restart that counts down after installers waits for nothing either. */
+    if(id==A_ZIP_STAY){a->zip_restart_at=0;a->dirty=true;return;}
+    /* A finger on the bar takes the level under it; chosen with the keys, the bar is one step brighter. */
+    if(id==A_TORCH_BAR){if(a->tapped)torch_choose(a,torch_bar_level(a,a->pressed_rect,a->pointer_x));else torch_step(a,1);return;}
     /* Going back and local settings need no job; anything else waits for a read in progress. */
     bool local=id==A_BACK||(id>=A_NAV_MODE&&id<A_NAV_MODE+3)||id==A_LANGUAGE||id==A_THEME||id==A_HOME_THEME||id==A_TERMINAL_THEME||id==A_ANIMATIONS||(id>=A_ANIMATION_ITEM&&id<A_ANIMATION_ITEM+(int)ANIMATION_COUNT)||(id>=A_TERMINAL_THEME_ITEM&&id<A_TERMINAL_THEME_ITEM+TERMINAL_SCHEME_COUNT+THEME_FILE_MAX)||(id>=A_LANGUAGE_ITEM&&id<A_LANGUAGE_ITEM+LANGUAGE_COUNT)||(id>=A_THEME_ITEM&&id<A_THEME_ITEM+THEME_COUNT+THEME_FILE_MAX)||(id>=A_VIBRATION&&id<A_VIBRATION+4)||id==A_TZ_DOWN||id==A_TZ_UP||(id>=A_TIMEOUT&&id<=A_TIMEOUT+5);
-    if(a->job.pid&&job_quiet(a->job.kind)&&!local&&!a->preview){a->queued_action=id;a->queued_screen=a->screen;return;}
+    if(a->job.pid&&ui_free(a)&&!local&&id!=A_SOURCE_CANCEL&&!a->preview){a->queued_action=id;a->queued_screen=a->screen;return;}
+    if(source_action(a,id))return;
     if(id>=A_VIBRATION&&id<A_VIBRATION+4){a->vibration=(unsigned int)(id-A_VIBRATION);haptic(a,1);settings_changed(a);return;}
     if(id>=A_NAV_MODE&&id<A_NAV_MODE+3){a->nav_mode=(unsigned int)(id-A_NAV_MODE);settings_changed(a);return;}
     if(id==A_LANGUAGE){screen(a,LANGUAGE);return;}
@@ -3519,8 +4127,20 @@ static void action(App*a,int id){
     if(!a->job.pid&&identity_action(a,id))return;
     if(android_plan_action(a,id))return;
     if(wipe_action(a,id))return;
+    if(android_log_action(a,id))return;
+    if(root_action(a,id))return;
+    if(manage_action(a,id))return;
+    if(card_action(a,id))return;
+    if(copies_action(a,id))return;
+    if(zip_action(a,id))return;
+    if(samsung_action(a,id))return;
     if((id==A_CHARGER_ON||id==A_CHARGER_OFF)&&!a->job.pid){start_charger_job(a,id==A_CHARGER_ON?1:2);return;}
-    if(a->job.pid&&!(id==A_BACK&&(a->job.kind==J_DISPLAY_SET||a->job.kind==J_DISPLAY_STATUS)))return;
+    if(a->job.pid&&!(id==A_BACK&&(a->job.kind==J_DISPLAY_SET||a->job.kind==J_DISPLAY_STATUS))){
+        /* Back pressed while the page is still being read is not lost: it follows the read (2026-11-10:
+           it was dropped, the arrow answered with a buzz and nothing else). */
+        if(id==A_BACK&&ui_free(a)&&!a->preview){a->queued_action=A_BACK;a->queued_screen=a->screen;}
+        return;
+    }
     if(theme_action(a,id))return;
     if(flash_action(a,id))return;
     if(locale_action(a,id))return;
@@ -3533,9 +4153,16 @@ static void action(App*a,int id){
     if(id==A_USB_EJECT){(void)start_usb_eject(a);return;}
     if(id>=A_BACKUP_ITEM&&id<A_BACKUP_ITEM+a->backup_count){a->selected_backup=id-A_BACKUP_ITEM;screen(a,DETAIL);return;}
     switch(id){
-    case A_BACK:if(a->screen==DETAIL)screen(a,LIST);else if(a->screen==PLAN)screen(a,a->plan_restore||a->plan_wipe?DETAIL:BACKUP);else if(a->screen==PREPARE_FILESYSTEM){int prepared=a->prepare_job;a->prepare_job=J_NONE;a->prepare_unmounting=false;screen(a,prepared==J_BACKUP_PLAN?BACKUP:DETAIL);}else if(a->screen==POWER_CONFIRM)screen(a,POWER);else if(a->screen==OS_MENU)screen(a,HOME);else if(a->screen==DISPLAY_SETTINGS)screen(a,TOOLS);else screen(a,HOME);break;
-    case A_BACKUP:if(a->fs_dirty||a->fs_new_file){files_problem(a,"UNSAVED_EDITS","Save or explicitly discard the edited text before leaving the editor.",FILE_EDIT);break;}if(strcmp(a->profile,"linux")&&strcmp(a->profile,"recovery"))copy(a->profile,sizeof(a->profile),"linux");screen(a,BACKUP);break;
+    case A_BACK:if(a->screen==DETAIL)screen(a,LIST);else if(a->screen==PLAN)screen(a,a->plan_restore||a->plan_wipe?DETAIL:BACKUP);else if(a->screen==PREPARE_FILESYSTEM){int prepared=a->prepare_job;a->prepare_job=J_NONE;a->prepare_unmounting=false;screen(a,prepared==J_BACKUP_PLAN?BACKUP:DETAIL);}else if(a->screen==POWER_CONFIRM)screen(a,POWER);else if(a->screen==OS_MENU)screen(a,HOME);else if(a->screen==DISPLAY_SETTINGS)screen(a,TOOLS);else reopen(a,came_from(a,HOME));break;
+    case A_BACKUP:if(a->fs_dirty||a->fs_new_file){files_problem(a,"UNSAVED_EDITS","Save or explicitly discard the edited text before leaving the editor.",FILE_EDIT);break;}if(strcmp(a->profile,"linux")&&strcmp(a->profile,"recovery"))copy(a->profile,sizeof(a->profile),"linux");screen(a,BACKUP);
+        /* Whether userdata is Android's decides what the page offers first (2026-11-11: it offered a Linux backup on a phone with Android). */
+        if(!a->systems_known&&a->distro_helper[0]&&!a->preview&&(a->device||a->fixture[0]))(void)start_systems_job(a,J_SYS_STATUS);
+        break;
     case A_RESTORE:case A_VERIFY:
+        a->page_scroll=0;
+        /* 2026-11-11: two categories. Android's copies are looked for on every mounted card; with no
+           storage for Linux snapshots the page opens there, so a copy on a stick is found at once. */
+        if(a->list_category==1||(a->device&&!a->preview&&access(a->repositories[a->store],F_OK))){a->list_for_verify=id==A_VERIFY;open_copies(a);break;}
         /* Restore opens without backup storage too: a partition image needs none. */
         if(id==A_RESTORE&&a->device&&!a->preview&&access(a->repositories[a->store],F_OK)){a->list_for_verify=a->install.pick_backup=false;a->backup_count=a->list_page=0;copy(a->message,sizeof(a->message),"Choose an SD card or USB stick with backups, or restore a partition image.");screen(a,LIST);break;}
         if(!destination_ready(a))break;
@@ -3552,9 +4179,9 @@ static void action(App*a,int id){
         if(a->prepare_mounted){if(!a->prepare_owned)break;FileRequest q={.kind=J_FS_UNMOUNT};copy(q.volume,sizeof(q.volume),"userdata");copy(q.volume_token,sizeof(q.volume_token),a->prepare_token);a->prepare_unmounting=true;start_files_request(a,&q);}
         else start_job(a,a->prepare_job);
         break;
-    case A_VERIFY_ONE:start_job(a,J_VERIFY);break;
+    case A_VERIFY_ONE:if(start_job(a,J_VERIFY))a->result_return=DETAIL;break; /* Back to the backup that was checked. */
     case A_CONFIRM:if(a->plan_can_execute)start_job(a,a->plan_wipe?J_WIPE:(a->plan_restore?J_RESTORE:J_BACKUP));break;
-    case A_DONE:a->systems_remove_offer=false;screen(a,a->result_return);if(a->result_return==DISPLAY_SETTINGS){a->display_note[0]=0;start_display_job(a,J_DISPLAY_STATUS);}else if(a->result_return==PREPARE_FILESYSTEM){a->prepare_known=false;a->fs_inventory_destination=PREPARE_FILESYSTEM;start_files_job(a,J_FS_INVENTORY);}else if(a->result_return==USB_FILES)start_usb_job(a,J_USB_STATUS);break;
+    case A_DONE:a->systems_remove_offer=false;a->zip_ran=false;a->zip_restart_at=0;screen(a,a->result_return);if(a->result_return==DISPLAY_SETTINGS){a->display_note[0]=0;start_display_job(a,J_DISPLAY_STATUS);}else if(a->result_return==PREPARE_FILESYSTEM){a->prepare_known=false;a->fs_inventory_destination=PREPARE_FILESYSTEM;start_files_job(a,J_FS_INVENTORY);}else if(a->result_return==USB_FILES)start_usb_job(a,J_USB_STATUS);else if(a->result_return==CARD_PAGE&&a->screen==CARD_PAGE){a->card_known=false;start_card_job(a,J_CARD_LIST);}break;
     case A_USB_FILES:case A_USB_REFRESH:
         if(id==A_USB_FILES)a->page_scroll=0;
         a->usb_volumes_known=false;
@@ -3582,11 +4209,19 @@ static void action(App*a,int id){
     case A_TOOLS_DEST_NEXT:tools_select_volume(a,next_writable_volume(a,a->tools_volume_index));a->dirty=true;break;
     case A_TOOLS_EXPORT_CONFIRM:if(a->tools_known&&a->logs_export_available)start_tools_job(a,J_TOOLS_EXPORT);break;
     case A_LIST_PREV:if(a->list_page>0)a->list_page--;a->dirty=true;break;
-    case A_LIST_NEXT:if((a->list_page+1)*6<a->backup_count)a->list_page++;a->dirty=true;break;
+    case A_LIST_NEXT:if((a->list_page+1)*list_rows(a)<a->backup_count)a->list_page++;a->dirty=true;break;
     case A_REBOOT:case A_SHUTDOWN:case A_REBOOT_RECOVERY:case A_REBOOT_DOWNLOAD:if(a->allow_power&&(id!=A_REBOOT||(!a->systems_reboot_blocked&&!a->install.reboot_blocked))){a->power_intent=id==A_REBOOT?200:(id==A_SHUTDOWN?201:(id==A_REBOOT_RECOVERY?202:203));screen(a,POWER_CONFIRM);}break;
     case A_POWER_CONFIRM:if(a->allow_power&&ui_free(a)&&a->power_intent>=200&&a->power_intent<=203&&(a->power_intent!=200||(!a->systems_reboot_blocked&&!a->install.reboot_blocked))){if(a->settings_dirty)settings_save(a,true);a->exit_code=a->power_intent;a->running=false;}break;
     default:break;
     }
+}
+/* Every tap, key and gesture ends here. Going back is marked for the trail of pages, and a read
+ * started by the action belongs to the page the action ends on. */
+static void action(App*a,int id){
+    bool was=a->nav_backing;a->nav_backing=id==A_BACK;
+    action_run(a,id);
+    a->nav_backing=was;
+    if(a->job_page_mark&&a->job.pid){a->job_page_mark=false;a->job_page=nav_page(a);}
 }
 static int button_at(App*a,int x,int y){for(int i=0;i<a->button_count;i++)if(a->buttons[i].enabled&&inside(a->buttons[i].r,x,y))return i;return -1;}
 /* Page transitions. Both pages are finished frames, so a frame costs two copies of the panel,
@@ -3595,7 +4230,7 @@ static float ease_out(float t){float u=1.f-t;return 1.f-u*u*u;}
 static float ease_in_out(float t){if(t<.5f)return 4.f*t*t*t;float u=2.f-2.f*t;return 1.f-u*u*u*.5f;}
 static void transition_cancel(App*a){if(a->tr.active||a->tr.armed)a->dirty=true;a->tr.active=a->tr.armed=false;}
 static void transition_arm(App*a,enum TransitionKind kind,unsigned int duration,Rect origin,int glyph,int cx,int cy){
-    a->tr.kind=kind;a->tr.duration=duration;a->tr.origin=origin;a->tr.glyph=glyph;a->tr.cx=cx;a->tr.cy=cy;a->tr.blur=false;
+    a->tr.kind=kind;a->tr.duration=duration;a->tr.origin=origin;a->tr.glyph=glyph;a->tr.cx=cx;a->tr.cy=cy;a->tr.blur=false;a->tr.page_from=a->tr.page_to=-1;
     memcpy(a->tr.from,a->pixels,(size_t)NW*NH*sizeof(uint32_t));a->tr.active=false;a->tr.armed=true;a->dirty=true;
 }
 static bool transition_soft_frames(App*a){
@@ -3608,7 +4243,7 @@ static void transition_start(App*a){
     /* Blur is worked out once here; each frame then only mixes finished pictures. */
     if(a->tr.kind==TR_DISSOLVE||a->tr.blur){
         if(!transition_soft_frames(a)){a->tr.blur=false;if(a->tr.kind==TR_DISSOLVE)a->tr.kind=TR_FADE;}
-        else{if(a->tr.kind!=TR_CLOSE)canvas_blur(a->tr.soft_from,a->tr.from);if(a->tr.kind!=TR_OPEN)canvas_blur(a->tr.soft_to,a->tr.to);}
+        else{canvas_blur(a->tr.soft_from,a->tr.from);canvas_blur(a->tr.soft_to,a->tr.to);}
     }
     a->tr.armed=false;a->tr.active=true;a->tr.started=milliseconds();a->tr.frames=0;a->tr.worst=0;
 }
@@ -3635,20 +4270,39 @@ static void transition_circle(App*a,float t){
 }
 /* The page opens out of the tapped tile and closes back into it, with the tile's glyph growing
  * from the tile to the middle of the screen and fading into the page. */
+/* How far one picture has given way to the other, 0..255, while u runs from start to end. */
+static unsigned int transition_ramp(float u,float start,float end){
+    float v=(u-start)/(end-start);v=v<=0?0:(v>=1?1:v);return (unsigned int)(v*v*(3.f-2.f*v)*255.f+.5f);
+}
 static void transition_zoom(App*a,float t){
     bool opening=a->tr.kind==TR_OPEN;float grown=opening?ease_out(t):1.f-ease_out(t);
-    const uint32_t*inner=opening?a->tr.to:a->tr.from,*outer=opening?a->tr.from:a->tr.to,*soft=a->tr.blur?(opening?a->tr.soft_from:a->tr.soft_to):NULL;Rect o=a->tr.origin;
-    unsigned int softness=(unsigned int)(grown*255.f);static uint32_t line[NW];
+    const uint32_t*inner=opening?a->tr.to:a->tr.from,*outer=opening?a->tr.from:a->tr.to;Rect o=a->tr.origin;
+    /* With blur (2026-11-10: it could not be told from the plain zoom, only the shrinking rim
+       behind the page was mixed) the page behind frosts over at once, and the page itself comes
+       out of the frost while it grows. Closing is the same film run backwards. */
+    const uint32_t*soft_outer=NULL,*soft_inner=NULL;unsigned int frost=0,focus=255;
+    if(a->tr.blur){
+        float u=opening?t:1.f-t;soft_outer=opening?a->tr.soft_from:a->tr.soft_to;soft_inner=opening?a->tr.soft_to:a->tr.soft_from;
+        frost=transition_ramp(u,0.f,opening?.3f:.45f);focus=transition_ramp(u,.2f,.85f);
+    }
+    static uint32_t line[NW],clear[NW];
     float left=(float)nx(o.x)*(1.f-grown),top=(float)nx(o.y)*(1.f-grown),right=(float)nx(o.x+o.w)+((float)NW-(float)nx(o.x+o.w))*grown,bottom=(float)nx(o.y+o.h)+((float)NH-(float)nx(o.y+o.h))*grown,radius=54.f*(1.f-grown);
     for(int y=0;y<NH;y++){
         uint32_t*out=a->pixels+(size_t)y*NW;const uint32_t*in=inner+(size_t)y*NW,*away=outer+(size_t)y*NW;float py=(float)y+.5f;
-        const uint32_t*behind=soft?soft+(size_t)y*NW:NULL;
-        if(py<top||py>=bottom){if(soft)canvas_mix_run(out,away,behind,NW,softness);else memcpy(out,away,(size_t)NW*4u);continue;}
+        const uint32_t*behind=soft_outer?soft_outer+(size_t)y*NW:NULL;bool mixing=frost>0&&frost<255;
+        /* A finished picture is copied; only a frame in between is mixed. */
+        if(frost>=255)away=behind;
+        if(py<top||py>=bottom){if(mixing)canvas_mix_run(out,away,behind,NW,frost);else memcpy(out,away,(size_t)NW*4u);continue;}
         float edge=py-top<bottom-py?py-top:bottom-py,dy=radius-edge,inset=dy>0?radius-sqrtf(radius*radius-dy*dy):0;
-        if(soft){
+        if(focus<255){
+            /* The page between its two edges, with the pixel either side that the edges blend. */
+            const uint32_t*frosted=soft_inner+(size_t)y*NW;int l=(int)(left+inset)-1,r=(int)(right-inset)+2;l=l<0?0:l;r=r>NW?NW:r;
+            if(!focus)in=frosted;else if(r>l){canvas_mix_run(clear+l,frosted+l,in+l,r-l,focus);in=clear;}
+        }
+        if(mixing){
             /* Only what stays visible beside the page needs mixing. */
             int l=(int)(left+inset)+2,r=(int)(right-inset)-1;l=l>NW?NW:l;r=r<0?0:r;
-            canvas_mix_run(line,away,behind,l,softness);canvas_mix_run(line+r,away+r,behind+r,NW-r,softness);
+            canvas_mix_run(line,away,behind,l,frost);canvas_mix_run(line+r,away+r,behind+r,NW-r,frost);
             transition_row(out,line,in,left+inset,right-inset);
         }else transition_row(out,away,in,left+inset,right-inset);
     }
@@ -3663,7 +4317,11 @@ static void transition_zoom(App*a,float t){
     if(y0<0)y0=0;
     if(x1>NW)x1=NW;
     if(y1>NH)y1=NH;
-    for(int y=y0;y<y1;y++){uint32_t*row=a->pixels+(size_t)y*NW;const uint32_t*page=inner+(size_t)y*NW;for(int x=x0;x<x1;x++)row[x]=canvas_blend(page[x],row[x],alpha);}
+    /* The glyph fades into the page as it is drawn at this moment, frosted or clear. */
+    for(int y=y0;y<y1;y++){
+        uint32_t*row=a->pixels+(size_t)y*NW;const uint32_t*page=inner+(size_t)y*NW,*frosted=focus<255?soft_inner+(size_t)y*NW:NULL;
+        for(int x=x0;x<x1;x++)row[x]=canvas_blend(frosted?canvas_blend(frosted[x],page[x],focus):page[x],row[x],alpha);
+    }
 }
 static void transition_slide(App*a,float t,bool back){
     int moved=(int)(ease_out(t)*(float)NW);moved=moved>NW?NW:moved;
@@ -3690,7 +4348,7 @@ static void transition_compose(App*a,float t){
 static bool transition_frame(App*a,uint64_t now){
     uint64_t elapsed=now>a->tr.started?now-a->tr.started:0;float t=a->tr.duration?(float)elapsed/(float)a->tr.duration:1.f;
     if(t>=1.f){
-        fprintf(stderr,"[recovery-ui:transition] kind=%d frames=%u elapsed_ms=%" PRIu64 " worst_ms=%" PRIu64 "\n",(int)a->tr.kind,a->tr.frames,elapsed,a->tr.worst);
+        fprintf(stderr,"[recovery-ui:transition] kind=%d frames=%u elapsed_ms=%" PRIu64 " worst_ms=%" PRIu64 " from=%d to=%d\n",(int)a->tr.kind,a->tr.frames,elapsed,a->tr.worst,a->tr.page_from,a->tr.page_to);
         a->tr.active=false;return false;
     }
     transition_compose(a,t);a->dirty=true;return true;
@@ -3714,8 +4372,10 @@ static void transition_after(App*a,int id,int before,const Theme*theme){
     case ANIM_SLIDE:transition_arm(a,back?TR_SLIDE_BACK:TR_SLIDE,TRANSITION_BACK_MS,origin,0,0,0);break;
     case ANIM_FADE:transition_arm(a,TR_FADE,TRANSITION_FADE_MS,origin,0,0,0);break;
     case ANIM_DISSOLVE:transition_arm(a,TR_DISSOLVE,TRANSITION_DISSOLVE_MS,origin,0,0,0);break;
-    default:transition_arm(a,back?TR_CLOSE:TR_OPEN,back?TRANSITION_BACK_MS:TRANSITION_OPEN_MS,origin,glyph,0,0);a->tr.blur=a->animation==ANIM_BLUR;break;
+    default:{bool blur=a->animation==ANIM_BLUR;
+        transition_arm(a,back?TR_CLOSE:TR_OPEN,blur?(back?TRANSITION_BLUR_BACK_MS:TRANSITION_BLUR_OPEN_MS):(back?TRANSITION_BACK_MS:TRANSITION_OPEN_MS),origin,glyph,0,0);a->tr.blur=blur;break;}
     }
+    a->tr.page_from=before;a->tr.page_to=(int)a->screen;
 }
 #define UNLOCK_SWIPE 150
 static void lock_ask(App*a){lock_prompt(a,J_LOCK_ENTER);if(a->animate&&a->animation!=ANIM_OFF)transition_arm(a,TR_FADE,TRANSITION_FADE_MS,(Rect){0,0,0,0},0,0,0);}
@@ -3732,15 +4392,21 @@ static void tap_action(App*a,int id);
 static void nav_home(App*a){
     if(a->screen==HOME)return;
     int back=nav_back_action(a);if(!back)return;
-    if(a->fs_dirty||a->fs_new_file||lock_prompting(a)||(terminal_screen(a)&&terminal_session_open(a))){tap_action(a,back);return;}
-    a->flash_pick=false;a->theme_pick=HOME;a->install.pick_source=false;a->install.pick_backup=false;a->systems_pick_manifest=a->systems_pick_script=false;a->fs_prompt_kind=0;
+    if(a->fs_dirty||a->fs_new_file||lock_prompting(a)||(terminal_screen(a)&&terminal_session_open(a))){
+        bool shell=terminal_screen(a);tap_action(a,back);
+        /* The shell is left as Back leaves it; then it is Home all the same, not the page under it. */
+        if(!shell||terminal_screen(a)||a->screen==HOME)return;
+    }
+    a->flash_pick=a->samsung_pick=a->stock_boot_pick=a->zip_pick=a->rom_pick=a->source_sheet=false;a->theme_pick=HOME;a->install.pick_source=false;a->install.pick_backup=false;a->systems_pick_manifest=a->systems_pick_script=false;a->fs_prompt_kind=0;
+    a->flash_after_targets=a->catalog_saving=a->wifi_from_catalog=false;a->catalog_return=HOME;a->catalog_only=0;
+    memset(a->root_superkey,0,sizeof(a->root_superkey));a->root_key_tool=-1;
     int before=(int)a->screen;const Theme*theme=ui_theme;screen(a,HOME);transition_after(a,A_BACK,before,theme);
 }
 static void tap_action(App*a,int id){
     if(id==A_NAV_BACK){id=nav_back_action(a);if(!id)return;}
     else if(id==A_NAV_HOME){nav_home(a);return;}
     else if(id==A_NAV_TERMINAL){if(terminal_screen(a))return;id=A_TERMINAL;}
-    int before=(int)a->screen;const Theme*theme=ui_theme;action(a,id);transition_after(a,id,before,theme);
+    int before=(int)a->screen;const Theme*theme=ui_theme;a->tapped=true;action(a,id);a->tapped=false;transition_after(a,id,before,theme);
 }
 /* What only time can tell: Power held long enough, a finger resting after a swipe up. */
 static void held_tick(App*a,bool dark){
@@ -3998,8 +4664,17 @@ static bool screen_timeout_tick(App*a){
 }
 static void key_event(App*a,unsigned code,int value){
     a->last_activity=a->now;
+    if(code==KEY_VOLUMEDOWN){if(value==1){a->voldown_held=true;a->voldown_at=a->now;a->voldown_focus=a->focus;}else if(value==0)a->voldown_held=false;}
     if(code==KEY_POWER){
-        if(value==1&&!a->display_power_down){a->display_power_down=true;a->display_power_at=a->now;cancel_pointer(a);}
+        if(value==1&&!a->display_power_down){a->display_power_down=true;a->display_power_at=a->now;cancel_pointer(a);
+            /* 2026-11-11: Volume down first and then Power is a screenshot too, as on Android where the two
+               are pressed together (only Power first was taken, so half the attempts moved the focus and
+               blanked the screen instead). The step the volume key made is taken back before the picture. */
+            if(a->voldown_held&&a->now>=a->voldown_at&&a->now-a->voldown_at<=SHOT_CHORD_MS&&!(a->display_blank_known&&a->display_blanked)){
+                a->power_held=true;if(a->focus!=a->voldown_focus){a->focus=a->voldown_focus;render(a);}
+                take_screenshot(a);
+            }
+        }
         else if(value==0&&a->display_power_down){
             bool short_press=!a->power_held&&a->now>=a->display_power_at&&a->now-a->display_power_at<=POWER_SHORT_PRESS_MS;
             a->display_power_down=false;a->power_held=false;
@@ -4066,13 +4741,127 @@ static void handle_input(App*a,Input*i,const Display*d){
     }
 }
 static long sysfs_number(const char*path,long fallback){FILE*f=fopen(path,"r");long value=fallback;if(f){if(fscanf(f,"%ld",&value)!=1)value=fallback;fclose(f);}return value;}
+/* The battery as the kernel shows it, and its curve from the device tree: the open-circuit voltage
+   at each level, and the cell's resistance. A22X_RECOVERY_BATTERY names a folder that holds both for
+   tests. */
+#define BATTERY_POINTS 40
+static struct{unsigned int uv[BATTERY_POINTS],percent[BATTERY_POINTS],count;long resistance;bool read;char folder[PATH_LEN],tree[PATH_LEN];}battery_curve;
+static long battery_number(const char*name,long fallback){char path[PATH_LEN+48];snprintf(path,sizeof(path),"%s/%s",battery_curve.folder,name);return sysfs_number(path,fallback);}
+static void battery_curve_read(void){
+    if(battery_curve.read)return;
+    battery_curve.read=true;battery_curve.count=0;battery_curve.resistance=0;
+    const char*test=getenv("A22X_RECOVERY_BATTERY");
+    copy(battery_curve.folder,sizeof(battery_curve.folder),test&&*test?test:"/sys/class/power_supply/battery");
+    copy(battery_curve.tree,sizeof(battery_curve.tree),test&&*test?test:"/sys/firmware/devicetree/base/battery");
+    char path[PATH_LEN+48];unsigned char data[BATTERY_POINTS*8];
+    snprintf(path,sizeof(path),"%s/ocv-capacity-table-0",battery_curve.tree);
+    int fd=open(path,O_RDONLY|O_CLOEXEC);ssize_t n=fd>=0?read(fd,data,sizeof(data)):-1;if(fd>=0)close(fd);
+    #define BE32(p) (((unsigned int)(p)[0]<<24)|((unsigned int)(p)[1]<<16)|((unsigned int)(p)[2]<<8)|(unsigned int)(p)[3])
+    for(ssize_t at=0;at+8<=n;at+=8){
+        unsigned int uv=BE32(data+at),percent=BE32(data+at+4),k=battery_curve.count;
+        /* From full to empty, each point below the one before: anything else is no curve. */
+        if(percent>100||uv<2000000||uv>5000000||(k&&(uv>=battery_curve.uv[k-1]||percent>=battery_curve.percent[k-1]))){battery_curve.count=0;break;}
+        battery_curve.uv[k]=uv;battery_curve.percent[k]=percent;battery_curve.count++;
+    }
+    snprintf(path,sizeof(path),"%s/factory-internal-resistance-micro-ohms",battery_curve.tree);
+    fd=open(path,O_RDONLY|O_CLOEXEC);n=fd>=0?read(fd,data,4):-1;if(fd>=0)close(fd);
+    if(n==4){unsigned int r=BE32(data);if(r>=10000&&r<=1000000)battery_curve.resistance=(long)r;}
+    #undef BE32
+}
+/* The level the curve gives for an open-circuit voltage, between its points. */
+static double battery_curve_level(long uv){
+    unsigned int n=battery_curve.count;
+    if(n<2)return -1;
+    if(uv>=(long)battery_curve.uv[0])return battery_curve.percent[0];
+    for(unsigned int k=1;k<n;k++)if(uv>=(long)battery_curve.uv[k]){
+        double span=(double)battery_curve.uv[k-1]-(double)battery_curve.uv[k];
+        return battery_curve.percent[k]+((double)uv-(double)battery_curve.uv[k])/span*((double)battery_curve.percent[k-1]-(double)battery_curve.percent[k]);
+    }
+    return battery_curve.percent[n-1];
+}
+/* 2026-11-11, the owner: "Android shows 90 %, here 15 %". The cell stood at 3.79 V, about 30 %: the
+   kernel counts charge from one reading of the voltage taken under load while the phone starts, and in
+   the flat middle of the curve that reading can be 30 points off (15, then 9, then 20 after a
+   restart); Android showed a number it had kept from days before. So the interface keeps its own
+   estimate. The kernel's counted charge gives the changes. Where the charge stands comes from the
+   voltage, taken back to open circuit with the measured current and the cell's resistance, and
+   smoothed: the estimate starts there, and afterwards is drawn to it one point at a time whenever
+   the two are four points or more apart. A charger that says Full is believed. */
+/* 2026-11-12, the owner: the percent still jumps, it used to be right, look how stock does it.
+   Stock keeps the percent it showed in the PMIC's clock domain and counts charge from there; the
+   voltage speaks only at the ends. From kernel 124 the recovery's gauge does the same (it starts
+   from that kept number, so Android and the recovery go on from one another's, and corrects itself
+   with care), and says so with its attribute soc_start. Then its number is shown as it is, and the
+   estimate below is for older kernels only. */
+static bool battery_gauge_keeps(void){char path[PATH_LEN+48];snprintf(path,sizeof(path),"%s/device/soc_start",battery_curve.folder);return access(path,R_OK)==0;}
+#define BATTERY_SETTLE 6u        /* readings at the start that set the estimate outright */
+#define BATTERY_APART 4.0        /* points between estimate and voltage before a correction */
+#define BATTERY_STEP_MS 30000.0  /* one point of correction takes this long */
 static void update_battery(App*a){
-    long capacity=sysfs_number("/sys/class/power_supply/battery/capacity",-1);if(capacity<0||capacity>100)return;
-    a->battery_percent=(int)capacity;snprintf(a->battery,sizeof(a->battery),"%ld%%",capacity);
-    char status[24]={0};FILE*f=fopen("/sys/class/power_supply/battery/status","r");if(f){if(!fgets(status,sizeof(status),f))status[0]=0;fclose(f);}
+    battery_curve_read();
+    long capacity=battery_number("capacity",-1);if(capacity<0||capacity>100)return;
+    char status[24]={0},path[PATH_LEN+48];snprintf(path,sizeof(path),"%s/status",battery_curve.folder);
+    FILE*f=fopen(path,"r");if(f){if(!fgets(status,sizeof(status),f))status[0]=0;fclose(f);}
     /* The status alone can stay at Charging while the phone powers a stick, so the current decides. */
-    long current=sysfs_number("/sys/class/power_supply/battery/current_now",1);
-    a->battery_charging=!strncmp(status,"Full",4)||(!strncmp(status,"Charging",8)&&current>0);
+    long current=battery_number("current_now",1);
+    bool full=!strncmp(status,"Full",4);
+    a->battery_charging=full||(!strncmp(status,"Charging",8)&&current>0);
+    double shown=(double)capacity;
+    long uv=battery_number("voltage_now",-1),counted=battery_number("charge_now",-1),whole=battery_number("charge_full",-1);
+    /* The resistance between the cell and where the voltage is measured is more than the cell's own
+       (on the phone, 2026-11-11: 3.810 V at +0.16 A and 3.729 V at -0.28 A, 185 mOhm against the 120 of
+       the device tree; the estimate fell 8 points during a long copy and would have climbed back
+       after it). It is learned from the phone itself: when the current steps by 0.2 A or more within
+       15 seconds, the step of the voltage over the step of the current is the resistance then. */
+    if(a->battery_ohm<=0)a->battery_ohm=(double)battery_curve.resistance/1e6;
+    if(uv>0&&a->battery_uv>0&&a->now>a->battery_at&&a->now-a->battery_at<=15000){
+        double di=(double)(current-a->battery_ua)/1e6,dv=(double)(uv-a->battery_uv)/1e6;
+        if(di>=0.2||di<=-0.2){double seen=dv/di;if(seen>=0.06&&seen<=0.40)a->battery_ohm+=(seen-a->battery_ohm)*0.25;}
+    }
+    a->battery_uv=uv;a->battery_ua=current;
+    double open=uv>0&&battery_curve.count?battery_curve_level(uv-(long)((double)current*a->battery_ohm)):-1;
+    bool kept=battery_gauge_keeps();
+    if(kept){
+        if(a->battery_estimated){a->battery_estimated=false;if(!getenv("A22X_RECOVERY_BATTERY"))unlink("/run/a22x-recovery/battery-level");}
+    }else if(open>=0&&counted>=0&&whole>0){
+        long flow=current<0?-current:current;
+        /* A heavy current bends the voltage more than one resistance explains: it counts for less, or not at all. */
+        double weight=flow<=300000?1.0:(flow>=700000?0.0:0.35);
+        if(!a->battery_estimated){a->battery_estimated=true;a->battery_estimate=a->battery_ocv=open;a->battery_samples=1;}
+        else{
+            double seconds=a->now>a->battery_at?(double)(a->now-a->battery_at)/1000.0:0.0,moved=(double)(counted-a->battery_counted)*100.0/(double)whole;
+            /* More than three amperes could have moved is the kernel taking a new start, not charge. */
+            double most=3.0e6*seconds/3600.0*100.0/(double)whole+0.3;
+            if(moved>=-most&&moved<=most)a->battery_estimate+=moved;
+            if(weight>0){a->battery_ocv+=(open-a->battery_ocv)*0.25*weight;a->battery_samples++;}
+            double apart=a->battery_ocv-a->battery_estimate;
+            /* A cell that is drained for minutes sags more than its resistance explains, and one that is
+               charged stands higher (on the phone, 2026-11-11: a copy at 0.2 to 0.5 A drew the estimate
+               down ten points in twelve minutes, and it climbed back afterwards). So the voltage is
+               believed at four points apart only against the current: while the cell is drained, that
+               it holds more; while it is charged, that it holds less. The other way it must be three
+               times as far apart. */
+            double up=current>60000?BATTERY_APART*3:BATTERY_APART,down=current<-60000?BATTERY_APART*3:BATTERY_APART;
+            if(a->battery_samples<=BATTERY_SETTLE)a->battery_estimate=a->battery_ocv;
+            else if(apart>=up||apart<=-down){
+                double step=seconds*1000.0/BATTERY_STEP_MS;if(step>1.0)step=1.0;
+                a->battery_estimate+=apart>0?step:-step;
+            }
+        }
+        if(full)a->battery_estimate=a->battery_ocv=100.0;
+        if(a->battery_estimate<0)a->battery_estimate=0;
+        if(a->battery_estimate>100)a->battery_estimate=100;
+        a->battery_counted=counted;a->battery_at=a->now;shown=a->battery_estimate;
+    }
+    int percent=(int)(shown+0.5);if(percent>100)percent=100;
+    /* Not full until the charger says so: 100 beside a charging bolt would be a promise. */
+    if(!full&&a->battery_charging&&percent>99&&(a->battery_estimated||kept))percent=99;
+    if(percent!=a->battery_percent||!a->battery[0]){
+        /* The same number for the page of the phone's details. */
+        const char*run=getenv("A22X_RECOVERY_BATTERY")?NULL:"/run/a22x-recovery/battery-level";
+        if(run&&a->battery_estimated){FILE*level=fopen(run,"w");if(level){fprintf(level,"%d\n",percent);fclose(level);}}
+    }
+    a->battery_percent=percent;snprintf(a->battery,sizeof(a->battery),"%d%%",percent);
 }
 static void initialize(App*a){
     a->lock_mode=1;a->access_mode=1;
@@ -4092,10 +4881,16 @@ static void initialize(App*a){
     a->sysinfo_root=getenv("A22X_SYSINFO_ROOT");theme_files_scan();
     const char*terminal_helper=getenv("A22X_RECOVERY_TERMINAL_HELPER");copy(a->terminal_helper,sizeof(a->terminal_helper),terminal_helper&&*terminal_helper?terminal_helper:"/opt/a22x-recovery/terminal.py");a->terminal_follow=true;
     const char*distro_helper=getenv("A22X_RECOVERY_DISTRO_HELPER");copy(a->distro_helper,sizeof(a->distro_helper),distro_helper&&*distro_helper?distro_helper:"/opt/a22x-recovery/distro.py");
+    const char*root_helper=getenv("A22X_RECOVERY_ROOT_HELPER");copy(a->root_helper,sizeof(a->root_helper),root_helper&&*root_helper?root_helper:"/opt/a22x-recovery/root.py");a->root_selected=-1;
+    {const char*shot_helper=getenv("A22X_RECOVERY_SCREENSHOT_HELPER");copy(a->shot_helper,sizeof(a->shot_helper),shot_helper&&*shot_helper?shot_helper:"/opt/a22x-recovery/screenshot.py");}
+    {const char*card_helper=getenv("A22X_RECOVERY_CARD_HELPER");copy(a->card_helper,sizeof(a->card_helper),card_helper&&*card_helper?card_helper:"/opt/a22x-recovery/sdcard.py");a->card_index=-1;}
+    const char*zip_helper=getenv("A22X_RECOVERY_ZIP_HELPER");copy(a->zip_helper,sizeof(a->zip_helper),zip_helper&&*zip_helper?zip_helper:"/opt/a22x-recovery/zip_install.py");
+    const char*gsi_helper=getenv("A22X_RECOVERY_GSI_HELPER");copy(a->gsi_helper,sizeof(a->gsi_helper),gsi_helper&&*gsi_helper?gsi_helper:"/opt/a22x-recovery/android_gsi.py");a->android_selected=-1;
+    const char*samsung_helper=getenv("A22X_RECOVERY_SAMSUNG_HELPER");copy(a->samsung_helper,sizeof(a->samsung_helper),samsung_helper&&*samsung_helper?samsung_helper:"/opt/a22x-recovery/samsung_firmware.py");
     const char*flash_helper=getenv("A22X_RECOVERY_FLASH_HELPER");copy(a->flash_helper,sizeof(a->flash_helper),flash_helper&&*flash_helper?flash_helper:"/opt/a22x-recovery/flash.py");a->flash_selected=-1;a->vibration=2;a->systems_selected=-1;
     const char*install_helper=getenv("A22X_RECOVERY_INSTALL_HELPER");copy(a->install_helper,sizeof(a->install_helper),install_helper&&*install_helper?install_helper:"/opt/a22x-recovery/install.py");a->install.pending_selected=-1;
     const char*profile=getenv("A22X_RECOVERY_PROFILE_RENDER");a->profile_render=profile&&*profile&&strcmp(profile,"0");
-    a->volume_index=a->fs_destination_index=a->tools_volume_index=-1;a->fs_inventory_destination=FILE_VOLUMES;
+    a->volume_index=a->fs_destination_index=a->tools_volume_index=-1;a->fs_inventory_destination=FILE_VOLUMES;a->nav_depth=1; /* The trail starts at Home. */
     struct utsname u;if(uname(&u)==0)snprintf(a->kernel,sizeof(a->kernel),T("Linux %.85s / %.24s"),u.release,u.machine);
 }
 static void sample_document(App*a,unsigned int lines){
@@ -4111,7 +4906,7 @@ static void sample_system(App*a);
 static bool preview(App*a,const char*name){
     copy(a->sys_model,sizeof(a->sys_model),"SM-A226B");copy(a->sys_version,sizeof(a->sys_version),"0.6");
     a->preview=true;a->inventory_ok=true;a->successful=true;a->battery_percent=92;copy(a->battery,sizeof(a->battery),"92%");copy(a->status,sizeof(a->status),"Illustrative UI preview - not a phone capture");copy(a->kernel,sizeof(a->kernel),"Kernel and device status appear here");copy(a->repositories[0],PATH_LEN,"/mnt/backup/A22xBackups");a->repository_count=1;copy(a->battery,sizeof(a->battery),"--");
-    if(!strcmp(name,"home"))a->screen=HOME;else if(!strcmp(name,"backup")){a->screen=BACKUP;a->linux_backup_available=true;}else if(!strcmp(name,"plan")){a->screen=PLAN;a->plan_can_execute=true;a->plan_bytes=53427044352ULL;copy(a->plan_parts,sizeof(a->plan_parts),"boot  +  userdata");copy(a->plan_backup,sizeof(a->plan_backup),"/mnt/backup/A22xBackups/linux-example");copy(a->plan_id,sizeof(a->plan_id),"example-plan-preview");}
+    if(!strcmp(name,"home"))a->screen=HOME;else if(!strcmp(name,"backup")||!strcmp(name,"backup-android")){a->screen=BACKUP;a->linux_backup_available=true;a->systems_foreign=!strcmp(name,"backup-android");}else if(!strcmp(name,"plan")){a->screen=PLAN;a->plan_can_execute=true;a->plan_bytes=53427044352ULL;copy(a->plan_parts,sizeof(a->plan_parts),"boot  +  userdata");copy(a->plan_backup,sizeof(a->plan_backup),"/mnt/backup/A22xBackups/linux-example");copy(a->plan_id,sizeof(a->plan_id),"example-plan-preview");}
     else if(!strcmp(name,"linux-plan")||!strcmp(name,"linux-wipe")||!strcmp(name,"linux-restore")||!strcmp(name,"linux-space-blocked")){
         a->screen=PLAN;a->plan_linux_v2=a->plan_linux_admitted=a->plan_space_known=a->plan_estimate_known=true;a->plan_can_execute=strcmp(name,"linux-space-blocked");
         a->plan_wipe=!strcmp(name,"linux-wipe");a->plan_restore=!strcmp(name,"linux-restore");a->plan_used_bytes=25ULL*1024*1024*1024;a->plan_archive_bytes=11ULL*1024*1024*1024;a->plan_free_bytes=a->plan_can_execute?32ULL*1024*1024*1024:1024*1024*1024;a->plan_reserve_bytes=64*1024*1024;
@@ -4128,6 +4923,63 @@ static bool preview(App*a,const char*name){
     }
     else if(!strcmp(name,"device-restore")){a->screen=PLAN;a->device=true;a->plan_restore=true;copy(a->profile,sizeof(a->profile),"android");a->plan_bytes=53460598784ULL;copy(a->plan_parts,sizeof(a->plan_parts),"boot  +  metadata  +  userdata");copy(a->plan_backup,sizeof(a->plan_backup),"/mnt/backup/A22xBackups/android-example");copy(a->plan_targets,sizeof(a->plan_targets),"userdata  /dev/mmcblk0p54\nmetadata  /dev/mmcblk0p31\nboot  /dev/mmcblk0p41");copy(a->blockers,sizeof(a->blockers),"DEVICE_RESTORE_NOT_QUALIFIED\nPhysical partition writes are not admitted in this prototype.");}
     else if(!strcmp(name,"restore")){a->screen=LIST;a->backup_count=2;for(int i=0;i<2;i++){BackupEntry*e=&a->backups[i];copy(e->profile,sizeof(e->profile),i?"android":"linux");copy(e->name,sizeof(e->name),i?"Android - saved state":"Linux - saved state");copy(e->created,sizeof(e->created),"Illustrative snapshot entry");e->bytes=53393489920ULL;}}
+    else if(!strcmp(name,"snapshot")||!strcmp(name,"snapshot-linux")||!strcmp(name,"backup-name")){
+        /* 2026-11-11: the page of one backup with Rename and Delete, and the prompt for its new name. */
+        bool compact=!strcmp(name,"snapshot-linux");a->backup_count=1;a->selected_backup=0;BackupEntry*e=&a->backups[0];memset(e,0,sizeof(*e));
+        copy(e->profile,sizeof(e->profile),compact?"linux":"recovery");copy(e->name,sizeof(e->name),compact?"linux-20261108-221500-417":"recovery-20261108-221500-417");
+        copy(e->created,sizeof(e->created),"2026-11-08T22:15:00Z");e->bytes=compact?6871947674ULL:41943040ULL;
+        snprintf(e->path,sizeof(e->path),"/mnt/volumes/sdcard-p1/A22xBackups/%s",e->name);
+        if(compact){copy(e->schema,sizeof(e->schema),"a22x.backup.v2");copy(e->workflow,sizeof(e->workflow),"linux-partclone-v2");}
+        a->screen=DETAIL;
+        if(!strcmp(name,"backup-name")){a->fs_prompt_kind=J_BACKUP_NAME;copy(a->fs_prompt,sizeof(a->fs_prompt),"before-root");a->prompt_cursor=strlen(a->fs_prompt);a->screen=FILE_PROMPT;}
+    }
+    else if(!strcmp(name,"restore-android")||!strcmp(name,"restore-android-empty")||!strcmp(name,"restore-android-reading")||!strcmp(name,"verify-android")||!strcmp(name,"copy-detail")||!strcmp(name,"copy-folder")||!strcmp(name,"copy-data")||!strcmp(name,"copy-data-on")){
+        /* 2026-11-11: Android's category of Restore and Verify, and the page of one copy; copy-data: a copy that holds Android's own data too. */
+        a->screen=LIST;a->list_category=1;a->list_for_verify=!strcmp(name,"verify-android");a->copies_known=strcmp(name,"restore-android-reading")!=0;a->copy_pick=-1;
+        static const char*const labels[]={"boot","dtbo","vbmeta","vbmeta_system","vbmeta_vendor","super","prism","optics"};
+        if(strcmp(name,"restore-android-empty")&&strcmp(name,"restore-android-reading")){
+            a->copy_count=3;
+            for(unsigned int n=0;n<3;n++){
+                PhoneCopy*c=&a->copies[n];memset(c,0,sizeof(*c));copy(c->volume,sizeof(c->volume),n==2?"sdcard-p1":"usb-p1");copy(c->place,sizeof(c->place),n==2?"alarm_root":"SANDISK");
+                memset(c->sha,'a'+(int)n,64);c->sha[64]=0;c->same=true;c->writable=n!=2;c->archive=n!=1;c->parts=n==2?2:8;c->bytes=n==2?33554432ULL+7239368704ULL:8040562688ULL;c->file_bytes=n==1?0:(n==2?3865470566ULL:4402341478ULL);
+                snprintf(c->created,sizeof(c->created),"2026-11-%02uT%02u:10:50Z",11-n,8+n*3);
+                snprintf(c->path,sizeof(c->path),"/A22xAndroidBackups/android-202611%02u-%02u1050%s",11-n,8+n*3,c->archive?".tar.zst":"");
+                for(unsigned int k=0;k<c->parts;k++)copy(c->labels[k],sizeof(c->labels[k]),n==2?(k?"super":"boot"):labels[k]);
+            }
+        }
+        if(!strncmp(name,"copy-data",9)){
+            PhoneCopy*c=&a->copies[0];c->parts=10;copy(c->labels[8],sizeof(c->labels[8]),"metadata");copy(c->labels[9],sizeof(c->labels[9]),"userdata");c->bytes+=53431222272ULL;c->file_bytes+=1116691497ULL;
+            a->screen=COPY_DETAIL;a->copy_pick=0;a->copy_off=!strcmp(name,"copy-data-on")?0:copy_data_parts(c);
+        }else if(strcmp(name,"copy-detail")&&strcmp(name,"copy-folder")){
+            a->copy_waiting_count=1;CopyVolume*v=&a->copy_waiting[0];memset(v,0,sizeof(*v));copy(v->id,sizeof(v->id),"sdcard-p2");copy(v->token,sizeof(v->token),"preview-volume-token");copy(v->label,sizeof(v->label),"SD card");copy(v->fs,sizeof(v->fs),"exfat");v->bytes=63864569856ULL;
+        }else{a->screen=COPY_DETAIL;a->copy_pick=!strcmp(name,"copy-folder")?1:0;a->copy_off=!strcmp(name,"copy-folder")?0:1u<<6;if(!strcmp(name,"copy-folder"))a->copies[1].writable=false;}
+    }
+    else if(!strcmp(name,"torch-home")||!strcmp(name,"torch-menu")||!strcmp(name,"torch-settings")){
+        /* 2026-11-11: the flashlight on Home, in the power menu and in Settings. */
+        a->torch_checked=a->torch_available=true;a->torch_max=13;a->torch_level=9;a->torch_on=strcmp(name,"torch-settings")!=0;
+        if(!strcmp(name,"torch-menu")){a->menu_return=HOME;a->screen=POWER_MENU;}
+        else if(!strcmp(name,"torch-settings")){a->screen=TOOLS;a->tools_scroll=600;}
+    }
+    else if(!strcmp(name,"identity-copies")){
+        a->screen=IDENTITY_RESTORE;a->id_kind=0;a->volumes[1].read_only=false;identity_select(a,1);a->id_backup_count=8;a->id_pick=1;
+        for(unsigned int n=0;n<8;n++){
+            snprintf(a->id_backups[n].path,sizeof(a->id_backups[n].path),"/A22xIdentityBackups/identity-202611%02u-221500",11-n);
+            snprintf(a->id_backups[n].created,sizeof(a->id_backups[n].created),"2026-11-%02uT22:15:00Z",11-n);
+            memset(a->id_backups[n].sha,'a',64);a->id_backups[n].sha[64]=0;a->id_backups[n].parts=7;a->id_backups[n].bytes=56u<<20;a->id_backups[n].same=n!=3;
+        }
+    }
+    else if(!strcmp(name,"card")||!strcmp(name,"card-busy")||!strcmp(name,"card-none")||!strcmp(name,"card-reading")){
+        /* 2026-11-11: Partition a card, with the card a phone in use holds. */
+        a->screen=CARD_PAGE;a->card_known=strcmp(name,"card-reading")!=0;a->card_count=0;a->card_index=-1;a->card_linux=16;a->card_swap=2;
+        if(!strcmp(name,"card")||!strcmp(name,"card-busy")){
+            CardDisk*c=&a->cards[0];memset(c,0,sizeof(*c));a->card_count=1;a->card_index=0;
+            copy(c->id,sizeof(c->id),"sdcard");copy(c->name,sizeof(c->name),"SD64G");copy(c->kind,sizeof(c->kind),"sd");copy(c->table,sizeof(c->table),"mbr");memset(c->token,'c',64);
+            c->size=63864569856ULL;c->usable=63862472704ULL;c->align=4u<<20;c->min_files=256u<<20;c->part_count=2;
+            c->parts[0].number=1;c->parts[0].size=268435456ULL;copy(c->parts[0].fs,sizeof(c->parts[0].fs),"vfat");
+            c->parts[1].number=2;c->parts[1].size=63590891520ULL;copy(c->parts[1].fs,sizeof(c->parts[1].fs),"ext4");copy(c->parts[1].label,sizeof(c->parts[1].label),"alarm_root");
+            if(!strcmp(name,"card-busy")){copy(c->busy_code,sizeof(c->busy_code),"CARD_MOUNTED");copy(c->busy,sizeof(c->busy),"Unmount the card in Files first");}
+        }
+    }
     else if(!strcmp(name,"storage")){a->screen=STORAGE;a->repository_count=2;copy(a->repositories[1],PATH_LEN,"/mnt/volumes/usb-p1/A22xBackups");copy(a->repository_volume[1],32,"usb-p1");copy(a->repository_root[1],PATH_LEN,"/mnt/volumes/usb-p1");a->repository_read_only[1]=true;a->storage_known=true;a->storage_mounted=true;}else if(!strcmp(name,"system"))a->screen=SYSTEM;
     else if(!strcmp(name,"power")){a->screen=POWER;a->allow_power=true;}
     else if(!strcmp(name,"download-confirm")){a->screen=POWER_CONFIRM;a->power_intent=203;a->allow_power=true;}
@@ -4174,6 +5026,16 @@ static bool preview(App*a,const char*name){
     else if(!strcmp(name,"lock-new")){a->fs_prompt_kind=J_LOCK_SET;a->screen=FILE_PROMPT;}
     else if(!strcmp(name,"lock-repeat")){a->fs_prompt_kind=J_LOCK_CONFIRM;a->lock_flow=LF_CHANGE;copy(a->fs_prompt,sizeof(a->fs_prompt),"1234");a->screen=FILE_PROMPT;}
     else if(!strcmp(name,"access")){a->screen=ACCESS_REQUEST;copy(a->access_channel,sizeof(a->access_channel),"ssh");copy(a->access_peer,sizeof(a->access_peer),"172.16.42.2");}
+    else if(!strcmp(name,"result-done")||!strcmp(name,"result-failed")||!strcmp(name,"progress-cancel")||!strcmp(name,"progress-wait")){
+        /* 2026-11-11: the work and result pages in tiles. */
+        if(!strcmp(name,"result-done")){a->screen=RESULT;a->successful=true;copy(a->status,sizeof(a->status),"The installer finished");a->result_return=ANDROID_MENU;
+            copy(a->message,sizeof(a->message),"Changed: boot\n\n- Patching ramdisk\n- Pre-init storage partition: cache\n- Repacking boot image\n- Flashing new boot image\n- Unmounting partitions\n- Done");}
+        else if(!strcmp(name,"result-failed")){a->screen=RESULT;a->successful=false;copy(a->status,sizeof(a->status),"ZIP_INSTALLER_FAILED");a->result_return=ANDROID_MENU;
+            copy(a->message,sizeof(a->message),"The installer ended with an error. Changed: Nothing\n\nE3004: This package is for device: gta4xlwifi; this device is a22x.\nUpdater process ended with ERROR: 7");}
+        else{a->screen=PROGRESS;a->job.pid=1;a->job.kind=!strcmp(name,"progress-cancel")?J_IMAGES_DOWNLOAD:J_ZIP_RUN;a->now=2000000;a->job_started=a->now-1013000u;
+            copy(a->progress_phase,sizeof(a->progress_phase),!strcmp(name,"progress-cancel")?"image-download":"Unpacking");
+            if(!strcmp(name,"progress-cancel")){copy(a->progress_part,sizeof(a->progress_part),"lineage-22.2-20250621-UNOFFICIAL-gsi_arm64_vN.img.gz");a->progress_total=1086466161ULL;a->progress_done=402000000ULL;a->progress_mark_at=a->now-95000u;a->progress_mark_done=0;}}
+    }
     else if(!strcmp(name,"progress")){a->screen=PROGRESS;a->job.pid=1;a->job.kind=J_BACKUP_PLAN;copy(a->progress_phase,sizeof(a->progress_phase),"compact-compress");copy(a->progress_part,sizeof(a->progress_part),"userdata");a->progress_done=14926253014ULL;a->progress_total=24103593114ULL;a->now=720000;a->progress_mark_at=1;a->progress_mark_done=0;}
     else if(!strcmp(name,"theme"))a->screen=THEME;
     else if(!strcmp(name,"language"))a->screen=LANGUAGE;
@@ -4182,9 +5044,10 @@ static bool preview(App*a,const char*name){
     else if(!strcmp(name,"systems-timezone")){a->systems_desktop=2;a->utc_offset=60;a->systems_tz_region=0;for(unsigned int i=0;i<TZ_ZONES;i++)if(!strcmp(tz_zones[i].id,"Europe/Kyiv"))a->systems_tz=(int)i;screen(a,SYSTEMS_TIMEZONE);}
     else if(!strcmp(name,"systems-shells")){copy(a->systems_manifest,sizeof(a->systems_manifest),"/Downloads/debian-13-arm64.tar.xz");a->systems_desktop=2;a->systems_shells=(1u<<4)|(1u<<6);a->systems_greeter=1;screen(a,SYSTEMS_SHELLS);}
     else if(!strcmp(name,"systems-shells-gnome")){copy(a->systems_manifest,sizeof(a->systems_manifest),"/Downloads/debian-13-arm64.tar.xz");a->systems_desktop=4;a->systems_shells=(1u<<3)|(1u<<2);a->systems_greeter=4;screen(a,SYSTEMS_SHELLS);}
-    else if(!strcmp(name,"tools")){
+    else if(!strcmp(name,"tools")||!strcmp(name,"tools-end")){
         a->screen=TOOLS;a->tools_known=a->ssh_available=a->ssh_running=a->ssh_ephemeral=a->logs_export_available=true;a->ssh_keys=1;a->ssh_port=22;
         copy(a->ssh_address,sizeof(a->ssh_address),"172.16.42.1");copy(a->ssh_fingerprint,sizeof(a->ssh_fingerprint),"SHA256:ExamplePreviewKeyNotARealPhoneFingerprint");
+        if(!strcmp(name,"tools-end")){a->screen=TOOLS;render(a);a->tools_scroll=tools_max_scroll(a);} /* 2026-11-11: the reset of the settings is the last thing on the page. */
     }
     else if(!strcmp(name,"terminal")||!strcmp(name,"terminal-unicode")||!strcmp(name,"terminal-scroll")||!strcmp(name,"terminal-ready")){
         a->screen=TERMINAL;a->terminal_known=a->terminal_available=true;terminal_reset_view(a);
@@ -4216,6 +5079,102 @@ static bool preview(App*a,const char*name){
         a->screen=!strcmp(name,"os-plan")?OS_MENU:(!strcmp(name,"home-plan")?HOME:APLAN);
     }
     else if(!strcmp(name,"wipe")||!strcmp(name,"wipe-review"))a->screen=!strcmp(name,"wipe")?WIPE:WIPE_REVIEW;
+    else if(!strcmp(name,"wipe-android")){a->wipe_android=true;a->screen=WIPE_REVIEW;}
+    else if(!strncmp(name,"android-log",11)){
+        /* What the owner met (kernel), init giving up for another reason (init), and a panic. */
+        const char*kind=name[11]=='-'?name+12:"kernel";a->screen=ANDROID_LOG;a->alog_seconds=9;copy(a->alog_id,sizeof(a->alog_id),"bb9507f313de2d66");
+        if(!strcmp(kind,"init")){copy(a->alog_code,sizeof(a->alog_code),"INIT_GAVE_UP");a->alog_seconds=12;copy(a->alog_reason,sizeof(a->alog_reason),"reboot,bootloader,bootstrap-apexd-failed");
+            copy(a->alog_lines[0],184,"[1:init]init: Service apexd-bootstrap has 'reboot_on_failure' option and failed, shutting down system.");
+            copy(a->alog_lines[1],184,"[1:init]reboot: Restarting system with command 'bootstrap-apexd-failed'");a->alog_line_count=2;}
+        else if(!strcmp(kind,"panic")){copy(a->alog_code,sizeof(a->alog_code),"KERNEL_PANIC");a->alog_seconds=20;copy(a->alog_detail,sizeof(a->alog_detail),"Attempted to kill init! exitcode=0x00000b00");
+            copy(a->alog_lines[0],184,"[1:init]Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000b00");a->alog_line_count=1;}
+        else{copy(a->alog_code,sizeof(a->alog_code),"KERNEL_TOO_OLD");copy(a->alog_needs,sizeof(a->alog_needs),"4.19");copy(a->alog_reason,sizeof(a->alog_reason),"reboot,bpfloader-failed");
+            copy(a->alog_lines[0],184,"[861:netbpfload]NetBpfLoad: Android V requires kernel 4.19.");
+            copy(a->alog_lines[1],184,"[1:init]init: Service 'bpfloader' (pid 861) exited with status 1 waiting took 0.015000 seconds");
+            copy(a->alog_lines[2],184,"[1:init]init: Service bpfloader has 'reboot_on_failure' option and failed, shutting down system.");
+            copy(a->alog_lines[3],184,"[1:init]init: Reboot start, reason: reboot,bpfloader-failed, reboot_target: bpfloader-failed");
+            copy(a->alog_lines[4],184,"[1:init]reboot: Restarting system with command 'bpfloader-failed'");a->alog_line_count=5;}
+    }
+    else if(!strcmp(name,"reset-asked")||!strcmp(name,"reset-prompt")){a->wipe_android=a->reset_asked=a->reset_page=true;a->reset_prompt=!strcmp(name,"reset-prompt");a->allow_power=true;a->screen=WIPE_REVIEW;}
+    else if(!strcmp(name,"android"))a->screen=ANDROID_MENU;
+    else if(!strcmp(name,"root")||!strcmp(name,"root-magisk")||!strcmp(name,"root-vbmeta")||!strcmp(name,"root-apatch")||!strcmp(name,"root-superkey")||!strcmp(name,"zip-review")||!strcmp(name,"zip-queue")){
+        /* 2026-11-10: the Root page as root.py lists it on this phone (stock Android, or Magisk in BOOT);
+           2026-11-11: with APatch, whose tool and image come with the recovery. */
+        static const struct{const char*id,*name,*version,*reason;uint64_t size;bool supported,bundled;}rows[]={
+            {"magisk","Magisk","v31.1","",10679283,true,false},{"apatch","APatch","KernelPatch 0.13.9","",296336,true,true}};
+        a->root_count=0;
+        for(unsigned int i=0;i<sizeof(rows)/sizeof(rows[0]);i++){RootTool*t=&a->root_tools[a->root_count++];memset(t,0,sizeof(*t));
+            copy(t->id,sizeof(t->id),rows[i].id);copy(t->name,sizeof(t->name),rows[i].name);copy(t->version,sizeof(t->version),rows[i].version);
+            copy(t->reason,sizeof(t->reason),rows[i].reason);t->size=rows[i].size;t->supported=rows[i].supported;t->bundled=t->needs_key=rows[i].bundled;copy(t->published,sizeof(t->published),"2026-03-21");
+            if(t->supported)copy(t->sha256,sizeof(t->sha256),"89cefac0a318afa39fb3880c0000000000000000000000000000000000000000");}
+        copy(a->root_boot_kind,sizeof(a->root_boot_kind),"android");copy(a->root_boot_release,sizeof(a->root_boot_release),"4.14.186-27218697");
+        a->root_boot_magisk=!strcmp(name,"root-magisk");a->root_verification=!strcmp(name,"root-vbmeta");a->root_needs_reset=!strcmp(name,"root");
+        copy(a->root_boot_root,sizeof(a->root_boot_root),a->root_boot_magisk?"magisk":"");a->root_key_tool=-1;
+        if(a->root_boot_magisk)copy(a->root_stock_path,sizeof(a->root_stock_path),"/a22x-recovery/saved-boot/stock-A226BXXSBDZC3-5df570768942.img");
+        a->root_known=true;a->screen=ROOT_PAGE;
+        if(!strcmp(name,"zip-review")||!strcmp(name,"zip-queue")){
+        copy(a->zip_name,sizeof(a->zip_name),"Magisk-v31.1.zip");copy(a->zip_title,sizeof(a->zip_title),"Magisk");copy(a->zip_what,sizeof(a->zip_what),"magisk");copy(a->zip_installer,sizeof(a->zip_installer),"script");
+        copy(a->zip_sha,sizeof(a->zip_sha),"89cefac0a318afa39fb3880c45c87b036c05bc1ebf02a7a715b7f8d7c26ac6e7");a->zip_size=10679283;a->zip_files=77;a->zip_known=true;
+        copy(a->zip_parts,sizeof(a->zip_parts),"boot, dtbo, vbmeta, super, system, vendor, product, odm");a->screen=ZIP_REVIEW;a->allow_power=true;
+        copy(a->zip_volume,sizeof(a->zip_volume),"sdcard-p1");copy(a->zip_path,sizeof(a->zip_path),"/Magisk-v31.1.zip");zip_item_from_review(a,&a->zip_queue[0]);a->zip_count=1;
+        if(!strcmp(name,"zip-queue")){
+            /* 2026-11-11: three ZIPs that one hold runs in order, and a restart asked for afterwards. */
+            static const char*const more[]={"lineage-22.2-20261101-UNOFFICIAL-a22x.zip","MindTheGapps-15.0.0-arm64-20261020.zip"};
+            for(unsigned int n=0;n<2;n++){a->zip_queue[n+1]=a->zip_queue[0];copy(a->zip_queue[n+1].name,sizeof(a->zip_queue[0].name),more[n]);snprintf(a->zip_queue[n+1].path,sizeof(a->zip_queue[0].path),"/%s",more[n]);}
+            ZipItem first=a->zip_queue[1];a->zip_queue[1]=a->zip_queue[2];a->zip_queue[2]=a->zip_queue[0];a->zip_queue[0]=first;a->zip_count=3;a->zip_restart=true;
+        }}
+    if(!strcmp(name,"root-apatch")){a->root_key_tool=1;copy(a->root_superkey,sizeof(a->root_superkey),"Preview-Key-2026");}
+        if(!strcmp(name,"root-superkey")){a->root_key_tool=1;a->fs_prompt_kind=J_ROOT_SUPERKEY;copy(a->fs_prompt,sizeof(a->fs_prompt),"Preview-Key-2026");a->prompt_cursor=strlen(a->fs_prompt);a->screen=FILE_PROMPT;}
+    }
+    else if(!strcmp(name,"samsung-review")){
+        /* Samsung's A226BXXSBDZC3 as samsung_firmware.py reads it (2026-11-10). */
+        static const struct{const char*file,*name,*action,*target,*reason;uint64_t size;}rows[]={
+            {"AP","boot.img.lz4","write","boot","",14197578u},{"AP","recovery.img.lz4","kept","","This recovery stays",25952224u},
+            {"AP","super.img.lz4","write","super","",4146139410u},{"AP","userdata.img.lz4","instead","","Formatted for Android instead, as Samsung's recovery does after Odin",1199093275u},
+            {"AP","dpm-verified.img.lz4","refused","","Firmware of the bootloader chain stays as it is",121570u},{"AP","vbmeta.img.lz4","write","vbmeta","",3223u},
+            {"AP","dtbo.img.lz4","write","dtbo","",36614u},{"AP","tee-verified.img.lz4","refused","","Firmware of the bootloader chain stays as it is",506493u},
+            {"AP","vbmeta_system.img.lz4","write","vbmeta_system","",2578u},{"CSC","A22X_EUR_OPEN.pit","refused","","A partition table: it would repartition the phone",8064u},
+            {"CSC","cache.img.lz4","instead","","Wiped instead; the recovery's own folder stays",1551u},{"CSC","omr.img.lz4","kept","","Kept as it is",1326u},
+            {"CSC","prism.img.lz4","write","prism","",472812488u},{"CSC","optics.img.lz4","write","optics","",582406u},
+            {"BL","preloader.img.lz4","refused","","The bootloader chain is never written by this recovery",302196u},
+            {"BL","lk-verified.img.lz4","refused","","The bootloader chain is never written by this recovery",1076763u},
+            {"CP","md1img.img.lz4","kept","","The modem stays as it is",41848476u}};
+        a->samsung_row_count=0;for(size_t n=0;n<sizeof(rows)/sizeof(rows[0]);n++){SamsungRow*r=&a->samsung_rows[a->samsung_row_count++];memset(r,0,sizeof(*r));
+            copy(r->file,sizeof(r->file),rows[n].file);copy(r->name,sizeof(r->name),rows[n].name);copy(r->action,sizeof(r->action),rows[n].action);
+            copy(r->target,sizeof(r->target),rows[n].target);copy(r->reason,sizeof(r->reason),rows[n].reason);r->size=rows[n].size;}
+        copy(a->samsung_build,sizeof(a->samsung_build),"A226BXXSBDZC3");copy(a->samsung_files,sizeof(a->samsung_files),"AP  +  CSC  +  BL  +  CP");
+        copy(a->samsung_plan,sizeof(a->samsung_plan),"preview");a->samsung_write_bytes=4619413905ULL;a->samsung_known=true;a->screen=SAMSUNG_REVIEW;
+    }
+    else if(!strcmp(name,"android-catalog")||!strcmp(name,"android-catalog-all")||!strncmp(name,"android-image",13)){
+        /* Google's GSIs of the catalog (2026-11-10). */
+        static const struct{const char*id,*name,*android,*variant,*build,*patch,*file;uint64_t size,system;bool fits;}images[]={
+            {"gsi-13-aosp","Android 13","13","aosp","TQ3A.230805.001.A3","2023-08-05","aosp_arm64-exp-TQ3A.230805.001.A3-10454027-66e107ed.zip",832870349u,1899503616u,true},
+            {"gsi-13-google","Android 13","13","gms","TQ3A.230805.001.A3","2023-08-05","gsi_gms_arm64-exp-TQ3A.230805.001.A3-10454027-3adcae59.zip",1474601277u,3241099264u,true},
+            {"gsi-14-aosp","Android 14","14","aosp","UQ1A.231205.015","2023-12-05","aosp_arm64-exp-UQ1A.231205.015-11084887-e291b838.zip",935880656u,2059816960u,true},
+            {"gsi-14-google","Android 14","14","gms","UQ1A.231205.015","2023-12-05","gsi_gms_arm64-exp-UQ1A.231205.015-11084887-2026a0e7.zip",1425799880u,3066781696u,true},
+            {"gsi-15-aosp","Android 15","15","aosp","BP1A.250405.005.C1","2025-04-05","aosp_arm64-exp-BP1A.250405.005.C1-13151952-61d23231.zip",888211669u,1899589632u,true},
+            {"gsi-15-google","Android 15","15","gms","BP1A.250405.005.C1","2025-04-05","gsi_gms_arm64-exp-BP1A.250405.005.C1-13151952-48d6db2a.zip",1586772058u,3276304384u,true},
+            {"gsi-16-aosp","Android 16","16","aosp","BP4A.251205.006","2025-12-05","aosp_arm64-exp-BP4A.251205.006-14401865-2171cf0e.zip",905400114u,1889701888u,false},
+            {"gsi-16-google","Android 16","16","gms","BP4A.251205.006","2025-12-05","gsi_gms_arm64-exp-BP4A.251205.006-14401865-f8760221.zip",1623557069u,3301928960u,false}};
+        a->systems_known=a->systems_platform=a->systems_mounted=true;a->systems_read_only=false;a->catalog_count=0;
+        for(size_t n=0;n<sizeof(images)/sizeof(images[0]);n++){CatalogImage*c=&a->catalog[a->catalog_count++];memset(c,0,sizeof(*c));
+            copy(c->id,sizeof(c->id),images[n].id);copy(c->name,sizeof(c->name),images[n].name);copy(c->android,sizeof(c->android),images[n].android);
+            copy(c->variant,sizeof(c->variant),images[n].variant);copy(c->build,sizeof(c->build),images[n].build);copy(c->patch,sizeof(c->patch),images[n].patch);
+            copy(c->file,sizeof(c->file),images[n].file);copy(c->category,sizeof(c->category),"gsi");copy(c->region,sizeof(c->region),"Global");copy(c->family,sizeof(c->family),"android");
+            c->size=images[n].size;c->system_bytes=images[n].system;c->fits=images[n].fits;c->reachable=true;}
+        CatalogImage*l=&a->catalog[a->catalog_count++];memset(l,0,sizeof(*l));copy(l->id,sizeof(l->id),"debian-13");copy(l->name,sizeof(l->name),"Debian");
+        copy(l->version,sizeof(l->version),"13 trixie");copy(l->family,sizeof(l->family),"debian");copy(l->file,sizeof(l->file),"debian.qcow2");copy(l->category,sizeof(l->category),"linux");l->reachable=true;l->size=337641472u;
+        a->catalog_known=a->catalog_network=true;a->catalog_category=CATEGORY_ANDROID;a->catalog_all_phones=!strcmp(name,"android-catalog-all");a->screen=SYSTEMS_CATALOG;
+        if(!strncmp(name,"android-image",13)){a->android_selected=!strcmp(name,"android-image-16")?6:0;a->saved_known=true;a->saved_count=0;a->screen=ANDROID_IMAGE;}
+        if(!strcmp(name,"android-image-card")||!strcmp(name,"android-image-card-saved")||!strcmp(name,"android-image-nocard")){
+            /* 2026-11-11: Android holds userdata, so the store is on a card, or there is no card for it. */
+            a->systems_mounted=a->systems_platform=false;
+            if(strcmp(name,"android-image-nocard")){copy(a->store_volume,sizeof(a->store_volume),"sdcard-p1");memset(a->store_token,'d',64);a->store_token[64]=0;copy(a->store_label,sizeof(a->store_label),"SD64G");}
+            else copy(a->store_reason,sizeof(a->store_reason),"Insert an SD card or attach a USB drive: while Android uses userdata, downloaded images are kept there");
+            if(!strcmp(name,"android-image-card-saved")){StoredImage*s=&a->saved[0];memset(s,0,sizeof(*s));copy(s->file,sizeof(s->file),a->catalog[0].file);
+                snprintf(s->path,sizeof(s->path),"/.a22x-images/%s",s->file);s->size=a->catalog[0].size;s->checked=true;a->saved_count=1;}
+        }
+    }
     else if(!strcmp(name,"flash-super")||!strcmp(name,"flash-list")||!strcmp(name,"flash-gsi")){
         /* 2026-11-10: the partitions inside super, as flash.py lists them on this phone. */
         static const struct{const char*label,*title;uint64_t bytes,room;bool logical;}rows[]={
@@ -4234,12 +5193,12 @@ static bool preview(App*a,const char*name){
         }else a->screen=!strcmp(name,"flash-super")?FLASH_SUPER:FLASH;
     }
     else if(!strcmp(name,"icon-sheet"))a->screen=ICON_SHEET;
-    else if(!strcmp(name,"android-backup")){
-        /* 2026-11-10: the Android partitions of the same page, with dtbo left out. */
-        a->screen=IDENTITY;a->id_kind=1;a->id_known=true;static const char*const labels[]={"boot","dtbo","vbmeta","vbmeta_system","vbmeta_vendor","super","prism","optics"};
-        static const uint64_t sizes[]={64u<<20,8u<<20,8u<<20,8u<<20,8u<<20,8800ull<<20,1200ull<<20,400ull<<20};
-        a->id_count=8;a->id_bytes=0;for(unsigned int n=0;n<8;n++){copy(a->id_labels[n],sizeof(a->id_labels[0]),labels[n]);a->id_sizes[n]=sizes[n];a->id_bytes+=sizes[n];}
-        a->id_off=1u<<1;a->volumes[1].read_only=false;identity_select(a,1);
+    else if(!strcmp(name,"android-backup")||!strcmp(name,"android-backup-data")||!strcmp(name,"android-backup-data-on")){
+        /* 2026-11-10: the Android partitions of the same page, with dtbo left out; -data: Android's own data offered too (2026-11-11). */
+        a->screen=IDENTITY;a->id_kind=1;a->id_known=true;static const char*const labels[]={"boot","dtbo","vbmeta","vbmeta_system","vbmeta_vendor","super","prism","optics","metadata","userdata"};
+        static const uint64_t sizes[]={64u<<20,8u<<20,8u<<20,8u<<20,8u<<20,8800ull<<20,1200ull<<20,400ull<<20,32u<<20,53397667328ULL};
+        a->id_count=strcmp(name,"android-backup")?10:8;a->id_bytes=0;for(unsigned int n=0;n<a->id_count;n++){copy(a->id_labels[n],sizeof(a->id_labels[0]),labels[n]);a->id_sizes[n]=sizes[n];a->id_bytes+=sizes[n];}
+        a->id_optional=a->id_count>8?3u<<8:0;a->id_off=1u<<1|(strcmp(name,"android-backup-data-on")?a->id_optional:0);a->volumes[1].read_only=false;identity_select(a,1);
     }
     else if(!strcmp(name,"apps-page")||!strcmp(name,"package-search")){
         /* The apps page, and a search in the repositories of a Debian image from the catalog. */
@@ -4304,7 +5263,7 @@ static bool preview(App*a,const char*name){
             copy(v->version,sizeof(v->version),saved[n].version);copy(v->family,sizeof(v->family),saved[n].family);v->size=saved[n].size;v->checked=saved[n].checked;}
         a->saved_known=true;a->saved_free=21368029184u;a->saved_delete=!strcmp(name,"saved-images-delete")?2:0;a->screen=SYSTEMS_IMAGES;
     }
-    else if(!strcmp(name,"new-system")||!strcmp(name,"add-system")||!strcmp(name,"catalog")||!strcmp(name,"catalog-online")){
+    else if(!strcmp(name,"new-system")||!strcmp(name,"add-system")||!strcmp(name,"catalog")||!strcmp(name,"catalog-online")||!strcmp(name,"catalog-linux")||!strcmp(name,"new-system-android")||!strncmp(name,"source-sheet",12)){
         /* The installer: a new system page and the catalog (the first without network). */
         static const struct{const char*id,*name,*version,*family,*file;uint64_t size;bool minimal,reachable,signed_;}images[]={
             {"debian-13","Debian","13 trixie","debian","debian-13-genericcloud-arm64-20261103-2651.qcow2",337641472u,true,true,false},
@@ -4318,7 +5277,20 @@ static bool preview(App*a,const char*name){
         for(size_t n=0;n<sizeof(images)/sizeof(images[0]);n++){CatalogImage*c=&a->catalog[a->catalog_count++];memset(c,0,sizeof(*c));
             copy(c->id,sizeof(c->id),images[n].id);copy(c->name,sizeof(c->name),images[n].name);copy(c->version,sizeof(c->version),images[n].version);
             copy(c->family,sizeof(c->family),images[n].family);copy(c->file,sizeof(c->file),images[n].file);c->size=images[n].size;c->minimal=images[n].minimal;c->reachable=images[n].reachable;c->signed_=images[n].signed_;}
-        a->catalog_known=true;a->catalog_network=strcmp(name,"catalog");a->screen=!strcmp(name,"new-system")||!strcmp(name,"add-system")?SYSTEMS_NEW:SYSTEMS_CATALOG;a->systems_adding=!strcmp(name,"add-system");
+        a->catalog_known=true;a->catalog_network=strcmp(name,"catalog")&&strcmp(name,"catalog-linux");a->screen=!strcmp(name,"new-system")||!strcmp(name,"add-system")||!strcmp(name,"new-system-android")||!strncmp(name,"source-sheet",12)?SYSTEMS_NEW:SYSTEMS_CATALOG;a->systems_adding=!strcmp(name,"add-system");
+        if(!strcmp(name,"catalog-linux")){a->catalog_only=1;a->catalog_network=true;}
+        if(!strcmp(name,"new-system-android")||!strncmp(name,"source-sheet",12)){
+            /* 2026-11-11: Android on userdata. Nothing is mounted; the file is chosen at once. */
+            a->systems_mounted=false;a->systems_read_only=true;a->systems_foreign=true;a->systems_boot_android=!strcmp(name,"new-system-android");copy(a->systems_volume_token,sizeof(a->systems_volume_token),"preview-volume-token");
+            if(!strncmp(name,"source-sheet",12)){
+                a->source_sheet=a->source_known=true;a->systems_pick_manifest=true;a->systems_wipe=true;a->volume_count=0;
+                if(!strcmp(name,"source-sheet")){
+                    a->volume_count=3;const char*ids[]={"usb-p1","sdcard-p1","cache"},*labels[]={"SANDISK","alarm_root","cache"},*types[]={"exfat","ext4","ext4"};
+                    for(int n=0;n<3;n++){FileVolume*v=&a->volumes[n];memset(v,0,sizeof(*v));copy(v->id,sizeof(v->id),ids[n]);copy(v->label,sizeof(v->label),labels[n]);copy(v->fs_type,sizeof(v->fs_type),types[n]);copy(v->token,sizeof(v->token),"preview-volume-token");
+                        v->mounted=n!=1;v->mountable=true;v->read_only=true;v->write_supported=true;v->bytes=n==0?62109253632ULL:(n==1?15707668480ULL:209715200ULL);}
+                }
+            }
+        }
         for(unsigned int n=0;n<a->catalog_count;n++)if(!strcmp(a->catalog[n].family,"mobian"))copy(a->catalog[n].notes,sizeof(a->catalog[n].notes),"Phone shell");
         if(!strcmp(name,"catalog-online")){a->catalog_check_done=true;a->catalog_servers=7;a->catalog_updated=1;}
     }
@@ -4404,7 +5376,7 @@ static bool preview(App*a,const char*name){
             a->screen=FILE_BROWSER;copy(a->fs_path,sizeof(a->fs_path),"/home/user");a->file_count=7;a->file_total=11;a->files_more=true;
             const char*names[]={"Документи","Зображення","config.ini","запустити-linux.sh","system-link","службовий-сокет","Дуже довга українська назва — резервна копія налаштувань системи 2026.txt"};
             const char*types[]={"directory","directory","file","file","symlink","other","file"};
-            for(int n=0;n<7;n++){FileEntry*e=&a->files[n];copy(e->name,sizeof(e->name),names[n]);child_path(a->fs_path,names[n],e->path,sizeof(e->path));copy(e->type,sizeof(e->type),types[n]);copy(e->mode,sizeof(e->mode),n==3?"0755":"0644");e->size=n<2?0:1536;}
+            for(int n=0;n<7;n++){FileEntry*e=&a->files[n];copy(e->name,sizeof(e->name),names[n]);child_path(a->fs_path,names[n],e->path,sizeof(e->path));copy(e->type,sizeof(e->type),types[n]);copy(e->mode,sizeof(e->mode),n==3?"0755":"0644");e->metadata_supported=true;e->size=n<2?0:1536;}
             if(!strcmp(name,"file-scroll")){a->file_count=FILE_BATCH;a->file_total=180;a->browser_scroll=57;for(int n=7;n<FILE_BATCH;n++){FileEntry*e=&a->files[n];snprintf(e->name,sizeof(e->name),"Налаштування-%03d.conf",n);child_path(a->fs_path,e->name,e->path,sizeof(e->path));copy(e->type,sizeof(e->type),"file");copy(e->mode,sizeof(e->mode),"0644");e->size=2048;}}
         }else if(!strcmp(name,"file-editor")||!strcmp(name,"editor-scroll")||!strcmp(name,"text-scroll")){
             a->screen=FILE_EDIT;copy(a->fs_file,sizeof(a->fs_file),"/home/user/налаштування.conf");copy(a->fs_text,sizeof(a->fs_text),"# Налаштування Linux\n# Зміни зберігаються після підтвердження.\n\n[display]\nbrightness=80\n\n[notes]\nmessage=Привіт, Україно!\n");a->fs_length=a->fs_cursor=strlen(a->fs_text);a->fs_dirty=true;a->kb_uk=true;
@@ -4448,6 +5420,333 @@ static int test_linux_plan_guards(void){
     assert(json_parse(&j,"{\"ok\":true,\"mode\":\"fixture\",\"available\":true,\"state\":\"active\",\"session_token\":\"session\",\"candidates\":[],\"exports\":[{\"label\":\"userdata\",\"volume_token\":\"v\",\"mount_token\":\"m\",\"access\":\"rw\"}]}",tokens,512)>0);assert(parse_usb_status(a,&j)&&a->usb_export_valid&&a->usb_export_writable&&usb_session_open(a));render(a);assert(test_button(a,A_USB_STOP)->enabled&&!test_button(a,A_USB_START));assert(!begin_linux_prepare(a,J_BACKUP_PLAN)&&!strcmp(a->status,"USB_EXPORT_ACTIVE")&&!a->job.pid);tests++;
     a->fs_dirty=true;screen(a,FILE_EDIT);action(a,A_USB_FILES);assert(!a->job.pid&&a->result_return==FILE_EDIT&&!strcmp(a->status,"UNSAVED_EDITS")&&!strcmp(a->fs_text,"unsaved text"));tests++;
     free(a->pixels);free(a);return tests;
+}
+/* 2026-11-11: the screenshot keys in either order. Volume down first used to step through the
+   buttons and Power then blanked the screen; now the step is taken back and the picture taken. */
+static int test_screenshot_keys(void){
+    App*a=calloc(1,sizeof(*a));assert(a);initialize(a);a->preview=true;a->inventory_ok=true;a->now=10000;a->screen=HOME;render(a);
+    assert(a->focus<0&&a->button_count>3&&!a->shot_flash);
+    key_event(a,KEY_VOLUMEDOWN,1);assert(a->focus>=0&&a->voldown_held);              /* the key steps to the first button */
+    a->now+=150;key_event(a,KEY_POWER,1);
+    assert(a->power_held&&a->shot_flash&&a->focus<0&&a->toast[0]);                     /* taken, and the step taken back */
+    a->now+=120;key_event(a,KEY_POWER,0);assert(!a->power_held&&!a->display_power_down&&!a->display_control.pid&&a->screen==HOME);
+    key_event(a,KEY_VOLUMEDOWN,0);assert(!a->voldown_held);
+    /* Power held first and Volume down then, as before. */
+    a->shot_flash=0;a->toast[0]=0;a->now+=3000;key_event(a,KEY_POWER,1);assert(!a->shot_flash);
+    a->now+=200;key_event(a,KEY_VOLUMEDOWN,1);assert(a->shot_flash&&a->power_held&&a->focus<0);
+    a->now+=100;key_event(a,KEY_POWER,0);key_event(a,KEY_VOLUMEDOWN,0);
+    /* Volume down held long before Power is no screenshot: the two keys keep their own work. */
+    a->shot_flash=0;a->now+=3000;key_event(a,KEY_VOLUMEDOWN,1);a->now+=SHOT_CHORD_MS+1;key_event(a,KEY_POWER,1);
+    assert(!a->shot_flash&&!a->power_held);key_event(a,KEY_POWER,0);key_event(a,KEY_VOLUMEDOWN,0);
+    /* A dark screen is not photographed. */
+    a->display_blank_known=a->display_blanked=true;a->shot_flash=0;a->now+=3000;key_event(a,KEY_VOLUMEDOWN,1);a->now+=100;key_event(a,KEY_POWER,1);
+    assert(!a->shot_flash);
+    /* The flash fades and ends by itself. */
+    a->display_blanked=false;a->shot_flash=a->now;screenshot_poll(a);assert(a->shot_flash);a->now+=SHOT_FLASH_MS;screenshot_poll(a);assert(!a->shot_flash);
+    free(a->pixels);free(a);return 1;
+}
+/* 2026-11-11: several ZIPs that one hold runs one after another. Replies of the helper are fed in by
+   hand; the jobs the list starts are real children that are dropped at once. */
+static bool zip_test_reply(App*a,const char*reply,int kind,bool ok){
+    char text[1536];JsonToken t[96];Json j;copy(text,sizeof(text),reply);
+    if(json_parse(&j,text,t,96)<1)return false;
+    complete_zip_job(a,&j,kind,ok);return true;
+}
+static void zip_test_drop(App*a){
+    if(!a->job.pid)return;
+    (void)kill(a->job.pid,SIGKILL);(void)waitpid(a->job.pid,NULL,0);
+    if(!a->job.out_eof)close(a->job.fdout);
+    if(!a->job.err_eof)close(a->job.fderr);
+    free(a->job.output);memset(&a->job,0,sizeof(a->job));
+}
+static void zip_test_choose(App*a,const char*path,bool adding,const char*name){
+    char reply[640];copy(a->zip_volume,sizeof(a->zip_volume),"sdcard-p1");copy(a->zip_token,sizeof(a->zip_token),"token");copy(a->zip_path,sizeof(a->zip_path),path);a->zip_adding=adding;
+    snprintf(reply,sizeof(reply),"{\"ok\":true,\"operation\":\"inspect\",\"name\":\"%s\",\"sha256\":\"%064d\",\"title\":\"\",\"what\":\"zip\",\"installer\":\"script\",\"size\":1000,\"files\":3,\"warnings\":[],\"partitions\":[\"boot\",\"super\"]}",name,7);
+    assert(zip_test_reply(a,reply,J_ZIP_INSPECT,true));
+}
+static int test_zip_queue(void){
+    App*a=calloc(1,sizeof(*a));assert(a);initialize(a);a->inventory_ok=true;a->now=10000;a->allow_power=true;a->fixture[0]='/';
+    copy(a->python,sizeof(a->python),"/bin/true");copy(a->zip_helper,sizeof(a->zip_helper),"zip_install.py");
+    /* A ZIP chosen afresh is a list of one; one that is added joins it; the same file again keeps its place. */
+    zip_test_choose(a,"/a.zip",false,"a.zip");assert(a->zip_count==1&&a->zip_known&&a->screen==ZIP_REVIEW&&!a->zip_adding);
+    zip_test_choose(a,"/b.zip",true,"b.zip");assert(a->zip_count==2&&!strcmp(a->zip_queue[0].name,"a.zip")&&!strcmp(a->zip_queue[1].name,"b.zip")&&!a->zip_adding);
+    a->toast[0]=0;zip_test_choose(a,"/a.zip",true,"a.zip");assert(a->zip_count==2&&a->toast[0]);
+    zip_test_choose(a,"/c.zip",true,"c.zip");assert(a->zip_count==3);
+    render(a);assert(test_button(a,A_ZIP_ADD)&&test_button(a,A_ZIP_REMOVE+2)&&!test_button(a,A_ZIP_REMOVE+3)&&test_button(a,A_ZIP_RESTART)&&test_button(a,A_ZIP_CONFIRM)->hold_ms==5000);
+    /* One taken out: the rest moves up, and the review shown is the last one's. */
+    assert(test_press(a,A_ZIP_REMOVE,50)&&a->zip_count==2&&!strcmp(a->zip_queue[0].name,"b.zip")&&!strcmp(a->zip_path,"/c.zip"));
+    zip_test_choose(a,"/a.zip",true,"a.zip");assert(a->zip_count==3&&!strcmp(a->zip_queue[2].name,"a.zip"));
+    /* The hold runs the first; each one that finishes starts the next; the result names all three. */
+    assert(test_press(a,A_ZIP_CONFIRM,5100)&&a->job.pid&&a->job.kind==J_ZIP_RUN&&a->zip_at==0&&!strcmp(a->zip_path,"/b.zip"));zip_test_drop(a);
+    assert(zip_test_reply(a,"{\"ok\":true,\"operation\":\"run\",\"changed\":[\"boot\"],\"log\":[\"one\"]}",J_ZIP_RUN,true)&&a->zip_at==1&&a->job.pid&&!strcmp(a->zip_path,"/c.zip")&&a->screen!=RESULT);zip_test_drop(a);
+    assert(zip_test_reply(a,"{\"ok\":true,\"operation\":\"run\",\"changed\":[\"super\",\"boot\"],\"log\":[\"two\"]}",J_ZIP_RUN,true)&&a->zip_at==2&&a->job.pid);zip_test_drop(a);
+    assert(zip_test_reply(a,"{\"ok\":true,\"operation\":\"run\",\"changed\":[],\"log\":[\"three\"]}",J_ZIP_RUN,true)&&!a->job.pid&&a->screen==RESULT&&a->successful&&a->zip_ran&&!a->zip_restart_at);
+    assert(!strcmp(a->status,"The installers finished")&&strstr(a->message,"boot super")&&strstr(a->message,"1. b.zip: finished")&&strstr(a->message,"3. a.zip: finished")&&strstr(a->message,"three")&&!strstr(a->message,"one"));
+    render(a);assert(test_button(a,A_REBOOT)&&!test_button(a,A_ZIP_STAY));
+    assert(test_press(a,A_DONE,50)&&!a->zip_ran);
+    /* The second fails: the third is not run, and the result says which is which. */
+    a->screen=ZIP_REVIEW;assert(test_press(a,A_ZIP_CONFIRM,5100)&&a->job.pid);zip_test_drop(a);
+    assert(zip_test_reply(a,"{\"ok\":true,\"operation\":\"run\",\"changed\":[\"boot\"],\"log\":[\"one\"]}",J_ZIP_RUN,true)&&a->job.pid);zip_test_drop(a);
+    assert(zip_test_reply(a,"{\"ok\":false,\"operation\":\"run\",\"error\":{\"code\":\"ZIP_INSTALLER_FAILED\",\"message\":\"x\",\"details\":{\"changed\":[],\"log\":[\"bad\"]}}}",J_ZIP_RUN,false));
+    assert(!a->job.pid&&a->screen==RESULT&&!a->successful&&!strcmp(a->status,"ZIP_INSTALLER_FAILED")&&strstr(a->message,"1. b.zip: finished")&&strstr(a->message,"2. c.zip: failed")&&strstr(a->message,"3. a.zip: not run")&&strstr(a->message,"bad"));
+    render(a);assert(!test_button(a,A_REBOOT)&&!test_button(a,A_ZIP_STAY));
+    /* A ZIP chosen afresh is a list of one again, shown as one ZIP was before. */
+    zip_test_choose(a,"/d.zip",false,"d.zip");assert(a->zip_count==1&&!strcmp(a->zip_queue[0].name,"d.zip"));
+    render(a);assert(test_button(a,A_ZIP_ADD)&&!test_button(a,A_ZIP_REMOVE));
+    /* The restart that was asked for counts down on the result page; Stay in recovery stops it. */
+    assert(test_press(a,A_ZIP_RESTART,50)&&a->zip_restart);
+    assert(test_press(a,A_ZIP_CONFIRM,5100)&&a->job.pid);zip_test_drop(a);a->now=50000;
+    assert(zip_test_reply(a,"{\"ok\":true,\"operation\":\"run\",\"changed\":[\"boot\"],\"log\":[\"done\"]}",J_ZIP_RUN,true)&&a->screen==RESULT&&a->zip_restart_at==50000+ZIP_RESTART_MS&&!strcmp(a->status,"The installer finished"));
+    render(a);assert(test_button(a,A_ZIP_STAY)&&!test_button(a,A_REBOOT));
+    a->now=55000;hotplug_tick(a);assert(a->running&&a->zip_restart_at&&a->zip_restart_shown==5);
+    /* Stay works at once, also while a read runs in the background (the tick may have started one). */
+    action(a,A_ZIP_STAY);assert(!a->zip_restart_at&&a->running);zip_test_drop(a);render(a);assert(test_button(a,A_REBOOT));
+    /* Left alone, it restarts the system; leaving the page first stops it; a read in the background is waited for. */
+    a->zip_restart_at=a->now+ZIP_RESTART_MS;a->screen=HOME;hotplug_tick(a);zip_test_drop(a);assert(!a->zip_restart_at&&a->running);
+    a->screen=RESULT;a->zip_restart_at=a->now+ZIP_RESTART_MS;a->now+=ZIP_RESTART_MS;a->job.pid=1;hotplug_tick(a);assert(a->running&&a->zip_restart_at);
+    a->job.pid=0;hotplug_tick(a);assert(!a->running&&a->exit_code==200&&a->power_intent==200);zip_test_drop(a);
+    /* No more than six. */
+    a->running=true;a->exit_code=0;zip_test_choose(a,"/1.zip",false,"1.zip");
+    for(int n=2;n<=8;n++){char path[16],name[16];snprintf(path,sizeof(path),"/%d.zip",n);snprintf(name,sizeof(name),"%d.zip",n);zip_test_choose(a,path,true,name);}
+    assert(a->zip_count==ZIP_QUEUE);render(a);assert(!test_button(a,A_ZIP_ADD)->enabled);
+    free(a->pixels);free(a);return 1;
+}
+/* 2026-11-11: a factory reset asked for in Android's settings arrives as a request in misc; init reads
+   it and the page of Data for Android opens for it. A file stands in for what init left. */
+static int test_reset_request(void){
+    char path[]="/tmp/a22x-bcb-XXXXXX",helper[]="/tmp/a22x-bcb-helper-XXXXXX";int fd=mkstemp(path);assert(fd>=0);
+    #define BCB_FILE(text) do{FILE*f=fopen(path,"w");assert(f);fputs(text,f);fclose(f);}while(0)
+    BCB_FILE("{\"ok\":true,\"command\":\"boot-recovery\",\"recovery\":[\"recovery\",\"--wipe_data\",\"--reason=MasterClearConfirm\"],\"reason\":\"MasterClearConfirm\",\"wipe\":true,\"cleared\":false}\n");
+    close(fd);setenv("A22X_RECOVERY_BCB",path,1);
+    App*a=calloc(1,sizeof(*a));assert(a);initialize(a);a->inventory_ok=true;a->now=10000;a->fixture[0]='/';a->fixture[1]=0;
+    /* Only from the home page, and not while a job runs or the phone is locked. */
+    a->screen=TOOLS;reset_request_poll(a);assert(!a->reset_checked&&a->screen==TOOLS);
+    a->screen=HOME;a->locked=true;reset_request_poll(a);assert(!a->reset_checked);a->locked=false;
+    reset_request_poll(a);assert(a->reset_checked&&a->reset_asked&&!a->reset_prompt&&a->reset_page&&a->wipe_android&&a->screen==WIPE_REVIEW);
+    render(a);assert(test_button(a,A_RESET_LATER)&&test_button(a,A_RESET_FORGET)&&test_button(a,A_WIPE_CONFIRM)&&test_button(a,A_WIPE_CONFIRM)->hold_ms==5000);
+    /* Not now: home; the request stays, and the page does not open by itself a second time. */
+    assert(test_press(a,A_RESET_LATER,50)&&a->screen==HOME&&a->reset_asked&&!a->reset_page&&!a->wipe_android);
+    reset_request_poll(a);assert(a->screen==HOME);
+    /* Wipe, Data for Android: the same page, as Android's request; Back goes home too. */
+    a->screen=WIPE;render(a);assert(test_press(a,A_WIPE_ANDROID,50)&&a->screen==WIPE_REVIEW&&a->reset_page&&a->wipe_android);
+    action(a,A_BACK);assert(a->screen==HOME&&a->reset_asked);
+    /* Forget: a helper that fails leaves everything as it was, and says so. */
+    a->screen=WIPE;render(a);assert(test_press(a,A_WIPE_ANDROID,50)&&a->screen==WIPE_REVIEW);
+    copy(a->python,sizeof(a->python),"/nonexistent/python");a->toast[0]=0;
+    render(a);assert(test_press(a,A_RESET_FORGET,50)&&a->reset_asked&&a->screen==WIPE_REVIEW&&a->toast[0]);
+    /* A helper that clears it: the request is gone, the file init left with it, and the page is home. */
+    fd=mkstemp(helper);assert(fd>=0);assert(write(fd,"exit 0\n",7)==7);close(fd);setenv("A22X_RECOVERY_BCB_HELPER",helper,1);
+    copy(a->python,sizeof(a->python),"/bin/sh");a->toast[0]=0;
+    render(a);assert(test_press(a,A_RESET_FORGET,50)&&!a->reset_asked&&!a->reset_page&&!a->wipe_android&&a->screen==HOME&&a->toast[0]&&access(path,F_OK)!=0);
+    a->screen=WIPE;render(a);assert(test_press(a,A_WIPE_ANDROID,50)&&a->screen==WIPE_REVIEW&&!a->reset_page);  /* the plain page again */
+    /* Android that could not open its data asks with a prompt. */
+    BCB_FILE("{\"ok\":true,\"command\":\"boot-recovery\",\"recovery\":[\"recovery\",\"--prompt_and_wipe_data\",\"--reason=fs_mgr_mount_all\"],\"wipe\":true}\n");
+    a->reset_checked=false;a->wipe_android=false;a->screen=HOME;reset_request_poll(a);assert(a->reset_asked&&a->reset_prompt&&a->screen==WIPE_REVIEW);render(a);
+    /* Nothing asked, or nothing left by init: the home page stays. */
+    BCB_FILE("{\"ok\":true,\"command\":\"\",\"recovery\":[],\"reason\":\"\",\"wipe\":false,\"cleared\":false}\n");
+    a->reset_checked=a->reset_asked=a->reset_page=a->wipe_android=false;a->screen=HOME;reset_request_poll(a);assert(a->reset_checked&&!a->reset_asked&&a->screen==HOME);
+    unlink(path);a->reset_checked=false;reset_request_poll(a);assert(a->reset_checked&&!a->reset_asked&&a->screen==HOME);
+    unlink(helper);unsetenv("A22X_RECOVERY_BCB");unsetenv("A22X_RECOVERY_BCB_HELPER");
+    #undef BCB_FILE
+    free(a->pixels);free(a);return 1;
+}
+/* 2026-11-11: the charge shown is the interface's own estimate. A folder stands in for the kernel's
+   battery and for the curve in the device tree. */
+static int test_battery(void){
+    char folder[]="/tmp/a22x-battery-XXXXXX",path[112];assert(mkdtemp(folder));
+    #define BATTERY_FILE(name,format,value) do{snprintf(path,sizeof(path),"%s/%s",folder,name);FILE*f=fopen(path,"w");assert(f);fprintf(f,format,value);fclose(f);}while(0)
+    /* The phone's own curve, as the device tree holds it: big-endian pairs of microvolts and percent. */
+    static const unsigned int curve[][2]={{4357000,100},{4280721,95},{4221383,90},{4165774,85},{4110504,80},{4070075,75},{3996095,70},{3963975,65},{3931597,60},{3880589,55},{3842700,50},
+        {3819808,45},{3802441,40},{3787965,35},{3776921,30},{3762025,25},{3743598,20},{3716495,15},{3691341,10},{3650438,5},{3400000,0}};
+    snprintf(path,sizeof(path),"%s/ocv-capacity-table-0",folder);FILE*table=fopen(path,"wb");assert(table);
+    for(size_t n=0;n<sizeof(curve)/sizeof(*curve);n++)for(int k=0;k<2;k++){unsigned char b[4]={(unsigned char)(curve[n][k]>>24),(unsigned char)(curve[n][k]>>16),(unsigned char)(curve[n][k]>>8),(unsigned char)curve[n][k]};fwrite(b,1,4,table);}
+    fclose(table);
+    snprintf(path,sizeof(path),"%s/factory-internal-resistance-micro-ohms",folder);table=fopen(path,"wb");assert(table);{unsigned char b[4]={0,1,0xd4,0xc0};fwrite(b,1,4,table);}fclose(table); /* 120000 */
+    setenv("A22X_RECOVERY_BATTERY",folder,1);battery_curve.read=false;
+    App*a=calloc(1,sizeof(*a));assert(a);initialize(a);a->now=100000;
+    /* What the owner met: the kernel says 15 %, the cell stands at 3.79 V while 0.15 A flows in. */
+    BATTERY_FILE("capacity","%d\n",15);BATTERY_FILE("status","%s\n","Charging");BATTERY_FILE("current_now","%d\n",150000);
+    BATTERY_FILE("voltage_now","%d\n",3790000);BATTERY_FILE("charge_now","%d\n",750000);BATTERY_FILE("charge_full","%d\n",5000000);
+    update_battery(a);
+    assert(battery_curve.count==21&&battery_curve.resistance==120000);
+    assert(a->battery_estimated&&a->battery_percent>=27&&a->battery_percent<=30&&a->battery_charging&&!strncmp(a->battery,"2",1));
+    assert(battery_curve_level(4400000)==100&&battery_curve_level(3300000)==0&&battery_curve_level(3842700)==50&&fabs(battery_curve_level(3831254)-47.5)<0.01);
+    /* Charge counted by the kernel moves the estimate: 50 mAh of 5000 is one point. */
+    int before=a->battery_percent;double start=a->battery_estimate;
+    a->now+=10000;BATTERY_FILE("charge_now","%d\n",800000);update_battery(a);
+    /* While it settles the voltage decides; afterwards the counted charge does. */
+    for(int n=0;n<8;n++){a->now+=10000;update_battery(a);}
+    assert(a->battery_samples>BATTERY_SETTLE&&fabs(a->battery_estimate-start)<1.0&&a->battery_percent>=before-1&&a->battery_percent<=before+1);
+    start=a->battery_estimate;a->now+=120000;BATTERY_FILE("charge_now","%d\n",850000);update_battery(a); /* 1.5 A for two minutes */
+    assert(fabs(a->battery_estimate-start-1.0)<0.05);
+    /* A new start taken by the kernel (20 points in ten seconds) is no charge. */
+    start=a->battery_estimate;a->now+=10000;BATTERY_FILE("charge_now","%d\n",1850000);update_battery(a);
+    assert(fabs(a->battery_estimate-start)<0.05);
+    /* An estimate that drifted is drawn to the voltage, one point in thirty seconds, and stops within four points. */
+    a->battery_estimate=60.0;double far=a->battery_estimate-a->battery_ocv;assert(far>25);
+    a->now+=30000;update_battery(a);assert(fabs(a->battery_estimate-59.0)<0.05);
+    a->now+=15000;update_battery(a);assert(fabs(a->battery_estimate-58.5)<0.05);
+    a->battery_estimate=a->battery_ocv+3.5;a->now+=30000;update_battery(a);assert(fabs(a->battery_estimate-a->battery_ocv-3.5)<0.05);
+    /* While the cell is charged its voltage stands high: that it holds more than the estimate is believed only from twelve points on. */
+    a->battery_estimate=a->battery_ocv-8.0;a->now+=30000;update_battery(a);assert(fabs(a->battery_estimate-(a->battery_ocv-8.0))<0.05);
+    a->battery_estimate=a->battery_ocv-13.0;a->now+=30000;update_battery(a);assert(fabs(a->battery_estimate-(a->battery_ocv-12.0))<0.05);
+    /* While it is drained its voltage sags: that it holds less is believed only from twelve points on, that it holds more at four. */
+    {double level=a->battery_ocv;BATTERY_FILE("current_now","%d\n",-200000);BATTERY_FILE("voltage_now","%d\n",3790000-42000);   /* the same open-circuit voltage at 120 mOhm */
+     a->battery_ohm=0.120;a->battery_uv=0;a->battery_estimate=level+8.0;a->now+=30000;update_battery(a);assert(fabs(a->battery_ocv-level)<0.6&&fabs(a->battery_estimate-(level+8.0))<0.05);
+     a->battery_estimate=a->battery_ocv+13.0;a->now+=30000;update_battery(a);assert(fabs(a->battery_estimate-(a->battery_ocv+12.0))<0.6);
+     a->battery_estimate=a->battery_ocv-5.0;a->now+=30000;update_battery(a);assert(fabs(a->battery_estimate-(a->battery_ocv-4.0))<0.6);
+     BATTERY_FILE("current_now","%d\n",150000);BATTERY_FILE("voltage_now","%d\n",3790000);a->battery_uv=0;a->now+=30000;update_battery(a);}
+    /* A heavy current says little about the cell: the smoothed voltage level does not move for it. */
+    double held=a->battery_ocv;BATTERY_FILE("current_now","%d\n",-2000000);BATTERY_FILE("voltage_now","%d\n",3500000);
+    a->now+=10000;update_battery(a);assert(a->battery_ocv==held&&!a->battery_charging);
+    /* The resistance is learned from a step of the current: 0.44 A and 81 mV apart is 185 mOhm, a quarter of the way at a time. */
+    BATTERY_FILE("current_now","%d\n",160000);BATTERY_FILE("voltage_now","%d\n",3810000);a->now+=10000;update_battery(a);a->battery_ohm=0.120;
+    BATTERY_FILE("current_now","%d\n",-278000);BATTERY_FILE("voltage_now","%d\n",3729000);a->now+=10000;update_battery(a);
+    assert(fabs(a->battery_ohm-(0.120+(0.0810/0.438-0.120)*0.25))<0.0005);
+    /* A step that took too long, or one that gives no sensible resistance, teaches nothing. */
+    double learned=a->battery_ohm;BATTERY_FILE("current_now","%d\n",160000);BATTERY_FILE("voltage_now","%d\n",3810000);a->now+=60000;update_battery(a);assert(a->battery_ohm==learned);
+    BATTERY_FILE("current_now","%d\n",-278000);BATTERY_FILE("voltage_now","%d\n",3815000);a->now+=10000;update_battery(a);assert(a->battery_ohm==learned);
+    /* Charging near the top is 99 until the charger says Full; then it is 100. */
+    BATTERY_FILE("current_now","%d\n",200000);BATTERY_FILE("voltage_now","%d\n",4390000);a->battery_estimate=a->battery_ocv=100.0;
+    a->now+=10000;update_battery(a);assert(a->battery_percent==99&&a->battery_charging);
+    BATTERY_FILE("status","%s\n","Full");BATTERY_FILE("current_now","%d\n",0);a->now+=10000;update_battery(a);assert(a->battery_percent==100&&!strcmp(a->battery,"100%"));
+    /* Below 20 % and not charging the mark is red: the estimate decides, not the kernel's number. */
+    BATTERY_FILE("status","%s\n","Discharging");BATTERY_FILE("current_now","%d\n",-300000);BATTERY_FILE("voltage_now","%d\n",3650000);BATTERY_FILE("capacity","%d\n",64);
+    a->battery_estimated=false;a->now+=10000;update_battery(a);assert(a->battery_percent<20&&a->battery_percent>=8&&!a->battery_charging);
+    /* A gauge that keeps the percent itself (kernel 124) is shown as it is, whatever the voltage says;
+       still no 100 beside the charging bolt before the charger says Full. */
+    {char device[96];snprintf(device,sizeof(device),"%s/device",folder);assert(!mkdir(device,0700));BATTERY_FILE("device/soc_start","%s\n","stored 64 41");
+     a->now+=10000;update_battery(a);assert(a->battery_percent==64&&!a->battery_estimated&&!strcmp(a->battery,"64%"));
+     BATTERY_FILE("capacity","%d\n",63);a->now+=10000;update_battery(a);assert(a->battery_percent==63);
+     BATTERY_FILE("status","%s\n","Charging");BATTERY_FILE("current_now","%d\n",900000);BATTERY_FILE("capacity","%d\n",100);a->now+=10000;update_battery(a);assert(a->battery_percent==99&&a->battery_charging);
+     BATTERY_FILE("status","%s\n","Full");a->now+=10000;update_battery(a);assert(a->battery_percent==100);
+     BATTERY_FILE("status","%s\n","Discharging");BATTERY_FILE("current_now","%d\n",-300000);BATTERY_FILE("capacity","%d\n",64);
+     snprintf(path,sizeof(path),"%s/device/soc_start",folder);unlink(path);rmdir(device);}
+    /* Without the curve the kernel's number is shown as it is. */
+    snprintf(path,sizeof(path),"%s/ocv-capacity-table-0",folder);unlink(path);battery_curve.read=false;a->battery_estimated=false;
+    a->now+=10000;update_battery(a);assert(a->battery_percent==64&&!a->battery_estimated);
+    /* A curve that does not fall from point to point is no curve. */
+    table=fopen(path,"wb");assert(table);{unsigned char b[16]={0,0x3e,0x7a,0x10,0,0,0,50, 0,0x40,0x7a,0x10,0,0,0,40};fwrite(b,1,16,table);}fclose(table);
+    battery_curve.read=false;a->now+=10000;update_battery(a);assert(battery_curve.count==0&&a->battery_percent==64);
+    static const char*const names[]={"capacity","status","current_now","voltage_now","charge_now","charge_full","ocv-capacity-table-0","factory-internal-resistance-micro-ohms"};
+    for(size_t n=0;n<sizeof(names)/sizeof(*names);n++){snprintf(path,sizeof(path),"%s/%s",folder,names[n]);unlink(path);}
+    rmdir(folder);unsetenv("A22X_RECOVERY_BATTERY");battery_curve.read=false;
+    #undef BATTERY_FILE
+    free(a->pixels);free(a);return 1;
+}
+/* 2026-11-12: how Android's last start ended, as init left it in RAM. The page opens once from the
+   home page for a start that failed, never for an ordinary restart or a log that just ends, and
+   not again for the start the owner has read about. */
+static int test_android_log(void){
+    char path[]="/tmp/a22x-alog-XXXXXX";int fd=mkstemp(path);assert(fd>=0);close(fd);setenv("A22X_RECOVERY_ANDROID_LOG",path,1);
+    #define ALOG_FILE(text) do{FILE*f=fopen(path,"w");assert(f);fputs(text,f);fclose(f);}while(0)
+    static const char failed[]="{\"ok\":true,\"operation\":\"read\",\"found\":true,\"code\":\"KERNEL_TOO_OLD\",\"restart\":\"bpfloader-failed\",\"reason\":\"reboot,bpfloader-failed\",\"needs\":\"4.19\",\"detail\":\"\",\"kernel\":\"\",\"seconds\":9.1,"
+        "\"lines\":[\"[861:netbpfload]NetBpfLoad: Android V requires kernel 4.19.\",\"[1:init]reboot: Restarting system with command 'bpfloader-failed'\"],\"id\":\"bb9507f313de2d66\",\"log_lines\":2395}";
+    App*a=calloc(1,sizeof(*a));assert(a);initialize(a);a->inventory_ok=true;a->now=100000;
+    ALOG_FILE(failed);
+    a->screen=TOOLS;android_log_poll(a);assert(!a->alog_checked);                       /* only from the home page */
+    a->screen=HOME;a->locked=true;android_log_poll(a);assert(!a->alog_checked);a->locked=false;
+    android_log_poll(a);assert(a->alog_checked&&a->screen==ANDROID_LOG&&!strcmp(a->alog_code,"KERNEL_TOO_OLD")&&!strcmp(a->alog_needs,"4.19")&&a->alog_seconds==9&&a->alog_line_count==2);
+    render(a);assert(test_button(a,A_ALOG_OK)&&test_button(a,A_ALOG_IMAGES)&&test_button(a,A_ALOG_STOCK));
+    assert(!a->alog_seen[0]&&test_press(a,A_ALOG_OK,50)&&a->screen==HOME&&!strcmp(a->alog_seen,"bb9507f313de2d66")&&a->settings_dirty);
+    /* The same start after the recovery was restarted: read about already, nothing opens. */
+    a->alog_checked=false;a->alog_code[0]=0;android_log_poll(a);assert(a->alog_checked&&a->screen==HOME);
+    /* Another failed start opens the page again; Back reads it as well, and the pages of Android are one tap away. */
+    a->alog_checked=false;copy(a->alog_seen,sizeof(a->alog_seen),"0000000000000000");android_log_poll(a);assert(a->screen==ANDROID_LOG);
+    render(a);assert(test_press(a,A_ALOG_IMAGES,50)&&a->screen==ANDROID_MENU&&!strcmp(a->alog_seen,"bb9507f313de2d66"));
+    a->alog_checked=false;a->alog_seen[0]=0;a->screen=HOME;android_log_poll(a);assert(a->screen==ANDROID_LOG);action(a,A_BACK);assert(a->screen==HOME&&a->alog_seen[0]);
+    /* An ordinary restart, a log that just ends, no Android log at all: nothing opens. */
+    a->alog_seen[0]=0;
+    ALOG_FILE("{\"ok\":true,\"found\":true,\"code\":\"\",\"restart\":\"recovery\",\"id\":\"1111111111111111\"}");a->alog_checked=false;android_log_poll(a);assert(a->alog_checked&&a->screen==HOME);
+    ALOG_FILE("{\"ok\":true,\"found\":true,\"code\":\"CUT_SHORT\",\"restart\":null,\"id\":\"2222222222222222\"}");a->alog_checked=false;android_log_poll(a);assert(a->alog_checked&&a->screen==HOME&&!a->alog_code[0]);
+    ALOG_FILE("{\"ok\":true,\"found\":false,\"code\":\"\"}");a->alog_checked=false;android_log_poll(a);assert(a->alog_checked&&a->screen==HOME);
+    /* init is still reading: the page waits for the answer, but not for ever. */
+    unlink(path);a->alog_checked=false;a->alog_since=0;android_log_poll(a);assert(!a->alog_checked);
+    a->now+=5000;ALOG_FILE(failed);android_log_poll(a);assert(a->alog_checked&&a->screen==ANDROID_LOG);action(a,A_BACK);
+    unlink(path);a->alog_checked=false;a->alog_since=0;android_log_poll(a);a->now+=21000;android_log_poll(a);assert(a->alog_checked&&a->screen==HOME);
+    #undef ALOG_FILE
+    unsetenv("A22X_RECOVERY_ANDROID_LOG");free(a->pixels);free(a);return 1;
+}
+/* 2026-11-11: the flashlight is the camera's LED in the kernel's LED class; what is shown is what
+   the LED took. A folder of two files stands in for it. */
+static int test_torch(void){
+    char folder[]="/tmp/a22x-torch-XXXXXX",path[96];assert(mkdtemp(folder));
+    #define TORCH_FILE(name,value) do{snprintf(path,sizeof(path),"%s/%s",folder,name);FILE*f=fopen(path,"w");assert(f);fputs(value,f);fclose(f);}while(0)
+    TORCH_FILE("max_brightness","7\n");TORCH_FILE("brightness","0\n");setenv("A22X_RECOVERY_TORCH",folder,1);
+    App*a=calloc(1,sizeof(*a));assert(a);initialize(a);a->inventory_ok=true;a->now=10000;a->screen=HOME;render(a);
+    unsigned int now=9;assert(torch_ready(a)&&a->torch_max==7&&!a->torch_on&&a->torch_level==4&&test_button(a,A_TORCH));
+    assert(test_press(a,A_TORCH,50)&&a->torch_on&&torch_value(folder,"brightness",&now)&&now==4);
+    render(a);assert(test_press(a,A_TORCH,50)&&!a->torch_on&&torch_value(folder,"brightness",&now)&&now==0);
+    /* Settings: On and Off, and the brightness: - and + through every level, or a touch on the bar.
+       While the light is off a step is kept for the next time. */
+    a->screen=TOOLS;a->tools_scroll=500;render(a);assert(test_button(a,A_TORCH_ON)&&test_button(a,A_TORCH_OFF)&&test_button(a,A_TORCH_UP)&&test_button(a,A_TORCH_DOWN)&&test_button(a,A_TORCH_BAR));
+    assert(test_press(a,A_TORCH_UP,50)&&!a->torch_on&&a->torch_level==5&&a->torch_saved==5&&a->settings_dirty&&torch_value(folder,"brightness",&now)&&now==0);
+    assert(test_press(a,A_TORCH_OFF,50)&&!a->torch_on&&torch_value(folder,"brightness",&now)&&now==0); /* off already */
+    assert(test_press(a,A_TORCH_ON,50)&&a->torch_on&&torch_value(folder,"brightness",&now)&&now==5);
+    assert(test_press(a,A_TORCH_ON,50)&&a->torch_on&&torch_value(folder,"brightness",&now)&&now==5);   /* on already */
+    assert(test_press(a,A_TORCH_UP,50)&&test_press(a,A_TORCH_UP,50)&&torch_value(folder,"brightness",&now)&&now==7&&a->torch_level==7);
+    render(a);assert(!test_button(a,A_TORCH_UP)->enabled&&!test_press(a,A_TORCH_UP,50)&&a->torch_level==7); /* the brightest: no further */
+    for(int n=0;n<6;n++)assert(test_press(a,A_TORCH_DOWN,50));
+    assert(torch_value(folder,"brightness",&now)&&now==1&&a->torch_level==1&&a->torch_saved==1);
+    render(a);assert(!test_button(a,A_TORCH_DOWN)->enabled);
+    /* The bar takes the level under the finger: its ends are the dimmest and the brightest. */
+    {Button*bar=test_button(a,A_TORCH_BAR);assert(bar);Rect r=bar->r;int y=r.y+r.h/2;uint64_t t=milliseconds();
+     pointer(a,true,r.x+r.w-6,y,t);pointer(a,false,r.x+r.w-6,y,t+50);assert(a->torch_level==7&&a->torch_saved==7&&torch_value(folder,"brightness",&now)&&now==7);
+     render(a);t=milliseconds();pointer(a,true,r.x+6,y,t);pointer(a,false,r.x+6,y,t+50);assert(a->torch_level==1&&torch_value(folder,"brightness",&now)&&now==1);
+     assert(test_press(a,A_TORCH_BAR,50)&&a->torch_level==4&&torch_value(folder,"brightness",&now)&&now==4);       /* its middle */
+     assert(torch_bar_level(a,r,r.x-50)==1&&torch_bar_level(a,r,r.x+r.w+50)==7);
+     for(unsigned int n=1;n<=7;n++)assert(torch_bar_level(a,r,r.x+4+(int)((unsigned int)(r.w-8)*n/7)-2)==n);      /* just inside each level's end */
+     /* Chosen with the keys there is no finger to place: the bar is one step brighter. */
+     action(a,A_TORCH_BAR);assert(a->torch_level==5&&torch_value(folder,"brightness",&now)&&now==5);
+     assert(test_press(a,A_TORCH_DOWN,50)&&torch_value(folder,"brightness",&now)&&now==4);}
+    /* The power menu switches it and stays open; its - and + step too; the level last used comes back. */
+    power_menu_open(a);render(a);assert(a->screen==POWER_MENU&&test_button(a,A_TORCH)&&test_button(a,A_TORCH_UP));
+    assert(test_press(a,A_TORCH,50)&&a->screen==POWER_MENU&&!a->torch_on&&torch_value(folder,"brightness",&now)&&now==0);
+    assert(test_press(a,A_TORCH,50)&&a->screen==POWER_MENU&&a->torch_on&&torch_value(folder,"brightness",&now)&&now==4);
+    assert(test_press(a,A_TORCH_UP,50)&&a->screen==POWER_MENU&&torch_value(folder,"brightness",&now)&&now==5);
+    assert(test_press(a,A_TORCH_DOWN,50)&&a->screen==POWER_MENU&&torch_value(folder,"brightness",&now)&&now==4);
+    assert(test_press(a,A_MENU_CLOSE,50)&&a->screen==TOOLS);
+    /* A level kept in the settings is the one a fresh start uses, when the LED has it. */
+    {App*b=calloc(1,sizeof(*b));assert(b);initialize(b);b->torch_saved=6;assert(torch_ready(b)&&b->torch_level==4);   /* the light is on at 4: shown as it is */
+     b->torch_checked=false;b->torch_on=false;TORCH_FILE("brightness","0\n");assert(torch_ready(b)&&b->torch_level==6);
+     b->torch_checked=false;b->torch_saved=99;assert(torch_ready(b)&&b->torch_level==4);
+     /* Settings read after the first frame: their level is taken, unless the LED has none such. */
+     b->torch_saved=2;torch_remembered(b);assert(b->torch_level==2);b->torch_saved=99;torch_remembered(b);assert(b->torch_level==2);
+     b->torch_saved=0;torch_remembered(b);assert(b->torch_level==2);free(b->pixels);free(b);}
+    TORCH_FILE("brightness","4\n");
+    /* A power action takes the light with it: the one this interface lit, and one lit by other hands. */
+    a->torch_on=true;torch_leave(a);assert(!a->torch_on&&torch_value(folder,"brightness",&now)&&now==0&&a->torch_level==4);
+    TORCH_FILE("brightness","3\n");torch_leave(a);assert(!a->torch_on&&torch_value(folder,"brightness",&now)&&now==0);
+    torch_leave(a);assert(torch_value(folder,"brightness",&now)&&now==0);
+    TORCH_FILE("brightness","4\n");a->torch_on=true;
+    /* An LED that does not take the value: said so, and shown as it is. */
+    snprintf(path,sizeof(path),"%s/brightness",folder);assert(chmod(path,0444)==0);
+    if(geteuid()){a->toast[0]=0;render(a);assert(test_press(a,A_TORCH_OFF,50)&&a->torch_on&&a->toast[0]);}
+    /* A phone without the LED shows no flashlight anywhere. */
+    unsetenv("A22X_RECOVERY_TORCH");a->torch_checked=a->torch_available=false;a->screen=HOME;render(a);assert(!torch_ready(a)&&!test_button(a,A_TORCH));
+    chmod(path,0644);unlink(path);snprintf(path,sizeof(path),"%s/max_brightness",folder);unlink(path);rmdir(folder);
+    #undef TORCH_FILE
+    free(a->pixels);free(a->menu_backdrop);free(a);return 1;
+}
+/* 2026-11-11, as TWRP's Restore defaults: a hold on the last button of Settings puts the ways the
+   recovery behaves back; the language and the time zone are the user's and stay. */
+static int test_settings_reset(void){
+    App*a=calloc(1,sizeof(*a));assert(a);initialize(a);a->preview=true;a->inventory_ok=true;
+    unsigned int language=ui_language;const Theme*theme=ui_theme;const TerminalScheme*scheme=ui_terminal;
+    ui_language=1;(void)theme_select(a,themes[THEME_COUNT-1].code);assert(ui_theme!=&themes[0]);
+    a->animation=3;a->nav_mode=NAV_BUTTONS;a->vibration=0;a->screen_timeout_index=5;a->saved_hz=90;a->saved_brightness=40;a->lock_mode=0;a->access_mode=false;a->storage_prefers_usb=true;a->utc_offset=120;
+    a->screen=TOOLS;render(a);assert(a->tools_content>1254);a->tools_scroll=tools_max_scroll(a);render(a);
+    Button*b=test_button(a,A_SETTINGS_RESET);assert(b&&b->enabled&&b->hold_ms==3000&&b->r.y+b->r.h==1484-28);
+    /* The page ends with the button: nothing scrolls past it, with or without the lock rows. */
+    a->lock_enabled=true;render(a);assert(a->tools_scroll<tools_max_scroll(a));a->tools_scroll=tools_max_scroll(a);render(a);b=test_button(a,A_SETTINGS_RESET);assert(b&&b->r.y+b->r.h==1484-28);
+    a->lock_enabled=false;render(a);assert(a->tools_scroll==tools_max_scroll(a));render(a);b=test_button(a,A_SETTINGS_RESET);assert(b&&b->r.y+b->r.h==1484-28);
+    assert(test_press(a,A_SETTINGS_RESET,600)&&a->animation==3&&ui_theme!=&themes[0]); /* A tap changes nothing. */
+    assert(test_press(a,A_SETTINGS_RESET,3100));
+    assert(ui_theme==&themes[0]&&a->animation==0&&a->nav_mode==NAV_GESTURES&&a->vibration==2&&a->screen_timeout_index==SCREEN_TIMEOUT_DEFAULT);
+    assert(!a->saved_hz&&!a->saved_brightness&&!a->storage_prefers_usb&&a->settings_dirty&&a->screen==TOOLS);
+    /* Who uses the phone and who may reach it stay as they were set. */
+    assert(ui_language==1&&a->utc_offset==120&&a->lock_mode==0&&!a->access_mode);
+    ui_language=language;ui_theme=theme;ui_terminal=scheme;free(a->pixels);free(a);return 1;
 }
 static int self_test(void){
     App*a=calloc(1,sizeof(*a));assert(a);initialize(a);int tests=0;
@@ -4509,7 +5808,7 @@ static int self_test(void){
     pointer(a,true,250,470,28000);pointer(a,false,250,470,28100);assert(a->screen==FILE_BROWSER&&!a->fs_file[0]&&!a->fs_selected.path[0]);render(a);assert(test_button(a,A_FS_ENTRY)->enabled);tests++;
     assert(json_parse(&fj,"{\"supported\":true,\"available_hz\":[60,90],\"current_hz\":60,\"actual_hz\":59.9998,\"service_running\":true,\"reason\":null}",ft,256)>0);assert(parse_display_status(a,&fj)&&a->display_hz==60&&a->display_90&&a->display_actual_hz>59.99);screen(a,DISPLAY_SETTINGS);render(a);assert(test_button(a,A_DISPLAY_90)->enabled&&!test_button(a,A_DISPLAY_60)->enabled);tests++;
     assert(json_parse(&fj,"{\"supported\":false,\"available_hz\":[],\"current_hz\":null,\"actual_hz\":null,\"service_running\":false,\"reason\":\"Unavailable\"}",ft,256)>0);assert(parse_display_status(a,&fj)&&!a->display_hz&&!a->display_actual_hz);render(a);assert(!test_button(a,A_DISPLAY_60)->enabled&&!test_button(a,A_DISPLAY_90)->enabled);tests++;
-    FileEntry typed={0};copy(typed.type,sizeof(typed.type),"file");copy(typed.mode,sizeof(typed.mode),"0644");assert(!file_is_executable(&typed)&&file_color(&typed)==FILE_BLUE&&!strcmp(file_type_label(&typed),"File"));copy(typed.mode,sizeof(typed.mode),"0755");assert(file_is_executable(&typed)&&file_color(&typed)==GREEN);copy(typed.type,sizeof(typed.type),"symlink");assert(!file_is_executable(&typed)&&file_color(&typed)==LINK_PURPLE);copy(typed.type,sizeof(typed.type),"directory");assert(file_color(&typed)==ORANGE);copy(typed.type,sizeof(typed.type),"other");assert(file_color(&typed)==MUTED&&strstr(file_type_label(&typed),"blocked"));tests++;
+    FileEntry typed={0};copy(typed.type,sizeof(typed.type),"file");copy(typed.mode,sizeof(typed.mode),"0644");assert(!file_is_executable(&typed)&&file_color(&typed)==FILE_BLUE&&!strcmp(file_type_label(&typed),"File"));copy(typed.mode,sizeof(typed.mode),"0755");assert(!file_is_executable(&typed)&&!strcmp(file_type_label(&typed),"File"));typed.metadata_supported=true;assert(file_is_executable(&typed)&&file_color(&typed)==GREEN);copy(typed.type,sizeof(typed.type),"symlink");assert(!file_is_executable(&typed)&&file_color(&typed)==LINK_PURPLE);copy(typed.type,sizeof(typed.type),"directory");assert(file_color(&typed)==ORANGE);copy(typed.type,sizeof(typed.type),"other");assert(file_color(&typed)==MUTED&&strstr(file_type_label(&typed),"blocked"));tests++;
     ScrollSamples samples={0};scroll_sample(&samples,100,0);scroll_sample(&samples,150,200);scroll_sample(&samples,180,320);assert(scroll_release_velocity(&samples,180)==SCROLL_MAX_SPEED);scroll_sample(&samples,350,320);assert(!scroll_release_velocity(&samples,350));tests++;
     samples.count=0;scroll_sample(&samples,1000,0);scroll_sample(&samples,1100,12);assert(!scroll_release_velocity(&samples,1100));scroll_sample(&samples,900,20);assert(samples.count==1&&!scroll_release_velocity(&samples,900));tests++;
     KineticScroll one={0},many={0};assert(kinetic_begin(&one,100,2000,10000,1000));many=one;assert(kinetic_advance(&one,1100,10000));for(uint64_t t=1010;t<=1100;t+=10)(void)kinetic_advance(&many,t,10000);assert(scroll_abs(one.position-many.position)<.001&&scroll_abs(one.velocity-many.velocity)<.001);tests++;
@@ -4545,7 +5844,7 @@ static int self_test(void){
     }
     theme_apply(a,0);tests++;
     ui_language=1;assert(strcmp(tr("Settings"),"Settings")&&!strcmp(tr("no such text"),"no such text"));raw_text(true);assert(!strcmp(tr("Settings"),"Settings"));raw_text(false);ui_language=0;assert(!strcmp(tr("Settings"),"Settings"));tests++;
-    tests+=test_linux_plan_guards();free(a->pixels);free(a);printf("{\"ok\":true,\"ui_self_tests\":%d,\"device_io\":false}\n",tests);return 0;
+    tests+=test_linux_plan_guards();tests+=test_settings_reset();tests+=test_screenshot_keys();tests+=test_android_log();tests+=test_torch();tests+=test_battery();tests+=test_reset_request();tests+=test_zip_queue();free(a->pixels);free(a);printf("{\"ok\":true,\"ui_self_tests\":%d,\"device_io\":false}\n",tests);return 0;
 }
 static bool await_job(App*a){
     uint64_t deadline=milliseconds()+60000;
@@ -4729,7 +6028,7 @@ static bool workflow_tools(App*a,const char*what){
     TOOLS_CHECK(a->tools_volume_index>=0&&!strcmp(a->tools_volume_id,"sdcard-p1")&&valid_sha256(a->tools_volume_token));
     TOOLS_CHECK(test_press(a,A_TOOLS_EXPORT_CONFIRM,1999)&&!a->job.pid&&a->screen==TOOLS_EXPORT);
     if(!strcmp(what,"tools-stale-export")){memset(a->tools_volume_token,'0',64);a->tools_volume_token[64]=0;copy(a->volumes[a->tools_volume_index].token,sizeof(a->volumes[0].token),a->tools_volume_token);}
-    TOOLS_CHECK(test_press(a,A_TOOLS_EXPORT_CONFIRM,2000)&&await_job(a)&&a->screen==RESULT&&a->result_return==TOOLS);
+    TOOLS_CHECK(test_press(a,A_TOOLS_EXPORT_CONFIRM,2000)&&await_job(a)&&a->screen==RESULT&&a->result_return==HOME);
     if(!strcmp(what,"tools-stale-export")){TOOLS_CHECK(!a->successful&&!strcmp(a->status,"VOLUME_CHANGED"));return true;}
     TOOLS_CHECK(a->successful&&strstr(a->message,"SHA-256:")&&strstr(a->message,".tar.gz"));
 #undef TOOLS_CHECK
@@ -4815,6 +6114,41 @@ static int workflow(App*a,const char*what,const char*render_path){
         a->selected_backup=0;
         if(!strcmp(what,"verify-first")){if(!start_job(a,J_VERIFY)||!await_job(a))return 1;}
         else{if(!start_job(a,J_RESTORE_PLAN)||!await_job(a)||a->screen!=PLAN||!a->plan_can_execute)return 1;render(a);pointer(a,true,300,1360,100);pointer(a,false,300,1360,3200);if(!await_job(a))return 1;}
+    }else if(!strcmp(what,"manage-first")){
+        /* 2026-11-11: the only backup is renamed and then deleted on its page, as a user does it. */
+#define MANAGE_CHECK(expression) do{if(!(expression)){fprintf(stderr,"[manage-workflow] failed at line %d: %s; screen=%d status=%s\n",__LINE__,#expression,a->screen,a->status);return 1;}}while(0)
+        MANAGE_CHECK(start_job(a,J_LIST)&&await_job(a)&&a->screen==LIST&&a->backup_count==1);
+        char old[sizeof(a->backups[0].name)];copy(old,sizeof(old),a->backups[0].name);
+        MANAGE_CHECK(test_press(a,A_BACKUP_ITEM,50)&&a->screen==DETAIL);
+        MANAGE_CHECK(test_press(a,A_BACKUP_RENAME,50)&&a->screen==FILE_PROMPT&&a->fs_prompt_kind==J_BACKUP_NAME&&!strcmp(a->fs_prompt,old));
+        /* The name it has, a name with a space and a hidden name are not taken. */
+        MANAGE_CHECK(!test_press(a,A_FS_PROMPT_NEXT,50));
+        MANAGE_CHECK(workflow_type(a,"my copy",true)&&!test_press(a,A_FS_PROMPT_NEXT,50)&&workflow_type(a,".hidden",true)&&!test_press(a,A_FS_PROMPT_NEXT,50));
+        MANAGE_CHECK(test_press(a,A_BACK,50)&&a->screen==DETAIL&&!a->job.pid&&!a->fs_prompt[0]);
+        MANAGE_CHECK(test_press(a,A_BACKUP_RENAME,50)&&workflow_type(a,"before-root_1.0",true)&&test_press(a,A_FS_PROMPT_NEXT,50)&&await_job(a));
+        MANAGE_CHECK(a->successful&&a->screen==LIST&&a->backup_count==1&&!strcmp(a->backups[0].name,"before-root_1.0")&&strstr(a->backups[0].path,"/before-root_1.0"));
+        /* A tap does not delete; the hold does, and the list comes back empty. */
+        MANAGE_CHECK(test_press(a,A_BACKUP_ITEM,50)&&a->screen==DETAIL&&test_press(a,A_BACKUP_DELETE,600)&&!a->job.pid&&a->screen==DETAIL);
+        MANAGE_CHECK(test_press(a,A_BACKUP_DELETE,3200)&&await_job(a)&&a->successful&&a->screen==LIST&&a->backup_count==0);
+#undef MANAGE_CHECK
+    }else if(!strcmp(what,"card-partition")){
+        /* 2026-11-11: a card is partitioned from the Wipe page, as a user does it; sdcard.py on a fixture file. */
+#define CARD_CHECK(expression) do{if(!(expression)){fprintf(stderr,"[card-workflow] failed at line %d: %s; screen=%d status=%s\n",__LINE__,#expression,a->screen,a->status);return 1;}}while(0)
+        screen(a,WIPE);
+        CARD_CHECK(test_press(a,A_CARD,50)&&a->screen==CARD_PAGE&&await_job(a)&&a->card_known&&a->card_count==1&&card_current(a));
+        CARD_CHECK(!card_current(a)->busy_code[0]&&card_current(a)->part_count==1&&!strcmp(card_current(a)->parts[0].fs,"ext4")&&!strcmp(card_current(a)->parts[0].label,"old-system"));
+        /* What does not fit a card of 3 GiB is no button: 8 GiB of Linux, 4 GiB of swap. */
+        render(a);CARD_CHECK(test_button(a,A_CARD_LINUX+1)&&!test_button(a,A_CARD_LINUX+1)->enabled&&!test_button(a,A_CARD_SWAP+3)->enabled&&test_button(a,A_CARD_SWAP+2)->enabled);
+        CARD_CHECK(test_press(a,A_CARD_SWAP+1,50)&&a->card_swap==1&&!a->job.pid);
+        /* A hold shorter than five seconds writes nothing. */
+        CARD_CHECK(test_button(a,A_CARD_APPLY)&&test_button(a,A_CARD_APPLY)->hold_ms==5000&&test_press(a,A_CARD_APPLY,3000)&&!a->job.pid&&a->screen==CARD_PAGE);
+        CARD_CHECK(test_press(a,A_CARD_APPLY,5200)&&await_job(a)&&a->successful&&a->screen==RESULT&&a->result_return==CARD_PAGE&&strstr(a->message,"FAT32"));
+        /* The result leads back to the page, which reads the card again and shows what was made. */
+        CARD_CHECK(test_press(a,A_DONE,50)&&a->screen==CARD_PAGE&&await_job(a)&&a->card_known&&card_current(a)&&card_current(a)->part_count==2);
+        CARD_CHECK(!strcmp(card_current(a)->table,"mbr")&&!strcmp(card_current(a)->parts[0].fs,"vfat")&&!strcmp(card_current(a)->parts[1].fs,"swap")&&card_current(a)->parts[1].size==1ULL<<30);
+        CARD_CHECK(test_press(a,A_BACK,50)&&a->screen==WIPE);
+        a->successful=true;
+#undef CARD_CHECK
     }else return 2;
     a->now=milliseconds();render(a);if(render_path&&!write_ppm(a,render_path))return 1;
     printf("{\"ok\":%s,\"workflow\":\"%s\",\"backend_operation\":\"%s\",\"progress_events\":%u,\"fixture_only\":true}\n",a->successful?"true":"false",what,a->last_backend_operation,a->progress_events);return a->successful?0:1;
@@ -4883,7 +6217,7 @@ int main(int argc,char**argv){
             else break;
         }
         terminal_pump(a);
-        bool dark=a->display_blank_known&&a->display_blanked,asleep=dark&&!a->job.pid&&!a->display_control.pid&&!a->settings_pid&&!a->pointer_down;
+        bool dark=a->display_blank_known&&a->display_blanked,asleep=dark&&!a->job.pid&&!a->display_control.pid&&!a->settings_pid&&!a->shot_pid&&!a->pointer_down;
         if(dark!=slept){slept=dark;ui_cpu_floor(!dark);}
         if(a->now-last_battery>(asleep?60000u:10000u)){update_battery(a);last_battery=a->now;a->dirty=true;}
         struct pollfd p[MAX_INPUTS+1];for(int n=0;n<count;n++)p[n]=(struct pollfd){inputs[n].fd,POLLIN,0};p[count]=(struct pollfd){hotplug,POLLIN,0};
@@ -4915,7 +6249,9 @@ int main(int argc,char**argv){
         }
     }
     for(int n=0;n<count;n++)close(inputs[n].fd);
-    /* A power action leaves this frame up while init finishes the work and the phone resets. */
+    /* A power action switches the flashlight off, and leaves this frame up while init finishes the
+       work and the phone resets. */
+    if(a->exit_code>=200&&a->exit_code<=203)torch_leave(a);
     if(a->device&&a->exit_code>=200&&a->exit_code<=203){render_farewell(a,a->exit_code);(void)present(a,&display);}
     close_display(&display);int rc=a->exit_code;free(a->pixels);free(a);return rc;
 }

@@ -16,10 +16,10 @@
     <string name="partition_line">%1$s: %2$s, образу потрібно %3$s</string>
     <string name="partition_missing">не знайдено</string>
     <string name="install_title">Встановлення</string>
-    <string name="install_text">Виберіть, що записати: recovery, BOOT або обидва.</string>
+    <string name="install_text">Виберіть, що записати: recovery зараз і Linux BOOT на потім.</string>
     <string name="option_recovery">A22x Recovery %1$s · %2$s</string>
-    <string name="option_boot">Linux BOOT %1$s · %2$s</string>
-    <string name="boot_warning">З цим BOOT Android не запуститься: він запускає систему Linux, встановлену recovery. Поточний BOOT спершу зберігається, і recovery може прошити його назад («Встановлення → Прошити розділ → boot»).</string>
+    <string name="option_boot">Linux BOOT %1$s · %2$s, зберегти для recovery</string>
+    <string name="boot_warning">Розділ BOOT не зачіпається: цей Linux BOOT зберігається в cache, а recovery запише його, коли встановлюватиме систему Linux. До того Android запускається як завжди.</string>
     <string name="install">Встановити</string>
     <string name="working">Виконується:</string>
     <string name="sha">SHA-256 %1$s…</string>
@@ -29,6 +29,7 @@
     <string name="confirm_backup">Поточний вміст спершу збережеться в %1$s, а кожен розділ після запису буде перечитано.</string>
     <string name="cancel">Скасувати</string>
     <string name="done_flash">%1$s записано й перечитано. Старий вміст збережено в %2$s.</string>
+    <string name="done_keep">Linux BOOT збережено в cache для recovery. Android запускається як раніше.</string>
     <string name="failed">Не виконано: %1$s</string>
     <string name="wifi_title">Wi-Fi для recovery</string>
     <string name="wifi_text">Recovery прочитає це один раз під час наступного запуску, збереже мережу як ключ WPA і видалить файл.</string>

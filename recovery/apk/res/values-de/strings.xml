@@ -16,10 +16,10 @@
     <string name="partition_line">%1$s: %2$s, das Abbild braucht %3$s</string>
     <string name="partition_missing">nicht gefunden</string>
     <string name="install_title">Installieren</string>
-    <string name="install_text">Wählen Sie, was geschrieben wird: das Recovery, der BOOT oder beides.</string>
+    <string name="install_text">Wählen Sie, was geschrieben wird: das Recovery jetzt und das Linux-BOOT für später.</string>
     <string name="option_recovery">A22x Recovery %1$s · %2$s</string>
-    <string name="option_boot">Linux-BOOT %1$s · %2$s</string>
-    <string name="boot_warning">Mit diesem BOOT startet Android nicht: Es startet das Linux-System, das das Recovery installiert hat. Ihr aktueller BOOT wird zuerst gesichert, und das Recovery kann ihn zurückschreiben (Installieren → Partition flashen → boot).</string>
+    <string name="option_boot">Linux-BOOT %1$s · %2$s, für das Recovery aufbewahrt</string>
+    <string name="boot_warning">Die BOOT-Partition wird nicht angefasst: Dieses Linux-BOOT wird auf cache aufbewahrt, und das Recovery schreibt es, wenn es ein Linux-System installiert. Bis dahin startet Android weiter.</string>
     <string name="install">Installieren</string>
     <string name="working">Läuft:</string>
     <string name="sha">SHA-256 %1$s…</string>
@@ -29,6 +29,7 @@
     <string name="confirm_backup">Der aktuelle Inhalt wird zuerst in %1$s gesichert, und jede Partition wird nach dem Schreiben zurückgelesen.</string>
     <string name="cancel">Abbrechen</string>
     <string name="done_flash">%1$s geschrieben und zurückgelesen. Der alte Inhalt liegt in %2$s.</string>
+    <string name="done_keep">Das Linux-BOOT liegt auf cache für das Recovery bereit. Android startet wie bisher.</string>
     <string name="failed">Nicht erledigt: %1$s</string>
     <string name="wifi_title">WLAN für das Recovery</string>
     <string name="wifi_text">Das Recovery liest dies einmal beim nächsten Start, behält das Netz als WPA-Schlüssel und löscht die Datei.</string>

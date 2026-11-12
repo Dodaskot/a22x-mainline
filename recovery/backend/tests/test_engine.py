@@ -107,6 +107,38 @@ class RecoveryTests(unittest.TestCase):
         engine.restore(self.context, plan, plan["confirmation_token"])
         self.assertEqual(self.contents(), original)
 
+    def test_a_finished_backup_is_renamed_and_deleted_only_by_its_own_name(self):
+        """2026-11-11, TWRP's Restore page: rename and delete. Only a complete snapshot, only with a
+        usable name, and deleting only when the snapshot's own name confirms it."""
+        first, second = self.snapshot("recovery"), self.snapshot("recovery")
+        for name in ("", "../escape", "a/b", ".hidden", "x" * 65, "new.partial-1", "with space", None):
+            with self.assertRaises(RecoveryError) as raised:
+                engine.manage_backup(self.context, first, "rename", new_name=name)
+            self.assertEqual(raised.exception.code, "INVALID_NAME", name)
+        self.assertTrue(first.is_dir())
+        with self.assertRaises(RecoveryError) as raised:
+            engine.manage_backup(self.context, first, "rename", new_name=second.name)
+        self.assertEqual(raised.exception.code, "BACKUP_EXISTS")
+        done = engine.manage_backup(self.context, first, "rename", new_name="before-root_2026.11")
+        renamed = Path(done["backup_path"])
+        self.assertTrue(renamed.is_dir() and not first.exists() and renamed.parent == first.parent)
+        self.assertTrue(engine.verify_backup(self.context, renamed)["verified"])
+        self.assertIn("before-root_2026.11", [b["name"] for b in engine.list_backups(self.context, self.repo)["backups"]])
+        with self.assertRaises(RecoveryError) as raised:
+            engine.manage_backup(self.context, renamed, "delete", confirm=second.name)
+        self.assertEqual(raised.exception.code, "CONFIRMATION_REQUIRED")
+        self.assertTrue(renamed.is_dir())
+        # A folder that is no finished snapshot is never deleted this way.
+        other = self.repo / "photos"
+        other.mkdir()
+        (other / "keep.txt").write_text("mine")
+        with self.assertRaises((RecoveryError, OSError)):
+            engine.manage_backup(self.context, other, "delete", confirm="photos")
+        self.assertTrue((other / "keep.txt").exists())
+        engine.manage_backup(self.context, renamed, "delete", confirm=renamed.name)
+        self.assertFalse(renamed.exists())
+        self.assertEqual([b["name"] for b in engine.list_backups(self.context, self.repo)["backups"]], [second.name])
+
     def test_wrong_confirmation_never_creates_snapshot(self):
         plan = engine.make_backup_plan(self.context, "linux", self.repo, "not-created", "gzip")
         self.assert_error("CONFIRMATION_MISMATCH", engine.backup, self.context, plan, "BACKUP-wrong")

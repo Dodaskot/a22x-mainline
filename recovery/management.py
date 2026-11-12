@@ -107,7 +107,8 @@ def archive_bytes(context):
     items, records = {}, {}
     run = context.root / 'management-logs' if context.mode == 'fixture' else RUN
     names = ['boot.json', 'ui.log', 'ui.stdout', 'diagnostics.log', 'ssh-start.log',
-             'power-volumes.json', 'power-storage.json', 'maintenance.log', 'display.log']
+             'power-volumes.json', 'power-storage.json', 'maintenance.log', 'display.log',
+             'android-last.json', 'android-last-kmsg.txt']  # how Android's last start ended (android_log.py)
     names += [f'{n}.{i}' for n in ('ui.log', 'ui.stdout') for i in range(1, KEEP_LOGS + 1)]
     for name in names:
         _add_input(items, records, 'logs/' + name, run / name)

@@ -156,10 +156,11 @@ static void render_aplan(App*a){
      else if(a->aplan_script_present)y=aplan_row(a,y,"Setup script",a->aplan_script,TEXT);
      else{snprintf(line,sizeof(line),T("%s is missing in cache"),a->aplan_script);y=aplan_row(a,y,"Setup script",line,ORANGE);}}
     {bool joined=a->wifi_connected&&a->wifi_ssid[0];y=aplan_row(a,y,"Wi-Fi",joined?a->wifi_ssid:tr("Not connected"),joined?GREEN:ORANGE);}
-    if(a->aplan_erase)wrapped(a,40,894,640,1,RED,"Userdata is erased first: Android's data, every Linux system and /home on it.",3);
-    else wrapped(a,40,894,640,0,MUTED,"The current Linux stays active until you switch to the new one.",3);
-    if(busy)text(a,40,1030,0,MUTED,"Preparing...");
-    else if(a->aplan_error[0])wrapped(a,40,1030,640,0,ORANGE,a->aplan_error,3);
+    int note=910;
+    if(a->aplan_erase)note+=text_tile(a,note,0,RED,"Userdata is erased first: Android's data, every Linux system and /home on it.",3)+16;
+    else note+=text_tile(a,note,0,MUTED,"The current Linux stays active until you switch to the new one.",3)+16;
+    if(busy)text(a,40,note-8,0,MUTED,"Preparing...");
+    else if(a->aplan_error[0])text_tile(a,note,0,ORANGE,a->aplan_error,3);
     bool free_=ui_free(a)&&!a->job.pid;
     button(a,(Rect){28,1196,324,96},"Change choices",A_APLAN_EDIT,free_,false,0);
     button(a,(Rect){368,1196,324,96},"Discard (hold)",A_APLAN_FORGET,free_,false,2000);
@@ -168,7 +169,8 @@ static void render_aplan(App*a){
 static bool android_plan_action(App*a,int id){
     if(id==A_APLAN){if(ui_free(a)&&a->aplan_present){a->aplan_error[0]=a->aplan_valid?0:a->aplan_error[0];screen(a,APLAN);}return true;}
     if(a->screen!=APLAN)return false;
-    if(id==A_BACK){if(!a->job.pid||!aplan_job(a->job.kind))screen(a,HOME);return true;}
+    /* The plan opens from Home and from Install: Back returns to the one it was opened from. */
+    if(id==A_BACK){if(!a->job.pid||!aplan_job(a->job.kind))reopen(a,came_from(a,HOME));return true;}
     if(id==A_APLAN_REVIEW||id==A_APLAN_EDIT){
         if(!ui_free(a)||a->job.pid||!a->aplan_valid)return true;
         a->aplan_error[0]=0;a->aplan_edit=id==A_APLAN_EDIT;if(!start_aplan_job(a,J_APLAN_PREPARE))copy(a->aplan_error,sizeof(a->aplan_error),tr("Wait for the current operation to finish."));

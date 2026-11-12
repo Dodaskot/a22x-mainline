@@ -408,11 +408,185 @@ def boot_identity(context):
     release = None if h.hexdigest() in ALLOWED_BOOTS else bootimage.linux_release(bytes(image))
     if h.hexdigest() not in ALLOWED_BOOTS:
         expected = platform_kernel_release(context)
+        # One sentence that says what to do (2026-11-11: with Android's kernel on BOOT the plan of a new
+        # system stopped here at its last step, in English); what was looked for goes to the details.
         require(release is not None and release == expected, 'BOOT_PROFILE_MISMATCH',
-                'BOOT does not hold a Linux kernel for this phone built for the platform modules (%s); found %s'
-                % (expected, release or 'no such kernel'))
+                'BOOT holds no Linux kernel for this phone. Flash a Linux BOOT image first: Install, Flash a partition, boot',
+                expected=expected, found=release or 'no such kernel')
     return {'profile': PROFILE_ID, 'boot_sha256': h.hexdigest(), 'fixture': False,
             'device_identity': block.device['identity'], 'kernel_release': release}
+
+
+def linux_boot_kept(context, sha256=None):
+    """A Linux BOOT kept on cache whose kernel release is the one the platform modules were built
+    for: the one with SHA256 when one is named, else the newest. What Android's BOOT replaced, or
+    what was downloaded. A fixture names its own (linux_boot_cache)."""
+    if context.mode == 'fixture':
+        kept = [dict(item, **{'from': 'cache', 'path': ''}) for item in context.config().get('linux_boot_cache') or ()]
+    else:
+        import saved_boot
+        expected = platform_kernel_release(context)
+        try:
+            found = saved_boot.saved_boots(types.SimpleNamespace(fs=context))
+        except (OSError, ValueError, fs.FilesystemError):
+            return None
+        kept = [{'sha256': item['sha256'], 'release': item['release'], 'from': 'cache', 'path': item['path']} for item in found
+                if item['kind'] == 'linux' and item['release'] == expected and item['bytes'] == BOOT_BYTES
+                and re.fullmatch(r'[0-9a-f]{64}', item['sha256'])]
+    for item in kept:
+        if sha256 is None or item['sha256'] == sha256:
+            return item
+    return None
+
+
+def linux_boot_offered(context):
+    """The Linux BOOT the catalog names for this recovery's platform modules: the mainline project's
+    release. None when the catalog names none that fits. A fixture names its own (linux_boot_release)."""
+    if context.mode == 'fixture':
+        offer = context.config().get('linux_boot_release')
+        return dict(offer, **{'from': 'download'}) if isinstance(offer, dict) else None
+    offer = catalog_builtin(context).get('linux_boot')
+    if not isinstance(offer, dict) or offer.get('release') != platform_kernel_release(context) or offer.get('size') != BOOT_BYTES \
+            or not re.fullmatch(r'[0-9a-f]{64}', str(offer.get('sha256', ''))) or not re.fullmatch(r'https://[^\s]+', str(offer.get('url', ''))):
+        return None
+    return {'sha256': offer['sha256'], 'release': offer['release'], 'from': 'download', 'url': offer['url'], 'size': offer['size'],
+            'version': str(offer.get('version', ''))[:24]}
+
+
+def network_joined(context):
+    if context.mode == 'fixture':
+        return context.config().get('offline') is not True
+    try:
+        return json.loads(WIFI_STATE.read_text()).get('connected') is True
+    except (OSError, ValueError):
+        return False
+
+
+def linux_boot_choice(context):
+    """Where a new system takes its Linux BOOT from, and whether the network is missing for it.
+    First the release this recovery was made for: kept on cache, else downloaded. Only when that
+    cannot be had, another Linux BOOT kept on this phone, which may be older (2026-11-11, on the
+    owner's phone: a BOOT kept since kernel 107 was taken before the release with kernel 122, and
+    the systems installed with it did not start as they should)."""
+    release = linux_boot_offered(context)
+    if release:
+        kept = linux_boot_kept(context, release['sha256'])
+        if kept:
+            return kept, False
+        if network_joined(context):
+            return release, False
+    older = linux_boot_kept(context)
+    if older:
+        return dict(older, older=release is not None), False
+    return None, release is not None
+
+
+def boot_for_linux(context, fresh=False):
+    """The BOOT a new Linux system starts from. The one there when it holds the Linux kernel of this
+    phone; a clean installation (FRESH) still takes the release this recovery was made for when
+    the BOOT there is another one. With Android's kernel on BOOT (2026-11-11, the owner: "I flashed
+    BOOT before installing Mobian myself: make this simpler") the installation takes a Linux BOOT
+    with it. It is fetched before anything is erased and written when the system is in place; the
+    plan is bound to that image by its SHA-256."""
+    android = context.mode == 'fixture' and context.config().get('android_boot')
+    try:
+        if android:
+            fail('BOOT_PROFILE_MISMATCH', 'BOOT holds no Linux kernel for this phone. Flash a Linux BOOT image first: Install, Flash a partition, boot')
+        there = boot_identity(context)
+    except fs.FilesystemError as error:
+        if getattr(error, 'code', '') != 'BOOT_PROFILE_MISMATCH':
+            raise
+        offer, offline = linux_boot_choice(context)
+        require(offer is not None or not offline, 'LINUX_BOOT_NEEDS_NETWORK',
+                'BOOT holds the kernel of Android, and this phone keeps no Linux BOOT: join Wi-Fi so that it can be downloaded, or flash one in Flash a partition')
+        if offer is None:
+            raise
+        return {'profile': PROFILE_ID, 'boot_sha256': offer['sha256'], 'fixture': context.mode == 'fixture',
+                'kernel_release': offer['release'], 'write': True}
+    if fresh:
+        offer, _ = linux_boot_choice(context)
+        if offer and not offer.get('older') and offer['sha256'] != boot_now(context, there):
+            return {'profile': PROFILE_ID, 'boot_sha256': offer['sha256'], 'fixture': context.mode == 'fixture',
+                    'kernel_release': offer['release'], 'write': True}
+    return there
+
+
+def boot_now(context, identity):
+    """The SHA-256 of the BOOT there; a fixture names it itself (boot_sha256), else it is the constant every fixture has."""
+    return context.config().get('boot_sha256', identity['boot_sha256']) if context.mode == 'fixture' else identity['boot_sha256']
+
+
+def boot_outdated(context):
+    """Whether BOOT holds a Linux kernel for this phone that is not the release this recovery was
+    made for, while that release can be had: a clean installation then writes it."""
+    try:
+        if context.mode == 'fixture' and context.config().get('android_boot'):
+            return False
+        there = boot_identity(context)
+    except fs.FilesystemError:
+        return False
+    offer, _ = linux_boot_choice(context)
+    return bool(offer and not offer.get('older') and offer['sha256'] != boot_now(context, there))
+
+
+def linux_boot_fetched(context, boot, progress):
+    """The Linux BOOT a plan is bound to, on cache: its path there. One that is not there is
+    downloaded from the catalog's address and kept, its SHA-256 checked, before anything is erased."""
+    kept = linux_boot_kept(context, boot['boot_sha256'])
+    if kept:
+        return kept.get('path', '')
+    offer = linux_boot_offered(context)
+    require(offer is not None and offer['sha256'] == boot['boot_sha256'], 'PLAN_STALE', 'The Linux BOOT of this plan is no longer offered: plan again')
+    if context.mode == 'fixture':
+        progress('image-boot-download', 1, 1)
+        return '/a22x-recovery/saved-boot/fixture-linux.img'
+    import saved_boot
+    work = Path('/run/a22x-recovery/linux-boot.partial')
+    try:
+        fetch(context, offer['url'], work, offer['size'], offer['sha256'], lambda phase, done=0, total=0: progress('image-boot-download', done, total))
+        image = work.read_bytes()
+    finally:
+        with contextlib.suppress(OSError):
+            work.unlink()
+    require(hashlib.sha256(image).hexdigest() == offer['sha256'] and bootimage.linux_release(image) == offer['release'],
+            'DOWNLOAD_MISMATCH', 'The downloaded Linux BOOT is not the one the catalog names')
+    name = 'linux-' + re.sub(r'[^A-Za-z0-9._+-]', '_', offer['release'])[:40] + '-' + offer['sha256'][:12] + '.img'
+    return saved_boot.save_on_cache(types.SimpleNamespace(fs=context), name, image, {'kind': 'linux', 'release': offer['release'],
+                                    'version': offer.get('version', '')}, lambda *unused: None)
+
+
+def linux_boot_written(context, path, boot, progress):
+    """The Linux BOOT from cache written to BOOT the way Flash a partition writes it: the BOOT there
+    is kept on cache first, the partition is read back. The lease this helper holds is lent to it."""
+    if context.mode == 'fixture':
+        spec = context.config()
+        spec['android_boot'], spec['boot_written'] = False, boot['boot_sha256']
+        context.config_path.write_text(json.dumps(spec))
+        return {'sha256': boot['boot_sha256'], 'kept_boot': 'fixture'}
+    import flash
+    import install as installer
+    from operation_lock import ENV_FD
+    before = os.environ.get(ENV_FD)
+    os.environ[ENV_FD] = str(context.lock_fd)
+    try:
+        writer = installer.DeviceContext()
+        cache = writer.fs.volume('cache')
+        if not cache['mounted']:
+            writer.fs.mount('cache', 'ro', True, cache['volume_token'])
+            cache = writer.fs.volume('cache')
+        args = types.SimpleNamespace(target='boot', volume='cache', volume_token=cache['volume_token'], path=path, member=None,
+                                     image_bytes=None, confirm=True)
+        checked = flash.check(writer, args, lambda *unused: None)
+        require(checked['image']['sha256'] == boot['boot_sha256'], 'PLAN_STALE', 'The Linux BOOT on cache changed since planning')
+        args.expected_sha256, args.expected_identity = checked['image']['sha256'], checked['image']['identity']
+        written = flash.write(writer, args, lambda *unused: None)
+    finally:
+        if before is None:
+            os.environ.pop(ENV_FD, None)
+        else:
+            os.environ[ENV_FD] = before
+    boot_identity(context)  # what a start of the system asks of BOOT holds now
+    return {'sha256': written['sha256'], 'kept_boot': written.get('kept_boot')}
 
 
 def platform_kernel_release(context):
@@ -1341,10 +1515,17 @@ def status(context):
             'active': None, 'slots': [], 'transaction': None,
             'reboot_blocked': sentinel_path(context).exists(), 'empty_userdata': False,
             'shared_paths': ['/home'], 'retained_boot': True, 'whole_switch_atomic': False,
-            'platform_profile_available': profile_path(context).exists()}
+            'platform_profile_available': profile_path(context).exists(), 'foreign': foreign_userdata(context),
+            'boot_linux': boot_is_linux(context)}
+    # Where a new system would take its Linux BOOT from, when BOOT holds another kernel: cache, download, or nowhere.
+    # cache or download; boot_outdated: BOOT is Linux, but not the release this recovery was made for.
+    base['boot_outdated'] = base['boot_linux'] and boot_outdated(context)
+    base['boot_source'] = (linux_boot_choice(context)[0] or {}).get('from', '') if not base['boot_linux'] or base['boot_outdated'] else ''
     if not volume['mounted']:
         return {**base, 'initialized': None, 'transaction_state': 'unknown-unmounted',
-                'normal_boot_safety_known': False, 'next_action': 'Mount userdata to inspect installed systems'}
+                'normal_boot_safety_known': False,
+                'next_action': 'Install a new system: userdata is formatted for Linux first' if base['foreign'] else
+                'Mount userdata to inspect installed systems'}
     with fs.PinnedVolume(context, 'userdata') as pin, Tree(pin) as tree:
         require_userdata(pin)
         base['incomplete_setups'] = [name for name in tree.list()
@@ -1414,7 +1595,8 @@ def save_plan_result(context, result, output):
         os.close(fd)
     keys = ('schema', 'operation', 'mode', 'seal', 'slot', 'name', 'confirmation', 'created_utc', 'expires_utc',
             'required_bytes', 'available_bytes', 'source_volume', 'manifest_path', 'preserved_paths',
-            'whole_switch_atomic', 'interruption_action', 'clean_install', 'erase_userdata', 'download_bytes')
+            'whole_switch_atomic', 'interruption_action', 'clean_install', 'erase_userdata', 'format_userdata', 'download_bytes',
+            'write_boot')
     return {**{k: v for k, v in result.items() if k != 'plan'},
             'plan': {k: result['plan'][k] for k in keys if k in result['plan']},
             'plan_summary': True, 'plan_path': str(path), 'plan_file_sha256': hashlib.sha256(data).hexdigest()}
@@ -1764,12 +1946,139 @@ def store_bytes(live):
     return sum(item['size'] for item in store_images(live))
 
 
+# The store on a card (2026-11-11). Images are kept beside the Linux systems on userdata; a phone
+# whose userdata holds Android has no place of its own for a download, so there the store is the
+# same folder on an SD card or a USB drive. Only Android images go to a card: a Linux installation
+# keeps its images on the userdata it is installed to.
+STORE_CARD_FS = ('ext4', 'exfat', 'vfat', 'f2fs')
+FAT_FILE_LIMIT = (4 << 30) - 1
+NO_CARD = 'Insert an SD card or attach a USB drive: while Android uses userdata, downloaded images are kept there'
+
+
+def linux_userdata(context):
+    """Whether userdata can hold the store: plain ext4, which is what a Linux system leaves there."""
+    try:
+        volume = context.volume('userdata')
+    except fs.FilesystemError:
+        return False
+    return volume.get('fs_type') == 'ext4' and not volume.get('fscrypt_feature')
+
+
+def boot_is_linux(context):
+    """Whether BOOT holds the Linux kernel the platform modules were built for: a system installed
+    now could start. A fixture says so itself (android_boot)."""
+    if context.mode == 'fixture':
+        return not context.config().get('android_boot', False)
+    try:
+        boot_identity(context)
+        return True
+    except fs.FilesystemError:
+        return False
+
+
+def foreign_userdata(context):
+    """Userdata that holds no Linux of this recovery (2026-11-11): Android's data, or nothing that
+    can be read. Nothing there can be mounted or kept; a clean installation formats it when the
+    confirmed installation starts."""
+    return not linux_userdata(context)
+
+
+# What ext4 leaves of a partition for files: its tables, its journal and the blocks it reserves.
+FORMATTED_SHARE = 0.90
+
+
+def foreign_room(volume):
+    """What a userdata that is formatted first can hold."""
+    if volume.get('size_bytes'):
+        return int(volume['size_bytes'] * FORMATTED_SHARE)
+    room = os.statvfs(volume['mountpoint'])  # a fixture's folder
+    return room.f_blocks * room.f_frsize
+
+
+def is_card(context, volume):
+    if context.mode == 'device':
+        return volume.get('external') is True
+    return volume['id'] in context.config().get('external_volumes', ['sdcard-p1'])
+
+
+def store_place(pin):
+    """What a result says of the volume its store is on."""
+    volume = pin.volume
+    return {'store': '/' + STORE_DIR, 'store_volume': volume['id'], 'store_token': volume['volume_token'],
+            'store_label': volume.get('label') or volume['id']}
+
+
+@contextlib.contextmanager
+def card_store(context, writing=False, need=0, holding=None):
+    """The store on a card: yields (pin, live), or (None, None) when no card can take it.
+
+    The card that already has the store comes first (with HOLDING, the one that has that file),
+    then, for a download, the first with NEED bytes free. A card is mounted when it is not,
+    read-only unless a file is written, and the one that holds images stays mounted read-only
+    afterwards, so that an image on it can be installed; any other is left as it was found."""
+    cards = sorted((v for v in context.volumes() if is_card(context, v) and v.get('mountable') and v.get('fs_type') in STORE_CARD_FS),
+                   key=lambda v: (not v['id'].startswith('sdcard'), v['id']))
+    opened, seen = [], []
+    try:
+        for volume in cards:
+            if not volume['mounted']:
+                context.mount(volume['id'], 'ro', True, volume['volume_token'])
+                opened.append(volume['id'])
+            with fs.PinnedVolume(context, volume['id']) as pin, Tree(pin) as live:
+                has = live.exists(STORE_DIR) and stat.S_ISDIR(live.lstat(STORE_DIR).st_mode)
+                wanted = has and (holding is None or live.exists(STORE_DIR + '/' + holding))
+                vfs = os.fstatvfs(pin.fd)
+                seen.append((volume['id'], bool(wanted), vfs.f_bavail * vfs.f_frsize, bool(has and store_images(live))))
+        fits = [row for row in seen if not writing or holding is not None or row[2] >= need]
+        chosen = next((row for row in fits if row[1]), None) or (None if holding is not None else next(iter(fits), None))
+        for ident in [i for i in opened if chosen is None or i != chosen[0]]:
+            context.unmount(ident)
+            opened.remove(ident)
+        if chosen is None:
+            require(not writing or holding is not None or not seen, 'INSUFFICIENT_SPACE', 'There is not enough space on the card for this image',
+                    available_bytes=max((row[2] for row in seen), default=0), required_bytes=need)
+            yield None, None
+            return
+        ident = chosen[0]
+        before = context.volume(ident)
+        reopened = False
+        if writing and before['read_only']:
+            require(before.get('mount_owner') == 'filesystem', 'STORE_READ_ONLY',
+                    'The card is mounted read-only as backup storage: disconnect it in Storage first')
+            context.mount(ident, 'rw', True, before['volume_token'])
+            reopened = True
+        try:
+            with fs.PinnedVolume(context, ident, writing=writing) as pin, Tree(pin) as live:
+                yield pin, live
+                keep = bool(store_images(live))
+                os.sync()
+        finally:
+            if reopened:
+                with contextlib.suppress(OSError, fs.FilesystemError):  # Still writable then; Files shows it as it is.
+                    context.mount(ident, 'ro', True, context.volume(ident)['volume_token'])
+        if ident in opened and not keep:
+            context.unmount(ident)
+        opened.clear()
+    except BaseException:
+        for ident in opened:
+            with contextlib.suppress(OSError, fs.FilesystemError):
+                context.unmount(ident)
+        raise
+
+
 def images(context):
-    """The images saved on the phone and the free space for more."""
-    with fs.PinnedVolume(context, 'userdata') as pin, Tree(pin) as live:
-        require_userdata(pin)
+    """The images saved on the phone, or on a card when Android holds userdata, and the free space for more."""
+    if linux_userdata(context):
+        with fs.PinnedVolume(context, 'userdata') as pin, Tree(pin) as live:
+            require_userdata(pin)
+            vfs = os.fstatvfs(pin.fd)
+            return {'images': store_images(live), 'free_bytes': vfs.f_bavail * vfs.f_frsize, **store_place(pin)}
+    with card_store(context) as (pin, live):
+        if pin is None:
+            return {'images': [], 'free_bytes': 0, 'store': '/' + STORE_DIR, 'store_volume': '', 'store_token': '',
+                    'store_label': '', 'store_reason': NO_CARD}
         vfs = os.fstatvfs(pin.fd)
-        return {'images': store_images(live), 'free_bytes': vfs.f_bavail * vfs.f_frsize, 'store': '/' + STORE_DIR}
+        return {'images': store_images(live), 'free_bytes': vfs.f_bavail * vfs.f_frsize, **store_place(pin)}
 
 
 def download_progress(name):
@@ -1800,27 +2109,43 @@ def store_download(context, live, entry, target, progress):
         raise
 
 
+def store_save(context, pin, live, entry, where):
+    """Download ENTRY into the store on PIN and record what the catalog said of it."""
+    vfs = os.fstatvfs(pin.fd)
+    free = vfs.f_bavail * vfs.f_frsize
+    require(free >= entry['size'] + MIN_FREE, 'INSUFFICIENT_SPACE', 'There is not enough space on %s for this image' % where,
+            available_bytes=free, required_bytes=entry['size'] + MIN_FREE)
+    require(pin.volume.get('fs_type') != 'vfat' or entry['size'] <= FAT_FILE_LIMIT, 'FILE_TOO_LARGE',
+            'A FAT32 card cannot hold a file of 4 GiB or more')
+    store = store_folder(live)
+    for name in os.listdir(store):  # What a download that was cut off left behind.
+        if name.startswith('.part-'):
+            (store / name).unlink()
+    part = store / ('.part-' + entry['file'])
+    store_download(context, live, entry, part, download_progress(entry['file']))
+    os.replace(part, store / entry['file'])
+    meta = {'schema': 'a22x.image-store.v1', 'id': entry['id'], 'name': entry.get('name', ''),
+            'version': entry.get('version', ''), 'family': entry.get('family', ''), 'category': entry.get('category', ''),
+            'variant': entry.get('variant', ''), 'size': entry['size'],
+            'sha256': entry.get('sha256', ''), 'sha512': entry.get('sha512', ''), 'url': entry['url'], 'checked': True}
+    (store / (entry['file'] + STORE_META)).write_text(json.dumps(meta, indent=1) + '\n')
+    os.sync()
+    vfs = os.fstatvfs(pin.fd)
+    return {'saved': entry['file'], 'images': store_images(live), 'free_bytes': vfs.f_bavail * vfs.f_frsize, **store_place(pin)}
+
+
 def images_download(context, image_id, confirmed=False):
-    """Save a catalog image on the phone, for installing later without a network or an SD card."""
+    """Save a catalog image on the phone, for installing later without a network or an SD card.
+    On a phone whose userdata holds Android, an Android image is saved on a card instead."""
     context.confirm(confirmed)
     entry = plan_entry(context, image_id)
-    with fs.PinnedVolume(context, 'userdata', writing=True) as pin, Tree(pin) as live:
-        require_userdata(pin)
-        vfs = os.fstatvfs(pin.fd)
-        free = vfs.f_bavail * vfs.f_frsize
-        require(free >= entry['size'] + MIN_FREE, 'INSUFFICIENT_SPACE', 'There is not enough space on userdata for this image',
-                available_bytes=free, required_bytes=entry['size'] + MIN_FREE)
-        store = store_folder(live)
-        part = store / ('.part-' + entry['file'])
-        store_download(context, live, entry, part, download_progress(entry['file']))
-        os.replace(part, store / entry['file'])
-        meta = {'schema': 'a22x.image-store.v1', 'id': entry['id'], 'name': entry.get('name', ''),
-                'version': entry.get('version', ''), 'family': entry.get('family', ''), 'size': entry['size'],
-                'sha256': entry.get('sha256', ''), 'sha512': entry.get('sha512', ''), 'url': entry['url'], 'checked': True}
-        (store / (entry['file'] + STORE_META)).write_text(json.dumps(meta, indent=1) + '\n')
-        os.sync()
-        vfs = os.fstatvfs(pin.fd)
-        return {'saved': entry['file'], 'images': store_images(live), 'free_bytes': vfs.f_bavail * vfs.f_frsize}
+    if linux_userdata(context) or entry.get('family') != 'android':
+        with fs.PinnedVolume(context, 'userdata', writing=True) as pin, Tree(pin) as live:
+            require_userdata(pin)
+            return store_save(context, pin, live, entry, 'userdata')
+    with card_store(context, writing=True, need=entry['size'] + MIN_FREE) as (pin, live):
+        require(pin is not None, 'STORE_MISSING', NO_CARD)
+        return store_save(context, pin, live, entry, 'the card')
 
 
 @contextlib.contextmanager
@@ -1855,13 +2180,76 @@ def sideload_store(context, size):
                 context.mount('userdata', 'ro', True, context.volume('userdata')['volume_token'])
 
 
+# adb sideload without a Linux userdata (2026-11-11): Android holds userdata, so a file arriving
+# over adb goes to a card's store, or to this folder on cache when it fits there. Cache keeps room
+# for a copy of BOOT; Wipe cache removes the folder, the recovery's own folder is elsewhere.
+SIDELOAD_CACHE_DIR = 'sideload'
+CACHE_KEEP = 48 << 20
+
+
+@contextlib.contextmanager
+def cache_place(context, size):
+    """The sideload folder on cache, writable for the transfer and read-only afterwards."""
+    volume = context.volume('cache')
+    require(volume.get('mountable'), 'STORE_MISSING', NO_CARD)
+    was_writable = volume['mounted'] and not volume['read_only']
+    if not was_writable:
+        require(not volume['mounted'] or volume.get('mount_owner') == 'filesystem', 'STORE_READ_ONLY',
+                'Cache is mounted elsewhere: unmount it in Files first')
+        context.mount('cache', 'rw', True, volume['volume_token'])
+    try:
+        with fs.PinnedVolume(context, 'cache', writing=True) as pin, Tree(pin) as live:
+            vfs = os.fstatvfs(pin.fd)
+            free = vfs.f_bavail * vfs.f_frsize
+            require(free >= size + CACHE_KEEP, 'INSUFFICIENT_SPACE',
+                    'There is no card, and cache has no room for this file: insert an SD card or attach a USB drive',
+                    available_bytes=free, required_bytes=size + CACHE_KEEP)
+            if live.exists(SIDELOAD_CACHE_DIR):
+                require(stat.S_ISDIR(live.lstat(SIDELOAD_CACHE_DIR).st_mode), 'STORE_INVALID', 'The sideload folder on cache is not a folder')
+            else:
+                live.mkdirs(SIDELOAD_CACHE_DIR)
+            yield {'folder': real_path(live) / SIDELOAD_CACHE_DIR, 'volume': 'cache', 'token': pin.volume['volume_token'],
+                   'dir': '/' + SIDELOAD_CACHE_DIR}
+            os.sync()
+    finally:
+        if not was_writable:
+            # Read-only afterwards, also when it was not mounted: the file is then reviewed and installed from there.
+            with contextlib.suppress(OSError, fs.FilesystemError):
+                context.mount('cache', 'ro', True, context.volume('cache')['volume_token'])
+
+
+@contextlib.contextmanager
+def sideload_place(context, size):
+    """Where a file arriving over adb sideload goes: {'folder', 'volume', 'token', 'dir'}.
+    A Linux userdata keeps it in its image store, as before. Otherwise a card's store takes it, or
+    cache when there is no card with room and the file fits there."""
+    if linux_userdata(context):
+        with sideload_store(context, size) as folder:
+            yield {'folder': folder, 'volume': 'userdata', 'token': context.volume('userdata')['volume_token'], 'dir': '/' + STORE_DIR}
+        return
+    entered = False
+    try:
+        with card_store(context, writing=True, need=size + MIN_FREE) as (pin, live):
+            if pin is not None:
+                place = {'folder': store_folder(live), 'volume': pin.volume['id'], 'token': pin.volume['volume_token'],
+                         'dir': '/' + STORE_DIR}
+                entered = True
+                yield place
+                return
+    except fs.FilesystemError as error:
+        if entered or error.code != 'INSUFFICIENT_SPACE':
+            raise
+    with cache_place(context, size) as place:
+        yield place
+
+
 def images_delete(context, name, confirmed=False):
     """Delete a saved image and what the catalog said about it."""
     context.confirm(confirmed)
     require(isinstance(name, str) and STORE_FILE.fullmatch(name) and not name.endswith(STORE_META),
             'INVALID_ARGUMENT', 'Choose an image of the store')
-    with fs.PinnedVolume(context, 'userdata', writing=True) as pin, Tree(pin) as live:
-        require_userdata(pin)
+
+    def drop(pin, live):
         path = STORE_DIR + '/' + name
         require(live.exists(path) and stat.S_ISREG(live.lstat(path).st_mode), 'IMAGE_NOT_FOUND', 'The image is not saved on the phone')
         store = store_folder(live)
@@ -1870,12 +2258,22 @@ def images_delete(context, name, confirmed=False):
             (store / (name + STORE_META)).unlink()
         os.sync()
         vfs = os.fstatvfs(pin.fd)
-        return {'deleted': name, 'images': store_images(live), 'free_bytes': vfs.f_bavail * vfs.f_frsize}
+        return {'deleted': name, 'images': store_images(live), 'free_bytes': vfs.f_bavail * vfs.f_frsize, **store_place(pin)}
+
+    if linux_userdata(context):
+        with fs.PinnedVolume(context, 'userdata', writing=True) as pin, Tree(pin) as live:
+            require_userdata(pin)
+            return drop(pin, live)
+    with card_store(context, writing=True, holding=name) as (pin, live):
+        require(pin is not None, 'IMAGE_NOT_FOUND', 'The image is not saved on the phone')
+        return drop(pin, live)
 
 
 def download_before_erase(context, remote, progress):
     """The catalog image of a clean installation, saved in the store before anything is erased.
     None when userdata has no room for it now: then it is formatted and the image comes after."""
+    if foreign_userdata(context):
+        return None  # nothing of Android's userdata can hold it: formatted first
     with fs.PinnedVolume(context, 'userdata', writing=True) as pin, Tree(pin) as live:
         require_userdata(pin)
         vfs = os.fstatvfs(pin.fd)
@@ -1941,6 +2339,14 @@ def script_stamp(context, script):
 # newest one the server lists. Image data may come from a plain HTTP mirror: its checksum decides.
 CATALOG = Path(__file__).resolve().parent / 'catalog.json'
 CATALOG_KEYS = ('id', 'name', 'version', 'family', 'size', 'file', 'format', 'minimal', 'notes', 'desktop')
+# Android images of the catalog (2026-11-10): GSIs, with their Android version, type (aosp: plain
+# AOSP; gms: with Google's apps), region, build, security patch and the size of their system.img.
+ANDROID_KEYS = ('id', 'category', 'name', 'version', 'android', 'sdk', 'variant', 'region', 'family', 'maker', 'build', 'patch',
+                'size', 'file', 'system_bytes')
+# This phone's vendor interface: Samsung's vendor of A226BXXSBDZC3 (and every A22x vendor, launched
+# with Android 11 and frozen there) declares target-level 5, read from super/vendor 2026-11-10. A
+# GSI fits when its framework still supports that level; Android 16 dropped it.
+VENDOR_FCM_LEVEL = 5
 PIN_KEYS = ('url', 'file', 'size', 'sha256', 'sha512', 'signature_url', 'signature_sha256')
 KEYS = Path(__file__).resolve().parent / 'keys'  # Signing keys of the distributions, pinned here.
 CATALOG_STATE = Path('a22x-recovery/catalog.json')  # On the settings volumes, beside the settings.
@@ -1968,24 +2374,11 @@ def tls_context():
 
 
 def ensure_clock(context):
-    """Certificates need the date. A phone whose clock was reset asks a time server once (SNTP);
-    the hardware clock is left alone."""
-    if context.mode == 'fixture' or time.time() >= CLOCK_FLOOR:
-        return
-    import socket
-    for host in ('time.cloudflare.com', 'pool.ntp.org'):
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
-                udp.settimeout(5)
-                udp.sendto(b'\x1b' + bytes(47), (host, 123))
-                reply = udp.recv(512)
-            seconds, fraction = struct.unpack('!II', reply[40:48])
-            now = seconds - 2208988800 + fraction / 2 ** 32
-            if now >= CLOCK_FLOOR:
-                time.clock_settime(time.CLOCK_REALTIME, now)
-                return
-        except (OSError, struct.error):
-            continue
+    """Certificates need the date. A clock that cannot be right (reset, or read in the form Samsung's
+    Android leaves in the hardware clock: the year 2086) asks a time server (SNTP); the hardware
+    clock is left alone."""
+    import clock
+    clock.ensure(context.mode)
 
 
 def secure_url(context, url):
@@ -2318,14 +2711,29 @@ def catalog(context, refresh=False, force=False):
                'signed': bool((e.get('source') or {}).get('key')),
                'reachable': (https or e['url'].startswith('http://')) and e.get('unavailable') is not True}
               for e in catalog_entries(context)]
-    result = {'images': images, 'https': https, 'network': joined}
+    android = []
+    for e in android_entries(context):
+        levels = e.get('vendor_levels') or []
+        # What a start on this phone showed counts for more than the rule (2026-11-11: LineageOS 22.2
+        # vanilla fits by the rule and restarted into the bootloader).
+        tried = e.get('tried') if e.get('tried') in ('starts', 'fails') else ''
+        fits = VENDOR_FCM_LEVEL in levels and tried != 'fails'
+        android.append({**{k: e[k] for k in ANDROID_KEYS if k in e}, 'fits': fits, 'tried': tried,
+                        'fit_note': str(e.get('fit_note', ''))[:90] if fits else 'Made for newer vendors: it may not start on this phone',
+                        'reachable': https or e['url'].startswith('http://')})
+    result = {'images': images, 'android': android, 'https': https, 'network': joined}
     if counts is not None:
         result['refresh'] = counts
     return result
 
 
+def android_entries(context):
+    """The Android images of the catalog: pinned, never refreshed (Google's GSI links stay)."""
+    return [e for e in catalog_builtin(context).get('android', []) if isinstance(e, dict)]
+
+
 def catalog_entry(context, image_id):
-    for entry in catalog_entries(context):
+    for entry in catalog_entries(context) + android_entries(context):
         if entry.get('id') == image_id:
             require(entry.get('unavailable') is not True, 'CATALOG_IMAGE_GONE',
                     'The server no longer offers this image. Choose another one.')
@@ -2431,6 +2839,13 @@ def package_search(context, family, release, query, limit=24):
     return {'family': family, 'query': query, 'results': results[:limit]}
 
 
+def linux_entry(context, image_id):
+    """A catalog entry for a Linux installation: an Android image is never unpacked as a system."""
+    entry = plan_entry(context, image_id)
+    require(entry.get('family') != 'android', 'CATALOG_NOT_LINUX', 'This is an Android image: install it from the Android page')
+    return entry
+
+
 def plan_entry(context, image_id):
     """The catalog entry of a plan, checked with its server when the pin is old. Without network
     the pin stays; the download then tells."""
@@ -2519,20 +2934,31 @@ def image_plan(context, source_volume, image_path, options, expected_source=None
     saved = store_name(image_path) if remote is None and source_volume == 'userdata' else None
     if remote is None and saved is None:
         require(source_volume != 'userdata', 'BUNDLE_ON_USERDATA', 'Choose an image on external SD/USB storage')
-    profile, boot = load_profile(context), boot_identity(context)
+    profile, boot = load_profile(context), boot_for_linux(context, fresh=wipe)
+    # 2026-11-11: Android's userdata (or one that cannot be read) holds nothing to mount or keep. A
+    # clean installation is planned on the partition as it will be once it is formatted for Linux.
+    foreign = foreign_userdata(context)
+    require(not foreign or (wipe and saved is None), 'LINUX_USERDATA_REQUIRED',
+            'Userdata holds no Linux system: only a new system, which formats it, can be installed')
     with contextlib.ExitStack() as stack:
-        target_pin = stack.enter_context(fs.PinnedVolume(context, 'userdata', writing=True))
-        live = stack.enter_context(Tree(target_pin))
+        if foreign:
+            target_pin = live = None
+            target_volume = context.volume('userdata')
+        else:
+            target_pin = stack.enter_context(fs.PinnedVolume(context, 'userdata', writing=True))
+            live = stack.enter_context(Tree(target_pin))
+            target_volume = target_pin.volume
         source_pin = source = None
         if saved is not None:
             source = live
         elif remote is None:
             source_pin = stack.enter_context(fs.PinnedVolume(context, source_volume, expected_source))
             source = stack.enter_context(Tree(source_pin))
-        require_userdata(target_pin)
+        if not foreign:
+            require_userdata(target_pin)
         require(remote is not None or saved is not None or context.mode == 'fixture' or source_pin.volume.get('external') is True,
                 'EXTERNAL_BUNDLE_REQUIRED', 'Images must be on external SD/USB storage')
-        state = read_state(live) if live.exists(MANAGER) else None
+        state = read_state(live) if live is not None and live.exists(MANAGER) else None
         if state and not wipe:
             require(not read_transaction(live), 'SWITCH_PENDING', 'Repair the pending switch before installing')
             require(len(slots(live, state)) < MAX_SLOTS, 'TOO_MANY_SLOTS', 'The slot limit has been reached')
@@ -2568,10 +2994,13 @@ def image_plan(context, source_volume, image_path, options, expected_source=None
             info = {'format': remote.get('format', 'image'), 'compression': remote.get('compression'),
                     'factor': int(remote.get('factor', 6))}
             name = remote['file']
-        vfs = os.fstatvfs(target_pin.fd)
-        # Erased first, the whole partition is free but for the saved images; a download stays
-        # until it is unpacked.
-        free = vfs.f_blocks * vfs.f_frsize - store_bytes(live) if wipe else vfs.f_bavail * vfs.f_frsize
+        if foreign:
+            free = foreign_room(target_volume)
+        else:
+            vfs = os.fstatvfs(target_pin.fd)
+            # Erased first, the whole partition is free but for the saved images; a download stays
+            # until it is unpacked.
+            free = vfs.f_blocks * vfs.f_frsize - store_bytes(live) if wipe else vfs.f_bavail * vfs.f_frsize
         if info.get('used_bytes'):
             # An ext image unpacks sparsely, then its files are copied out: twice what it holds.
             required = 2 * info['used_bytes'] + IMAGE_MARGIN + MIN_FREE
@@ -2584,9 +3013,9 @@ def image_plan(context, source_volume, image_path, options, expected_source=None
         require(free >= required, 'INSUFFICIENT_SPACE', 'There is not enough space beside the retained system',
                 available_bytes=free, required_bytes=required)
         slot = image_slot(name, live) if not wipe else image_slot(name, types.SimpleNamespace(exists=lambda _: False))
-        binding = {'volume_token': target_pin.volume['volume_token'], 'state_seal': state['seal'] if state else None,
+        binding = {'volume_token': target_volume['volume_token'], 'state_seal': state['seal'] if state else None,
                    'source_volume_token': source_pin.volume['volume_token'] if source_pin else
-                   (target_pin.volume['volume_token'] if saved is not None and not wipe else None),
+                   (target_volume['volume_token'] if saved is not None and not wipe else None),
                    'image_identity': list(stamp), 'format': info, 'boot': boot, 'platform_profile_sha256': digest(profile),
                    'options': options, 'clean': clean, 'script': script, 'wipe': wipe,
                    'remote': {k: remote[k] for k in ('id', 'url', 'sha256', 'sha512', 'size', 'file', 'signature_url', 'signature_sha256', 'key')
@@ -2594,8 +3023,9 @@ def image_plan(context, source_volume, image_path, options, expected_source=None
         return {'plan': plan_envelope(context, 'import', binding, source_volume=source_volume if remote is None else None,
                     image=True, manifest_path='/' + path if path else None, slot=slot, name=name[:96],
                     required_bytes=required, available_bytes=free, clean_install=clean, erase_userdata=wipe,
-                    download_bytes=remote['size'] if remote else 0,
-                    confirmation='Erase userdata, then install as the only system' if wipe else
+                    format_userdata=foreign, download_bytes=remote['size'] if remote else 0, write_boot=boot.get('write') is True,
+                    confirmation='Format userdata for Linux, then install as the only system' if foreign else
+                    'Erase userdata, then install as the only system' if wipe else
                     ('Install as the only system on the empty userdata' if clean else
                      'Install alongside the current system; nothing is switched or erased')),
                 'switches_current_system': False, 'backup_recommended': not clean}
@@ -3260,7 +3690,7 @@ def give_builds(context, root):
 def erase_userdata(context):
     """The clean install of the installer page: userdata is formatted ext4 when the confirmed
     installation starts, not before (2026-11-08)."""
-    if context.mode == 'fixture':
+    if context.mode == 'fixture' and not foreign_userdata(context):
         return  # The fixture empties its userdata folder once it is pinned.
     volume = context.volume('userdata')
     if volume['mounted']:
@@ -3270,6 +3700,23 @@ def erase_userdata(context):
 
 
 def install_image(context, plan, confirmed=False):
+    """A system from an image. When its plan takes a Linux BOOT with it (boot_for_linux), that BOOT is
+    on cache before anything is erased and is written once the system is in place."""
+    boot = plan['binding'].get('boot') or {}
+    if not boot.get('write'):
+        return install_image_system(context, plan, confirmed)
+    context.confirm(confirmed)
+    progress = import_progress(plan)
+    verify_plan(context, plan, 'import')
+    path = linux_boot_fetched(context, boot, progress)
+    result = install_image_system(context, plan, confirmed)
+    progress('image-boot', 0, 1)
+    written = linux_boot_written(context, path, boot, progress)
+    progress('image-boot', 1, 1)
+    return {**result, 'boot_written': written['sha256'], 'kept_boot': written.get('kept_boot')}
+
+
+def install_image_system(context, plan, confirmed=False):
     context.confirm(confirmed)
     progress = import_progress(plan)
     verify_plan(context, plan, 'import')
@@ -3744,8 +4191,25 @@ def recover(context, direction, expected_transaction, confirmed=False, checkpoin
         return run_transaction(context, live, journal, direction, checkpoint)
 
 
+def android_boot_installed():
+    """True when BOOT holds Android's own BOOT for this phone (stock, or a custom Android kernel):
+    a normal start then starts Android, and there is no Linux system on userdata to check."""
+    import bootimage
+    try:
+        with open('/dev/disk/by-partlabel/boot', 'rb') as f:
+            data = f.read(64 << 20)
+        info = bootimage.inspect_boot(data)
+    except (OSError, ValueError):
+        return False
+    return bool(info['device'].get('this_phone')) and not info.get('mainline')
+
+
 def boot_check(context):
     """Explicit Normal Boot preflight; never an automatic cold-start mount."""
+    # 2026-11-10: with Android installed (Samsung's firmware or a GSI), userdata is Android's
+    # encrypted f2fs and BOOT is Android's: nothing of Linux is checked, the start goes on.
+    if context.mode == 'device' and android_boot_installed():
+        return {'android': True, 'linux_checked': False}
     volume = context.volume('userdata')
     owned = not volume['mounted']
     mounted = False
@@ -3922,7 +4386,7 @@ def main(argv=None):
                                                       args.trial_seconds, key, wifi, args.app, script, args.package,
                                                       args.shell, args.greeter, args.locale, args.timezone, hashed),
                                         args.expected_source_token, wipe=args.wipe,
-                                        remote=plan_entry(context, args.remote) if args.remote else None)
+                                        remote=linux_entry(context, args.remote) if args.remote else None)
             elif operation == 'remove-slot':
                 result = remove_slot(context, args.slot, args.confirm)
             elif operation == 'switch-plan':
