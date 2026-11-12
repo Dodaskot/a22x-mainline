@@ -1816,6 +1816,7 @@ This image keeps its system on xfs, which this recovery cannot read
 This installer is a program: it can map and rewrite the logical partitions of super by itself
 This is a recovery image, not a boot image
 This is an update for phones with two system slots (payload.bin). This phone has one: choose a ROM made for it, or a system image.
+This is Android 15 or newer. Google's own builds need kernel 4.19 and restart for ever on this phone's Android kernel 4.14; ROMs made for older phones (Treble GSIs) start.
 This is not a backup of this kind
 This is not a complete ZIP archive
 This is not a Samsung firmware file (a .tar.md5)

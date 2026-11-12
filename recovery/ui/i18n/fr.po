@@ -5457,6 +5457,9 @@ msgstr "C'est une image recovery, pas une image de démarrage"
 msgid "This is an update for phones with two system slots (payload.bin). This phone has one: choose a ROM made for it, or a system image."
 msgstr "C’est une mise à jour pour les téléphones à deux emplacements système (payload.bin). Ce téléphone n’en a qu’un : choisissez une ROM faite pour lui ou une image système."
 
+msgid "This is Android 15 or newer. Google's own builds need kernel 4.19 and restart for ever on this phone's Android kernel 4.14; ROMs made for older phones (Treble GSIs) start."
+msgstr "C’est Android 15 ou plus récent. Les versions de Google demandent le noyau 4.19 et redémarrent sans fin avec le noyau Android 4.14 de ce téléphone ; les ROM faites pour des téléphones plus anciens (GSI Treble) démarrent."
+
 msgid "This is not a backup of this kind"
 msgstr "Ce n’est pas une sauvegarde de ce type"
 

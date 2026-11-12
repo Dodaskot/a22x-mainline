@@ -19,6 +19,8 @@ NOT_TEXT = {'—', '%4d-%2d-%2dT%2d:%2d:%2dZ', 'recovery-%s.png', r'\x89PNG\r\n\
             'SM-A226B  /  Recovery 0.6', 'A22x Recovery', 'Mainline Recovery', 'USB SSH', 'microSD', 'Android', 'Console', '%u Hz', '60 Hz', '90 Hz', 'Ctrl+C', 'Ctrl+D', 'GiB', 'KiB', 'MiB', 'TiB', 'GNOME', 'Phosh', 'Sxmo', 'Lomiri', 'Del', 'saved\\n', 'FILE TEST', 'PREVIEW', 'SHA-256'}
 # Messages from the backup backend that a person is likely to meet.
 BACKEND_TEXT = {'BOOT holds no Linux kernel for this phone. Flash a Linux BOOT image first: Install, Flash a partition, boot',  # distro.py boot_identity (2026-11-11)
+                # android_gsi.py OLD_KERNEL_WARNING (2026-11-12).
+                "This is Android 15 or newer. Google's own builds need kernel 4.19 and restart for ever on this phone's Android kernel 4.14; ROMs made for older phones (Treble GSIs) start.",
                 # catalog.json fit_note of the Treble GSIs, shown on an Android image's page (2026-11-12).
                 'Treble GSI: made to start on older vendors too',
                 # bootimage.py: why an image is refused before anything is written (2026-11-12: IMAGE_DAMAGED was shown in English).

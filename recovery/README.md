@@ -14,7 +14,7 @@ on-phone check: [docs/PROGRESS.md](docs/PROGRESS.md).
 
 | | |
 |---|---|
-| Recovery | 0.6.192, SHA-256 `561a3f7895d78f9a8afdef6f2f3c0a462b37b5eafc1a8d06b1a325a7629369cf` |
+| Recovery | 0.6.193, SHA-256 `9035450a0c8b9be35589183211773f851ef70f52ce1980fb2c272e8197f42669` |
 | Recovery kernel | `7.2.0-a22x-recovery+ #130`: [linux-a22x](https://github.com/Dodaskot/linux-a22x) branch `a22x-recovery`, tag `a22x-recovery-kernel130` |
 | Tested with | BOOT v146 (`releases/v146`, kernel `#122`) and v145 (kernel `#121`), branch `a22x-boot` |
 | Image and app | [Releases](https://github.com/Dodaskot/a22x-recovery/releases): the recovery image for any phone (the same build without the developer's SSH key and without the phone's Bluetooth address, see [Building](#building)) and the installer app that carries it |
@@ -337,7 +337,7 @@ The pages, in Aurora (each one singly: [a22x-recovery/docs/screenshots/en](https
   says what became of each. A restart of the system afterwards can be asked
   for; it counts down ten seconds and can be stopped.
 
-### Added in 0.6.182 to 0.6.192
+### Added in 0.6.182 to 0.6.193
 
 - **Why Android did not start** (0.6.183). The log of Android's kernel
   outlives a restart in the phone's memory. The recovery reads it at its start
@@ -370,6 +370,11 @@ The pages, in Aurora (each one singly: [a22x-recovery/docs/screenshots/en](https
   now built for such an image too when its phoc needs it.
 - **Catalog.** Google's Android 15 images are gone from it: they cannot start
   on this phone's Android kernel.
+- **A warning for Android 15 and newer** (0.6.193). The review of an Android
+  image or ROM file now says when it holds Android 15 or newer: Google's own
+  builds need kernel 4.19 and restart for ever on this phone's Android kernel
+  4.14, while ROMs made for older phones (Treble GSIs) start. It is a warning,
+  not a refusal.
 - **Refusals in your language** (0.6.191). The 33 reasons for which an image
   is refused before anything is written (a damaged or cut-short image, one for
   another phone, a broken device tree or vbmeta) were shown in English only.
@@ -512,7 +517,7 @@ paths of the machine it was built on.
 ## Tests
 
 ```fish
-unshare -r python3 -B -m unittest discover -s tests   # 702 tests
+unshare -r python3 -B -m unittest discover -s tests   # 703 tests
 cd ui; and make test systems-ui-integration display-ui-integration shells-ui-test locale-ui-test
 make -C ui arm64 CROSS_COMPILE=aarch64-linux-gnu-     # static interface for the phone
 ```

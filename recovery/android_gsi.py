@@ -25,6 +25,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import struct
 import sys
@@ -239,6 +240,18 @@ def vbmeta_flags(context):
     return struct.unpack_from('>I', head, 120)[0] if head[:4] == b'AVB0' else None
 
 
+KERNEL_FLOOR_SDK, KERNEL_FLOOR = 35, (4, 19)
+# One literal on one line: the interface's list of texts is gathered from the sources line by line.
+OLD_KERNEL_WARNING = "This is Android 15 or newer. Google's own builds need kernel 4.19 and restart for ever on this phone's Android kernel 4.14; ROMs made for older phones (Treble GSIs) start."
+
+
+def kernel_older(release, floor):
+    """Whether a kernel release ("4.14.186-27218697") is older than FLOOR; one that is not known
+    counts as older: this phone's Android kernel is 4.14 whatever the firmware."""
+    match = re.match(r'(\d+)\.(\d+)', release or '')
+    return not match or (int(match.group(1)), int(match.group(2))) < floor
+
+
 def inspect(context, volume, token, path):
     relative = '/' + fs.clean_path(path).lstrip('/')
     name = relative.rsplit('/', 1)[-1]
@@ -262,6 +275,13 @@ def inspect(context, volume, token, path):
         warnings.append('Made for newer vendors: it may not start on this phone')
     if not sdk:
         warnings.append('The image does not say its Android version')
+    # 2026-11-12, on the owner's phone: Google's Android 15 restarted for ever. Its network loader
+    # refuses a kernel older than 4.19 ("NetBpfLoad: Android V requires kernel 4.19"), and this
+    # phone's Android kernel is 4.14. ROMs made for older phones take that check out (crDroid and
+    # AlphaDroid, both Android 16, started here), and a file does not say which kind it is: so
+    # this is said, and never refused.
+    if sdk >= KERNEL_FLOOR_SDK and kernel_older(release if boot == 'android' else (stock or {}).get('release', ''), KERNEL_FLOOR):
+        warnings.append(OLD_KERNEL_WARNING)
     system_name, system_bytes = source['members']['system']
     targets = {t['label']: t for t in flash.targets(context)['targets']}
     room = flash.targets(context).get('super_free_bytes', 0)

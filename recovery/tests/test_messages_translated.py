@@ -6,6 +6,8 @@ import re
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+import sys
+sys.path.insert(0, str(ROOT))
 
 
 def messages(module):
@@ -22,7 +24,8 @@ def messages(module):
 class Translated(unittest.TestCase):
     def test_every_refusal_of_the_image_check_has_its_translations(self):
         listed = set((ROOT / 'ui/i18n/messages.txt').read_text().splitlines())
-        wanted = messages('bootimage.py')
+        import android_gsi
+        wanted = messages('bootimage.py') | {android_gsi.OLD_KERNEL_WARNING}
         self.assertGreater(len(wanted), 25)
         self.assertEqual(sorted(wanted - listed), [])
         for language in ('uk', 'de', 'es', 'fr', 'pl'):

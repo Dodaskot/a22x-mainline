@@ -160,6 +160,23 @@ class Gsi(unittest.TestCase):
         self.addCleanup(os.close, fd)
         self.assertEqual(b''.join(lp.Super(fd).chunks('system'))[:len(self.system)], bytes(self.system))
 
+    def test_android_15_and_newer_is_warned_about_this_phones_kernel(self):
+        """2026-11-12, on the owner's phone: Google's Android 15 restarted for ever ("Android V requires
+        kernel 4.19"; the phone's Android kernel is 4.14), and the review had said nothing. It is a
+        warning, not a refusal: ROMs made for older phones start."""
+        for sdk, warned in (('34', False), ('35', True), ('36', True)):
+            with zipfile.ZipFile(self.gsi, 'w') as z:
+                z.writestr('system.img', bytes(self.system))
+                z.writestr('vbmeta.img', b'AVB0' + bytes(252))
+                z.writestr('build.prop', 'ro.build.version.release=x\nro.build.version.sdk=%s\n' % sdk)
+            code, plan, _ = self.inspect()
+            self.assertEqual(code, 0, plan)
+            self.assertEqual(ag.OLD_KERNEL_WARNING in plan['warnings'], warned, sdk)
+            self.assertNotIn('KERNEL', ' '.join(plan['blockers']))
+        self.assertLess(len(ag.OLD_KERNEL_WARNING.encode()), 200)   # the interface reads a warning into 200 bytes
+        self.assertTrue(ag.kernel_older('4.14.186-27218697', (4, 19)) and ag.kernel_older('', (4, 19)))
+        self.assertFalse(ag.kernel_older('4.19.191-1', (4, 19)) or ag.kernel_older('5.10.209', (4, 19)))
+
     def test_newer_android_warns_and_an_image_without_vbmeta_needs_it_disabled(self):
         with zipfile.ZipFile(self.gsi, 'w') as z:
             z.writestr('system.img', bytes(self.system))

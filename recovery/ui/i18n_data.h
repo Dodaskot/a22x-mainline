@@ -4,7 +4,7 @@
 #define LANGUAGE_COUNT 6
 static const char*const language_codes[LANGUAGE_COUNT]={"en","uk","de","es","fr","pl"};
 static const char*const language_names[LANGUAGE_COUNT]={"English","Українська","Deutsch","Español","Français","Polski"};
-#define MESSAGE_COUNT 2034
+#define MESSAGE_COUNT 2035
 static const char*const message_ids[MESSAGE_COUNT]={
 "  /  skip-identical",
 " / preview truncated",
@@ -1786,6 +1786,7 @@ static const char*const message_ids[MESSAGE_COUNT]={
 "This image keeps its system on btrfs, which this recovery cannot read",
 "This image keeps its system on xfs, which this recovery cannot read",
 "This installer is a program: it can map and rewrite the logical partitions of super by itself",
+"This is Android 15 or newer. Google's own builds need kernel 4.19 and restart for ever on this phone's Android kernel 4.14; ROMs made for older phones (Treble GSIs) start.",
 "This is a recovery image, not a boot image",
 "This is an update for phones with two system slots (payload.bin). This phone has one: choose a ROM made for it, or a system image.",
 "This is not a Samsung firmware file (a .tar.md5)",
@@ -3823,6 +3824,7 @@ static const char*const message_text[LANGUAGE_COUNT-1][MESSAGE_COUNT]={
 "Система в цьому образі лежить на btrfs, а цей рекавері не читає btrfs",
 "Система в цьому образі лежить на xfs, а цей рекавері не читає xfs",
 "Цей інсталятор — програма: вона може сама відображати й перезаписувати логічні розділи super",
+"Це Android 15 або новіший. Власні збірки Google потребують ядра 4.19 і на ядрі Android цього телефона (4.14) перезапускаються без кінця; ROM, зроблені для старіших телефонів (Treble GSI), запускаються.",
 "Це образ recovery, а не boot",
 "Це оновлення для телефонів із двома системними слотами (payload.bin). У цього телефона слот один: виберіть ROM, зроблений для нього, або образ системи.",
 "Це не файл прошивки Samsung (.tar.md5)",
@@ -5859,6 +5861,7 @@ static const char*const message_text[LANGUAGE_COUNT-1][MESSAGE_COUNT]={
 "Dieses Image legt sein System auf btrfs ab, das dieses Recovery nicht lesen kann",
 "Dieses Image legt sein System auf xfs ab, das dieses Recovery nicht lesen kann",
 "Dieser Installer ist ein Programm: Es kann die logischen Partitionen von super selbst einbinden und überschreiben",
+"Das ist Android 15 oder neuer. Googles eigene Builds brauchen Kernel 4.19 und starten auf dem Android-Kernel 4.14 dieses Telefons endlos neu; ROMs für ältere Telefone (Treble-GSIs) starten.",
 "Das ist ein Recovery-Image, kein Boot-Image",
 "Das ist ein Update für Telefone mit zwei System-Slots (payload.bin). Dieses Telefon hat einen: Wählen Sie ein dafür gebautes ROM oder ein Systemabbild.",
 "Dies ist keine Samsung-Firmware-Datei (.tar.md5)",
@@ -7895,6 +7898,7 @@ static const char*const message_text[LANGUAGE_COUNT-1][MESSAGE_COUNT]={
 "Esta imagen guarda su sistema en btrfs, que este recovery no puede leer",
 "Esta imagen guarda su sistema en xfs, que este recovery no puede leer",
 "Este instalador es un programa: puede mapear y reescribir por sí mismo las particiones lógicas de super",
+"Esto es Android 15 o más nuevo. Las compilaciones de Google necesitan el kernel 4.19 y se reinician sin fin con el kernel de Android 4.14 de este teléfono; las ROM hechas para teléfonos más antiguos (GSI Treble) se inician.",
 "Es una imagen de recovery, no de arranque",
 "Es una actualización para teléfonos con dos ranuras de sistema (payload.bin). Este teléfono tiene una: elige una ROM hecha para él o una imagen de sistema.",
 "No es un archivo de firmware de Samsung (.tar.md5)",
@@ -9931,6 +9935,7 @@ static const char*const message_text[LANGUAGE_COUNT-1][MESSAGE_COUNT]={
 "Cette image place son système sur btrfs, que ce recovery ne sait pas lire",
 "Cette image place son système sur xfs, que ce recovery ne sait pas lire",
 "Cet installateur est un programme : il peut mapper et réécrire lui-même les partitions logiques de super",
+"C’est Android 15 ou plus récent. Les versions de Google demandent le noyau 4.19 et redémarrent sans fin avec le noyau Android 4.14 de ce téléphone ; les ROM faites pour des téléphones plus anciens (GSI Treble) démarrent.",
 "C'est une image recovery, pas une image de démarrage",
 "C’est une mise à jour pour les téléphones à deux emplacements système (payload.bin). Ce téléphone n’en a qu’un : choisissez une ROM faite pour lui ou une image système.",
 "Ce n’est pas un fichier de firmware Samsung (.tar.md5)",
@@ -11967,6 +11972,7 @@ static const char*const message_text[LANGUAGE_COUNT-1][MESSAGE_COUNT]={
 "Ten obraz trzyma system na btrfs, którego to recovery nie odczyta",
 "Ten obraz trzyma system na xfs, którego to recovery nie odczyta",
 "Ten instalator to program: może sam mapować i nadpisywać partycje logiczne super",
+"To Android 15 lub nowszy. Własne kompilacje Google wymagają jądra 4.19 i na jądrze Androida 4.14 tego telefonu restartują się bez końca; ROM-y zrobione dla starszych telefonów (Treble GSI) startują.",
 "To obraz recovery, a nie obraz rozruchowy",
 "To aktualizacja dla telefonów z dwoma slotami systemu (payload.bin). Ten telefon ma jeden: wybierz ROM zrobiony dla niego lub obraz systemu.",
 "To nie jest plik firmware Samsunga (.tar.md5)",

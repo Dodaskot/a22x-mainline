@@ -5457,6 +5457,9 @@ msgstr "Це образ recovery, а не boot"
 msgid "This is an update for phones with two system slots (payload.bin). This phone has one: choose a ROM made for it, or a system image."
 msgstr "Це оновлення для телефонів із двома системними слотами (payload.bin). У цього телефона слот один: виберіть ROM, зроблений для нього, або образ системи."
 
+msgid "This is Android 15 or newer. Google's own builds need kernel 4.19 and restart for ever on this phone's Android kernel 4.14; ROMs made for older phones (Treble GSIs) start."
+msgstr "Це Android 15 або новіший. Власні збірки Google потребують ядра 4.19 і на ядрі Android цього телефона (4.14) перезапускаються без кінця; ROM, зроблені для старіших телефонів (Treble GSI), запускаються."
+
 msgid "This is not a backup of this kind"
 msgstr "Це не копія цього виду"
 

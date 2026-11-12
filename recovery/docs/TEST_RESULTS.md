@@ -1,6 +1,6 @@
 # Test results
 
-Recovery **0.6.192**, recovery kernel `7.2.0-a22x-recovery+ #130`, 2026-11-12.
+Recovery **0.6.193**, recovery kernel `7.2.0-a22x-recovery+ #130`, 2026-11-12.
 
 Two kinds of evidence are kept apart here. The first is automatic: tests that run on a computer
 against fixtures, with no phone attached. The second is what was done on the phone itself
@@ -9,11 +9,11 @@ is never listed as working on the phone.
 
 ## Automatic tests (computer, fixtures)
 
-One full run of every suite on the sources of 0.6.192: **24 of 24 suites passed**.
+One full run of every suite on the sources of 0.6.193: **24 of 24 suites passed**.
 
 | Suite | Result | Size |
 |---|---|---|
-| Helpers (Python): `tests/` | pass | 702 tests |
+| Helpers (Python): `tests/` | pass | 703 tests |
 | Backup backend: `backend/tests/` | pass | 106 tests |
 | Interface self-tests: `make test` | pass | 102 self-tests |
 | `ui: make integration` | pass | 2 profiles |
@@ -23,7 +23,7 @@ One full run of every suite on the sources of 0.6.192: **24 of 24 suites passed*
 | `ui: make motion-integration` | pass | 4 workflows |
 | `ui: make usb-ui-integration` | pass | 5 workflows |
 | `ui: make terminal-ui-integration` | pass | 13 workflows, 568 checks |
-| `ui: make display-ui-integration` | pass | 53 workflows, 1196 checks |
+| `ui: make display-ui-integration` | pass | 53 workflows, 1181 checks |
 | `ui: make locale-ui-test` | pass | 27 checks, 312 time zones |
 | `ui: make shells-ui-test` | pass | 32 checks |
 | `ui: make charger-ui-test` | pass |  |
@@ -72,7 +72,8 @@ Done by touch on the phone unless said otherwise.
 | Kernel #130: a stale 96 % of Android refused at the voltage of 90 %; voltage readings without errors | 192 | works |
 | "Android did not start": the page opened by itself after Google's Android 15 restarted for ever, with the kernel's line "Android V requires kernel 4.19" | 183 | works; read once, not shown again |
 | A damaged recovery image is refused before anything is written | 183 | refused (IMAGE_DAMAGED); the partition kept its content |
-| Flash the recovery from the recovery, read back byte for byte | 182 to 192 | works |
+| Flash the recovery from the recovery, read back byte for byte | 182 to 193 | works |
+| ROM from a file: Google's Android 15 ZIP chosen on the SD card | 192, 193 | recognised as an Android image with its build; since 193 the review warns that it needs kernel 4.19 (not installed) |
 | Restore Android with its data from the copy (10 partitions, 57.3 GiB) over four Linux systems | 191 | boot, super, metadata and userdata written and read back, six partitions already the same; 27 minutes; the Linux BOOT that was there is kept on cache |
 | Download an Android image from the catalog to the SD card (crDroid 12.12 with microG, 1.0 GiB) and install it | 191 | downloaded and checked; system written into super and read back, userdata formatted for Android. Not started yet |
 
