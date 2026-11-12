@@ -523,6 +523,12 @@ class Shells(unittest.TestCase):
         self.write('usr/lib/dri/kmsro_dri.so', '')              # a Mesa that has both names
         self.assertEqual(self.run_sh('sh /usr/bin/a22x-gpu-driver; mesa_driver').split(), ['kmsro', 'kmsro'])
 
+    def test_plasma_on_debian_brings_what_its_keyboard_needs(self):
+        """2026-11-12, Debian 13 with Plasma Mobile on the phone: the keyboard is a Qt 5 program and
+        Qt 5's Wayland plugin is only recommended, so KWin gave the keyboard up."""
+        self.assertEqual(self.run_sh('shell_extras plasma apt').split(), ['maliit-keyboard', 'qtwayland5'])
+        self.assertEqual(self.run_sh('shell_extras plasma pacman; shell_extras plasma dnf').split(), [])
+
     def test_phosh_session_uses_the_fixed_phoc_when_built(self):
         self.session('phosh', 'auto')
         self.write('opt/a22x-phoc/bin/phoc', '#!/bin/sh\n', 0o755)

@@ -141,6 +141,30 @@ msgstr "Копія містить BOOT, super та інші розділи Andro
 msgid "A custom ROM or a system image on an SD card or USB stick"
 msgstr "Кастомний ROM або образ системи на SD-картці чи флешці"
 
+msgid "A device tree is cut short"
+msgstr "Дерево пристроїв обірване"
+
+msgid "A device tree is larger than its DT table entry"
+msgstr "Дерево пристроїв більше за свій запис у таблиці DT"
+
+msgid "A device tree lies outside its own size"
+msgstr "Дерево пристроїв виходить за власний розмір"
+
+msgid "A device tree node name is cut short"
+msgstr "Назва вузла дерева пристроїв обірвана"
+
+msgid "A device tree of the DT table lies outside it"
+msgstr "Дерево пристроїв із таблиці DT лежить поза нею"
+
+msgid "A device tree property is cut short"
+msgstr "Властивість дерева пристроїв обірвана"
+
+msgid "A device tree property lies outside"
+msgstr "Властивість дерева пристроїв лежить поза ним"
+
+msgid "A DT table entry is not a device tree"
+msgstr "Запис таблиці DT не є деревом пристроїв"
+
 msgid "A factory reset was asked for in Android's settings: Android restarted into this recovery to have its data erased."
 msgstr "У налаштуваннях Android замовлено скидання до заводських: Android перезапустився в це recovery, щоб стерти свої дані."
 
@@ -188,6 +212,9 @@ msgstr "GSI запускається з BOOT і vendor від Samsung: спер�
 
 msgid "A GSI's system.img goes into system. When the image is larger, the partition grows into the free space of super; the other partitions stay as they are."
 msgstr "system.img з GSI прошивається в system. Якщо образ більший, розділ збільшується за рахунок вільного місця super; інші розділи лишаються як є."
+
+msgid "A hash descriptor is cut short"
+msgstr "Дескриптор хешу обірваний"
 
 msgid "A kernel (AnyKernel3)"
 msgstr "Ядро (AnyKernel3)"
@@ -290,6 +317,9 @@ msgstr "Сенсорний вхід на основі Phosh з екранною 
 
 msgid "A touch login made of Phosh, with the on-screen keyboard and a list of the shells. Arch builds it on the phone: 30-40 minutes more."
 msgstr "Сенсорний вхід на основі Phosh з екранною клавіатурою та списком оболонок. Arch збирає його на телефоні: ще 30-40 хвилин."
+
+msgid "A vbmeta descriptor lies outside"
+msgstr "Дескриптор vbmeta лежить поза межами"
 
 msgid "A whole volume"
 msgstr "Цілий том"
@@ -2586,6 +2616,9 @@ msgstr "Потрібен для зміни захисту."
 msgid "Needs HTTPS"
 msgstr "Потрібен HTTPS"
 
+msgid "Neither an AVB hash nor the kernel and ramdisk streams show that the image is complete"
+msgstr "Ні хеш AVB, ні потоки ядра й ramdisk не доводять, що образ повний"
+
 msgid "Network and apps"
 msgstr "Мережа та програми"
 
@@ -2796,6 +2829,9 @@ msgstr "Немає."
 msgid "Normal Linux boot is blocked"
 msgstr "Звичайний запуск Linux заблоковано"
 
+msgid "Not a device tree"
+msgstr "Це не дерево пристроїв"
+
 msgid "Not Android's BOOT: install Android first"
 msgstr "Це не BOOT Android: спершу встановіть Android"
 
@@ -2864,6 +2900,9 @@ msgstr "Поки що нічого не записано."
 
 msgid "Nothing has run yet."
 msgstr "Ще нічого не запускалося."
+
+msgid "Nothing in this boot image names the Galaxy A22 5G or its MT6833 chip"
+msgstr "Ніщо в цьому образі boot не називає Galaxy A22 5G чи його чип MT6833"
 
 msgid "Nothing is downloaded for the desktop."
 msgstr "Для робочого столу нічого не завантажується."
@@ -4359,6 +4398,9 @@ msgstr "Архів не прочитано до кінця"
 msgid "The audited phone platform profile is unavailable. Import and switching remain disabled."
 msgstr "Перевірений профіль платформи телефона недоступний. Імпорт і перемикання вимкнено."
 
+msgid "The AVB footer points outside the partition"
+msgstr "Нижній колонтитул AVB вказує за межі розділу"
+
 msgid "The backend did not admit this operation."
 msgstr "Бекенд не допустив цю операцію."
 
@@ -4400,6 +4442,18 @@ msgstr "Блоковий пристрій уже лише для читання;
 
 msgid "The block-level read-only guard changed; remount is required"
 msgstr "Блоковий захист від запису змінився; потрібне перемонтування"
+
+msgid "The boot image has an unusual page size"
+msgstr "Образ boot має незвичний розмір сторінки"
+
+msgid "The boot image has no kernel"
+msgstr "В образі boot немає ядра"
+
+msgid "The boot image is larger than the part its AVB footer covers"
+msgstr "Образ boot більший за частину, яку охоплює його колонтитул AVB"
+
+msgid "The boot image is larger than the partition"
+msgstr "Образ boot більший за розділ"
 
 msgid "The BOOT in the firmware is damaged: its AVB hash does not match"
 msgstr "BOOT у прошивці пошкоджено: його AVB-хеш не збігається"
@@ -4532,6 +4586,12 @@ msgstr "Завантажений образ відрізняється від к
 
 msgid "The downloaded Linux BOOT is not the one the catalog names"
 msgstr "Завантажений Linux BOOT не той, що названий у каталозі"
+
+msgid "The DT table is cut short"
+msgstr "Таблиця DT обірвана"
+
+msgid "The DT table lies outside the partition"
+msgstr "Таблиця DT лежить поза розділом"
 
 msgid "The exact plan, source, backup, targets, journal or safety policy was not confirmed."
 msgstr "Точний план, джерело, копію, цілі, журнал або політику безпеки не підтверджено."
@@ -4761,8 +4821,20 @@ msgstr "Ядро не змогло прочитати нову таблицю р
 msgid "The kernel does not show the new partitions"
 msgstr "Ядро не показує нових розділів"
 
+msgid "The kernel does not unpack to its end: the image is damaged or incomplete"
+msgstr "Ядро не розпаковується до кінця: образ пошкоджений або неповний"
+
+msgid "The kernel does not unpack: the image is damaged or incomplete"
+msgstr "Ядро не розпаковується: образ пошкоджений або неповний"
+
 msgid "The kernel in BOOT could not be patched for APatch"
 msgstr "Не вдалося пропатчити ядро в BOOT для APatch"
+
+msgid "The kernel is neither gzip, LZ4 nor an arm64 Image"
+msgstr "Ядро — це ні gzip, ні LZ4, ні arm64 Image"
+
+msgid "The kernel is not an arm64 Image"
+msgstr "Ядро не є arm64 Image"
 
 msgid "The kernel keeps this partition read-only"
 msgstr "Ядро тримає цей розділ лише для читання"
@@ -5010,6 +5082,12 @@ msgstr "План відхилено"
 msgid "The private RAM work directory is unavailable."
 msgstr "Приватна робоча тека в RAM недоступна."
 
+msgid "The ramdisk does not unpack to its end: the image is damaged or incomplete"
+msgstr "Ramdisk не розпаковується до кінця: образ пошкоджений або неповний"
+
+msgid "The ramdisk does not unpack: the image is damaged or incomplete"
+msgstr "Ramdisk не розпаковується: образ пошкоджений або неповний"
+
 msgid "The recovery's own folder stays"
 msgstr "Власна тека Recovery лишається"
 
@@ -5151,6 +5229,12 @@ msgstr "Помічник передавання USB-файлів не налаш
 msgid "The USB stick could not be opened for writing."
 msgstr "Не вдалося відкрити флешку для запису."
 
+msgid "The vbmeta blocks lie outside the image"
+msgstr "Блоки vbmeta лежать поза образом"
+
+msgid "The vbmeta hash does not match its contents"
+msgstr "Хеш vbmeta не відповідає вмісту"
+
 msgid "The volume has too little free space for the backup"
 msgstr "На томі замало вільного місця для копії"
 
@@ -5214,8 +5298,17 @@ msgstr "Файл теми"
 msgid "Theme removed"
 msgstr "Тему вилучено"
 
+msgid "There is no Android boot image header"
+msgstr "Немає заголовка образу boot Android"
+
+msgid "There is no Android DT table"
+msgstr "Немає таблиці DT Android"
+
 msgid "There is no automatic reboot."
 msgstr "Автоматичного перезапуску немає."
+
+msgid "There is no AVB vbmeta header"
+msgstr "Немає заголовка AVB vbmeta"
 
 msgid "There is no AVB vbmeta in the vbmeta partition"
 msgstr "У розділі vbmeta немає AVB vbmeta"
@@ -5409,6 +5502,9 @@ msgstr "Цю мережу не збережено."
 msgid "This partition is already used by another block mapping"
 msgstr "Цей розділ уже зайнятий іншим блоковим відображенням"
 
+msgid "This partition is not judged by its contents"
+msgstr "Цей розділ не оцінюється за вмістом"
+
 msgid "This partition is too large to save first"
 msgstr "Цей розділ завеликий для попереднього збереження"
 
@@ -5499,6 +5595,9 @@ msgstr "Сенсорна панель"
 msgid "TRANSACTION"
 msgstr "ТРАНЗАКЦІЯ"
 
+msgid "Treble GSI: made to start on older vendors too"
+msgstr "Treble GSI: зроблений так, щоб запускатися й на старіших vendor"
+
 msgid "Tried on an SM-A226B: it restarted into the bootloader instead of starting. You can still try it: this recovery stays, and stock Android can be flashed again."
 msgstr "Перевірено на SM-A226B: замість запуску телефон перезапускався в завантажувач. Спробувати все одно можна: це recovery лишається, а стоковий Android можна прошити знову."
 
@@ -5549,6 +5648,9 @@ msgstr "Зрозуміло"
 
 msgid "unknown"
 msgstr "невідомо"
+
+msgid "Unknown device tree token"
+msgstr "Невідомий елемент дерева пристроїв"
 
 msgid "Unknown kind of backup"
 msgstr "Невідомий вид копії"

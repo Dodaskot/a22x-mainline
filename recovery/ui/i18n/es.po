@@ -141,6 +141,30 @@ msgstr "Una copia contiene BOOT, super y las demás particiones de Android. Reco
 msgid "A custom ROM or a system image on an SD card or USB stick"
 msgstr "Una ROM personalizada o una imagen de sistema en una tarjeta SD o memoria USB"
 
+msgid "A device tree is cut short"
+msgstr "Un árbol de dispositivos está cortado"
+
+msgid "A device tree is larger than its DT table entry"
+msgstr "Un árbol de dispositivos es mayor que su entrada en la tabla DT"
+
+msgid "A device tree lies outside its own size"
+msgstr "Un árbol de dispositivos se sale de su propio tamaño"
+
+msgid "A device tree node name is cut short"
+msgstr "El nombre de un nodo del árbol de dispositivos está cortado"
+
+msgid "A device tree of the DT table lies outside it"
+msgstr "Un árbol de dispositivos de la tabla DT queda fuera de ella"
+
+msgid "A device tree property is cut short"
+msgstr "Una propiedad del árbol de dispositivos está cortada"
+
+msgid "A device tree property lies outside"
+msgstr "Una propiedad del árbol de dispositivos queda fuera"
+
+msgid "A DT table entry is not a device tree"
+msgstr "Una entrada de la tabla DT no es un árbol de dispositivos"
+
 msgid "A factory reset was asked for in Android's settings: Android restarted into this recovery to have its data erased."
 msgstr "En los ajustes de Android se pidió un restablecimiento de fábrica: Android se reinició en este recovery para que se borren sus datos."
 
@@ -188,6 +212,9 @@ msgstr "Una GSI arranca con el BOOT y el vendor de Samsung: primero flashea el f
 
 msgid "A GSI's system.img goes into system. When the image is larger, the partition grows into the free space of super; the other partitions stay as they are."
 msgstr "El system.img de una GSI va a system. Si la imagen es mayor, la partición crece en el espacio libre de super; las demás quedan como están."
+
+msgid "A hash descriptor is cut short"
+msgstr "Un descriptor de hash está cortado"
 
 msgid "A kernel (AnyKernel3)"
 msgstr "Un kernel (AnyKernel3)"
@@ -290,6 +317,9 @@ msgstr "Inicio de sesión táctil basado en Phosh, con teclado en pantalla y lis
 
 msgid "A touch login made of Phosh, with the on-screen keyboard and a list of the shells. Arch builds it on the phone: 30-40 minutes more."
 msgstr "Inicio de sesión táctil basado en Phosh, con teclado en pantalla y lista de entornos. Arch lo compila en el teléfono: 30-40 minutos más."
+
+msgid "A vbmeta descriptor lies outside"
+msgstr "Un descriptor de vbmeta queda fuera"
 
 msgid "A whole volume"
 msgstr "Un volumen entero"
@@ -2586,6 +2616,9 @@ msgstr "Necesaria para cambiar la protección."
 msgid "Needs HTTPS"
 msgstr "Necesita HTTPS"
 
+msgid "Neither an AVB hash nor the kernel and ramdisk streams show that the image is complete"
+msgstr "Ni un hash AVB ni los flujos del kernel y del ramdisk muestran que la imagen esté completa"
+
 msgid "Network and apps"
 msgstr "Red y aplicaciones"
 
@@ -2796,6 +2829,9 @@ msgstr "Ninguno."
 msgid "Normal Linux boot is blocked"
 msgstr "El arranque normal de Linux está bloqueado"
 
+msgid "Not a device tree"
+msgstr "No es un árbol de dispositivos"
+
 msgid "Not Android's BOOT: install Android first"
 msgstr "No es el BOOT de Android: instala Android primero"
 
@@ -2864,6 +2900,9 @@ msgstr "Aún no se ha escrito nada."
 
 msgid "Nothing has run yet."
 msgstr "Aún no se ha ejecutado nada."
+
+msgid "Nothing in this boot image names the Galaxy A22 5G or its MT6833 chip"
+msgstr "Nada en esta imagen de arranque nombra el Galaxy A22 5G ni su chip MT6833"
 
 msgid "Nothing is downloaded for the desktop."
 msgstr "No se descarga nada para el escritorio."
@@ -4359,6 +4398,9 @@ msgstr "El archivo no se leyó hasta el final"
 msgid "The audited phone platform profile is unavailable. Import and switching remain disabled."
 msgstr "El perfil auditado de la plataforma del teléfono no está disponible. La importación y el cambio siguen desactivados."
 
+msgid "The AVB footer points outside the partition"
+msgstr "El pie AVB apunta fuera de la partición"
+
 msgid "The backend did not admit this operation."
 msgstr "El backend no admitió esta operación."
 
@@ -4400,6 +4442,18 @@ msgstr "El dispositivo de bloques ya era de solo lectura; esta herramienta no lo
 
 msgid "The block-level read-only guard changed; remount is required"
 msgstr "La protección de solo lectura a nivel de bloque cambió; hay que volver a montar"
+
+msgid "The boot image has an unusual page size"
+msgstr "La imagen de arranque tiene un tamaño de página inusual"
+
+msgid "The boot image has no kernel"
+msgstr "La imagen de arranque no tiene kernel"
+
+msgid "The boot image is larger than the part its AVB footer covers"
+msgstr "La imagen de arranque es mayor que la parte que cubre su pie AVB"
+
+msgid "The boot image is larger than the partition"
+msgstr "La imagen de arranque es mayor que la partición"
 
 msgid "The BOOT in the firmware is damaged: its AVB hash does not match"
 msgstr "El BOOT del firmware está dañado: su hash AVB no coincide"
@@ -4532,6 +4586,12 @@ msgstr "La imagen descargada no coincide con el catálogo. Inténtalo de nuevo."
 
 msgid "The downloaded Linux BOOT is not the one the catalog names"
 msgstr "El BOOT de Linux descargado no es el que nombra el catálogo"
+
+msgid "The DT table is cut short"
+msgstr "La tabla DT está cortada"
+
+msgid "The DT table lies outside the partition"
+msgstr "La tabla DT queda fuera de la partición"
 
 msgid "The exact plan, source, backup, targets, journal or safety policy was not confirmed."
 msgstr "No se confirmaron exactamente el plan, el origen, la copia, los destinos, el registro o la política de seguridad."
@@ -4761,8 +4821,20 @@ msgstr "El kernel no pudo leer la nueva tabla de particiones"
 msgid "The kernel does not show the new partitions"
 msgstr "El kernel no muestra las nuevas particiones"
 
+msgid "The kernel does not unpack to its end: the image is damaged or incomplete"
+msgstr "El kernel no se descomprime hasta el final: la imagen está dañada o incompleta"
+
+msgid "The kernel does not unpack: the image is damaged or incomplete"
+msgstr "El kernel no se descomprime: la imagen está dañada o incompleta"
+
 msgid "The kernel in BOOT could not be patched for APatch"
 msgstr "No se pudo parchear el kernel de BOOT para APatch"
+
+msgid "The kernel is neither gzip, LZ4 nor an arm64 Image"
+msgstr "El kernel no es gzip, ni LZ4, ni un Image arm64"
+
+msgid "The kernel is not an arm64 Image"
+msgstr "El kernel no es un Image arm64"
 
 msgid "The kernel keeps this partition read-only"
 msgstr "El núcleo mantiene esta partición en solo lectura"
@@ -5010,6 +5082,12 @@ msgstr "Se descartó el plan"
 msgid "The private RAM work directory is unavailable."
 msgstr "El directorio privado de trabajo en RAM no está disponible."
 
+msgid "The ramdisk does not unpack to its end: the image is damaged or incomplete"
+msgstr "El ramdisk no se descomprime hasta el final: la imagen está dañada o incompleta"
+
+msgid "The ramdisk does not unpack: the image is damaged or incomplete"
+msgstr "El ramdisk no se descomprime: la imagen está dañada o incompleta"
+
 msgid "The recovery's own folder stays"
 msgstr "La carpeta propia del recovery se queda"
 
@@ -5151,6 +5229,12 @@ msgstr "La herramienta de transferencia de archivos USB no está configurada."
 msgid "The USB stick could not be opened for writing."
 msgstr "No se pudo abrir la memoria USB para escribir."
 
+msgid "The vbmeta blocks lie outside the image"
+msgstr "Los bloques de vbmeta quedan fuera de la imagen"
+
+msgid "The vbmeta hash does not match its contents"
+msgstr "El hash de vbmeta no coincide con su contenido"
+
 msgid "The volume has too little free space for the backup"
 msgstr "El volumen tiene muy poco espacio libre para la copia"
 
@@ -5214,8 +5298,17 @@ msgstr "Archivo de tema"
 msgid "Theme removed"
 msgstr "Tema eliminado"
 
+msgid "There is no Android boot image header"
+msgstr "No hay cabecera de imagen de arranque de Android"
+
+msgid "There is no Android DT table"
+msgstr "No hay tabla DT de Android"
+
 msgid "There is no automatic reboot."
 msgstr "No hay reinicio automático."
+
+msgid "There is no AVB vbmeta header"
+msgstr "No hay cabecera AVB vbmeta"
 
 msgid "There is no AVB vbmeta in the vbmeta partition"
 msgstr "No hay un vbmeta AVB en la partición vbmeta"
@@ -5409,6 +5502,9 @@ msgstr "Esta red no está guardada."
 msgid "This partition is already used by another block mapping"
 msgstr "Esta partición ya la usa otro mapeo de bloques"
 
+msgid "This partition is not judged by its contents"
+msgstr "Esta partición no se juzga por su contenido"
+
 msgid "This partition is too large to save first"
 msgstr "Esta partición es demasiado grande para guardarla antes"
 
@@ -5499,6 +5595,9 @@ msgstr "Panel táctil"
 msgid "TRANSACTION"
 msgstr "TRANSACCIÓN"
 
+msgid "Treble GSI: made to start on older vendors too"
+msgstr "GSI Treble: hecho para iniciarse también con vendor más antiguos"
+
 msgid "Tried on an SM-A226B: it restarted into the bootloader instead of starting. You can still try it: this recovery stays, and stock Android can be flashed again."
 msgstr "Probado en un SM-A226B: en lugar de arrancar, se reinició en el cargador. Aun así puedes probarlo: este recovery se queda y el Android de fábrica puede flashearse de nuevo."
 
@@ -5549,6 +5648,9 @@ msgstr "Entendido"
 
 msgid "unknown"
 msgstr "desconocido"
+
+msgid "Unknown device tree token"
+msgstr "Elemento desconocido en el árbol de dispositivos"
 
 msgid "Unknown kind of backup"
 msgstr "Tipo de copia desconocido"

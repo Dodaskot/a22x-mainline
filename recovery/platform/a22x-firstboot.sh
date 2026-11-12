@@ -296,6 +296,10 @@ shell_extras() {
     case "$1:$2" in
     phosh:apt) echo "adwaita-icon-theme librsvg2-common gnome-backgrounds fonts-cantarell phosh-mobile-settings gnome-control-center gnome-console stevia squeekboard" ;;
     sxmo:apt) echo "fonts-noto-color-emoji wvkbd" ;;
+    # Plasma's on-screen keyboard (maliit-keyboard) is still a Qt 5 program in Debian 13, and Qt 5's
+    # Wayland plugin is only recommended there: without it KWin started the keyboard five times
+    # ("Could not find the Qt platform plugin wayland") and gave it up (2026-11-12).
+    plasma:apt) echo "maliit-keyboard qtwayland5" ;;
     # Lomiri's keyboard (maliit) enables English and emoji by default and crashed (SIGSEGV) without
     # their data packages, which are only recommended; Lomiri restarted with it in a loop (Ubuntu
     # 26.04, 2026-11-09). Its data for the system language comes too, where there is one.

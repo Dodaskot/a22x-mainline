@@ -14,8 +14,8 @@ on-phone check: [docs/PROGRESS.md](docs/PROGRESS.md).
 
 | | |
 |---|---|
-| Recovery | 0.6.188, SHA-256 `28edd82f1b0d353e7a14d63a260d95702df830bae22f50a19e274c8440032f02` |
-| Recovery kernel | `7.2.0-a22x-recovery+ #127`: [linux-a22x](https://github.com/Dodaskot/linux-a22x) branch `a22x-recovery`, tag `a22x-recovery-kernel127` |
+| Recovery | 0.6.192, SHA-256 `561a3f7895d78f9a8afdef6f2f3c0a462b37b5eafc1a8d06b1a325a7629369cf` |
+| Recovery kernel | `7.2.0-a22x-recovery+ #130`: [linux-a22x](https://github.com/Dodaskot/linux-a22x) branch `a22x-recovery`, tag `a22x-recovery-kernel130` |
 | Tested with | BOOT v146 (`releases/v146`, kernel `#122`) and v145 (kernel `#121`), branch `a22x-boot` |
 | Image and app | [Releases](https://github.com/Dodaskot/a22x-recovery/releases): the recovery image for any phone (the same build without the developer's SSH key and without the phone's Bluetooth address, see [Building](#building)) and the installer app that carries it |
 | Test results | [docs/TEST_RESULTS.md](docs/TEST_RESULTS.md): every automatic suite, and what was done on the phone |
@@ -337,7 +337,7 @@ The pages, in Aurora (each one singly: [a22x-recovery/docs/screenshots/en](https
   says what became of each. A restart of the system afterwards can be asked
   for; it counts down ten seconds and can be stopped.
 
-### Added in 0.6.182 to 0.6.188
+### Added in 0.6.182 to 0.6.192
 
 - **Why Android did not start** (0.6.183). The log of Android's kernel
   outlives a restart in the phone's memory. The recovery reads it at its start
@@ -352,7 +352,7 @@ The pages, in Aurora (each one singly: [a22x-recovery/docs/screenshots/en](https
   An older Linux BOOT that the phone keeps is used only when the release cannot
   be had, and a clean installation replaces an older Linux BOOT that is there.
   Before, the newest BOOT on cache won, and that could be one from an old test.
-- **Charge** (0.6.182 to 0.6.188, recovery kernel #124 to #127). The kernel's
+- **Charge** (0.6.182 to 0.6.192, recovery kernel #124 to #130). The kernel's
   gauge judges its start against the cell's curve in volts, refuses a percent
   that the voltage contradicts, and corrects its count with care; the interface
   shows that number as it is. See Known problems for what is still open.
@@ -370,6 +370,12 @@ The pages, in Aurora (each one singly: [a22x-recovery/docs/screenshots/en](https
   now built for such an image too when its phoc needs it.
 - **Catalog.** Google's Android 15 images are gone from it: they cannot start
   on this phone's Android kernel.
+- **Refusals in your language** (0.6.191). The 33 reasons for which an image
+  is refused before anything is written (a damaged or cut-short image, one for
+  another phone, a broken device tree or vbmeta) were shown in English only.
+- **Plasma Mobile's keyboard on Debian and Ubuntu** (0.6.191). The keyboard is
+  still a Qt 5 program there and needs Qt 5's Wayland plugin, which is only
+  recommended: it now comes with Plasma Mobile.
 
 ### Power
 
@@ -463,12 +469,13 @@ shared `/home`. Switching between them in every direction worked.
    scripts saved in `cache` (`a22x-recovery/scripts/`).
 11. The image leaves 1.3 MiB of the RECOVERY partition free. The kernel also
    supports XZ and ZSTD initramfs, which would free more room.
-12. **The charge kept for Android does not hold.** The recovery's gauge writes
-    its percent where Android's gauge keeps its own (the PMIC's RTC domain),
-    and reads it back, but the write never reaches the RTC's core (a reload
-    of the registers shows the old value at once), so after a restart the
-    register holds what Android wrote before. Android and the recovery still
-    count from their own starts, and may show different numbers.
+12. **Android and the recovery do not share the charge.** Android's gauge
+    keeps its percent in the PMIC's RTC domain. The recovery reads it and
+    takes it when the voltage agrees, but cannot write its own: on this phone
+    the alarm registers of the RTC do not take writes from the mainline kernel
+    (a time set there holds, an alarm hour does not; the reason is not known).
+    So each starts its count by itself, and the two may show different
+    numbers.
 13. **The setup of an installed system cannot be run again.** A system whose
     desktop was set up by an older recovery keeps that setup; the fixes above
     reach it only by installing it again (beside the others or clean).
@@ -505,7 +512,7 @@ paths of the machine it was built on.
 ## Tests
 
 ```fish
-unshare -r python3 -B -m unittest discover -s tests   # 700 tests
+unshare -r python3 -B -m unittest discover -s tests   # 702 tests
 cd ui; and make test systems-ui-integration display-ui-integration shells-ui-test locale-ui-test
 make -C ui arm64 CROSS_COMPILE=aarch64-linux-gnu-     # static interface for the phone
 ```

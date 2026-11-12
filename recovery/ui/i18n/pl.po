@@ -141,6 +141,30 @@ msgstr "Kopia zawiera BOOT, super i pozostałe partycje Androida. Recovery i cac
 msgid "A custom ROM or a system image on an SD card or USB stick"
 msgstr "Własny ROM lub obraz systemu na karcie SD albo pendrivie"
 
+msgid "A device tree is cut short"
+msgstr "Drzewo urządzeń jest ucięte"
+
+msgid "A device tree is larger than its DT table entry"
+msgstr "Drzewo urządzeń jest większe niż jego wpis w tablicy DT"
+
+msgid "A device tree lies outside its own size"
+msgstr "Drzewo urządzeń wykracza poza własny rozmiar"
+
+msgid "A device tree node name is cut short"
+msgstr "Nazwa węzła drzewa urządzeń jest ucięta"
+
+msgid "A device tree of the DT table lies outside it"
+msgstr "Drzewo urządzeń z tablicy DT leży poza nią"
+
+msgid "A device tree property is cut short"
+msgstr "Właściwość drzewa urządzeń jest ucięta"
+
+msgid "A device tree property lies outside"
+msgstr "Właściwość drzewa urządzeń leży poza nim"
+
+msgid "A DT table entry is not a device tree"
+msgstr "Wpis tablicy DT nie jest drzewem urządzeń"
+
 msgid "A factory reset was asked for in Android's settings: Android restarted into this recovery to have its data erased."
 msgstr "W ustawieniach Androida zażądano przywrócenia ustawień fabrycznych: Android uruchomił to recovery, aby skasować swoje dane."
 
@@ -188,6 +212,9 @@ msgstr "GSI uruchamia się z BOOT i vendor Samsunga: najpierw wgraj firmware Sam
 
 msgid "A GSI's system.img goes into system. When the image is larger, the partition grows into the free space of super; the other partitions stay as they are."
 msgstr "system.img z GSI trafia do system. Gdy obraz jest większy, partycja rośnie w wolnym miejscu super; pozostałe zostają bez zmian."
+
+msgid "A hash descriptor is cut short"
+msgstr "Deskryptor skrótu jest ucięty"
 
 msgid "A kernel (AnyKernel3)"
 msgstr "Jądro (AnyKernel3)"
@@ -290,6 +317,9 @@ msgstr "Logowanie dotykowe oparte na Phosh, z klawiaturą ekranową i listą pow
 
 msgid "A touch login made of Phosh, with the on-screen keyboard and a list of the shells. Arch builds it on the phone: 30-40 minutes more."
 msgstr "Logowanie dotykowe oparte na Phosh, z klawiaturą ekranową i listą powłok. Arch buduje je na telefonie: 30-40 minut dłużej."
+
+msgid "A vbmeta descriptor lies outside"
+msgstr "Deskryptor vbmeta leży poza obszarem"
 
 msgid "A whole volume"
 msgstr "Cały wolumin"
@@ -2586,6 +2616,9 @@ msgstr "Potrzebne do zmiany ochrony."
 msgid "Needs HTTPS"
 msgstr "Wymaga HTTPS"
 
+msgid "Neither an AVB hash nor the kernel and ramdisk streams show that the image is complete"
+msgstr "Ani skrót AVB, ani strumienie jądra i ramdisku nie dowodzą, że obraz jest kompletny"
+
 msgid "Network and apps"
 msgstr "Sieć i aplikacje"
 
@@ -2796,6 +2829,9 @@ msgstr "Brak."
 msgid "Normal Linux boot is blocked"
 msgstr "Zwykły rozruch Linuksa jest zablokowany"
 
+msgid "Not a device tree"
+msgstr "To nie jest drzewo urządzeń"
+
 msgid "Not Android's BOOT: install Android first"
 msgstr "To nie BOOT Androida: najpierw zainstaluj Androida"
 
@@ -2864,6 +2900,9 @@ msgstr "Jeszcze nic nie zapisano."
 
 msgid "Nothing has run yet."
 msgstr "Nic jeszcze nie zostało uruchomione."
+
+msgid "Nothing in this boot image names the Galaxy A22 5G or its MT6833 chip"
+msgstr "Nic w tym obrazie boot nie wymienia Galaxy A22 5G ani jego układu MT6833"
 
 msgid "Nothing is downloaded for the desktop."
 msgstr "Dla środowiska nic nie jest pobierane."
@@ -4359,6 +4398,9 @@ msgstr "Archiwum nie zostało odczytane do końca"
 msgid "The audited phone platform profile is unavailable. Import and switching remain disabled."
 msgstr "Sprawdzony profil platformy telefonu jest niedostępny. Import i przełączanie pozostają wyłączone."
 
+msgid "The AVB footer points outside the partition"
+msgstr "Stopka AVB wskazuje poza partycję"
+
 msgid "The backend did not admit this operation."
 msgstr "Backend nie dopuścił tej operacji."
 
@@ -4400,6 +4442,18 @@ msgstr "Urządzenie blokowe było już tylko do odczytu; to narzędzie tego nie 
 
 msgid "The block-level read-only guard changed; remount is required"
 msgstr "Zmieniła się blokada odczytu na poziomie bloków; wymagane ponowne montowanie"
+
+msgid "The boot image has an unusual page size"
+msgstr "Obraz boot ma nietypowy rozmiar strony"
+
+msgid "The boot image has no kernel"
+msgstr "Obraz boot nie zawiera jądra"
+
+msgid "The boot image is larger than the part its AVB footer covers"
+msgstr "Obraz boot jest większy niż część objęta jego stopką AVB"
+
+msgid "The boot image is larger than the partition"
+msgstr "Obraz boot jest większy niż partycja"
 
 msgid "The BOOT in the firmware is damaged: its AVB hash does not match"
 msgstr "BOOT w firmware jest uszkodzony: jego skrót AVB się nie zgadza"
@@ -4532,6 +4586,12 @@ msgstr "Pobrany obraz różni się od katalogu. Spróbuj ponownie."
 
 msgid "The downloaded Linux BOOT is not the one the catalog names"
 msgstr "Pobrany Linux BOOT nie jest tym, który podaje katalog"
+
+msgid "The DT table is cut short"
+msgstr "Tablica DT jest ucięta"
+
+msgid "The DT table lies outside the partition"
+msgstr "Tablica DT leży poza partycją"
 
 msgid "The exact plan, source, backup, targets, journal or safety policy was not confirmed."
 msgstr "Nie potwierdzono dokładnie planu, źródła, kopii, celów, dziennika ani zasad bezpieczeństwa."
@@ -4761,8 +4821,20 @@ msgstr "Jądro nie mogło odczytać nowej tablicy partycji"
 msgid "The kernel does not show the new partitions"
 msgstr "Jądro nie pokazuje nowych partycji"
 
+msgid "The kernel does not unpack to its end: the image is damaged or incomplete"
+msgstr "Jądro nie rozpakowuje się do końca: obraz jest uszkodzony lub niepełny"
+
+msgid "The kernel does not unpack: the image is damaged or incomplete"
+msgstr "Jądro się nie rozpakowuje: obraz jest uszkodzony lub niepełny"
+
 msgid "The kernel in BOOT could not be patched for APatch"
 msgstr "Nie udało się załatać jądra w BOOT dla APatch"
+
+msgid "The kernel is neither gzip, LZ4 nor an arm64 Image"
+msgstr "Jądro nie jest ani gzip, ani LZ4, ani obrazem arm64"
+
+msgid "The kernel is not an arm64 Image"
+msgstr "Jądro nie jest obrazem arm64"
 
 msgid "The kernel keeps this partition read-only"
 msgstr "Jądro trzyma tę partycję tylko do odczytu"
@@ -5010,6 +5082,12 @@ msgstr "Plan odrzucono"
 msgid "The private RAM work directory is unavailable."
 msgstr "Prywatny katalog roboczy w RAM jest niedostępny."
 
+msgid "The ramdisk does not unpack to its end: the image is damaged or incomplete"
+msgstr "Ramdisk nie rozpakowuje się do końca: obraz jest uszkodzony lub niepełny"
+
+msgid "The ramdisk does not unpack: the image is damaged or incomplete"
+msgstr "Ramdisk się nie rozpakowuje: obraz jest uszkodzony lub niepełny"
+
 msgid "The recovery's own folder stays"
 msgstr "Własny folder Recovery zostaje"
 
@@ -5151,6 +5229,12 @@ msgstr "Narzędzie przesyłania plików USB nie jest skonfigurowane."
 msgid "The USB stick could not be opened for writing."
 msgstr "Nie można otworzyć pendrive do zapisu."
 
+msgid "The vbmeta blocks lie outside the image"
+msgstr "Bloki vbmeta leżą poza obrazem"
+
+msgid "The vbmeta hash does not match its contents"
+msgstr "Skrót vbmeta nie zgadza się z zawartością"
+
 msgid "The volume has too little free space for the backup"
 msgstr "Wolumin ma za mało wolnego miejsca na kopię"
 
@@ -5214,8 +5298,17 @@ msgstr "Plik motywu"
 msgid "Theme removed"
 msgstr "Usunięto motyw"
 
+msgid "There is no Android boot image header"
+msgstr "Brak nagłówka obrazu boot Androida"
+
+msgid "There is no Android DT table"
+msgstr "Brak tablicy DT Androida"
+
 msgid "There is no automatic reboot."
 msgstr "Brak automatycznego restartu."
+
+msgid "There is no AVB vbmeta header"
+msgstr "Brak nagłówka AVB vbmeta"
 
 msgid "There is no AVB vbmeta in the vbmeta partition"
 msgstr "W partycji vbmeta nie ma AVB vbmeta"
@@ -5409,6 +5502,9 @@ msgstr "Ta sieć nie jest zapisana."
 msgid "This partition is already used by another block mapping"
 msgstr "Ta partycja jest już używana przez inne mapowanie bloków"
 
+msgid "This partition is not judged by its contents"
+msgstr "Ta partycja nie jest oceniana po zawartości"
+
 msgid "This partition is too large to save first"
 msgstr "Ta partycja jest za duża, by najpierw ją zapisać"
 
@@ -5499,6 +5595,9 @@ msgstr "Panel dotykowy"
 msgid "TRANSACTION"
 msgstr "TRANSAKCJA"
 
+msgid "Treble GSI: made to start on older vendors too"
+msgstr "Treble GSI: zrobiony tak, by startował też na starszych vendor"
+
 msgid "Tried on an SM-A226B: it restarted into the bootloader instead of starting. You can still try it: this recovery stays, and stock Android can be flashed again."
 msgstr "Sprawdzono na SM-A226B: zamiast się uruchomić, restartował do bootloadera. Mimo to można spróbować: to recovery zostaje, a fabrycznego Androida można wgrać ponownie."
 
@@ -5549,6 +5648,9 @@ msgstr "Rozumiem"
 
 msgid "unknown"
 msgstr "nieznane"
+
+msgid "Unknown device tree token"
+msgstr "Nieznany element drzewa urządzeń"
 
 msgid "Unknown kind of backup"
 msgstr "Nieznany rodzaj kopii"

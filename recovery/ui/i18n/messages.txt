@@ -44,6 +44,14 @@ A computer is asking to use this phone.
 A computer is connected over SSH or SFTP: close that session, then try again
 A copy holds BOOT, super and the other partitions of Android. Recovery and cache are in no copy: a restore leaves them as they are.
 A custom ROM or a system image on an SD card or USB stick
+A device tree is cut short
+A device tree is larger than its DT table entry
+A device tree lies outside its own size
+A device tree node name is cut short
+A device tree of the DT table lies outside it
+A device tree property is cut short
+A device tree property lies outside
+A DT table entry is not a device tree
 A factory reset was asked for in Android's settings: Android restarted into this recovery to have its data erased.
 A FAT32 card cannot hold a file of 4 GiB or more
 A file has no MD5 at its end; every image is still checked as it is read
@@ -60,6 +68,7 @@ A folder copy saves the replaced partitions beside itself first: mount this card
 A folder of images, made before archives
 A GSI starts with Samsung's BOOT and vendor: flash the Samsung firmware first. Installing formats userdata for Android.
 A GSI's system.img goes into system. When the image is larger, the partition grows into the free space of super; the other partitions stay as they are.
+A hash descriptor is cut short
 A kernel (AnyKernel3)
 A logical partition: the size of the checked image
 A member got more bytes than its size
@@ -94,6 +103,7 @@ A tile icon would be too hard to read
 A tool that makes filesystems is missing
 A touch login made of Phosh, with the on-screen keyboard and a list of the shells.
 A touch login made of Phosh, with the on-screen keyboard and a list of the shells. Arch builds it on the phone: 30-40 minutes more.
+A vbmeta descriptor lies outside
 A whole volume
 A Wi-Fi password has 8 to 63 characters
 A Wi-Fi password has 8 to 63 characters.
@@ -859,6 +869,7 @@ Navigation
 NEEDED
 Needed to change the protection.
 Needs HTTPS
+Neither an AVB hash nor the kernel and ramdisk streams show that the image is complete
 Network and apps
 NETWORK NAME
 Never
@@ -929,6 +940,7 @@ none
 None found
 None.
 Normal Linux boot is blocked
+Not a device tree
 Not Android's BOOT: install Android first
 Not Android: flash the Samsung firmware first
 Not available. Tap to choose storage
@@ -952,6 +964,7 @@ Nothing
 Nothing has been erased yet.
 Nothing has been written yet.
 Nothing has run yet.
+Nothing in this boot image names the Galaxy A22 5G or its MT6833 chip
 Nothing is downloaded for the desktop.
 Nothing is downloaded.
 NOTHING IS ERASED
@@ -1450,6 +1463,7 @@ The archive is not a plain file
 The archive lacks a file its manifest lists
 The archive was not read to its end
 The audited phone platform profile is unavailable. Import and switching remain disabled.
+The AVB footer points outside the partition
 The backend did not admit this operation.
 The backend did not report a successful result.
 The backend did not return a valid success result.
@@ -1464,6 +1478,10 @@ The backup name was taken meanwhile
 The backup passed integrity verification.
 The block device was already read-only; this helper will not override it
 The block-level read-only guard changed; remount is required
+The boot image has an unusual page size
+The boot image has no kernel
+The boot image is larger than the part its AVB footer covers
+The boot image is larger than the partition
 The BOOT in the firmware is damaged: its AVB hash does not match
 The BOOT that was there is kept on cache:
 The BOOT there is kept on cache before it is replaced. Magisk lives in the ramdisk and APatch in the kernel; their modules are installed in their apps in Android.
@@ -1508,6 +1526,8 @@ The download differs from its release. Try again.
 The download is larger than its release says
 The downloaded image differs from the catalog. Try again.
 The downloaded Linux BOOT is not the one the catalog names
+The DT table is cut short
+The DT table lies outside the partition
 The exact plan, source, backup, targets, journal or safety policy was not confirmed.
 The exact private plan file, source, target or preservation policy was not confirmed.
 The existing shell has not become ready. Refresh or close this exact session; another shell is not started.
@@ -1584,7 +1604,11 @@ The installers finished
 The interrupted transaction changed. Review the refreshed Systems screen.
 The kernel could not read the new partition table
 The kernel does not show the new partitions
+The kernel does not unpack to its end: the image is damaged or incomplete
+The kernel does not unpack: the image is damaged or incomplete
 The kernel in BOOT could not be patched for APatch
+The kernel is neither gzip, LZ4 nor an arm64 Image
+The kernel is not an arm64 Image
 The kernel keeps this partition read-only
 THE KERNEL'S LAST LINES
 The last installation completed with independent readback. Boot behavior still needs a deliberate test.
@@ -1667,6 +1691,8 @@ The plan from the Android app cannot be used.
 The plan is blocked. Read the reported blockers.
 The plan was discarded
 The private RAM work directory is unavailable.
+The ramdisk does not unpack to its end: the image is damaged or incomplete
+The ramdisk does not unpack: the image is damaged or incomplete
 The recovery's own folder stays
 The regional file is of another version than the AP
 The removal was not confirmed. Refresh Systems.
@@ -1714,6 +1740,8 @@ The theme helper did not return a valid result.
 The USB file helper returned an incomplete state. Refresh before changing sharing.
 The USB file transfer helper is not configured.
 The USB stick could not be opened for writing.
+The vbmeta blocks lie outside the image
+The vbmeta hash does not match its contents
 The volume has too little free space for the backup
 The volume ran out of space while the archive was written
 The whole image of all of them
@@ -1735,7 +1763,10 @@ Theme
 Theme added
 Theme file
 Theme removed
+There is no Android boot image header
+There is no Android DT table
 There is no automatic reboot.
+There is no AVB vbmeta header
 There is no AVB vbmeta in the vbmeta partition
 There is not enough space beside the retained system
 There is not enough space beside the ZIP to unpack the firmware
@@ -1800,6 +1831,7 @@ This mount is not owned by the recovery Files helper. Close its owner and unmoun
 This name belongs to a built-in theme
 This network is not saved.
 This partition is already used by another block mapping
+This partition is not judged by its contents
 This partition is too large to save first
 This phone
 This phone's partitions are laid out differently: the copy cannot be written back here.
@@ -1830,6 +1862,7 @@ To: %.170s
 Too many attempts. Try again in %u s
 Touch panel
 TRANSACTION
+Treble GSI: made to start on older vendors too
 Tried on an SM-A226B: it restarted into the bootloader instead of starting. You can still try it: this recovery stays, and stock Android can be flashed again.
 Tried on an SM-A226B: it started. Not everything in it was checked; this recovery stays, and stock Android can be flashed again.
 Tuesday
@@ -1847,6 +1880,7 @@ unavailable
 Under a minute
 Understood
 unknown
+Unknown device tree token
 Unknown kind of backup
 Unknown phone
 Unlock

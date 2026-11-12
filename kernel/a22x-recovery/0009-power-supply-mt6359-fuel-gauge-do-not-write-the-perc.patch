@@ -1,0 +1,223 @@
+From 41c3332eac14b2ac2ce84797662398001302fe36 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Thu, 12 Nov 2026 08:12:53 +0100
+Subject: [PATCH] power: supply: mt6359-fuel-gauge: do not write the percent to
+ the RTC
+
+The percent written to RTC_AL_HOU[15:8] never reached the RTC's core on
+SM-A226B, whatever was tried:
+
+- the write trigger with the vendor's wait for CBUSY, and with 2 ms
+  given to the flag to rise and 1 ms after it fell;
+- the write interface opened with the two keys (RTC_PROT then read
+  0x9136, RTC_POWERKEY1/2 0xa357/0x67d2);
+- the same write committed together with BBPU and its key.
+
+Each time the register read back the new value and showed the old one
+after a reload of the registers from the core, and the next start found
+what Android had written days before. An alarm hour set through the RTC
+driver (RTC_WKALM_SET) did not hold over a restart either, while a time
+set through it did: on this phone the alarm registers do not take writes
+from this kernel. Why is not known.
+
+So the store, the unlock and the reload are removed, and with them every
+write of this driver to the RTC. The percent Android keeps there is still
+read, but as it may be days old it is taken only when the open-circuit
+voltage it stands for lies within 30 mV of the measured one (70 mV let a
+stale 96 % in at 90 %). soc_start shows the start and the raw register.
+
+Tested on SM-A226B (recovery kernel #130): "start from OCV at 90% (the
+RTC keeps 0xe00d)", and no failed reading of the voltage afterwards.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_011X51ML8nmkZnA9U8adKvGD
+---
+ drivers/power/supply/mt6359-fuel-gauge.c | 114 +++--------------------
+ 1 file changed, 13 insertions(+), 101 deletions(-)
+
+diff --git a/drivers/power/supply/mt6359-fuel-gauge.c b/drivers/power/supply/mt6359-fuel-gauge.c
+index fb4978c64fb1..09a5bd321c0c 100644
+--- a/drivers/power/supply/mt6359-fuel-gauge.c
++++ b/drivers/power/supply/mt6359-fuel-gauge.c
+@@ -12,10 +12,13 @@
+  * One reading of the voltage under the load of a starting system is a poor
+  * witness: between 20 % and 50 % the curve of this cell rises 3 mV per percent,
+  * so 100 mV of sag is 30 points (seen: 15 % shown at 3.79 V, which is 30 %).
+- * Two things mend that. The state of charge that was last shown is kept where
+- * Android's gauge keeps its own, in the RTC domain of the PMIC, and is taken
+- * as the start while the voltage does not contradict it; every system on the
+- * phone then goes on from the same number. And while little current flows, the
++ * Two things mend that. The percent that Android's gauge keeps in the RTC
++ * domain of the PMIC is taken as the start while the voltage does not
++ * contradict it. This driver does not write it: on SM-A226B a write to
++ * RTC_AL_HOU from here read back, yet never reached the RTC's core (a reload of
++ * the registers showed the old value at once; an alarm hour set through the RTC
++ * driver did not hold over a restart either, while the time did). So the number
++ * may be days old, and the voltage has the last word. And while little current flows, the
+  * count is drawn one percent per poll towards the smoothed OCV estimate. A cell
+  * that is drained for minutes sags more than its resistance explains, and one
+  * that is charged stands higher (seen: ten points in six minutes at 0.2-0.5 A),
+@@ -51,15 +54,7 @@
+  * bits 6:0 percent (vendor mt6359_gauge.c fgauge_set_rtc_ui_soc, RTC_FGSOC).
+  * The low byte is the alarm hour of the RTC driver and is never touched here.
+  */
+-#define MT6359_RTC_BBPU			0x588
+ #define MT6359_RTC_AL_HOU		0x5a4
+-#define MT6359_RTC_PROT			0x5bc
+-#define MT6359_RTC_WRTGR		0x5c2
+-#define RTC_PROT_UNLOCK1		0x586a
+-#define RTC_PROT_UNLOCK2		0x9136
+-#define RTC_BBPU_CBUSY			BIT(6)
+-#define RTC_BBPU_RELOAD			BIT(5)
+-#define RTC_BBPU_KEY			0x4300
+ #define RTC_AL_HOU_FG_MASK		GENMASK(15, 8)
+ #define RTC_FG_SOC_VALID		BIT(7)
+ #define RTC_FG_SOC_MASK			GENMASK(6, 0)
+@@ -76,7 +71,7 @@
+ #define FG_POLL_INTERVAL		(30 * HZ)
+ #define FG_LOW_OCV_CAPACITY		15	/* % below which OCV is trusted */
+ #define FG_LOW_MAX_ERROR		5	/* % allowed above the OCV estimate */
+-#define FG_STORED_MAX_UV		70000	/* the stored charge may lie this far from the voltage */
++#define FG_STORED_MAX_UV		30000	/* the stored charge may lie this far from the voltage */
+ #define FG_RELAXED_UA			400000	/* below this the OCV estimate is heard */
+ #define FG_OCV_SETTLE			4	/* OCV readings before any correction */
+ #define FG_OCV_APART			4	/* % apart at rest before the count is corrected */
+@@ -101,9 +96,6 @@ struct mt6359_fg {
+ 	bool anchored;
+ 	int ocv_avg;			/* smoothed OCV estimate, percent * 16 */
+ 	unsigned int ocv_samples;
+-	int stored;			/* percent last written to the RTC, -1: none */
+-	bool rtc_unlocked;		/* the RTC write interface was opened */
+-	int rtc_error;			/* what the last write to the RTC ended with */
+ 	unsigned int stored_raw;	/* RTC_AL_HOU as it was found */
+ 	int start_cap;			/* percent the count began at, -1: not yet */
+ 	int start_ocv;			/* what the voltage said then */
+@@ -263,82 +255,6 @@ static int mt6359_fg_stored_capacity(struct mt6359_fg *fg, int *cap)
+ 	return 0;
+ }
+ 
+-/* What was written to the RTC's registers takes effect with the write trigger. */
+-static int mt6359_fg_rtc_trigger(struct mt6359_fg *fg)
+-{
+-	unsigned int busy;
+-	int ret = regmap_write(fg->regmap, MT6359_RTC_WRTGR, 1);
+-
+-	if (ret)
+-		return ret;
+-	/* the RTC runs from 32 kHz: the vendor waits up to half a second */
+-	return regmap_read_poll_timeout(fg->regmap, MT6359_RTC_BBPU, busy,
+-					!(busy & RTC_BBPU_CBUSY), 200, 500000);
+-}
+-
+-/*
+- * The bootloader leaves the RTC's write interface closed, and a write trigger
+- * then changes nothing (seen: 63 % written, 96 % of days before read after the
+- * restart). The vendor kernel opens it once in its RTC driver's probe
+- * (rtc_writeif_unlock), with the same two keys.
+- */
+-static int mt6359_fg_rtc_unlock(struct mt6359_fg *fg)
+-{
+-	int ret;
+-
+-	if (fg->rtc_unlocked)
+-		return 0;
+-	ret = regmap_write(fg->regmap, MT6359_RTC_PROT, RTC_PROT_UNLOCK1);
+-	if (!ret)
+-		ret = mt6359_fg_rtc_trigger(fg);
+-	if (!ret)
+-		ret = regmap_write(fg->regmap, MT6359_RTC_PROT, RTC_PROT_UNLOCK2);
+-	if (!ret)
+-		ret = mt6359_fg_rtc_trigger(fg);
+-	fg->rtc_unlocked = !ret;
+-	if (ret)
+-		dev_warn_ratelimited(fg->dev, "RTC write interface not opened: %d\n", ret);
+-	return ret;
+-}
+-
+-static void mt6359_fg_store_capacity(struct mt6359_fg *fg, int cap)
+-{
+-	unsigned int back = 0;
+-
+-	cap = clamp(cap, 1, 100);	/* 0 reads as "nothing stored" */
+-	if (cap == fg->stored)
+-		return;
+-	fg->rtc_error = mt6359_fg_rtc_unlock(fg);
+-	if (fg->rtc_error)
+-		return;
+-	fg->rtc_error = regmap_update_bits(fg->regmap, MT6359_RTC_AL_HOU,
+-					   RTC_AL_HOU_FG_MASK,
+-					   FIELD_PREP(RTC_AL_HOU_FG_MASK,
+-						      RTC_FG_SOC_VALID | cap));
+-	if (!fg->rtc_error)
+-		fg->rtc_error = mt6359_fg_rtc_trigger(fg);
+-	if (fg->rtc_error)
+-		return;
+-	regmap_read(fg->regmap, MT6359_RTC_AL_HOU, &back);
+-	if (fg->stored < 0) {
+-		unsigned int bbpu = 0, core = 0;
+-
+-		/*
+-		 * What reads back is the write buffer. A reload brings the
+-		 * registers of the RTC core into it (the vendor's rtc_reload):
+-		 * what reads then is what a restart will find.
+-		 */
+-		regmap_read(fg->regmap, MT6359_RTC_BBPU, &bbpu);
+-		regmap_write(fg->regmap, MT6359_RTC_BBPU,
+-			     (bbpu & 0xff) | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
+-		mt6359_fg_rtc_trigger(fg);
+-		regmap_read(fg->regmap, MT6359_RTC_AL_HOU, &core);
+-		dev_info(fg->dev, "kept %d%% in the RTC: reads %#x, after a reload %#x (BBPU %#x)\n",
+-			 cap, back, core, bbpu);
+-	}
+-	fg->stored = cap;
+-}
+-
+ static int mt6359_fg_charge_now(struct mt6359_fg *fg, s64 *uah)
+ {
+ 	s64 car;
+@@ -352,8 +268,9 @@ static int mt6359_fg_charge_now(struct mt6359_fg *fg, s64 *uah)
+ 		 * What was last shown is the better start while the voltage
+ 		 * does not contradict it. How far the two may lie apart is
+ 		 * measured in volts, not in percent: in the flat middle of the
+-		 * curve 70 mV are twenty points, near its ends three (seen:
+-		 * 96 % kept from days before taken at 3.97 V, which is 66 %).
++		 * curve 30 mV are ten points, near its ends two. Only Android
++		 * writes that percent (see the head of this file), so it may be
++		 * days old (seen: 96 % kept, 3.97 V measured, which is 66 %).
+ 		 */
+ 		if (!ret && !mt6359_fg_stored_capacity(fg, &stored) &&
+ 		    abs(mt6359_fg_capacity_uv(fg, stored) - uv) <= FG_STORED_MAX_UV) {
+@@ -440,10 +357,6 @@ static void mt6359_fg_work(struct work_struct *work)
+ 		}
+ 	}
+ 
+-	if (!mt6359_fg_charge_now(fg, &uah))
+-		mt6359_fg_store_capacity(fg, div_s64(uah * 100 + fg->full_uah / 2,
+-						     fg->full_uah));
+-
+ 	power_supply_changed(fg->psy);
+ 	/* freezable: no wakeups (and no ADC reads) while the system sleeps */
+ 	queue_delayed_work(system_freezable_wq, &fg->work, FG_POLL_INTERVAL);
+@@ -559,9 +472,9 @@ static ssize_t soc_start_show(struct device *dev, struct device_attribute *attr,
+ 
+ 	if (!fg || fg->start_cap < 0)
+ 		return sysfs_emit(buf, "none\n");
+-	return sysfs_emit(buf, "%s %d %d found=%#x kept=%d error=%d\n",
++	return sysfs_emit(buf, "%s %d %d found=%#x\n",
+ 			  fg->start_stored ? "stored" : "ocv", fg->start_cap,
+-			  fg->start_ocv, fg->stored_raw, fg->stored, fg->rtc_error);
++			  fg->start_ocv, fg->stored_raw);
+ }
+ static DEVICE_ATTR_RO(soc_start);
+ 
+@@ -588,7 +501,6 @@ static int mt6359_fg_probe(struct platform_device *pdev)
+ 	if (!fg)
+ 		return -ENOMEM;
+ 	fg->dev = dev;
+-	fg->stored = -1;
+ 	fg->start_cap = -1;
+ 	platform_set_drvdata(pdev, fg);
+ 	ret = devm_mutex_init(dev, &fg->lock);
+-- 
+2.56.0
+
