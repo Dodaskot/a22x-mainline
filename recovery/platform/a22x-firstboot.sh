@@ -163,6 +163,28 @@ nm_wifi() {
     return 1
 }
 
+# What busybox udhcpc runs with a lease: the address, the route and the name servers. Written both
+# for the setup's own network and for the units that keep Wi-Fi up later (2026-11-12: a Debian set
+# up "as in the image" needed no network during its setup, the script was never written, and its
+# Wi-Fi unit got leases it could not apply: IPv6 only, no IPv4).
+dhcp_script() {
+    mkdir -p /opt/a22x-conn
+    cat > /opt/a22x-conn/udhcpc.script <<'S'
+#!/opt/a22x-conn/busybox sh
+[ "$1" = bound ] || [ "$1" = renew ] || exit 0
+/opt/a22x-conn/busybox ifconfig "$interface" "$ip" netmask "$subnet"
+for r in $router; do /opt/a22x-conn/busybox route add default gw "$r" dev "$interface"; done
+rm -f /etc/resolv.conf
+for d in $dns; do echo "nameserver $d"; done > /etc/resolv.conf
+# Fedora resolves names through systemd-resolved, which does not read this file (2026-11-08).
+if command -v resolvectl >/dev/null 2>&1; then
+    resolvectl dns "$interface" $dns
+    resolvectl domain "$interface" "~."
+fi
+S
+    chmod 755 /opt/a22x-conn/udhcpc.script
+}
+
 wifi() {
     [ -z "${A22X_CHROOT:-}" ] || return 0  # The recovery is on Wi-Fi.
     for radio in /sys/class/rfkill/rfkill*; do
@@ -199,20 +221,7 @@ wifi() {
     else
         $run -B -i wlan0 -c /etc/a22x/wpa.conf -D nl80211 || return 1
     fi
-    cat > /opt/a22x-conn/udhcpc.script <<'S'
-#!/opt/a22x-conn/busybox sh
-[ "$1" = bound ] || [ "$1" = renew ] || exit 0
-/opt/a22x-conn/busybox ifconfig "$interface" "$ip" netmask "$subnet"
-for r in $router; do /opt/a22x-conn/busybox route add default gw "$r" dev "$interface"; done
-rm -f /etc/resolv.conf
-for d in $dns; do echo "nameserver $d"; done > /etc/resolv.conf
-# Fedora resolves names through systemd-resolved, which does not read this file (2026-11-08).
-if command -v resolvectl >/dev/null 2>&1; then
-    resolvectl dns "$interface" $dns
-    resolvectl domain "$interface" "~."
-fi
-S
-    chmod 755 /opt/a22x-conn/udhcpc.script
+    dhcp_script
     $B udhcpc -i wlan0 -n -q -t 20 -s /opt/a22x-conn/udhcpc.script || return 1
     # The lease is renewed for as long as the downloads take.
     if command -v systemd-run >/dev/null 2>&1; then
@@ -958,6 +967,7 @@ persist_wifi() {
         return 0
     fi
     cp /etc/a22x/wpa.conf /etc/a22x/wifi.conf && chmod 600 /etc/a22x/wifi.conf
+    dhcp_script
     # Both units step aside only when NetworkManager can drive Wi-Fi itself: NetworkManager
     # alone, as on Fedora Cloud, would otherwise leave the phone without a network.
     cat > /opt/a22x-conn/a22x-wifi-needed <<'S'

@@ -1,6 +1,6 @@
 # Test results
 
-Recovery **0.6.193**, recovery kernel `7.2.0-a22x-recovery+ #130`, 2026-11-12.
+Recovery **0.6.197**, recovery kernel `7.2.0-a22x-recovery+ #137`, BOOT v147 (kernel `#138`), 2026-11-12.
 
 Two kinds of evidence are kept apart here. The first is automatic: tests that run on a computer
 against fixtures, with no phone attached. The second is what was done on the phone itself
@@ -9,11 +9,11 @@ is never listed as working on the phone.
 
 ## Automatic tests (computer, fixtures)
 
-One full run of every suite on the sources of 0.6.193: **24 of 24 suites passed**.
+One full run of every suite on the sources of 0.6.197: **24 of 24 suites passed**.
 
 | Suite | Result | Size |
 |---|---|---|
-| Helpers (Python): `tests/` | pass | 703 tests |
+| Helpers (Python): `tests/` | pass | 706 tests |
 | Backup backend: `backend/tests/` | pass | 106 tests |
 | Interface self-tests: `make test` | pass | 102 self-tests |
 | `ui: make integration` | pass | 2 profiles |
@@ -23,7 +23,7 @@ One full run of every suite on the sources of 0.6.193: **24 of 24 suites passed*
 | `ui: make motion-integration` | pass | 4 workflows |
 | `ui: make usb-ui-integration` | pass | 5 workflows |
 | `ui: make terminal-ui-integration` | pass | 13 workflows, 568 checks |
-| `ui: make display-ui-integration` | pass | 53 workflows, 1181 checks |
+| `ui: make display-ui-integration` | pass | 53 workflows, 1187 checks |
 | `ui: make locale-ui-test` | pass | 27 checks, 312 time zones |
 | `ui: make shells-ui-test` | pass | 32 checks |
 | `ui: make charger-ui-test` | pass |  |
@@ -54,6 +54,10 @@ Done by touch on the phone unless said otherwise.
 | Screenshot with Volume down + Power; flashlight on the home page | 176 | works |
 | Flashlight brightness: every step, the bar, kept over a restart, off before a restart | 177 | works |
 | Copy of Android with its data (10 partitions, 57.3 GiB of partitions into a 4.3 GiB archive) | 178 | created and verified |
+| Clean installation of Debian 13 over BOOT v146: the installation downloads BOOT v147 from the mainline release before erasing, and writes it | 196 | BOOT v147 written and started (kernel #138); the system noted its start and the list of systems reads it; charge started from the recovery's 95 % |
+| A full cache: a test flash of the recovery needed room to keep the old one; the recovery gave up the kept Linux BOOTs v144 and v146 (published, can be downloaded again) and kept v147, the stock and the rooted BOOT | 197 | old recovery kept on cache, 29 → 54 MiB free afterwards |
+| Wi-Fi in that system (no NetworkManager, set up "as in the image") | 196, 197 | 196: joined, IPv6 only (the DHCP script was missing); 197: joined with IPv4: internet and name lookup work |
+| Clean installation of Debian 13 from the catalog, new account user, the Linux BOOT written by the installation; then BOOT v147 flashed by the recovery's flash helper | 195 | installed, running, no failed service, USB networking and SSH; started with kernel #138 |
 | Clean installation of Manjaro ARM Phosh from the catalog, the Linux BOOT written by the installation | 185 | installed; BOOT is release v146; started on kernel `#122`, no failed service, Wi-Fi, time zone and language as chosen |
 | The same image added beside it, switched to and started | 187 | Phosh starts by itself through the image's `phosh.service` (on 185 the phone stopped at a text login) |
 | Phosh under touches in that image (sent to the touchscreen's input node): the swipe to unlock, the password keypad, Unlock | 188, 191 | answers; Android's first-setup program opens after the unlock |
@@ -68,8 +72,8 @@ Done by touch on the phone unless said otherwise.
 | A queue of two good ZIPs with a restart asked for afterwards | 191 | both done, ten seconds counted down, the phone restarted into its Linux system |
 | Recovery kernel #124 to #130: starts, Wi-Fi, USB, touch, display | 182 to 192 | works |
 | Charge shown: a stale 96 % kept by Android refused at 3.97 V; three restarts began at 66 to 68 % | 184, 185 | works |
-| Charge kept in the PMIC for Android and the next start | 185 to 191 | **cannot be written**: the RTC's alarm registers take no writes from this kernel (a time set through the RTC driver held, an alarm hour did not); removed in kernel #130 |
-| Kernel #130: a stale 96 % of Android refused at the voltage of 90 %; voltage readings without errors | 192 | works |
+| Charge kept in the PMIC for Android and the next start | 185 to 193 | **wrong register**: builds up to 0.6.193 used RTC_AL_HOU, which takes no writes; 0.6.192 and 0.6.193 concluded that the RTC took none at all, a mistake of the test (the alarm it set was disabled, and the RTC driver does not write a disabled alarm) |
+| Charge kept in RTC_AL_MTH, where Android's gauge keeps it (recovery kernel #137, BOOT kernel #138) | 194, 195 | **works between the recovery and Linux**: the recovery kept 94 %, Debian 13 started from the stored 94 %, went to 93 % under 0.8 A and kept it, the recovery started from the stored 93 %; a test value written once survived a reload of the RTC's registers and a restart |
 | "Android did not start": the page opened by itself after Google's Android 15 restarted for ever, with the kernel's line "Android V requires kernel 4.19" | 183 | works; read once, not shown again |
 | A damaged recovery image is refused before anything is written | 183 | refused (IMAGE_DAMAGED); the partition kept its content |
 | Flash the recovery from the recovery, read back byte for byte | 182 to 193 | works |

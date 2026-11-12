@@ -59,6 +59,8 @@ LINUX_BOOT_K116 = '71a50262a73859e1538e79277f0ce00822be208d52b32328038a5932b513f
 # Kernel 121: kernel 116 plus the USB replug after system sleep, same modules (2026-11-09).
 LINUX_BOOT_K121 = 'e3542fcdd905a4b89a10eb828fa983bc9f0837a2635155d0124c692f6c5fbb1f'
 LINUX_BOOT_K122 = '9701f48ddced60c648e79a502885778935d1cb5610a011d77fc1898eea01d41a'
+# Kernel 138 (BOOT v147, 2026-11-12): the battery percent kept in the PMIC; same modules.
+LINUX_BOOT_K138 = '5faafaa0035bff7bd77251ab01e2b4c395798755ad24db7b3240cc3d6139ad0f'
 MMC_SECTORS = 122142720
 MMC_BOOT_BYTES = 4 * CHUNK
 PLATFORM_BASELINE = {
@@ -1855,7 +1857,7 @@ def boot_check(context):
                     observed[label] = target_hash(context, context.target(label))
                 return observed[label]
             known_linux = all(current(label) == expected or (label == 'boot' and context.mode == 'device'
-                                                              and current(label) in (LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K116, LINUX_BOOT_K121, LINUX_BOOT_K122))
+                                                              and current(label) in (LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K116, LINUX_BOOT_K121, LINUX_BOOT_K122, LINUX_BOOT_K138))
                               for label, expected in baseline.items())
             verified_transaction = None
             verified_flash, verified_contents = [], []
@@ -1879,7 +1881,7 @@ def boot_check(context):
                     records = read_flash_records(context)
                     changed = [label for label, expected in baseline.items() if current(label) != expected and not (
                         label == 'boot' and context.mode == 'device' and current(label) in (
-                            LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K116, LINUX_BOOT_K121, LINUX_BOOT_K122))]
+                            LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K116, LINUX_BOOT_K121, LINUX_BOOT_K122, LINUX_BOOT_K138))]
                     problems = {}
                     for label in changed:
                         if records.get(label) == current(label):

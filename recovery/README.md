@@ -14,9 +14,9 @@ on-phone check: [docs/PROGRESS.md](docs/PROGRESS.md).
 
 | | |
 |---|---|
-| Recovery | 0.6.193, SHA-256 `9035450a0c8b9be35589183211773f851ef70f52ce1980fb2c272e8197f42669` |
-| Recovery kernel | `7.2.0-a22x-recovery+ #130`: [linux-a22x](https://github.com/Dodaskot/linux-a22x) branch `a22x-recovery`, tag `a22x-recovery-kernel130` |
-| Tested with | BOOT v146 (`releases/v146`, kernel `#122`) and v145 (kernel `#121`), branch `a22x-boot` |
+| Recovery | 0.6.197, SHA-256 `7e48fc54bfb6332539e05bcebf75e6e942e18a88c961d5b353ae5213f2a9f3fc` |
+| Recovery kernel | `7.2.0-a22x-recovery+ #137`: [linux-a22x](https://github.com/Dodaskot/linux-a22x) branch `a22x-recovery`, tag `a22x-recovery-kernel137` |
+| Tested with | BOOT v147 (`releases/v147`, kernel `#138`), v146 (kernel `#122`) and v145 (kernel `#121`), branch `a22x-boot` |
 | Image and app | [Releases](https://github.com/Dodaskot/a22x-recovery/releases): the recovery image for any phone (the same build without the developer's SSH key and without the phone's Bluetooth address, see [Building](#building)) and the installer app that carries it |
 | Test results | [docs/TEST_RESULTS.md](docs/TEST_RESULTS.md): every automatic suite, and what was done on the phone |
 
@@ -337,7 +337,7 @@ The pages, in Aurora (each one singly: [a22x-recovery/docs/screenshots/en](https
   says what became of each. A restart of the system afterwards can be asked
   for; it counts down ten seconds and can be stopped.
 
-### Added in 0.6.182 to 0.6.193
+### Added in 0.6.182 to 0.6.197
 
 - **Why Android did not start** (0.6.183). The log of Android's kernel
   outlives a restart in the phone's memory. The recovery reads it at its start
@@ -352,10 +352,31 @@ The pages, in Aurora (each one singly: [a22x-recovery/docs/screenshots/en](https
   An older Linux BOOT that the phone keeps is used only when the release cannot
   be had, and a clean installation replaces an older Linux BOOT that is there.
   Before, the newest BOOT on cache won, and that could be one from an old test.
-- **Charge** (0.6.182 to 0.6.192, recovery kernel #124 to #130). The kernel's
-  gauge judges its start against the cell's curve in volts, refuses a percent
-  that the voltage contradicts, and corrects its count with care; the interface
-  shows that number as it is. See Known problems for what is still open.
+- **One battery percent for the recovery and the installed systems** (0.6.196,
+  recovery kernel #137, BOOT v147 with kernel #138). The kernel's gauge keeps
+  the percent it shows in the PMIC, in the byte where Android's gauge keeps its
+  own, and starts its count from there while the measured voltage does not
+  contradict it; the interface shows that number as it is. On the phone the
+  recovery kept 94 %, Debian started from 94 %, went to 93 % under load, and
+  the recovery started from 93 %. Builds 0.6.182 to 0.6.193 had the wrong
+  register and showed a number of their own; 0.6.192 and 0.6.193 said the
+  register could not be written, which was a mistake of the test.
+- **The Linux BOOT a new system gets is v147** (0.6.196), whose kernel has that
+  gauge.
+- **A system that has started is no longer called untested** (0.6.196). The
+  list of systems said "boot not yet tested" of every system for ever. A
+  system installed by this build notes its own start, and the list reads it.
+- **Wi-Fi with IPv4 in a system set up "as in the image"** (0.6.197). A system
+  without NetworkManager whose setup needed no network (Debian 13 from the
+  catalog, "as in the image") joined Wi-Fi at its start but got only IPv6:
+  the script that applies a DHCP lease was written only when the setup itself
+  used the network.
+- **A full cache gives up older published Linux BOOTs** (0.6.197). Every
+  installation keeps the BOOT it replaces on cache, and three Linux BOOTs, the
+  stock BOOT and a rooted one filled 160 of its 200 MiB. When room is needed,
+  a kept Linux BOOT that is an older release of the mainline project goes, as
+  it can be downloaded again; the current release and a BOOT of one's own
+  build stay.
 - **A pushed file is flushed** (0.6.185). `adb push` to the recovery says
   "pushed" only after the file is on the storage.
 - **An image that brings its own Phosh** (0.6.186 to 0.6.188), found with
@@ -474,13 +495,14 @@ shared `/home`. Switching between them in every direction worked.
    scripts saved in `cache` (`a22x-recovery/scripts/`).
 11. The image leaves 1.3 MiB of the RECOVERY partition free. The kernel also
    supports XZ and ZSTD initramfs, which would free more room.
-12. **Android and the recovery do not share the charge.** Android's gauge
-    keeps its percent in the PMIC's RTC domain. The recovery reads it and
-    takes it when the voltage agrees, but cannot write its own: on this phone
-    the alarm registers of the RTC do not take writes from the mainline kernel
-    (a time set there holds, an alarm hour does not; the reason is not known).
-    So each starts its count by itself, and the two may show different
-    numbers.
+12. **The charge shared with Android is not checked on the phone yet.** The
+    recovery and the installed Linux systems share one percent (see above).
+    The byte they keep it in is the one the vendor's Android gauge reads and
+    writes, and Android's own number was found there, but Android has not been
+    started since to see it pick up the recovery's. A system started with a
+    BOOT older than v147 does not write the percent, so the next system
+    starts from an older one or, when the voltage contradicts it, from the
+    voltage.
 13. **The setup of an installed system cannot be run again.** A system whose
     desktop was set up by an older recovery keeps that setup; the fixes above
     reach it only by installing it again (beside the others or clean).
@@ -517,7 +539,7 @@ paths of the machine it was built on.
 ## Tests
 
 ```fish
-unshare -r python3 -B -m unittest discover -s tests   # 703 tests
+unshare -r python3 -B -m unittest discover -s tests   # 706 tests
 cd ui; and make test systems-ui-integration display-ui-integration shells-ui-test locale-ui-test
 make -C ui arm64 CROSS_COMPILE=aarch64-linux-gnu-     # static interface for the phone
 ```

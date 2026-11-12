@@ -529,6 +529,24 @@ class Shells(unittest.TestCase):
         self.assertEqual(self.run_sh('shell_extras plasma apt').split(), ['maliit-keyboard', 'qtwayland5'])
         self.assertEqual(self.run_sh('shell_extras plasma pacman; shell_extras plasma dnf').split(), [])
 
+    def test_wifi_for_later_starts_brings_its_dhcp_script(self):
+        """2026-11-12, Debian 13 set up "as in the image" on the phone: its setup needed no network,
+        the script that applies a DHCP lease was never written, and the Wi-Fi unit for later starts
+        named it: the phone joined Wi-Fi but got no IPv4 address."""
+        self.write('etc/a22x/wpa.conf', 'network={\n ssid="test"\n}\n')
+        self.write('opt/a22x-conn/wifi/wpa_supplicant', '#!/bin/sh\n', 0o755)
+        self.assertFalse((self.root / 'opt/a22x-conn/udhcpc.script').exists())
+        (self.root / 'etc/systemd/system').mkdir(parents=True, exist_ok=True)
+        self.run_sh('nm_has_wifi() { return 1; }\npersist_wifi', env='W=/opt/a22x-conn/wifi\nB=/opt/a22x-conn/busybox')
+        script = self.root / 'opt/a22x-conn/udhcpc.script'
+        self.assertTrue(script.is_file() and script.stat().st_mode & 0o111, 'the DHCP script is missing')
+        text = script.read_text()
+        self.assertIn('ifconfig "$interface" "$ip" netmask "$subnet"', text)
+        self.assertIn('route add default gw', text)
+        unit = self.read('etc/systemd/system/a22x-wifi-dhcp.service')
+        self.assertIn('-s /opt/a22x-conn/udhcpc.script', unit)
+        self.assertIn('systemctl enable a22x-wifi.service a22x-wifi-dhcp.service', self.calls())
+
     def test_phosh_session_uses_the_fixed_phoc_when_built(self):
         self.session('phosh', 'auto')
         self.write('opt/a22x-phoc/bin/phoc', '#!/bin/sh\n', 0o755)

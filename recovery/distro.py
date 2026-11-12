@@ -60,7 +60,10 @@ BOOT_K116_SHA256 = '71a50262a73859e1538e79277f0ce00822be208d52b32328038a5932b513
 BOOT_K121_SHA256 = 'e3542fcdd905a4b89a10eb828fa983bc9f0837a2635155d0124c692f6c5fbb1f'
 # BOOT v1r6 (2026-11-10): kernel 122 keeps the USB device link through system sleep.
 BOOT_K122_SHA256 = '9701f48ddced60c648e79a502885778935d1cb5610a011d77fc1898eea01d41a'
-ALLOWED_BOOTS = frozenset((BOOT_SHA256, BOOT_K108_SHA256, BOOT_CHARGER_OFF_SHA256, BOOT_K116_SHA256, BOOT_K121_SHA256, BOOT_K122_SHA256))
+# BOOT v1r7 (2026-11-12, published as v147): kernel 138 keeps the battery percent in the PMIC, shared
+# with the recovery's kernel and Android's gauge; only the kernel differs, the same modules serve it.
+BOOT_K138_SHA256 = '5faafaa0035bff7bd77251ab01e2b4c395798755ad24db7b3240cc3d6139ad0f'
+ALLOWED_BOOTS = frozenset((BOOT_SHA256, BOOT_K108_SHA256, BOOT_CHARGER_OFF_SHA256, BOOT_K116_SHA256, BOOT_K121_SHA256, BOOT_K122_SHA256, BOOT_K138_SHA256))
 BOOT_BYTES = 33554432
 USERDATA_BYTES = 53393489920
 # A first start of Manjaro ARM grew userdata to the end of the eMMC (sfdisk, 2026-11-08):
@@ -74,6 +77,7 @@ MAX_JSON = 4 * 1024 * 1024
 MAX_ENTRIES = 200000
 MAX_PROFILE_ENTRIES = 30000
 MAX_SLOTS = 16
+STARTED_FILE = 'var/lib/a22x/started'  # written by the system itself: a22x_adapter.STARTED_UNIT
 MAX_ARCHIVE = 16 * 1024**3
 MAX_UNPACKED = 24 * 1024**3
 MAX_FILE = 8 * 1024**3
@@ -1493,6 +1497,14 @@ def reconcile_completed_guard(tree, state):
     clear_sentinel(tree.pin.context, ident)
 
 
+def has_started(tree, root):
+    """Whether the system at ROOT has noted its start; one whose /var cannot be walked has not."""
+    try:
+        return tree.exists(root + STARTED_FILE)
+    except (OSError, fs.FilesystemError):
+        return False
+
+
 def slots(tree, state):
     names = tree.list(MANAGER + '/slots')
     require(len(names) <= MAX_SLOTS, 'TOO_MANY_SLOTS', 'Too many saved systems')
@@ -1502,8 +1514,12 @@ def slots(tree, state):
         item = tree.json(MANAGER + '/slots/' + name + '/slot.json', sealed=True)
         require(item.get('schema') == 'a22x.distro.slot.v1' and item.get('id') == name,
                 'INVALID_SLOT', 'Slot metadata does not match its directory')
+        # A system that has started on the phone says so in its own /var (a22x_adapter.STARTED_FILE,
+        # 2026-11-12); the active one lies at the top of userdata, a saved one in its slot.
+        root = '' if name == state['active'] else MANAGER + '/slots/' + name + '/root/'
+        started = bool(item.get('hardware_boot_tested')) or has_started(tree, root)
         result.append({'id': name, 'name': item['name'], 'active': name == state['active'],
-                       'origin': item.get('origin'), 'hardware_boot_tested': item.get('hardware_boot_tested', False)})
+                       'origin': item.get('origin'), 'hardware_boot_tested': started})
     require(sum(item['active'] for item in result) == 1, 'ACTIVE_SLOT_MISSING', 'The active slot is not recorded')
     return result
 

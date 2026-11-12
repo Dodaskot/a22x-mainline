@@ -407,6 +407,21 @@ ExecStart=/opt/a22x-conn/a22x-sram normal
 [Install]
 WantedBy=sysinit.target
 """
+# 2026-11-12: the recovery's list of systems said "boot not yet tested" of every system for ever,
+# because nothing told it that one had started. A system now says so itself, once it lets users
+# in: the kernel it started with, in a file of its own /var.
+STARTED_FILE = 'var/lib/a22x/started'
+STARTED_UNIT = """[Unit]
+Description=A22x: note that this system has started on the phone
+After=systemd-user-sessions.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/a22x-conn/busybox sh -c 'mkdir -p /var/lib/a22x && uname -r > /var/lib/a22x/started.new && mv -f /var/lib/a22x/started.new /var/lib/a22x/started'
+
+[Install]
+WantedBy=multi-user.target
+"""
 SRAM_SHUTDOWN = """#!/opt/a22x-conn/busybox sh
 # A real power-off must keep the charger behaviour, so the boot-time markers go.
 case "$1" in poweroff|halt) exec /opt/a22x-conn/a22x-sram clear ;; esac
@@ -590,6 +605,11 @@ def adapt(root, args, meta):
     link_unit(root, 'etc/systemd/system/sysinit.target.wants/a22x-sram.service',
               '/etc/systemd/system/a22x-sram.service')
     write(root, 'usr/lib/systemd/system-shutdown/a22x-sram', SRAM_SHUTDOWN, 0o755)
+    write(root, 'etc/systemd/system/a22x-started.service', STARTED_UNIT)
+    link_unit(root, 'etc/systemd/system/multi-user.target.wants/a22x-started.service',
+              '/etc/systemd/system/a22x-started.service')
+    # A root copied from another phone or kept from an earlier installation has not started here.
+    remove(root / STARTED_FILE)
     remove(root / 'etc/systemd/network/10-usb0.network')
     for unit in MASKED:
         link_unit(root, f'etc/systemd/system/{unit}', '/dev/null')

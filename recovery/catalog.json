@@ -1,12 +1,32 @@
 {
  "schema": "a22x.catalog.v1",
  "linux_boot": {
-  "version": "v146",
+  "version": "v147",
   "release": "7.2.0-a22x+",
-  "url": "https://github.com/Dodaskot/a22x-mainline/releases/download/v146/boot.img",
-  "sha256": "9701f48ddced60c648e79a502885778935d1cb5610a011d77fc1898eea01d41a",
+  "url": "https://github.com/Dodaskot/a22x-mainline/releases/download/v147/boot.img",
+  "sha256": "5faafaa0035bff7bd77251ab01e2b4c395798755ad24db7b3240cc3d6139ad0f",
   "size": 33554432
  },
+ "linux_boot_older": [
+  {
+   "version": "v146",
+   "url": "https://github.com/Dodaskot/a22x-mainline/releases/download/v146/boot.img",
+   "sha256": "9701f48ddced60c648e79a502885778935d1cb5610a011d77fc1898eea01d41a",
+   "size": 33554432
+  },
+  {
+   "version": "v145",
+   "url": "https://github.com/Dodaskot/a22x-mainline/releases/download/v145/boot.img",
+   "sha256": "e3542fcdd905a4b89a10eb828fa983bc9f0837a2635155d0124c692f6c5fbb1f",
+   "size": 33554432
+  },
+  {
+   "version": "v144",
+   "url": "https://github.com/Dodaskot/a22x-mainline/releases/download/v144/boot.img",
+   "sha256": "b3f59daa37ad50e0ac6bfaed83f6954147536d07119f1b46a9981ee19d9b17ab",
+   "size": 33554432
+  }
+ ],
  "pinned": 1794139200,
  "images": [
   {

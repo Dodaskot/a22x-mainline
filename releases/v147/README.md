@@ -14,7 +14,7 @@ For the **Samsung Galaxy A22 5G SM-A226B** with an unlocked bootloader.
 The image is for the **BOOT partition only** and expects a Linux root
 filesystem in `userdata`; the [A22x recovery](../../recovery/README.md)
 installs one, and can flash this image itself (**Install → Flash a
-partition → boot**). From 0.6.196 on the recovery takes this image for every
+partition → boot**). From 0.6.197 on the recovery takes this image for every
 new Linux system by itself.
 
 ## What changed since v146
@@ -46,9 +46,12 @@ that is drained for minutes sags more than its resistance explains.
 
 ## Validation and limits
 
-Flashed with the recovery, which read the partition back. Debian 13, installed
-by the recovery from its catalog, booted with `7.2.0-a22x+ #138`: the system
-was running with no failed unit, USB networking and SSH worked, Wi-Fi was up.
+Flashed with the recovery, which read the partition back, and written by the
+recovery 0.6.197 itself during a clean installation over v146: it downloaded
+this release, checked it and wrote it. Debian 13, installed by the recovery
+from its catalog, booted with `7.2.0-a22x+ #138`: the system was running with
+no failed unit; USB networking, SSH and Wi-Fi (IPv4 and IPv6, internet and
+name lookup) worked.
 
 The charge, both ways: the recovery had kept 94 %, and Debian started from the
 stored 94 % (the voltage said 95 %). Under a load of 0.8 A for five minutes

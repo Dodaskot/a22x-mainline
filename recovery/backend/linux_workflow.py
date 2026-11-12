@@ -42,6 +42,8 @@ LINUX_BOOT_K116 = "71a50262a73859e1538e79277f0ce00822be208d52b32328038a5932b513f
 # Kernel 121: kernel 116 plus the USB replug after system sleep, same modules (2026-11-09).
 LINUX_BOOT_K121 = "e3542fcdd905a4b89a10eb828fa983bc9f0837a2635155d0124c692f6c5fbb1f"
 LINUX_BOOT_K122 = "9701f48ddced60c648e79a502885778935d1cb5610a011d77fc1898eea01d41a"
+# Kernel 138 (BOOT v147, 2026-11-12): the battery percent kept in the PMIC; same modules.
+LINUX_BOOT_K138 = "5faafaa0035bff7bd77251ab01e2b4c395798755ad24db7b3240cc3d6139ad0f"
 LABELS = ("boot", "userdata")
 RESERVE = 64 * 1024 * 1024
 METADATA_ALLOWANCE = 1024 * 1024
@@ -495,7 +497,7 @@ def make_destructive_plan(context, backup_path, operation, progress=None):
         boot_sha = _boot_hash(context, parts[0], progress, operation + "-plan")
         backup_boot_sha = manifest["entries"][0]["raw_sha256"]
         blockers = list(qualification["blockers"])
-        if context.mode == "device" and qualification["eligible"] and backup_boot_sha not in (qualification["linux_boot_sha256"], LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K121, LINUX_BOOT_K116, LINUX_BOOT_K122) \
+        if context.mode == "device" and qualification["eligible"] and backup_boot_sha not in (qualification["linux_boot_sha256"], LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K121, LINUX_BOOT_K116, LINUX_BOOT_K122, LINUX_BOOT_K138) \
                 and not _linux_boot_in_backup(path, manifest["entries"][0]):
             blockers.append("LINUX_BOOT_NOT_QUALIFIED")
         if operation == "wipe":
@@ -841,7 +843,7 @@ def execute(context, plan, confirmation, progress=None):
                 or manifest.get("source_geometry") != qualified.geometry_record(parts)):
             fail("PLAN_STALE", "The sealed source backup or target contract changed after review")
         backup_boot = manifest["entries"][0]["raw_sha256"]
-        if context.mode == "device" and backup_boot not in (plan["qualification"]["linux_boot_sha256"], LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K116, LINUX_BOOT_K121, LINUX_BOOT_K122) \
+        if context.mode == "device" and backup_boot not in (plan["qualification"]["linux_boot_sha256"], LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K116, LINUX_BOOT_K121, LINUX_BOOT_K122, LINUX_BOOT_K138) \
                 and not _linux_boot_in_backup(path, manifest["entries"][0]):
             fail("LINUX_BOOT_NOT_QUALIFIED", "This backup BOOT image is outside the tested Linux boot allowlist")
         for part in parts:

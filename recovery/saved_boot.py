@@ -269,11 +269,53 @@ def prune_rooted(folder):
                 os.unlink(name + suffix, dir_fd=folder)
 
 
-def make_room(pin):
+def downloadable_boots():
+    """{SHA-256: release} of the Linux BOOTs published before the current one, which can be
+    downloaded again: the catalog's linux_boot_older. The catalog beside this file is read."""
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'catalog.json'), encoding='utf-8') as source:
+            catalog = json.load(source)
+    except (OSError, ValueError):
+        return {}
+    found = {}
+    for item in catalog.get('linux_boot_older') or ():
+        if isinstance(item, dict) and re.fullmatch(r'[0-9a-f]{64}', str(item.get('sha256', ''))) \
+                and str(item.get('url', '')).startswith('https://'):
+            found[item['sha256']] = str(item.get('version', ''))[:24]
+    return found
+
+
+def prune_downloadable(folder, downloadable):
+    """Kept Linux BOOTs that are older published releases go: they can be downloaded again
+    (2026-11-12: three Linux BOOTs, the stock BOOT and a rooted one filled 160 of cache's 200 MiB,
+    and a recovery image no longer fitted). A Linux BOOT that is not such a release, a build of
+    one's own, is the only copy of it and stays."""
+    for name in sorted(os.listdir(folder)):
+        if not name.endswith('.img'):
+            continue
+        try:
+            fd = fs.open_regular(name + '.json', dir_fd=folder)
+            try:
+                meta = json.loads(os.pread(fd, 65536, 0).decode('utf-8'))
+            finally:
+                os.close(fd)
+        except (OSError, ValueError, fs.FilesystemError):
+            continue
+        if isinstance(meta, dict) and meta.get('kind') == 'linux' and meta.get('sha256') in downloadable:
+            for suffix in ('', '.json', '.sha256'):
+                with contextlib.suppress(OSError):
+                    os.unlink(name + suffix, dir_fd=folder)
+
+
+def make_room(pin, downloadable=None):
     """Space on cache from what is there twice or can be made again: the same BOOT under two names,
-    older BOOTs with root, and all but the newest copy of each partition kept before a write. What
-    is the only copy of something stays: the stock BOOT, a Linux BOOT, settings, keys, Wi-Fi."""
-    for name, tidy in ((SAVED_BOOT, tidy_folder), (SAVED_BOOT, prune_rooted), (ROLLBACKS, prune_rollbacks)):
+    older BOOTs with root, older published Linux BOOTs (DOWNLOADABLE, else the catalog's), and all
+    but the newest copy of each partition kept before a write. What is the only copy of something
+    stays: the stock BOOT, a Linux BOOT that cannot be downloaded again, settings, keys, Wi-Fi."""
+    if downloadable is None:
+        downloadable = downloadable_boots()
+    for name, tidy in ((SAVED_BOOT, tidy_folder), (SAVED_BOOT, prune_rooted),
+                       (SAVED_BOOT, lambda folder: prune_downloadable(folder, downloadable)), (ROLLBACKS, prune_rollbacks)):
         with contextlib.suppress(FileNotFoundError, NotADirectoryError, fs.FilesystemError, OSError):
             with pin.directory(name) as folder:
                 tidy(folder)

@@ -290,6 +290,28 @@ class TestDistro(unittest.TestCase):
             action()
         self.assertEqual(caught.exception.code, code, str(caught.exception))
 
+    def test_a_system_that_has_started_is_no_longer_called_untested(self):
+        """2026-11-12, on the phone: every system stayed "boot not yet tested" for ever, also after it
+        had run. A system notes its own start in its /var; the list reads the note where the system
+        lies: at the top of userdata while it is active, in its slot while it is saved."""
+        plan = self.f.imported()
+        tested = lambda: {slot['id']: slot['hardware_boot_tested'] for slot in d.status(self.f.context)['slots']}
+        self.assertEqual(tested(), {'original': False, 'new-linux': False})
+        (self.f.live / 'var/lib/a22x').mkdir(parents=True)
+        (self.f.live / d.STARTED_FILE).write_text('7.2.0-a22x+\n')           # the active system started
+        self.assertEqual(tested(), {'original': True, 'new-linux': False})
+        d.switch(self.f.context, plan, True)                                   # its /var goes into its slot with it
+        self.assertEqual(tested(), {'original': True, 'new-linux': False})
+        self.assertTrue((self.f.live / d.MANAGER / 'slots/original/root' / d.STARTED_FILE).is_file())
+        (self.f.live / 'var/lib/a22x').mkdir(parents=True, exist_ok=True)
+        (self.f.live / d.STARTED_FILE).write_text('7.2.0-a22x+\n')           # now the new one started too
+        self.assertEqual(tested(), {'original': True, 'new-linux': True})
+        # A root whose /var cannot be walked (a link put there) has not started, and the list still comes.
+        import shutil
+        shutil.rmtree(self.f.live / 'var/lib/a22x')
+        (self.f.live / 'var/lib/a22x').symlink_to('/nonexistent')
+        self.assertEqual(tested(), {'original': True, 'new-linux': False})
+
     def test_import_switch_return_preserves_home_and_each_system(self):
         plan = self.f.imported()
         status = d.status(self.f.context)

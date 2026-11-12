@@ -186,6 +186,41 @@ class KeepRecovery(unittest.TestCase):
         self.assertEqual([p.name for p in old.iterdir()], ['recovery-20261111-000102.img'])
         self.assertTrue((self.root / 'cache/a22x-recovery/settings.json').exists())
 
+    def test_a_full_cache_gives_up_published_linux_boots_that_can_be_downloaded_again(self):
+        """2026-11-12, on the phone: three Linux BOOTs, the stock BOOT and a rooted one filled 160 of
+        cache's 200 MiB, and a recovery image no longer fitted. An older published Linux BOOT can be
+        downloaded again and goes; the current release and a build of one's own stay."""
+        import filesystem as fs
+        boots = self.root / 'cache' / saved_boot.SAVED_BOOT
+        boots.mkdir(parents=True)
+        rows = {}
+        for name, kind in (('linux-v144.img', 'linux'), ('linux-v146.img', 'linux'), ('linux-v147.img', 'linux'),
+                           ('linux-own-build.img', 'linux'), ('stock-A226BXXSBDZC3-x.img', 'android')):
+            data = signed(boot_image()) + name.encode()
+            rows[name] = hashlib.sha256(data).hexdigest()
+            (boots / name).write_bytes(data)
+            (boots / (name + '.json')).write_text(json.dumps({'kind': kind, 'saved': 1, 'sha256': rows[name], 'bytes': len(data)}))
+            (boots / (name + '.sha256')).write_text(rows[name] + '\n')
+        rows_fs = json.loads((self.root / 'filesystem-fixture.json').read_text())
+        rows_fs['volumes'][0]['read_only'] = False
+        (self.root / 'filesystem-fixture.json').write_text(json.dumps(rows_fs))
+        context = install.FixtureContext(self.root)
+        older = {rows['linux-v144.img']: 'v144', rows['linux-v146.img']: 'v146'}
+        with fs.PinnedVolume(context.fs, 'cache', writing=True) as pin:
+            saved_boot.make_room(pin, older)
+        self.assertEqual(sorted(p.name for p in boots.iterdir()),
+                         sorted(n + suffix for n in ('linux-v147.img', 'linux-own-build.img', 'stock-A226BXXSBDZC3-x.img')
+                                for suffix in ('', '.json', '.sha256')))
+        # Nothing is known to be downloadable: every Linux BOOT stays.
+        with fs.PinnedVolume(context.fs, 'cache', writing=True) as pin:
+            saved_boot.make_room(pin, {})
+        self.assertEqual(len([p for p in boots.iterdir() if p.suffix == '.img']), 3)
+        # The catalog of this recovery names the older releases with their addresses.
+        published = saved_boot.downloadable_boots()
+        self.assertEqual(sorted(published.values()), ['v144', 'v145', 'v146'])
+        current = json.loads(Path(saved_boot.__file__).with_name('catalog.json').read_text())['linux_boot']['sha256']
+        self.assertNotIn(current, published)  # the current release is never given up
+
     def test_a_signed_vbmeta_with_only_its_flags_set_is_not_damaged(self):
         """2026-11-10 on the phone: root's vbmeta (flags 3, as Magisk writes it for Samsung) was
         refused as VBMETA_DAMAGED. Its hash fits the header with flags 0; other changes still fail."""
