@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "release": "v147",
+  "device": "Samsung Galaxy A22 5G SM-A226B / a22x / MediaTek MT6833",
+  "boot_image": {
+    "filename": "boot.img",
+    "bytes": 33554432,
+    "sha256": "5faafaa0035bff7bd77251ab01e2b4c395798755ad24db7b3240cc3d6139ad0f",
+    "internal_name": "BOOT v1r7",
+    "header_version": 2,
+    "page_size": 2048,
+    "board": "SRPTL28A011",
+    "command_line": "bootopt=64S3,32N2,64N2 earlycon=mt6833uart,0x11002000 console=ttyS0,921600n8 loglevel=8 ignore_loglevel clk_ignore_unused pd_ignore_unused printk.devkmsg=on mem_sleep_default=s2idle cma=96M mt6359_regulator.a22x_lp_probe=1 mt6359_regulator.a22x_lp_stock_init=1 fbcon=logo-count:0 vt.global_cursor_default=0 fbcon=vc:1-62"
+  },
+  "kernel": {
+    "release": "7.2.0-a22x+",
+    "build": 138,
+    "version_string": "(ClangBuiltLinux clang version 23.1.1 (https://github.com/llvm/llvm-project.git 6dfe1677ab8dffbc6ec13d53a1e0215d75147689), ClangBuiltLinux LLD 23.1.1 (https://github.com/llvm/llvm-project.git 6dfe1677ab8dffbc6ec13d53a1e0215d75147689)) #138 SMP PREEMPT Thu Nov 12 08:00:00 UTC 2026",
+    "source_repository": "https://github.com/Dodaskot/linux-a22x",
+    "source_branch": "a22x-boot",
+    "source_tag": "a22x-boot-kernel138",
+    "source_commit": "e0a91d69b89a801481220da885f9cf27d8df3a38",
+    "source_tree": "30c76b028a49b258d9bcfd90f6c19d19fec4f735",
+    "base_commit_kernel107": "79a09eba25ef8cb4e03a98325c6ec1e606961810",
+    "patches_above_kernel107": "kernel/a22x-boot/ (7)",
+    "config_path": "kernel/config/a22x-boot-k121.config",
+    "config_sha256": "8e58352f8b55282240d3d6529017351e0ea47e50ea261a982c252674db319380",
+    "image_sha256": "050f0a23fea267bfb32002fdc5c5c415558a422450bf257119f67f061ffa14ee",
+    "image_gz_sha256": "cc9270da84912d933196d62dfdb210a1154704b8275b558186defc87c183433c",
+    "shimmed_image_sha256": "f175229ff376a7cca7f6e5a986b4c996a9687d1d98953b6a09b6add958e4c0f7",
+    "boot_payload_sha256": "054a3268ec3b60800f1c3e0c7a0dc7c967cbcd5eabc23dfcc219bb476ad8ce06",
+    "payload_equals_build_output": true,
+    "config_identical_to_kernel122": true
+  },
+  "dtb": {
+    "appended_sha256": "d01dd9ef8e4cab80e2d7f866ea32ce2eea55450d84ee67bb7a8b79502bf8281e",
+    "unchanged_from_v146": true
+  },
+  "ramdisk": {
+    "sha256": "e0be596ae3ea876e6e38d1965b4dc07a3268401cdb400257d54991cd7f5daf3b",
+    "files_sha256": {
+      "init": "c5b8c9c3a33f925b1edac40d6cf221926eed471b35c0c6898546109464c705db",
+      "bin/reboot-download": "a21266617997c68f00ea5af6d2c60d1cccd8d68da21fcc81951afbe93b653bf1",
+      "bin/memtool": "03e36287f15eeb20473a79a772b002250b8a91c33e2dc4df5723deb44ef050cc",
+      "bin/busybox": "7d93682be37cf6ed46699f6fff546b80bf133cf8ec342c2d04bc23387f78bc34",
+      "lib/firmware/Himax_firmware_fw_jdi.bin": "fd4df971965dfe5e550ba4a6a9e94e1b67d5ca128dad3eb74ebaa1873d591f1a",
+      "bin/a22x-charger": "eec42faac2a435cc8a9742b221f0eb3b934e62be5fcb57fb874823ef2a7b518d"
+    },
+    "connectivity_modules_embedded": false,
+    "connectivity_firmware_embedded": false,
+    "root_filesystem_included": false,
+    "exact_deployed_image": true,
+    "rebuilt_from_public_build_scripts": false,
+    "changed_entries_from_v146": [],
+    "unchanged_from_v146": true
+  },
+  "unchanged_components": {
+    "everything_but_the_kernel": "header, command line, ramdisk and appended device tree are byte-identical to v146",
+    "busybox": "Debian busybox-static 1:1.37.0-6+b9 (GPL-2.0, https://sources.debian.org/src/busybox/1:1.37.0-6/)",
+    "himax_firmware": "lib/firmware/Himax_firmware_fw_jdi.bin, Samsung stock /vendor/firmware, proprietary"
+  },
+  "verification": {
+    "boot_partition_readback_hash_matches": true,
+    "normal_boot_kernel_138_observed": true,
+    "flashed_with": "the A22x recovery 0.6.195 (its flash helper read the partition back)",
+    "usb_ncm_and_ssh": true,
+    "systems_booted": [
+      "Debian 13 (console), installed by the recovery from its catalog"
+    ],
+    "charge_shared_with_the_recovery": "the recovery kept 94 %, Debian started from the stored 94 %; after five minutes at 0.8 A it showed and kept 93 %, and the recovery (kernel #137) started from the stored 93 %",
+    "charge_shared_with_android": "not checked on the phone; the register and its format are those of the vendor gauge (RTC_AL_MTH[15:8])",
+    "system_state": "systemctl is-system-running: running, no failed unit; wlan0 up",
+    "modem_or_cellular_service_verified": false
+  }
+}

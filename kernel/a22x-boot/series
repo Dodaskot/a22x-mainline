@@ -4,3 +4,4 @@
 0004-drm-mediatek-change-the-refresh-rate-through-the-DSI.patch
 0005-drm-mediatek-draw-the-A22x-boot-splash.patch
 0006-usb-musb-keep-the-device-link-through-system-sleep.patch
+0007-power-supply-mt6359-fuel-gauge-start-from-the-percen.patch

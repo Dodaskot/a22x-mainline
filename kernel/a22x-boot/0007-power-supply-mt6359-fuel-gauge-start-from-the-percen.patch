@@ -1,0 +1,378 @@
+From e0a91d69b89a801481220da885f9cf27d8df3a38 Mon Sep 17 00:00:00 2001
+From: Dodaskot <pessdres@gmail.com>
+Date: Thu, 12 Nov 2026 09:25:52 +0100
+Subject: [PATCH] power: supply: mt6359-fuel-gauge: start from the percent kept
+ in the PMIC and keep it there
+
+The gauge counted charge from one reading of the voltage taken under the
+load of a starting system. In the flat middle of this cell's curve that
+reading can be 30 points off, and every system on the phone showed a
+number of its own: Android one, the recovery another, an installed Linux
+a third.
+
+Android's gauge keeps the percent it shows in the RTC domain of the
+PMIC: RTC_AL_MTH[15:8], bit 7 valid, bits 6:0 the percent (the vendor's
+rtc_spare_reg[RTC_FGSOC] = { RTC_AL_MTH, 0xff, 8 }; mt6359_gauge.c reads
+and writes it in fgauge_get_rtc_ui_soc and fgauge_set_rtc_ui_soc). This
+driver now starts its count from that percent while the open-circuit
+voltage it stands for lies within 70 mV of the measured one, and writes
+what it shows back when it changes, so that the next start of any system
+goes on from the same number.
+
+While the count runs, the voltage corrects it with care, one percent per
+poll: at four percent apart while the cell rests, at six against the
+current (while draining, that the cell holds more; while charging, that
+it holds less) and at fifteen along it. A cell that is drained for
+minutes sags more than its resistance explains, so correcting both ways
+alike made the number dip by ten points during a long copy.
+
+The same driver as on branch a22x-recovery (recovery kernel #137).
+
+Tested on SM-A226B (BOOT kernel #138, Debian 13): "stored 94 95" after
+the recovery had kept 94 %; under a load of 0.8 A for five minutes the
+count went to 93 % and was kept, and the recovery then started from the
+stored 93 %. The system was running with no failed unit, Wi-Fi and USB
+networking up.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_011X51ML8nmkZnA9U8adKvGD
+---
+ drivers/power/supply/mt6359-fuel-gauge.c | 219 ++++++++++++++++++++++-
+ 1 file changed, 214 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/power/supply/mt6359-fuel-gauge.c b/drivers/power/supply/mt6359-fuel-gauge.c
+index f1030297f1f5..a687ac2ddd87 100644
+--- a/drivers/power/supply/mt6359-fuel-gauge.c
++++ b/drivers/power/supply/mt6359-fuel-gauge.c
+@@ -9,10 +9,28 @@
+  * A full charge re-anchors it to 100 %; near empty the count is pulled down
+  * towards the OCV estimate, so a worn cell does not die at "10 %".
+  *
++ * One reading of the voltage under the load of a starting system is a poor
++ * witness: between 20 % and 50 % the curve of this cell rises 3 mV per percent,
++ * so 100 mV of sag is 30 points (seen: 15 % shown at 3.79 V, which is 30 %).
++ * Two things mend that. The state of charge that was last shown is kept where
++ * Android's gauge keeps its own, in the RTC domain of the PMIC, and is taken
++ * as the start while the voltage does not contradict it; every system on the
++ * phone then goes on from the same number. And while little current flows, the
++ * count is drawn one percent per poll towards the smoothed OCV estimate. A cell
++ * that is drained for minutes sags more than its resistance explains, and one
++ * that is charged stands higher (seen: ten points in six minutes at 0.2-0.5 A),
++ * so the estimate is heard at four percent apart only while the cell rests.
++ * Under a current it is heard at six percent against the current (while
++ * draining, that the cell holds more; while charging, that it holds less) and
++ * at fifteen the other way: the vendor's gauge also counts charge from the
++ * stored number and lets the voltage speak only at the ends of the curve.
++ * The attribute soc_start tells user space where the count began.
++ *
+  * Register layout and units from the vendor mt6359_gauge.c (GM3.0):
+  *   current: 610.352 uA/LSB, CAR: 0.085 uAh/LSB, both for a 5 mOhm sense
+  *   resistor and scaled by 5 mOhm / R_sense; positive = charging.
+  */
++#include <linux/bitfield.h>
+ #include <linux/iio/consumer.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+@@ -28,6 +46,27 @@
+ #define MT6359_FGADC_CAR_CON1		0xd18
+ #define MT6359_FGADC_CUR_CON0		0xd8a
+ 
++/*
++ * The state of charge the user was last shown: RTC_AL_MTH[15:8], bit 7 valid,
++ * bits 6:0 percent. The vendor calls the byte spare3: its mtk_rtc_hal.c has
++ * rtc_spare_reg[RTC_FGSOC] = { RTC_AL_MTH, 0xff, 8 }, and mt6359_gauge.c reads
++ * and writes it in fgauge_get_rtc_ui_soc and fgauge_set_rtc_ui_soc. The low
++ * byte is the alarm month of the RTC driver and is never touched here.
++ *
++ * It is not RTC_AL_HOU[15:8], though a comment in the vendor's
++ * mtk_rtc_common.c says so and earlier versions of this driver believed it.
++ * That byte is the vendor's spare0, the status of the battery plug-out
++ * detection: it reads 0xe0 on SM-A226B and takes no value written to it,
++ * which looked like an RTC that refused every write.
++ */
++#define MT6359_RTC_BBPU			0x588
++#define MT6359_RTC_AL_MTH		0x5aa
++#define MT6359_RTC_WRTGR		0x5c2
++#define RTC_BBPU_CBUSY			BIT(6)
++#define RTC_AL_MTH_FG_MASK		GENMASK(15, 8)
++#define RTC_FG_SOC_VALID		BIT(7)
++#define RTC_FG_SOC_MASK			GENMASK(6, 0)
++
+ #define FGADC_CON0_FG_ON		BIT(0)
+ #define FGADC_CON1_READ_PRE		BIT(0)
+ #define FGADC_CON1_SW_CLEAR		BIT(3)
+@@ -40,6 +79,13 @@
+ #define FG_POLL_INTERVAL		(30 * HZ)
+ #define FG_LOW_OCV_CAPACITY		15	/* % below which OCV is trusted */
+ #define FG_LOW_MAX_ERROR		5	/* % allowed above the OCV estimate */
++#define FG_STORED_MAX_UV		70000	/* the stored charge may lie this far from the voltage */
++#define FG_RELAXED_UA			400000	/* below this the OCV estimate is heard */
++#define FG_OCV_SETTLE			4	/* OCV readings before any correction */
++#define FG_OCV_APART			4	/* % apart at rest before the count is corrected */
++#define FG_OCV_AGAINST			6	/* the same against the current */
++#define FG_OCV_WITH			15	/* the same along the current */
++#define FG_STEADY_UA			60000	/* beyond this the current biases the OCV */
+ 
+ struct mt6359_fg {
+ 	struct device *dev;
+@@ -56,6 +102,13 @@ struct mt6359_fg {
+ 	s64 car0_uah;			/* counter value at the anchor point */
+ 	s64 charge0_uah;		/* charge at the anchor point */
+ 	bool anchored;
++	int ocv_avg;			/* smoothed OCV estimate, percent * 16 */
++	unsigned int ocv_samples;
++	unsigned int stored_raw;	/* RTC_AL_MTH as it was found */
++	int rtc_error;			/* what the last write to the RTC ended with */
++	int start_cap;			/* percent the count began at, -1: not yet */
++	int start_ocv;			/* what the voltage said then */
++	bool start_stored;		/* it began at the stored percent */
+ };
+ 
+ /* Latch the counters, run @read, release the latch (vendor sequence). */
+@@ -137,7 +190,7 @@ static int mt6359_fg_voltage_uv(struct mt6359_fg *fg, int *uv)
+ 	return ret < 0 ? ret : 0;
+ }
+ 
+-static int mt6359_fg_ocv_capacity(struct mt6359_fg *fg, int *cap)
++static int mt6359_fg_ocv_uv(struct mt6359_fg *fg, int *ocv)
+ {
+ 	int uv, ua, ret;
+ 
+@@ -148,13 +201,38 @@ static int mt6359_fg_ocv_capacity(struct mt6359_fg *fg, int *cap)
+ 	if (ret)
+ 		return ret;
+ 	/* charging current raises the terminal voltage above OCV */
+-	uv -= (int)div_s64((s64)ua * fg->rbat_uohm, 1000000);
++	*ocv = uv - (int)div_s64((s64)ua * fg->rbat_uohm, 1000000);
++	return 0;
++}
++
++static int mt6359_fg_ocv_capacity(struct mt6359_fg *fg, int *cap)
++{
++	int uv, ret = mt6359_fg_ocv_uv(fg, &uv);
++
++	if (ret)
++		return ret;
+ 	*cap = power_supply_batinfo_ocv2cap(fg->info, uv, 25);
+ 	if (*cap < 0)
+ 		return *cap;
+ 	return 0;
+ }
+ 
++/* The open-circuit voltage the cell's curve gives for a percent. */
++static int mt6359_fg_capacity_uv(struct mt6359_fg *fg, int cap)
++{
++	const struct power_supply_battery_ocv_table *t = fg->info->ocv_table[0];
++	int n = fg->info->ocv_table_size[0], i;
++
++	if (cap >= t[0].capacity)
++		return t[0].ocv;
++	for (i = 1; i < n; i++)
++		if (cap >= t[i].capacity)
++			return t[i].ocv + (t[i - 1].ocv - t[i].ocv) *
++			       (cap - t[i].capacity) /
++			       max(t[i - 1].capacity - t[i].capacity, 1);
++	return t[n - 1].ocv;
++}
++
+ static int mt6359_fg_anchor(struct mt6359_fg *fg, int capacity)
+ {
+ 	s64 car;
+@@ -169,17 +247,93 @@ static int mt6359_fg_anchor(struct mt6359_fg *fg, int capacity)
+ 	return 0;
+ }
+ 
++/* The state of charge last shown by this driver or by Android's gauge. */
++static int mt6359_fg_stored_capacity(struct mt6359_fg *fg, int *cap)
++{
++	unsigned int val;
++	int ret = regmap_read(fg->regmap, MT6359_RTC_AL_MTH, &val);
++
++	if (ret)
++		return ret;
++	fg->stored_raw = val;
++	val = FIELD_GET(RTC_AL_MTH_FG_MASK, val);
++	if (!(val & RTC_FG_SOC_VALID) || !(val & RTC_FG_SOC_MASK) ||
++	    (val & RTC_FG_SOC_MASK) > 100)
++		return -ENODATA;
++	*cap = val & RTC_FG_SOC_MASK;
++	return 0;
++}
++
++/*
++ * What is shown is written back, so that Android's gauge and the next start of
++ * any system go on from it. A write to the RTC's registers takes effect with
++ * the write trigger, as in the RTC driver. The register is read first: that
++ * driver rewrites it with the alarm month from a copy it read earlier, so a
++ * store that fell between its read and its write is made again at the next
++ * poll.
++ */
++static void mt6359_fg_store_capacity(struct mt6359_fg *fg, int cap)
++{
++	unsigned int val, busy, want;
++
++	want = RTC_FG_SOC_VALID | clamp(cap, 1, 100);	/* 0 reads as "nothing stored" */
++	fg->rtc_error = regmap_read(fg->regmap, MT6359_RTC_AL_MTH, &val);
++	if (fg->rtc_error || FIELD_GET(RTC_AL_MTH_FG_MASK, val) == want)
++		return;
++	fg->rtc_error = regmap_update_bits(fg->regmap, MT6359_RTC_AL_MTH,
++					   RTC_AL_MTH_FG_MASK,
++					   FIELD_PREP(RTC_AL_MTH_FG_MASK, want));
++	if (!fg->rtc_error)
++		fg->rtc_error = regmap_write(fg->regmap, MT6359_RTC_WRTGR, 1);
++	if (!fg->rtc_error)
++		fg->rtc_error = regmap_read_poll_timeout(fg->regmap, MT6359_RTC_BBPU,
++							 busy, !(busy & RTC_BBPU_CBUSY),
++							 200, 500000);
++	if (fg->rtc_error)
++		dev_warn_ratelimited(fg->dev, "the charge was not kept in the RTC: %d\n",
++				     fg->rtc_error);
++}
++
+ static int mt6359_fg_charge_now(struct mt6359_fg *fg, s64 *uah)
+ {
+ 	s64 car;
+-	int ret, cap;
++	int ret, cap, ocv, stored, uv = 0;
++	bool kept;
+ 
+ 	if (!fg->anchored) {
+ 		ret = mt6359_fg_ocv_capacity(fg, &cap);
+ 		if (!ret)
+-			ret = mt6359_fg_anchor(fg, cap);
++			ret = mt6359_fg_ocv_uv(fg, &uv);
++		/*
++		 * What was last shown is the better start while the voltage
++		 * does not contradict it. How far the two may lie apart is
++		 * measured in volts, not in percent: in the flat middle of the
++		 * curve 70 mV are twenty points, near its ends three. A system
++		 * whose kernel does not write its percent there leaves an old
++		 * one behind.
++		 */
+ 		if (ret)
+ 			return ret;
++		ocv = cap;
++		kept = !mt6359_fg_stored_capacity(fg, &stored) &&
++		       abs(mt6359_fg_capacity_uv(fg, stored) - uv) <= FG_STORED_MAX_UV;
++		if (kept)
++			cap = stored;
++		ret = mt6359_fg_anchor(fg, cap);
++		if (ret) {
++			/* the counter does not always answer the first time after a start */
++			dev_dbg(fg->dev, "the charge counter was not read: %d\n", ret);
++			return ret;
++		}
++		if (kept)
++			dev_info(fg->dev, "start from the stored %d%% (OCV says %d%%)\n",
++				 cap, ocv);
++		else
++			dev_info(fg->dev, "start from OCV at %d%% (the RTC keeps %#x)\n",
++				 cap, fg->stored_raw);
++		fg->start_cap = cap;
++		fg->start_ocv = ocv;
++		fg->start_stored = kept;
+ 	}
+ 	ret = mt6359_fg_car_uah(fg, &car);
+ 	if (ret)
+@@ -204,12 +358,13 @@ static void mt6359_fg_work(struct work_struct *work)
+ 	struct mt6359_fg *fg = container_of(work, struct mt6359_fg, work.work);
+ 
+ 	int status = mt6359_fg_supplier_status(fg);
+-	int ocv_cap, cap;
++	int ocv_cap, cap, ua, avg, up, down;
+ 	s64 uah;
+ 
+ 	/* the charger ended the charge cycle: the cell is full */
+ 	if (status == POWER_SUPPLY_STATUS_FULL) {
+ 		mt6359_fg_anchor(fg, 100);
++		fg->ocv_avg = 100 * 16;
+ 	} else if (status != POWER_SUPPLY_STATUS_CHARGING &&
+ 		   !mt6359_fg_charge_now(fg, &uah) &&
+ 		   !mt6359_fg_ocv_capacity(fg, &ocv_cap) &&
+@@ -218,8 +373,39 @@ static void mt6359_fg_work(struct work_struct *work)
+ 		cap = div_s64(uah * 100, fg->full_uah);
+ 		if (cap > ocv_cap + FG_LOW_MAX_ERROR)
+ 			mt6359_fg_anchor(fg, cap - 1);
++	} else if (!mt6359_fg_current_ua(fg, &ua) && abs(ua) <= FG_RELAXED_UA &&
++		   !mt6359_fg_ocv_capacity(fg, &ocv_cap) &&
++		   !mt6359_fg_charge_now(fg, &uah)) {
++		/*
++		 * Little current: the corrected voltage says where the charge
++		 * stands. Smoothed, and heard only once it has settled.
++		 */
++		if (fg->ocv_samples++)
++			fg->ocv_avg += (ocv_cap * 16 - fg->ocv_avg) / 4;
++		else
++			fg->ocv_avg = ocv_cap * 16;
++		avg = (fg->ocv_avg + 8) / 16;
++		cap = div_s64(uah * 100 + fg->full_uah / 2, fg->full_uah);
++		up = down = FG_OCV_APART;
++		if (ua > FG_STEADY_UA) {
++			up = FG_OCV_WITH;
++			down = FG_OCV_AGAINST;
++		} else if (ua < -FG_STEADY_UA) {
++			up = FG_OCV_AGAINST;
++			down = FG_OCV_WITH;
++		}
++		if (fg->ocv_samples > FG_OCV_SETTLE) {
++			if (avg - cap >= up)
++				mt6359_fg_anchor(fg, min(cap + 1, 100));
++			else if (cap - avg >= down)
++				mt6359_fg_anchor(fg, max(cap - 1, 0));
++		}
+ 	}
+ 
++	if (!mt6359_fg_charge_now(fg, &uah))
++		mt6359_fg_store_capacity(fg, div_s64(uah * 100 + fg->full_uah / 2,
++						     fg->full_uah));
++
+ 	power_supply_changed(fg->psy);
+ 	/* freezable: no wakeups (and no ADC reads) while the system sleeps */
+ 	queue_delayed_work(system_freezable_wq, &fg->work, FG_POLL_INTERVAL);
+@@ -327,6 +513,26 @@ static struct regmap *mt6359_fg_get_regmap(struct device *dev)
+ 	return map ?: ERR_PTR(-EPROBE_DEFER);
+ }
+ 
++/* Where the count began: "stored" or "ocv", the percent, and what the voltage said. */
++static ssize_t soc_start_show(struct device *dev, struct device_attribute *attr,
++			      char *buf)
++{
++	struct mt6359_fg *fg = dev_get_drvdata(dev);
++
++	if (!fg || fg->start_cap < 0)
++		return sysfs_emit(buf, "none\n");
++	return sysfs_emit(buf, "%s %d %d found=%#x error=%d\n",
++			  fg->start_stored ? "stored" : "ocv", fg->start_cap,
++			  fg->start_ocv, fg->stored_raw, fg->rtc_error);
++}
++static DEVICE_ATTR_RO(soc_start);
++
++static struct attribute *mt6359_fg_attrs[] = {
++	&dev_attr_soc_start.attr,
++	NULL
++};
++ATTRIBUTE_GROUPS(mt6359_fg);
++
+ static void mt6359_fg_cancel_work(void *data)
+ {
+ 	cancel_delayed_work_sync(data);
+@@ -344,6 +550,8 @@ static int mt6359_fg_probe(struct platform_device *pdev)
+ 	if (!fg)
+ 		return -ENOMEM;
+ 	fg->dev = dev;
++	fg->start_cap = -1;
++	platform_set_drvdata(pdev, fg);
+ 	ret = devm_mutex_init(dev, &fg->lock);
+ 	if (ret)
+ 		return ret;
+@@ -403,6 +611,7 @@ static struct platform_driver mt6359_fg_driver = {
+ 	.driver = {
+ 		.name = "mt6359-fuel-gauge",
+ 		.of_match_table = mt6359_fg_of_match,
++		.dev_groups = mt6359_fg_groups,
+ 	},
+ };
+ module_platform_driver(mt6359_fg_driver);
+-- 
+2.56.0
+

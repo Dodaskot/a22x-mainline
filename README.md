@@ -15,19 +15,23 @@ It boots from the stock Samsung LK bootloader as an ordinary `boot.img`:
 no bootloader, modem or other partition is replaced. The userspace used
 during development is Arch Linux ARM with Phosh.
 
-The latest release is **v146 (kernel build #122)**: the computer no longer
-loses the phone while it sleeps, because the USB link stays up through system
-sleep. It keeps everything v145 (#121) added: USB networking after sleep and
-during large uploads, 60/90 Hz changes without a dark flash, a boot splash
-from the first frame, and skipping the charging screen when the installed
-system asks for it. Kernel #122 is kernel #107 plus six commits: branch
+The latest release is **v147 (kernel build #138)**: one battery percent for
+every system on the phone. The kernel's fuel gauge starts its count from the
+percent kept in the PMIC, where Android's gauge keeps its own, and writes what
+it shows back, so an installed Linux, the recovery and Android go on from one
+another's number instead of each guessing from the voltage at its start. It
+keeps everything v146 (#122) and v145 (#121) added: the USB link kept through
+system sleep, USB networking after sleep and during large uploads, 60/90 Hz
+changes without a dark flash, a boot splash from the first frame, and skipping
+the charging screen when the installed system asks for it. Kernel #138 is
+kernel #107 plus seven commits: branch
 [`a22x-boot`](https://github.com/Dodaskot/linux-a22x/tree/a22x-boot) and
 [kernel/a22x-boot/](kernel/a22x-boot/). See the
-[prebuilt v146 boot.img](releases/v146/README.md)
-([v145](releases/v145/README.md)).
+[prebuilt v147 boot.img](releases/v147/README.md)
+([v146](releases/v146/README.md), [v145](releases/v145/README.md)).
 
 **[A22x recovery](recovery/README.md)** ([українською](recovery/README.uk.md))
-is a Linux recovery for the RECOVERY partition, with its own kernel #130
+is a Linux recovery for the RECOVERY partition, with its own kernel #137
 (branch [`a22x-recovery`](https://github.com/Dodaskot/linux-a22x/tree/a22x-recovery)).
 From its touch interface it installs Debian, Ubuntu, Fedora, Arch Linux ARM,
 Manjaro, Mobian or postmarketOS from a catalog or a file. You choose the
@@ -71,7 +75,7 @@ teardown fix. See [provenance](docs/PROVENANCE.md) for the release history.
 | USB | NCM networking and USB-C OTG storage; both plug orientations and return to charging/NCM tested; v145 keeps large uploads and re-attaches after system sleep; v146 keeps the link to a computer through sleep |
 | Audio | speaker (SIA8109), earpiece, headphones + jack detection, built-in microphone (ALSA UCM provided) |
 | Wi-Fi / Bluetooth | vendor gen4m Wi-Fi port and own HCI-over-STP Bluetooth driver (`conn/`) |
-| Battery | MT6359 fuel gauge (coulomb counter), MT6360 charger; v144 adds an initramfs-only power-off charging display |
+| Battery | MT6359 fuel gauge (coulomb counter), MT6360 charger; v144 adds an initramfs-only power-off charging display; v147 starts the count from the percent kept in the PMIC and keeps it there, shared with the recovery and Android's gauge |
 | Sensors | ICM-40607 IMU, MMC5603 magnetometer, MN78911 light/proximity and auto-brightness; absolute lux scale uncalibrated |
 | Misc | torch, vibration, volume/power keys, RTC |
 | Sleep | s2idle (CPU/cluster off, 26 MHz off) works in everyday use: installed systems suspend by themselves and with the Power key and wake with the Power key; display, Wi-Fi and USB come back. About 11.3 mA asleep (stock Android: about 7.3–7.9 mA). While a computer is attached (v146), its USB traffic keeps the phone awake and the link up |
@@ -124,8 +128,8 @@ for per-workload scores, driver changes and validation limits.
 ```
 kernel/patches/   143 patches on top of Linux v7.2 (git am), with series file
                   (same source as linux-a22x branch a22x / kernel #107)
-kernel/a22x-boot/ 6 patches above #107: BOOT kernel #122 (branch a22x-boot)
-kernel/a22x-recovery/ 9 patches above #107: recovery kernel #130 (branch a22x-recovery)
+kernel/a22x-boot/ 7 patches above #107: BOOT kernel #138 (branch a22x-boot)
+kernel/a22x-recovery/ 10 patches above #107: recovery kernel #137 (branch a22x-recovery)
 kernel/config/    a22x-boot-k121.config, a22x-recovery-k120.config, a22x-v144.config (#107),
                   historical v135 config + fragments
 kernel/build.sh   clone v7.2, apply the series, build Image.gz/DTBs/modules
@@ -138,7 +142,9 @@ recovery/         A22x recovery 0.6: touch interface, Linux installer, tests (MI
 rootfs/           ALSA UCM profile, feedbackd theme
 tools/            bring-up helpers (memtool, clock/DT generators, smoke test)
 docs/             building/flashing guide, hardware notes, provenance
-releases/v145/    latest prebuilt boot.img, kernel #121 (Git LFS)
+releases/v147/    latest prebuilt boot.img, kernel #138 (Git LFS)
+releases/v146/    prebuilt boot.img, kernel #122 (Git LFS)
+releases/v145/    prebuilt boot.img, kernel #121 (Git LFS)
 releases/v144/    prebuilt boot.img, kernel #107 + minimal charger (Git LFS)
 releases/v143/    historical prebuilt boot.img, kernel #101 (Git LFS)
 releases/v142/    prebuilt v142 boot.img (Git LFS)
