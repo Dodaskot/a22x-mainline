@@ -3,10 +3,9 @@ A touch recovery on the mainline Linux kernel, for every SM-A226B (64 GB and 128
 
 [I]Screenshots taken on the phone with 1.0.1, in the default theme (Graphite).[/I]
 
-[SPOILER="Screenshots"]
-[B]Home[/B]
 [IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/home.png[/IMG]
 
+[SPOILER="More screenshots"]
 [B]Install[/B]
 [IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/install.png[/IMG]
 
@@ -36,7 +35,7 @@ A touch recovery on the mainline Linux kernel, for every SM-A226B (64 GB and 128
 [IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/home-daylight.png[/IMG]
 [IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/home-aurora.png[/IMG]
 
-[B]A theme of your own: the Beaver example[/B] (themes/beaver.json in the source; how to make one: [URL]https://github.com/Dodaskot/mainline-recovery/blob/main/docs/MAKING_THEMES.md[/URL])
+[B]A theme of your own: the Beaver example[/B] (themes/beaver.json in the source; how to make one: [URL]https://github.com/Dodaskot/mainline-recovery/blob/main/THEMES_API.md[/URL])
 [IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/home-beaver.png[/IMG]
 [IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/install-beaver.png[/IMG]
 [/SPOILER]
@@ -96,7 +95,7 @@ Thank you both!
 [*]Unlock the bootloader (this erases the phone).
 [*]In Download Mode flash the image to RECOVERY, for example with Heimdall:
 [CODE]heimdall flash --recovery recovery-a22x-1.0.1.img[/CODE]
-Or install it from a rooted Android with the app (mainline-recovery-installer-1.0.1.apk).
+Or install it from a rooted Android with the app: [URL=https://github.com/Dodaskot/mainline-recovery/releases/download/v1.0.1/mainline-recovery-installer-1.0.1.apk]mainline-recovery-installer-1.0.1.apk[/URL] (root needed).
 [*]Start the recovery: phone off, USB cable to a computer, hold Volume up + Power.
 [/LIST]
 Already on 1.0.0 or 0.6.x? Settings > Updates finds 1.0.1.
