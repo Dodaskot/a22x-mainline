@@ -230,4 +230,42 @@ final class Scripts {
                 + "echo \"A22X:OK $copy\"\n";
         return script;
     }
+
+    /** The misc partition of this phone's eMMC, 512 KiB (the stock PIT's), as $dev; A22X:ERROR otherwise. */
+    static final String MISC_FIND =
+            "dev=\n"
+            + "for d in /dev/block/by-name/misc /dev/block/bootdevice/by-name/misc /dev/block/platform/*/by-name/misc; do\n"
+            + "  [ -e \"$d\" ] && { dev=$(readlink -f \"$d\"); break; }\n"
+            + "done\n"
+            + "case \"$dev\" in /dev/block/mmcblk0p[0-9]*) ;; *) echo A22X:ERROR NO_MISC; exit 30;; esac\n"
+            + "[ -b \"$dev\" ] && [ \"$(blockdev --getsize64 \"$dev\")\" = " + MiscRecords.MISC_SIZE + " ] || { echo A22X:ERROR NO_MISC; exit 30; }\n";
+
+    /** The recovery's area of misc (384 KiB to its end), printed in base64 between A22X:BEGIN and
+     *  A22X:END: through the output, never a file a root shell made in this app's folder. */
+    static String miscRead() {
+        return MISC_FIND
+                + "echo A22X:BEGIN\n"
+                + "dd if=\"$dev\" bs=1024 skip=" + (MiscRecords.AREA_START / 1024) + " count=" + (MiscRecords.AREA_SIZE / 1024)
+                + " 2>/dev/null | base64 || { echo; echo A22X:ERROR READ; exit 31; }\n"
+                + "echo A22X:END\n";
+    }
+
+    /** One slot of a record from FILE (SLOT bytes) at OFFSET in misc, as the recovery writes it: the
+     *  header sector first and synced, then the rest; then the slot read back from the eMMC, in base64. */
+    static String miscWrite(String file, long offset) {
+        if (offset < MiscRecords.AREA_START || offset % MiscRecords.SECTOR != 0
+                || offset + MiscRecords.SLOT > MiscRecords.MISC_SIZE) throw new IllegalArgumentException("offset");
+        long sector = offset / MiscRecords.SECTOR;
+        int sectors = MiscRecords.SLOT / MiscRecords.SECTOR;
+        return MISC_FIND
+                + "F=" + Root.quote(file) + "\n"
+                + "[ \"$(stat -c %s \"$F\")\" = " + MiscRecords.SLOT + " ] || { echo A22X:ERROR SLOT_FILE; exit 32; }\n"
+                + "dd if=\"$F\" of=\"$dev\" bs=512 seek=" + sector + " count=1 conv=notrunc 2>/dev/null && sync"
+                + " && dd if=\"$F\" of=\"$dev\" bs=512 skip=1 seek=" + (sector + 1) + " count=" + (sectors - 1) + " conv=notrunc 2>/dev/null && sync"
+                + " || { echo A22X:ERROR WRITE; exit 33; }\n"
+                + "blockdev --flushbufs \"$dev\" 2>/dev/null; echo 3 > /proc/sys/vm/drop_caches\n"
+                + "echo A22X:BEGIN\n"
+                + "dd if=\"$dev\" bs=512 skip=" + sector + " count=" + sectors + " 2>/dev/null | base64 || { echo; echo A22X:ERROR READBACK; exit 34; }\n"
+                + "echo A22X:END\n";
+    }
 }

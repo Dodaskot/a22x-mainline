@@ -110,6 +110,8 @@ def apply_record(record, remember=None, load=None, store=None):
     remember = remember or wifi.remember
     load, store = load or settings.load, store or settings.store
     networks, language, zone = checked(record)
+    when = record.get('time_utc')
+    when = when if isinstance(when, int) and not isinstance(when, bool) and EARLIEST <= when <= LATEST else None
     unsaved, busy = [], False
     deadline = time.monotonic() + WAIT_SECONDS
     for ssid, password in reversed(networks):
@@ -123,7 +125,8 @@ def apply_record(record, remember=None, load=None, store=None):
             continue
         key = wifi.psk(ssid, password) if password else ''
         while True:
-            saved = remember(ssid, key)
+            # When the file was written: a network saved in the recovery since keeps its password.
+            saved = remember(ssid, key) if when is None else remember(ssid, key, when=when)
             if saved is not None:
                 break
             if time.monotonic() + RETRY_SECONDS > deadline:

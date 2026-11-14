@@ -371,12 +371,24 @@ def _update(change):
     return True if status == 'ok' else (False if status == 'failed' else None)
 
 
-def remember(ssid, key):
+def remember(ssid, key, when=None):
     """True when saved; None when the saved list cannot be had now and nothing was changed
     (2026-11-14 review: with the settings volume busy, the list read as empty, and the new network
-    alone replaced every other one); False when it could not be written."""
-    added = {'ssid_hex': ssid.hex(), 'psk': key, 'added': int(time.time())}
-    return _update(lambda current: ([added] + [n for n in current if n.get('ssid_hex') != ssid.hex()])[:SAVED_MAX])
+    alone replaced every other one); False when it could not be written. WHEN: the time the network
+    was given, for one handed over from a phone system; an entry for it saved later stays, and the
+    list is as before (True). The Android app writes the same list in misc by the same rule, so the
+    app and the recovery never undo each other's password: the newer one wins (2026-11-14)."""
+    stamp = int(time.time()) if when is None else int(when)
+    added = {'ssid_hex': ssid.hex(), 'psk': key, 'added': stamp}
+
+    def change(current):
+        for network in current:
+            saved = network.get('added')
+            if network.get('ssid_hex') == ssid.hex() and isinstance(saved, int) and not isinstance(saved, bool) \
+                    and saved > stamp:
+                return current
+        return ([added] + [n for n in current if n.get('ssid_hex') != ssid.hex()])[:SAVED_MAX]
+    return _update(change)
 
 
 def saved_key(ssid):

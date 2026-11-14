@@ -4,6 +4,26 @@ What changed in each version of A22x Mainline Recovery, newest first. Every item
 was checked on the phone unless it says otherwise. Before 0.6.124: [docs/CHANGELOG.md](docs/CHANGELOG.md);
 day-by-day notes with every on-phone check: [docs/PROGRESS.md](docs/PROGRESS.md).
 
+## 1.0.2 (2026-11-14)
+
+- **The app writes into the recovery's settings in `misc`, and no password undoes another.**
+  The Android app (1.0.2) writes the language, the time zone and Wi-Fi networks straight into
+  the recovery's records in `misc` (`MiscRecords.java`, the format of `misc_store.py`: both
+  copies, the older first, each read back from the eMMC). It changes only records the recovery
+  made: before the recovery's first start, which copies an older release's settings and their
+  password, and with an older recovery, it writes the hand-over file on cache as before. In the
+  settings it changes the language and time zone only; the password and everything else stay.
+  The app and the recovery keep one list of networks, and for a network the newer entry wins
+  wherever it was made: a password changed in the recovery is no longer replaced by an older
+  one from the app, also not from a hand-over file written before it (`wifi.remember(when=…)`).
+  Tests: 913 Python (`tests/test_apk_misc.py`: what the app's Java code writes, read by the
+  recovery, and the other way round), 110 backend; the app's build runs 68 checks and
+  `MiscRecordsTest` (24, the WPA key against the IEEE 802.11i vector). On the phone: 1.0.2
+  written to RECOVERY, read back, started; an older hand-over kept a password saved later, a newer
+  one replaced it; the app's misc scripts run in the recovery against the real misc (the area read
+  as it is; a slot written with its own bytes, read back the same, misc unchanged). The 1.0.2 app
+  itself has not run on Android yet: the test phone has Linux on userdata.
+
 ## 1.0.1 (2026-11-14)
 
 - **The settings, the password and the saved Wi-Fi networks are kept in `misc`**, not in a file

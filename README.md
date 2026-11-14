@@ -30,7 +30,7 @@ kernel #107 plus seven commits: branch
 [prebuilt v147 boot.img](releases/v147/README.md)
 ([v146](releases/v146/README.md), [v145](releases/v145/README.md)).
 
-**[Mainline Recovery 1.0.1](recovery/README.md)** ([українською](recovery/README.uk.md))
+**[Mainline Recovery 1.0.2](recovery/README.md)** ([українською](recovery/README.uk.md))
 is a Linux recovery for the RECOVERY partition, with its own kernel #139
 (branch [`a22x-recovery`](https://github.com/Dodaskot/linux-a22x/tree/a22x-recovery):
 the phone's kernel, branch `a22x`, trimmed for the recovery).
@@ -140,7 +140,7 @@ conn/             MediaTek connectivity drivers (WMT, BTIF, gen4m Wi-Fi, BT HCI)
                   ported out-of-tree from the Samsung GPL release, + systemd units
 boot/             mkboot.sh (boot.img for stock LK), initramfs init, flash.sh
 boot/charger/     static AArch64 minimal charger, host/ARM tests and build helper
-recovery/         Mainline Recovery 1.0.1: touch interface, Linux installer, tests (MIT)
+recovery/         Mainline Recovery 1.0.2: touch interface, Linux installer, tests (MIT)
 rootfs/           ALSA UCM profile, feedbackd theme
 tools/            bring-up helpers (memtool, clock/DT generators, smoke test)
 docs/             building/flashing guide, hardware notes, provenance

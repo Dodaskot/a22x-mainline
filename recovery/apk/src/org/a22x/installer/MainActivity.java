@@ -986,7 +986,9 @@ public class MainActivity extends Activity {
                     Root.Result r = RecoveryStore.sendHandoff(this, name, secret);
                     if (r.marker("OK") != null) {
                         runOnUiThread(() -> key.setText(""));
-                        say(getString(R.string.wifi_saved, Handoff.networks(RecoveryStore.waitingHandoff())));
+                        int inMisc = RecoveryStore.savedInMisc(r);
+                        say(inMisc >= 0 ? getString(R.string.wifi_saved_misc, inMisc)
+                                : getString(R.string.wifi_saved, Handoff.networks(RecoveryStore.waitingHandoff())));
                     } else {
                         say(getString(R.string.failed, r.output.trim()));
                     }

@@ -32,11 +32,12 @@
     <string name="done_keep">Linux BOOT збережено в cache для recovery. Android запускається як раніше.</string>
     <string name="failed">Не виконано: %1$s</string>
     <string name="wifi_title">Wi-Fi для recovery</string>
-    <string name="wifi_text">Recovery прочитає це один раз під час наступного запуску, збереже мережу як ключ WPA і видалить файл.</string>
+    <string name="wifi_text">Мережа зберігається як ключ WPA у власному списку recovery (у розділі misc, recovery 1.0.1 і новіший) — у тому самому списку, який змінює recovery: для мережі перемагає новіший пароль. Старіший recovery забере її один раз під час наступного запуску.</string>
     <string name="ssid_hint">Назва мережі</string>
     <string name="password_hint">Пароль (порожній для відкритої)</string>
     <string name="save_to_recovery">Зберегти в recovery</string>
     <string name="wifi_saved">Збережено. Мереж чекає на recovery: %1$d</string>
+    <string name="wifi_saved_misc">Збережено в списку recovery. Збережено мереж: %1$d</string>
     <string name="bad_ssid">Назва мережі має займати від 1 до 32 байтів.</string>
     <string name="bad_password">Пароль WPA має від 8 до 63 символів.</string>
     <string name="sync_title">Мова й час</string>

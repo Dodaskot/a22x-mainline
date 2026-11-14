@@ -13,6 +13,12 @@ are not this recovery's are never written over. `/run/a22x-recovery/settings.jso
 reading `misc` for every question; a save `misc` cannot take now stays in RAM (exit 3) and
 the interface tries again after 10 s, then each time twice as late, 5 min at most.
 
+The Android app (`apk/`, 1.0.2) writes the same records from Android with root, by the same
+rules (`MiscRecords.java`): only records the recovery made, the language and time zone only in
+the settings (the password and everything else kept), and the Wi-Fi list with one entry per
+network, where the newer entry wins wherever it was made. A network handed over in a file
+(`handoff.py`) never replaces one saved after the file was written.
+
 Releases up to 1.0.1 kept the settings in `a22x-recovery/settings.json` on `cache` (or on
 `userdata`), with a password mark beside them. While `misc` holds no record yet, that file is
 read as those releases read it and copied to `misc`, which decides from then on; the file and

@@ -32,11 +32,12 @@
     <string name="done_keep">BOOT Linuksa jest na cache dla recovery. Android uruchamia się jak dotąd.</string>
     <string name="failed">Nie wykonano: %1$s</string>
     <string name="wifi_title">Wi-Fi dla recovery</string>
-    <string name="wifi_text">Recovery odczyta to raz przy następnym starcie, zachowa sieć jako klucz WPA i usunie plik.</string>
+    <string name="wifi_text">Sieć jest zapisywana jako klucz WPA na własnej liście recovery (w partycji misc, recovery 1.0.1 i nowsze) — tej samej, którą zmienia recovery: dla sieci wygrywa nowsze hasło. Starsze recovery przejmie ją raz przy następnym starcie.</string>
     <string name="ssid_hint">Nazwa sieci</string>
     <string name="password_hint">Hasło (puste dla sieci otwartej)</string>
     <string name="save_to_recovery">Zapisz w recovery</string>
     <string name="wifi_saved">Zapisano. Sieci czekające na recovery: %1$d</string>
+    <string name="wifi_saved_misc">Zapisano na liście recovery. Zapisane sieci: %1$d</string>
     <string name="bad_ssid">Nazwa sieci musi mieć od 1 do 32 bajtów.</string>
     <string name="bad_password">Hasło WPA ma od 8 do 63 znaków.</string>
     <string name="sync_title">Język i czas</string>

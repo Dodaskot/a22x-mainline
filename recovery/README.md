@@ -162,9 +162,12 @@ a computer.
 
 `apk/` builds a small installer app (about 0.4 MB) for a rooted Android on this phone: it
 checks the phone, downloads the recovery from its release and the Linux BOOT from the catalog,
-each checked against the SHA-256 built into the app, installs either or both, hands Wi-Fi
+each checked against the SHA-256 built into the app, installs either or both, gives Wi-Fi
 networks, language and time zone to the recovery, keeps Android's BOOT on cache by itself and
-updates itself from the newest release. `apk/build.sh` builds it without the Android SDK.
+updates itself from the newest release. With recovery 1.0.1 and newer it writes them straight
+into the recovery's own records in `misc` (only records the recovery made, the password kept):
+one list of networks for both, and for a network the newer password wins wherever it was set.
+An older recovery gets them in a hand-over file on cache at its next start. `apk/build.sh` builds it without the Android SDK.
 
 ## Installing
 
@@ -173,7 +176,7 @@ updates itself from the newest release. `apk/build.sh` builds it without the And
    to RECOVERY in Download Mode, for example with Heimdall:
 
    ```fish
-   heimdall flash --recovery recovery-a22x-1.0.1.img
+   heimdall flash --recovery recovery-a22x-1.0.2.img
    ```
 
    or install it from a rooted Android with the app.
@@ -213,7 +216,7 @@ partition → recovery.
 
 ## Building
 
-`VERSION=1.0.1 tools/build-image.sh NN` builds `build-v06-NN/recovery-a22x-mainline-k108-v0.6.img`
+`VERSION=1.0.2 tools/build-image.sh NN` builds `build-v06-NN/recovery-a22x-mainline-k108-v0.6.img`
 from these sources, the recovery kernel and the runtimes, on top of the qualified
 base image, and checks that every file in the image equals this tree. Device
 firmware and the sealed platform profile are captured from your own phone with

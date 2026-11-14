@@ -75,10 +75,12 @@ with open(os.path.join(folder, 'images.json'), 'w') as f:
 P
 
 # The rules shared with the recovery are tested on this computer first.
-javac -nowarn --release 8 -d "$work/test" "$here"/src/org/a22x/installer/{Json,Handoff,Root,Scripts,Compat,Plan,Sha512Crypt}.java "$here"/test/org/a22x/installer/{HandoffTest,ScriptsMain}.java
+javac -nowarn --release 8 -d "$work/test" "$here"/src/org/a22x/installer/{Json,Handoff,Root,Scripts,MiscRecords,Compat,Plan,Sha512Crypt}.java "$here"/test/org/a22x/installer/{HandoffTest,ScriptsMain}.java
 java -cp "$work/test" org.a22x.installer.HandoffTest
 javac -nowarn --release 8 -cp "$work/test" -d "$work/test" "$here"/src/org/a22x/installer/{Json,Root,AppUpdate}.java "$here"/test/org/a22x/installer/AppUpdateTest.java
 java -cp "$work/test" org.a22x.installer.AppUpdateTest
+javac -nowarn --release 8 -cp "$work/test" -d "$work/test" "$here"/src/org/a22x/installer/{Json,Root,Scripts,MiscRecords}.java "$here"/test/org/a22x/installer/MiscRecordsTest.java
+java -cp "$work/test" org.a22x.installer.MiscRecordsTest
 # The backdrops are the recovery's own: every pixel of BackdropMath against its canvas_backdrop().
 cc -O2 -I "$here/../ui" -o "$work/backdrop_ref" "$here/test/backdrop_ref.c" -lm
 size=$("$work/backdrop_ref" "$work/backdrop-daylight.raw" "$work/backdrop-aurora.raw")

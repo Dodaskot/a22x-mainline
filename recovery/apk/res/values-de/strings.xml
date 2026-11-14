@@ -32,11 +32,12 @@
     <string name="done_keep">Das Linux-BOOT liegt auf cache für das Recovery bereit. Android startet wie bisher.</string>
     <string name="failed">Nicht erledigt: %1$s</string>
     <string name="wifi_title">WLAN für das Recovery</string>
-    <string name="wifi_text">Das Recovery liest dies einmal beim nächsten Start, behält das Netz als WPA-Schlüssel und löscht die Datei.</string>
+    <string name="wifi_text">Das Netz wird als WPA-Schlüssel in der eigenen Liste des Recovery gespeichert (in der Partition misc, Recovery 1.0.1 und neuer), derselben Liste, die das Recovery ändert: für ein Netz gilt das neuere Passwort. Ein älteres Recovery übernimmt es einmal beim nächsten Start.</string>
     <string name="ssid_hint">Netzwerkname</string>
     <string name="password_hint">Passwort (leer für ein offenes Netz)</string>
     <string name="save_to_recovery">Im Recovery speichern</string>
     <string name="wifi_saved">Gespeichert. Netze, die auf das Recovery warten: %1$d</string>
+    <string name="wifi_saved_misc">In der Liste des Recovery gespeichert. Gespeicherte Netze: %1$d</string>
     <string name="bad_ssid">Der Netzwerkname muss 1 bis 32 Bytes lang sein.</string>
     <string name="bad_password">Ein WPA-Passwort hat 8 bis 63 Zeichen.</string>
     <string name="sync_title">Sprache und Zeit</string>

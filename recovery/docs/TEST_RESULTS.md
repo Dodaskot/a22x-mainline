@@ -1,12 +1,27 @@
 # Test results
 
-Recovery **1.0.1**, recovery kernel `7.2.0-a22x-recovery+ #139` (branch `a22x-recovery` of
+Recovery **1.0.2** and **1.0.1**, recovery kernel `7.2.0-a22x-recovery+ #139` (branch `a22x-recovery` of
 [linux-a22x](https://github.com/Dodaskot/linux-a22x), `cf097a32`), BOOT v147 (kernel `#138`),
 2026-11-14, on a 64 GB SM-A226B. Earlier releases follow below.
 
 Two kinds of evidence are kept apart here. The first is automatic: tests that run on a computer
 against fixtures, with no phone attached. The second is what was done on the phone itself
 (SM-A226B). Something that passed only on the computer is never listed as working on the phone.
+
+## 1.0.2 (2026-11-14)
+
+Recovery **1.0.2** and its app, on the same kernel (`#139`) and BOOT (v147).
+
+| What | Where | Result |
+|---|---|---|
+| Helpers (Python) `tests/`, with `tests/test_apk_misc.py`: the app's Java code changes the recovery's records, the recovery reads them, and the other way round | computer | 913 tests pass |
+| Backup backend `backend/tests/` | computer | 110 tests pass |
+| App build: 68 checks, `MiscRecordsTest` (24, WPA key against IEEE 802.11i), signatures v2 and v3 | computer | pass |
+| 1.0.2 written to RECOVERY through Flash, read back, started: settings from `misc`, interface, Wi-Fi | phone | works |
+| A hand-over file older than a password saved in the recovery: the password kept; a newer file: replaced (test network, removed after) | phone | works |
+| The app's misc scripts in the recovery against the real misc: the area read as it is; a slot written with its own bytes and read back | phone | identical; misc unchanged (same SHA-256) |
+
+Not proven yet: the 1.0.2 app on Android (the test phone has Linux on userdata).
 
 ## Automatic tests (computer, fixtures), 1.0.1
 

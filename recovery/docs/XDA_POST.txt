@@ -1,4 +1,4 @@
-[CENTER][SIZE=6][B]Mainline Recovery 1.0.1 for the Galaxy A22 5G (SM-A226B)[/B][/SIZE]
+[CENTER][SIZE=6][B]Mainline Recovery 1.0.2 for the Galaxy A22 5G (SM-A226B)[/B][/SIZE]
 A touch recovery on the mainline Linux kernel, for every SM-A226B (64 GB and 128 GB)[/CENTER]
 
 [I]Screenshots taken on the phone with 1.0.1, in the default theme (Graphite).[/I]
@@ -72,6 +72,11 @@ A touch recovery on the mainline Linux kernel, for every SM-A226B (64 GB and 128
 [*]Six languages, three themes and your own from a file (see the Beaver example), 60/90 Hz, an optional password.
 [/LIST]
 
+[SIZE=5][B]New in 1.0.2[/B][/SIZE]
+[LIST]
+[*]The app writes Wi-Fi networks, language and time zone straight into the recovery's own settings in misc. The app and the recovery share one list of networks: for a network, the newer password wins, wherever it was set.
+[/LIST]
+
 [SIZE=5][B]New in 1.0.1[/B][/SIZE]
 [LIST]
 [*]The settings, the password and the saved Wi-Fi networks are kept in a free part of the [B]misc[/B] partition, twice, with checksums. A normal stock firmware flash does not touch them. Your settings from 1.0.0 are moved there by themselves at the first start.
@@ -94,15 +99,15 @@ Thank you both!
 [LIST=1]
 [*]Unlock the bootloader (this erases the phone).
 [*]In Download Mode flash the image to RECOVERY, for example with Heimdall:
-[CODE]heimdall flash --recovery recovery-a22x-1.0.1.img[/CODE]
-Or install it from a rooted Android with the app: [URL=https://github.com/Dodaskot/mainline-recovery/releases/download/v1.0.1/mainline-recovery-installer-1.0.1.apk]mainline-recovery-installer-1.0.1.apk[/URL] (root needed).
+[CODE]heimdall flash --recovery recovery-a22x-1.0.2.img[/CODE]
+Or install it from a rooted Android with the app: [URL=https://github.com/Dodaskot/mainline-recovery/releases/download/v1.0.2/mainline-recovery-installer-1.0.2.apk]mainline-recovery-installer-1.0.2.apk[/URL] (root needed).
 [*]Start the recovery: phone off, USB cable to a computer, hold Volume up + Power.
 [/LIST]
-Already on 1.0.0 or 0.6.x? Settings > Updates finds 1.0.1.
+Already on 1.0.1, 1.0.0 or 0.6.x? Settings > Updates finds 1.0.2.
 
 [SIZE=5][B]Downloads and source[/B][/SIZE]
 [LIST]
-[*]Download (image + app): [URL]https://github.com/Dodaskot/mainline-recovery/releases/tag/v1.0.1[/URL]
+[*]Download (image + app): [URL]https://github.com/Dodaskot/mainline-recovery/releases/tag/v1.0.2[/URL]
 [*]Source: [URL]https://github.com/Dodaskot/mainline-recovery[/URL]
 [*]Recovery kernel: [URL]https://github.com/Dodaskot/linux-a22x/tree/a22x-recovery[/URL] (the phone's mainline kernel, branch a22x, trimmed for the recovery)
 [*]Linux BOOT for the phone: [URL]https://gitlab.com/pessdres/a22x-mainline[/URL] (mirror: [URL]https://github.com/Dodaskot/a22x-mainline[/URL])

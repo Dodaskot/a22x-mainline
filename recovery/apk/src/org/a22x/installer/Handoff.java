@@ -98,6 +98,40 @@ final class Handoff {
         return Json.write(record);
     }
 
+    /** The networks still waiting in a hand-over record, as {ssid, password}; none when it is damaged. */
+    @SuppressWarnings("unchecked")
+    static List<String[]> waitingNetworks(String waiting) {
+        List<String[]> found = new ArrayList<>();
+        if (waiting == null || waiting.trim().isEmpty()) return found;
+        try {
+            Object value = Json.parse(waiting);
+            if (!(value instanceof Map) || !SCHEMA.equals(((Map<String, Object>) value).get("schema"))) return found;
+            Object list = ((Map<String, Object>) value).get("wifi");
+            if (!(list instanceof List)) return found;
+            for (Object item : (List<Object>) list) {
+                if (!(item instanceof Map)) continue;
+                Object ssid = ((Map<String, Object>) item).get("ssid"), password = ((Map<String, Object>) item).get("password");
+                String secret = password instanceof String ? (String) password : "";
+                if (ssid instanceof String && networkProblem((String) ssid, secret) == null) found.add(new String[]{(String) ssid, secret});
+            }
+        } catch (IllegalArgumentException damaged) {
+            // A damaged file carries no network.
+        }
+        return found;
+    }
+
+    /** When a hand-over record was written (its time_utc), or 0. */
+    @SuppressWarnings("unchecked")
+    static long waitingTime(String waiting) {
+        try {
+            Object value = waiting == null ? null : Json.parse(waiting);
+            Object time = value instanceof Map ? ((Map<String, Object>) value).get("time_utc") : null;
+            return time instanceof Long ? (Long) time : time instanceof Integer ? (Integer) time : 0;
+        } catch (IllegalArgumentException damaged) {
+            return 0;
+        }
+    }
+
     /** How many networks a record carries, without showing them. */
     @SuppressWarnings("unchecked")
     static int networks(String record) {
