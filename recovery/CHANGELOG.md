@@ -21,8 +21,7 @@ day-by-day notes with every on-phone check: [docs/PROGRESS.md](docs/PROGRESS.md)
   `MiscRecordsTest` (24, the WPA key against the IEEE 802.11i vector). On the phone: 1.0.2
   written to RECOVERY, read back, started; an older hand-over kept a password saved later, a newer
   one replaced it; the app's misc scripts run in the recovery against the real misc (the area read
-  as it is; a slot written with its own bytes, read back the same, misc unchanged). The 1.0.2 app
-  itself has not run on Android yet: the test phone has Linux on userdata.
+  as it is; a slot written with its own bytes, read back the same, misc unchanged). Then a clean installation without a PC, done by the owner: stock firmware BDZC3 and Magisk installed from the recovery, the stock recovery flashed back, cache wiped and the recovery's area of misc zeroed; then in Android the app 1.0.2 got root, a Wi-Fi network was entered and the app installed the recovery. At its first start the language, the time and the network came over; the theme and the animations started at their defaults, as on a new phone.
 
 ## 1.0.1 (2026-11-14)
 

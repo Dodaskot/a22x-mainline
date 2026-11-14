@@ -20,8 +20,10 @@ Recovery **1.0.2** and its app, on the same kernel (`#139`) and BOOT (v147).
 | 1.0.2 written to RECOVERY through Flash, read back, started: settings from `misc`, interface, Wi-Fi | phone | works |
 | A hand-over file older than a password saved in the recovery: the password kept; a newer file: replaced (test network, removed after) | phone | works |
 | The app's misc scripts in the recovery against the real misc: the area read as it is; a slot written with its own bytes and read back | phone | identical; misc unchanged (same SHA-256) |
+| A clean installation without a PC, done by the owner: stock firmware BDZC3 and Magisk installed from the recovery, the stock recovery flashed back, cache wiped and the recovery's area of misc zeroed; then in Android the app 1.0.2 got root, a Wi-Fi network was entered and the app installed the recovery. At its first start the language, the time and the network came over; the theme and the animations started at their defaults, as on a new phone. | phone, by the owner | works |
 
-Not proven yet: the 1.0.2 app on Android (the test phone has Linux on userdata).
+Not proven yet: the app writing a second network straight into misc on Android (the clean
+installation above used the hand-over file, as it must before the recovery's first start).
 
 ## Automatic tests (computer, fixtures), 1.0.1
 

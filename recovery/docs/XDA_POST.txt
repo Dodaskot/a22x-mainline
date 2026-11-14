@@ -75,6 +75,7 @@ A touch recovery on the mainline Linux kernel, for every SM-A226B (64 GB and 128
 [SIZE=5][B]New in 1.0.2[/B][/SIZE]
 [LIST]
 [*]The app writes Wi-Fi networks, language and time zone straight into the recovery's own settings in misc. The app and the recovery share one list of networks: for a network, the newer password wins, wherever it was set.
+[*]Tested: a clean install without a PC. Stock firmware and Magisk root installed from the recovery, then the stock recovery flashed back and the recovery's settings cleared; in Android the app installed the recovery. The language, the time and the Wi-Fi network entered in the app came over to the recovery; the theme and animations start at their defaults, as on a new phone.
 [/LIST]
 
 [SIZE=5][B]New in 1.0.1[/B][/SIZE]
