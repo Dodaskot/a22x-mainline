@@ -1,9 +1,36 @@
 [CENTER][SIZE=6][B]Mainline Recovery 1.0.1 for the Galaxy A22 5G (SM-A226B)[/B][/SIZE]
 A touch recovery on the mainline Linux kernel, for every SM-A226B (64 GB and 128 GB)[/CENTER]
 
-[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/release-1.0.1-1.jpg[/IMG]
-[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/release-1.0.1-2.jpg[/IMG]
 [I]Screenshots taken on the phone with 1.0.1, in the default theme (Graphite).[/I]
+
+[SPOILER="Screenshots"]
+[B]Home[/B]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/home.png[/IMG]
+
+[B]Install[/B]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/install.png[/IMG]
+
+[B]Android[/B]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/android.png[/IMG]
+
+[B]Linux systems[/B]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/os.png[/IMG]
+
+[B]Backup[/B]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/backup.png[/IMG]
+
+[B]Files[/B]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/files.png[/IMG]
+
+[B]Settings[/B]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/settings.png[/IMG]
+
+[B]Updates[/B]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/updates.png[/IMG]
+
+[B]Terminal[/B]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/terminal.png[/IMG]
+[/SPOILER]
 
 [SIZE=5][B]What it does[/B][/SIZE]
 
