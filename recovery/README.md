@@ -35,6 +35,13 @@ More, from the preview data:
 
 More, page by page: [docs/screenshots/en](docs/screenshots/en).
 
+## Made with AI
+
+AI (Claude) was used intensively in this project: for writing and reviewing the code,
+the tests and the documentation. Every release is tested on a real SM-A226B; the
+[test results](docs/TEST_RESULTS.md) say what was checked on the phone and what only on
+a computer.
+
 ## Features
 
 ### Linux systems
