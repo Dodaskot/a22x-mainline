@@ -18,8 +18,7 @@ Ukrainian: [README.uk.md](README.uk.md) · What changed in each version:
 
 ## Screenshots
 
-Rendered by the interface itself from its preview data. The three built-in
-themes, Graphite, Daylight and Aurora:
+The three built-in themes, Graphite, Daylight and Aurora (on the phone, 1.0.1):
 
 ![The three themes](docs/screenshots/themes.jpg)
 

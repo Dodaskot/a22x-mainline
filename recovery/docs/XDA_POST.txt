@@ -30,6 +30,11 @@ A touch recovery on the mainline Linux kernel, for every SM-A226B (64 GB and 128
 
 [B]Terminal[/B]
 [IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/terminal.png[/IMG]
+
+[B]The three themes: Graphite, Daylight, Aurora[/B]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/home-graphite.png[/IMG]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/home-daylight.png[/IMG]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/home-aurora.png[/IMG]
 [/SPOILER]
 
 [SIZE=5][B]What it does[/B][/SIZE]
