@@ -111,6 +111,6 @@ Already on 1.0.0 or 0.6.x? Settings > Updates finds 1.0.1.
 [/LIST]
 
 [SIZE=5][B]Made with AI[/B][/SIZE]
-AI (Claude) was used intensively in this project: for writing and reviewing the code, the tests and the documentation. Every release is tested on a real SM-A226B, and the test results say what was checked on the phone and what only on a computer.
+AI was used intensively in this project: OpenAI Codex at the very beginning, up to version 0.5, and Claude since then, for writing and reviewing the code, the tests and the documentation. Every release is tested on a real SM-A226B, and the test results say what was checked on the phone and what only on a computer.
 
 [SIZE=2]Flash at your own risk. Only for the SM-A226B: images made for other phones are refused. Download Mode always lets you flash the stock recovery back.[/SIZE]
