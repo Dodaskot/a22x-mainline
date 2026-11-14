@@ -2,19 +2,32 @@
    search in the repositories of the chosen distribution, so an extra package is named as the
    distribution names it and is known to exist for arm64. distro.py package-search asks the
    distribution's own package site; the chosen names go into the plan as --package. */
-#define PKG_PAGE 7u
 static const char*const pkg_families[]={"debian","ubuntu","fedora","arch","manjaro"};
 static const char*const pkg_family_labels[]={"Debian","Ubuntu","Fedora","Arch","Manjaro"};
 #define PKG_FAMILIES (sizeof(pkg_families)/sizeof(pkg_families[0]))
 
+/* The release name of a catalog image's version (2026-11-14 review: every Ubuntu but 24.04 was
+   taken for 26.04 and every Debian for 13; a newer image in the remote catalog was searched in the
+   wrong release). A version not in the table names none: the helper then searches its default. */
+static const char*pkg_release_of(const char*family,const char*version){
+    static const struct{const char*family,*version,*release;}known[]={
+        {"debian","12","bookworm"},{"debian","13","trixie"},{"debian","14","forky"},
+        {"mobian","12","bookworm"},{"mobian","13","trixie"},{"mobian","14","forky"},
+        {"ubuntu","22.04","jammy"},{"ubuntu","24.04","noble"},{"ubuntu","24.10","oracular"},{"ubuntu","25.04","plucky"},
+        {"ubuntu","25.10","questing"},{"ubuntu","26.04","resolute"}};
+    for(size_t i=0;i<sizeof(known)/sizeof(known[0]);i++){
+        size_t n=strlen(known[i].version);
+        if(!strcmp(family,known[i].family)&&!strncmp(version,known[i].version,n)&&(version[n]==0||version[n]==' '||version[n]=='.'))return known[i].release;
+    }
+    return "";
+}
 /* The family and release to search: those of the catalog image, or the chosen chip for a file. */
 static bool pkg_target(const App*a,char*family,size_t fsize,char*release,size_t rsize,char*label,size_t lsize){
     release[0]=0;
     if(a->systems_remote_id[0])for(unsigned int i=0;i<a->catalog_count;i++){
         const CatalogImage*c=&a->catalog[i];if(strcmp(c->id,a->systems_remote_id))continue;
         char text_[112];snprintf(text_,sizeof(text_),"%s %s",c->name,c->version);copy(label,lsize,text_);
-        if(!strcmp(c->family,"debian")||!strcmp(c->family,"mobian")){copy(family,fsize,c->family);copy(release,rsize,"trixie");}
-        else if(!strcmp(c->family,"ubuntu")){copy(family,fsize,"ubuntu");copy(release,rsize,!strncmp(c->version,"24.04",5)?"noble":"resolute");}
+        if(!strcmp(c->family,"debian")||!strcmp(c->family,"mobian")||!strcmp(c->family,"ubuntu")){copy(family,fsize,c->family);copy(release,rsize,pkg_release_of(c->family,c->version));}
         else if(!strcmp(c->family,"fedora")){char number[3]={c->version[0],c->version[0]?c->version[1]:0,0};copy(family,fsize,"fedora");copy(release,rsize,number);}
         else copy(family,fsize,c->family);
         return true;
@@ -160,11 +173,11 @@ static bool start_package_search(App*a){
     args[n++]="package-search";args[n++]="--family";args[n++]=a->pkg_search_family;
     if(release[0]){args[n++]="--release";args[n++]=a->pkg_search_release;}
     args[n++]="--query";args[n++]=a->pkg_query;args[n]=NULL;
-    a->pkg_error[0]=0;a->pkg_count=0;a->pkg_page=0;a->pkg_known=false;
+    a->pkg_error[0]=0;a->pkg_count=0;a->pkg_known=false;
     return launch_job(a,J_PKG_SEARCH,args);
 }
 static void complete_package_search(App*a,const Json*j,bool ok){
-    a->pkg_known=true;a->pkg_count=0;a->pkg_page=0;a->page_scroll=0;
+    a->pkg_known=true;a->pkg_count=0;a->page_scroll=0;
     if(!ok||!j){
         if(j){int e=json_get(j,0,"error");if(e>=0)jstring(j,e,"message",a->pkg_error,sizeof(a->pkg_error));}
         if(!a->pkg_error[0])copy(a->pkg_error,sizeof(a->pkg_error),"The package site did not answer. Check Wi-Fi and try again.");
@@ -206,14 +219,12 @@ static bool packages_action(App*a,int id){
         if(id==A_PKG_DONE||id==A_BACK){screen(a,SYSTEMS_EXTRAS);return true;}
         if(id>=A_PKG_FAMILY&&id<A_PKG_FAMILY+(int)PKG_FAMILIES){a->pkg_family=(unsigned int)(id-A_PKG_FAMILY);a->pkg_count=0;a->pkg_known=false;a->pkg_error[0]=0;a->page_scroll=0;a->dirty=true;return true;}
         if(id==A_PKG_QUERY){a->fs_prompt_kind=J_PKG_QUERY;copy(a->fs_prompt,sizeof(a->fs_prompt),a->pkg_query);a->prompt_cursor=strlen(a->fs_prompt);a->prompt_scroll=0;screen(a,FILE_PROMPT);return true;}
-        if(id==A_PKG_PREV){if(a->pkg_page)a->pkg_page--;a->dirty=true;return true;}
-        if(id==A_PKG_NEXT){a->pkg_page++;a->dirty=true;return true;}
         if(id>=A_PKG_RESULT&&id<A_PKG_RESULT+(int)PKG_RESULTS){unsigned int n=(unsigned int)(id-A_PKG_RESULT);if(n<a->pkg_count&&a->pkg_results[n].available!=0){char name[64];copy(name,sizeof(name),a->pkg_results[n].name);pkg_toggle(a,name);}return true;}
     }
     if(a->screen==FILE_PROMPT&&a->fs_prompt_kind==J_PKG_QUERY){
         if(id==A_BACK){a->fs_prompt_kind=0;screen(a,SYSTEMS_SEARCH);return true;}
         if(id==A_FS_PROMPT_NEXT||id==A_KB_ENTER){
-            if(!pkg_query_ok(a->fs_prompt)){copy(a->pkg_error,sizeof(a->pkg_error),"Use 2 to 40 letters, digits, + . _ or -.");a->fs_prompt_kind=0;screen(a,SYSTEMS_SEARCH);return true;}
+            if(!pkg_query_ok(a->fs_prompt)){/* the results of the last query go with it (2026-11-14 review) */a->pkg_count=0;a->pkg_known=false;copy(a->pkg_error,sizeof(a->pkg_error),"Use 2 to 40 letters, digits, + . _ or -.");a->fs_prompt_kind=0;screen(a,SYSTEMS_SEARCH);return true;}
             copy(a->pkg_query,sizeof(a->pkg_query),a->fs_prompt);a->fs_prompt_kind=0;screen(a,SYSTEMS_SEARCH);start_package_search(a);return true;
         }
     }

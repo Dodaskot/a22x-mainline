@@ -10,9 +10,11 @@ BOOT    An Android boot image with header version 0 to 2 (this phone's bootloade
         vendor_boot) whose sections all lie inside the partition. Its kernel unpacks to the end
         (the gzip CRC and length are checked, a raw arm64 Image is recognised) and names its release
         ("Linux version ..."). Something in it names this phone: the header's board SRPTL28A011, a
-        device tree for samsung,a22x or an SM-A226 model, or the ramdisk's
-        ro.product.bootimage.device=a22x. A device tree for the
-        MT6833 alone is enough, unless the image names another phone. An AVB hash footer, when
+        device tree for samsung,a22x or an SM-A226B model, or the ramdisk's
+        ro.product.bootimage.device=a22x. A device tree for the MT6833 alone is not enough
+        (2026-11-12 audit: an image for another phone with the same chip, xiaomi,... with
+        mediatek,mt6833, passed), and a board compatible of any other maker names another
+        phone. An AVB hash footer, when
         there is one, proves the image complete when it matches; a footer left over from before a
         change (Magisk keeps the stock one) is only noted, and the kernel and ramdisk streams decide.
 dtbo    An Android DT table whose entries lie inside the partition and are device trees.
@@ -34,7 +36,9 @@ DT_TABLE_MAGIC = 0xd7b7ab1e
 AVB_FOOTER_MAGIC = b'AVBf'
 AVB_MAGIC = b'AVB0'
 DEVICE = 'a22x'
-MODEL_PREFIX = 'SM-A226'
+MODEL_PREFIX = 'SM-A226B'
+# Compatible strings that name no phone: the chip's maker and generic ones.
+NEUTRAL_VENDORS = ('mediatek,', 'arm,', 'linux,')
 DEVICE_COMPATIBLE = 'samsung,a22x'
 BOARD = 'SRPTL28A011'  # Samsung's board name in the header of every A22x boot and recovery image
 SOC_COMPATIBLE = 'mediatek,mt6833'
@@ -204,7 +208,17 @@ def avb_footer(data):
     major, _, original, offset, size = struct.unpack_from('>IIQQQ', data, len(data) - 60)
     require(major == 1 and original <= offset and offset + size <= len(data) - 64, 'AVB_FOOTER_INVALID',
             'The AVB footer points outside the partition')
-    meta = vbmeta(data[offset:offset + size])
+    try:
+        meta = vbmeta(data[offset:offset + size])
+    except ImageError as error:
+        if error.code != 'VBMETA_DAMAGED':
+            raise
+        # 2026-11-13, LineageOS 20 for A226B: a BOOT changed after avbtool signed it (its vbmeta
+        # hash and its hash descriptor both differ). Samsung's unlocked bootloader starts it; it is
+        # read as an image changed after signing (avb state 'mismatch'), its kernel and ramdisk
+        # still checked by decoding them, not refused as no BOOT at all.
+        meta = vbmeta(data[offset:offset + size], verify=False)
+        meta['signature'] = 'mismatch'
     return {'original_size': original, 'vbmeta': meta}
 
 
@@ -378,7 +392,7 @@ def device_of(trees, props, board=''):
                   or named == DEVICE or model.startswith(MODEL_PREFIX))
     soc = SOC_COMPATIBLE in compatible
     other = (named is not None and named != DEVICE) or (model and not model.startswith(MODEL_PREFIX)) or any(
-        item.startswith('samsung,') and item != DEVICE_COMPATIBLE for item in compatible) or (
+        ',' in item and item != DEVICE_COMPATIBLE and not item.startswith(NEUTRAL_VENDORS) for item in compatible) or (
         board.startswith('SRP') and board != BOARD)
     return {'this_phone': this_phone, 'soc': soc, 'other_phone': bool(other) and not this_phone,
             'model': next((item for item in models if MODEL_PREFIX in item), model or (models[0] if models else '')),
@@ -407,8 +421,8 @@ def inspect_boot(data, partition='boot'):
             'Neither an AVB hash nor the kernel and ramdisk streams show that the image is complete')
     require(not device['other_phone'], 'BOOT_OTHER_PHONE',
             'This boot image is for another phone (%s)' % (device['device'] or device['model'] or 'unknown'))
-    require(device['this_phone'] or device['soc'], 'BOOT_PHONE_UNKNOWN',
-            'Nothing in this boot image names the Galaxy A22 5G or its MT6833 chip')
+    require(device['this_phone'], 'BOOT_PHONE_UNKNOWN',
+            'Nothing in this boot image names the Galaxy A22 5G (SM-A226B)')
     linux = kernel['release'] or ''
     return {'kind': 'boot', 'header_version': header['version'], 'page_size': header['page_size'],
             'android': header['os'], 'kernel': {key: kernel[key] for key in ('compression', 'verified', 'release')},

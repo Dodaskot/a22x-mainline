@@ -571,6 +571,15 @@ def tar_stream(path, kind):
     return head[257:262] == b'ustar'
 
 
+def member_name(value):
+    """A tar member's path inside the root: leading "./" and "/" go, "." parts go; None for an
+    empty name or one with "..", which could leave the root."""
+    parts = [part for part in str(value).split('/') if part not in ('', '.')]
+    if not parts or '..' in parts:
+        return None
+    return '/'.join(parts)
+
+
 def extract_tar(path, kind, root, progress=None):
     stream, process, raw, position = open_counted(path, kind)
     try:
@@ -581,17 +590,34 @@ def extract_tar(path, kind, root, progress=None):
                 members += 1
                 if progress and members % 200 == 0:
                     progress('image-unpack', position(), total)
-                name = item.name.lstrip('./')
-                if not name or item.isdev() or item.isfifo() or '..' in name.split('/'):
+                # 2026-11-12 review: lstrip('./') turned "/etc/shadow" and "../../etc/shadow" into
+                # "etc/shadow" for the checks, while tarfile wrote the member under its own name: out of
+                # ROOT, as root. The member is written under the checked name only, and never through a link.
+                name = member_name(item.name)
+                if name is None or item.isdev() or item.isfifo():
                     continue
+                item.name = name
                 # The recovery runs as root: no member may write through a symlink out of ROOT.
                 walked = root
                 for part in Path(name).parts[:-1]:
                     walked = walked / part
                     if walked.is_symlink():
                         fail('UNSAFE_ARCHIVE', f'Archive path passes through a link: {name}')
-                if item.islnk() and ('..' in item.linkname.split('/') or (root / item.linkname.lstrip('./')).is_symlink()):
-                    fail('UNSAFE_ARCHIVE', f'Unsafe hardlink: {name}')
+                if item.islnk():
+                    link = member_name(item.linkname)
+                    if link is None:
+                        fail('UNSAFE_ARCHIVE', f'Unsafe hardlink: {name}')
+                    walked = root
+                    for part in Path(link).parts:
+                        walked = walked / part
+                        if walked.is_symlink():
+                            fail('UNSAFE_ARCHIVE', f'Unsafe hardlink: {name}')
+                    item.linkname = link
+                place = root / name
+                if place.is_symlink() or (place.exists() and not place.is_dir()):
+                    place.unlink()  # a later member replaces an earlier one, never writes through it
+                elif place.is_dir() and not item.isdir():
+                    fail('UNSAFE_ARCHIVE', f'A file replaces a folder: {name}')
                 (root / name).parent.mkdir(parents=True, exist_ok=True)
                 archive.extract(item, root, numeric_owner=True)
                 target = root / name
@@ -663,8 +689,13 @@ def _extract(path, work, root, progress=None):
             if images:
                 image = work / 'rootfs.img'
                 images[0].rename(image)
+                # 2026-11-12 review: a folder beside the image (include/, boot/) failed with
+                # IsADirectoryError; folders go whole, never through a link.
                 for child in list(root.iterdir()):
-                    child.unlink()
+                    if child.is_dir() and not child.is_symlink():
+                        shutil.rmtree(child)
+                    else:
+                        child.unlink()
                 if not locate(image, work, root, 0, progress):
                     fail('NO_ROOT_FILESYSTEM', 'No Linux root filesystem was found in this archive')
                 image.unlink()

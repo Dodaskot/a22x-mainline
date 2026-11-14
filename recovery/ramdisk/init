@@ -48,6 +48,22 @@ torch_off() {
     done 2>/dev/null
     return 0
 }
+# The recovery mounts cache many times in a session, and ext4 asks for a check after 39 mounts
+# (2026-11-12, on the phone: mount count 185, "maximal mount count reached" at every mount). As
+# Android's fs_mgr does at every start, cache is checked in preen mode before anything mounts it:
+# e2fsck repairs only what is safe without a question, and reads it all only when a check is due.
+check_cache() {
+    dev=${1:-/dev/disk/by-partlabel/cache}
+    log=${2:-/run/a22x-recovery/cache-check.log}
+    tool=${E2FSCK:-/sbin/e2fsck}
+    [ -b "$dev" ] || [ -f "$dev" ] || return 0
+    [ -x "$tool" ] || return 0
+    # Not without a limit: e2fsck -p waits for ever after a write error (2026-11-14 review, seen
+    # with 1.47.4), and nothing of the recovery has started yet.
+    ${CHECK_LIMIT:-/bin/busybox timeout -s KILL 120} "$tool" -p "$dev" > "$log" 2>&1
+    echo "exit=$?" >> "$log"
+    return 0
+}
 msg "RAM recovery reached on $(uname -r); internal filesystems remain unmounted"
 
 # Export GPT names from kernel-owned sysfs. Do not infer labels from partition order.
@@ -72,7 +88,11 @@ done
 # first picture, and the interface starts in it. Read-only, without replaying the journal; a theme
 # from a file falls back to Graphite, which the kernel also shows when nothing arrives.
 boot_theme=graphite
-if [ -b /dev/disk/by-partlabel/cache ] && mkdir -p /run/a22x-theme &&
+# Since 2026-11-14 the settings are in misc (misc_store.py); the file on cache only until the first
+# start of such a release has copied it there.
+saved=$(/usr/bin/python3 -B /opt/a22x-recovery/misc_store.py field settings theme 2>/dev/null)
+case "$saved" in graphite|daylight|aurora) boot_theme=$saved ;; esac
+if [ -z "$saved" ] && [ -b /dev/disk/by-partlabel/cache ] && mkdir -p /run/a22x-theme &&
         mount -t ext4 -o ro,noload,nosuid,nodev,noexec /dev/disk/by-partlabel/cache /run/a22x-theme 2>/dev/null; then
     saved=$(sed -n 's/.*"theme": *"\([a-z]*\)".*/\1/p' /run/a22x-theme/a22x-recovery/settings.json 2>/dev/null | head -n 1)
     umount /run/a22x-theme
@@ -81,6 +101,7 @@ fi
 rmdir /run/a22x-theme 2>/dev/null
 echo "$boot_theme" > /sys/module/mediatek_drm/parameters/boot_splash_theme 2>/dev/null
 echo "$boot_theme" > /run/a22x-recovery/boot-theme
+check_cache
 
 # Boot identity is separate from the exact Linux workflow qualification capsule.
 boot_id=$(cat /proc/sys/kernel/random/boot_id)
@@ -184,6 +205,12 @@ while true; do
     if [ ! -e /run/a22x-recovery/bcb.json ] && [ -f /opt/a22x-recovery/bcb.py ]; then
         /usr/bin/python3 /opt/a22x-recovery/bcb.py --device arrive > /run/a22x-recovery/bcb.json 2>/dev/null
     fi
+    # A partition write cut short by a power loss or a crash (2026-11-12 audit): finished, or the
+    # copy saved before it put back, before the interface or Wi-Fi takes the operation lock.
+    if [ ! -e /run/a22x-recovery/flash-resume.json ] && [ -f /opt/a22x-recovery/flash.py ]; then
+        /bin/busybox timeout 300 /usr/bin/python3 /opt/a22x-recovery/flash.py --device resume \
+            > /run/a22x-recovery/flash-resume.json 2>/dev/null || true
+    fi
     # How Android's last start ended, from the memory its kernel's log outlives a restart in
     # (2026-11-12): read once, in the background, so the interface does not wait for it.
     if [ ! -e /run/a22x-recovery/android-last.json ] && [ -f /opt/a22x-recovery/android_log.py ]; then
@@ -201,11 +228,25 @@ while true; do
             *'"retry":"download"'*) auto_rc=203; msg "the restart into Download came back to recovery; restarting once more" ;;
         esac
     fi
+    # Cache tidied at every start (2026-11-12): older copies of recovery and BOOT go; the stock BOOT,
+    # the newest copies, settings, keys and Wi-Fi stay (saved_boot.py tidy_cache). After the check
+    # above, whose window is a minute from the restart (2026-11-13 review), and not before a restart
+    # once more: the next start tidies.
+    if [ -z "${auto_rc:-}" ] && [ ! -e /run/a22x-recovery/cache-tidy.json ] && [ -f /opt/a22x-recovery/saved_boot.py ]; then
+        /bin/busybox timeout 120 /usr/bin/python3 /opt/a22x-recovery/saved_boot.py --device tidy \
+            > /run/a22x-recovery/cache-tidy.json 2>/dev/null || true
+    fi
     # Remembered Wi-Fi networks: recovery joins the strongest one in the background, once per start.
     # Not before a restart once more: joining holds the operation lock the checks below need.
     if [ -z "${auto_rc:-}" ] && [ ! -e /run/a22x-recovery/wifi-auto.started ] && [ -f /opt/a22x-recovery/wifi.py ]; then
         : > /run/a22x-recovery/wifi-auto.started
-        /usr/bin/python3 /opt/a22x-recovery/wifi.py auto > /run/a22x-recovery/wifi-auto.json 2>&1 &
+        # 2026-11-12, 0.6.201 on the phone: the first try came before the Wi-Fi chip was on
+        # ("wpa_supplicant did not start"); the same command a minute later joined at once.
+        ( for try in 1 2 3 4; do
+              /usr/bin/python3 /opt/a22x-recovery/wifi.py auto > /run/a22x-recovery/wifi-auto.json 2>&1
+              grep -q WIFI_START_FAILED /run/a22x-recovery/wifi-auto.json || break
+              sleep 5
+          done ) &
     fi
     if [ -n "${auto_rc:-}" ]; then
         rc=$auto_rc

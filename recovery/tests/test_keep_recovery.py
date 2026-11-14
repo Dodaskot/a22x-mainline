@@ -6,6 +6,7 @@ import contextlib
 import hashlib
 import io
 import json
+import types
 import os
 from pathlib import Path
 import shutil
@@ -13,6 +14,7 @@ import struct
 import sys
 import tempfile
 import unittest
+import unittest.mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -109,6 +111,50 @@ class KeepRecovery(unittest.TestCase):
                          ['linux-k122.img', 'linux-k122.img.json', 'linux-k122.img.sha256', 'stock-A226BXXSBDZC3-x.img',
                           'stock-A226BXXSBDZC3-x.img.json', 'stock-A226BXXSBDZC3-x.img.sha256'])
 
+    def test_a_description_alone_does_not_remove_the_one_whole_copy(self):
+        # 2026-11-14 review: a damaged stock- copy kept its old description (content key); tidying
+        # took it for the same BOOT and removed the other, the one whole copy.
+        folder = self.root / 'cache' / saved_boot.SAVED_BOOT
+        folder.mkdir(parents=True)
+        key = saved_boot.content_key(self.stock)
+        damaged = bytearray(self.stock)
+        damaged[100] ^= 0xff
+        for name, data in (('stock-A226BXXSBDZC3-x.img', bytes(damaged)), ('android-y.img', self.stock)):
+            (folder / name).write_bytes(data)
+            (folder / (name + '.json')).write_text(json.dumps({'saved': 1, 'bytes': len(data), 'content': key}))
+        fd = os.open(folder, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            kept = saved_boot.tidy_folder(fd)
+        finally:
+            os.close(fd)
+        self.assertTrue((folder / 'android-y.img').exists())
+        self.assertIn('android-y.img', kept)
+
+    def test_a_lone_damaged_copy_is_not_taken_for_the_boot(self):
+        # 2026-11-14 review: a damaged stock- copy whose description still gave the content key was
+        # returned as the copy already there, and the good BOOT was never saved.
+        folder = self.root / 'cache' / saved_boot.SAVED_BOOT
+        folder.mkdir(parents=True)
+        damaged = bytearray(self.stock)
+        damaged[100] ^= 0xff
+        name = 'stock-A226BXXSBDZC3-x.img'
+        (folder / name).write_bytes(bytes(damaged))
+        (folder / (name + '.json')).write_text(json.dumps({'saved': 1, 'bytes': len(damaged),
+                                                          'content': saved_boot.content_key(self.stock)}))
+        (self.root / 'targets/boot').write_bytes(self.stock)
+        kept = saved_boot.keep_current_boot(install.FixtureContext(self.root), lambda *a: None)
+        self.assertNotEqual(kept['kept'], '/' + saved_boot.SAVED_BOOT + '/' + name)
+        self.assertEqual((self.root / 'cache' / kept['kept'].lstrip('/')).read_bytes(), self.stock)
+
+    def test_a_cut_download_leaves_nothing_behind(self):
+        # 2026-11-14 review: .part- files were removed in saved-boot only.
+        for name in (saved_boot.UPDATES, saved_boot.VBMETA_FOLDER):
+            (self.root / 'cache' / name).mkdir(parents=True, exist_ok=True)
+            (self.root / 'cache' / name / '.part-recovery-1.0.1.img').write_bytes(bytes(4096))
+        saved_boot.tidy_cache(types.SimpleNamespace(fs=saved_boot.fs.FixtureContext(self.root)))
+        for name in (saved_boot.UPDATES, saved_boot.VBMETA_FOLDER):
+            self.assertEqual(list((self.root / 'cache' / name).iterdir()), [])
+
     def test_cache_keeps_only_the_newest_copy_of_each_partition(self):
         """2026-11-11, on the phone: two flashes of the recovery left 80 MiB of old recoveries on the
         200 MiB cache, and a root install then found no room for its BOOT."""
@@ -120,16 +166,52 @@ class KeepRecovery(unittest.TestCase):
             (folder / name).write_bytes(b'x' * 100)
         fd = os.open(folder, os.O_RDONLY)
         try:
-            # A date from Samsung's clock form (the year 2086) does not make an old copy the newest.
-            self.assertEqual(saved_boot.prune_rollbacks(fd), 300)
+            # A date from Samsung's clock form (the year 2086): which recovery copy is the newest is not
+            # known, so the tidy at start (no KEEP) leaves that partition's copies alone (2026-11-12 review:
+            # it removed the copy from just before the last write).
+            self.assertEqual(saved_boot.prune_rollbacks(fd), 100)
             self.assertEqual(sorted(p.name for p in folder.iterdir()), ['boot-20261110-120000-1.img', 'notes.txt',
-                                                                         'recovery-20261111-000102.img', 'super-odm-20261110-120000.img'])
+                                                                         'recovery-20261110-230129.img', 'recovery-20261111-000102.img',
+                                                                         'recovery-20861109-101010.img', 'super-odm-20261110-120000.img'])
             # The copy just written stays, whatever date an older one carries.
             (folder / 'recovery-20491231-235959.img').write_bytes(b'y')
             saved_boot.prune_rollbacks(fd, keep='recovery-20261111-000102.img')
         finally:
             os.close(fd)
         self.assertEqual(sorted(p.name for p in folder.iterdir() if p.name.startswith('recovery')), ['recovery-20261111-000102.img'])
+
+    def test_a_copy_a_write_still_needs_stays_and_counts_as_the_newest(self):
+        """2026-11-12 review: the copy save_rollback has just written has its journal already; it was
+        left out of its group, so the older copies beside it were never removed."""
+        folder = self.root / 'cache' / saved_boot.ROLLBACKS
+        folder.mkdir()
+        for name in ('boot-20261101-100000.img', 'boot-20261102-100000.img', 'boot-20861109-101010.img'):
+            (folder / name).write_bytes(b'x' * 100)
+        (folder / 'boot-20861109-101010.img.pending.json').write_text('{}')
+        fd = os.open(folder, os.O_RDONLY)
+        try:
+            self.assertEqual(saved_boot.prune_rollbacks(fd, keep='boot-20861109-101010.img'), 200)
+            self.assertEqual(sorted(p.name for p in folder.iterdir()), ['boot-20861109-101010.img', 'boot-20861109-101010.img.pending.json'])
+            # Two writes not over: both copies stay, also in the tidy at start.
+            (folder / 'boot-20261103-100000.img').write_bytes(b'z')
+            (folder / 'boot-20261103-100000.img.pending.json').write_text('{}')
+            self.assertEqual(saved_boot.prune_rollbacks(fd), 0)
+        finally:
+            os.close(fd)
+        self.assertEqual(len([p for p in folder.iterdir() if p.suffix == '.img']), 2)
+
+    def test_only_the_newest_downloaded_recovery_stays(self):
+        folder = self.root / 'cache' / saved_boot.UPDATES
+        folder.mkdir(parents=True)
+        for version in ('0.6.99', '0.6.206', '0.6.205'):
+            for suffix in ('', '.json', '.sha256'):
+                (folder / ('recovery-%s.img%s' % (version, suffix))).write_text('x')
+        fd = os.open(folder, os.O_RDONLY)
+        try:
+            saved_boot.prune_updates(fd)
+        finally:
+            os.close(fd)
+        self.assertEqual(sorted(p.name for p in folder.iterdir()), ['recovery-0.6.206.img', 'recovery-0.6.206.img.json', 'recovery-0.6.206.img.sha256'])
 
     def test_a_writable_cache_keeps_one_copy_per_partition_and_no_second_copy_of_a_boot(self):
         """Cache mounted for writing is where the old content of a partition goes when no card is in:
@@ -220,6 +302,40 @@ class KeepRecovery(unittest.TestCase):
         self.assertEqual(sorted(published.values()), ['v144', 'v145', 'v146'])
         current = json.loads(Path(saved_boot.__file__).with_name('catalog.json').read_text())['linux_boot']['sha256']
         self.assertNotIn(current, published)  # the current release is never given up
+
+    def test_cache_is_tidied_at_every_start_and_the_newest_copies_stay(self):
+        """2026-11-12, the owner: cache cleans itself of old copies of recovery and BOOT; the settings
+        and the newest copies of recovery and BOOT, with the stock one, stay."""
+        import filesystem as fs
+        import types
+        cache = self.root / 'cache'
+        boots = cache / saved_boot.SAVED_BOOT
+        boots.mkdir(parents=True)
+        rows = {}
+        for name, kind, saved in (('linux-v145.img', 'linux', 1), ('linux-v146.img', 'linux', 2),
+                                  ('stock-A226BXXSBDZC3-x.img', 'android', 3)):
+            data = signed(boot_image()) + name.encode()
+            rows[name] = hashlib.sha256(data).hexdigest()
+            (boots / name).write_bytes(data)
+            (boots / (name + '.json')).write_text(json.dumps({'kind': kind, 'saved': saved, 'sha256': rows[name], 'bytes': len(data)}))
+            (boots / (name + '.sha256')).write_text(rows[name] + '\n')
+        backups = cache / saved_boot.ROLLBACKS
+        backups.mkdir(parents=True)
+        for name in ('recovery-20261110-100000.img', 'recovery-20261111-100000.img', 'recovery-20261112-100000.img',
+                     'boot-20261110-100000.img', 'boot-20261112-100000.img'):
+            (backups / name).write_bytes(name.encode())
+        (cache / 'a22x-recovery/settings.json').write_text('{"theme": "aurora"}')
+        rows_fs = json.loads((self.root / 'filesystem-fixture.json').read_text())
+        rows_fs['volumes'][0].update(mounted=False)
+        (self.root / 'filesystem-fixture.json').write_text(json.dumps(rows_fs))
+        files = fs.FixtureContext(self.root)
+        # Both kept Linux BOOTs are older published releases: the newest of them stays all the same.
+        with unittest.mock.patch.object(saved_boot, 'downloadable_boots', lambda: {rows['linux-v145.img']: 'v145', rows['linux-v146.img']: 'v146'}):
+            self.assertGreaterEqual(saved_boot.tidy_cache(types.SimpleNamespace(fs=files)), 0)
+        self.assertEqual(sorted(p.name for p in boots.iterdir() if p.suffix == '.img'), ['linux-v146.img', 'stock-A226BXXSBDZC3-x.img'])
+        self.assertEqual(sorted(p.name for p in backups.iterdir()), ['boot-20261112-100000.img', 'recovery-20261112-100000.img'])
+        self.assertTrue((cache / 'a22x-recovery/settings.json').is_file())
+        self.assertFalse(files.volume('cache')['mounted'])  # left as it was found
 
     def test_a_signed_vbmeta_with_only_its_flags_set_is_not_damaged(self):
         """2026-11-10 on the phone: root's vbmeta (flags 3, as Magisk writes it for Samsung) was

@@ -31,7 +31,9 @@ static bool write_png(const char*path,const uint32_t*frame,int width,int height)
     FILE*f=fopen(path,"wbx");if(!f){free(z);return false;}
     unsigned char ihdr[13]={(unsigned char)(width>>24),(unsigned char)(width>>16),(unsigned char)(width>>8),(unsigned char)width,(unsigned char)(height>>24),(unsigned char)(height>>16),(unsigned char)(height>>8),(unsigned char)height,8,2,0,0,0};
     bool ok=fwrite("\x89PNG\r\n\x1a\n",1,8,f)==8&&png_chunk(f,"IHDR",ihdr,13)&&png_chunk(f,"IDAT",z,(uint32_t)at)&&png_chunk(f,"IEND",NULL,0);
-    free(z);ok=fflush(f)==0&&fsync(fileno(f))==0&&ok;return fclose(f)==0&&ok;
+    free(z);ok=fflush(f)==0&&fsync(fileno(f))==0&&ok;ok=fclose(f)==0&&ok;
+    if(!ok)unlink(path);  /* a card full halfway left a cut PNG that looked whole (2026-11-14 review) */
+    return ok;
 }
 /* A mounted writable SD card or USB drive under /mnt/volumes, else private RAM. */
 static bool screenshot_folder(char*out,size_t size,bool*removable){
@@ -104,20 +106,37 @@ static void screenshot_poll(App*a){
     else toast(a,"Screenshot not saved");
     a->toast_icon=ICON_DISPLAY;
 }
-/* Whatever needs storage next waits for a screenshot that is still being placed (a second at most). */
+/* Whatever needs storage next waits for a screenshot that is still being placed, a second at most
+   (2026-11-14 review: it was 4 s of a frozen screen, the comment said a second). The helper mounts a
+   volume only under the operation lock and goes to RAM when it is taken; a job started while it
+   still holds the lock waits for it there (A22X_LOCK_WAIT_UNTIL, launch_job), not on this screen. */
 static void screenshot_wait(App*a){
-    for(int n=0;a->shot_pid&&n<400;n++){a->now=milliseconds();screenshot_poll(a);if(a->shot_pid){struct timespec pause={0,10000000};nanosleep(&pause,NULL);}}
+    for(int n=0;a->shot_pid&&n<100;n++){a->now=milliseconds();screenshot_poll(a);if(a->shot_pid){struct timespec pause={0,10000000};nanosleep(&pause,NULL);}}
+}
+/* 2026-11-14 review: what a password field shows is not photographed (the character just typed is
+   seen for a moment, Show shows it all), nor anything while the recovery is locked. */
+static bool screenshot_allowed(const App*a){
+    if(a->locked||a->screen==LOCKSCREEN||a->screen==ACCESS_REQUEST||lock_prompting(a))return false;
+    if(a->screen!=FILE_PROMPT)return true;
+    int k=a->fs_prompt_kind;
+    return !(k==J_BACKUP_PASSWORD||k==J_ROOT_SUPERKEY||k==J_SYS_ACCOUNT_PASS||k==J_SYS_WIFI_PASS||k==J_WIFI_PASS);
 }
 static void take_screenshot(App*a){
     if(a->shot_pid){toast(a,"The last screenshot is still being saved");return;}
+    if(!screenshot_allowed(a)){toast(a,"No screenshot while a password is on the screen");return;}
     int width=1080,height=2408;uint32_t*frame=malloc((size_t)width*height*sizeof(*frame));
     char folder[PATH_LEN],path[PATH_LEN+64],stamp[32];bool removable=false;time_t now=time(NULL);struct tm tm;
-    localtime_r(&now,&tm);strftime(stamp,sizeof(stamp),"%Y%m%d-%H%M%S",&tm);
-    if(frame&&compose_native(a,frame,width,height,0,4,width,2400)){
+    /* The time shown on the screen, a fixed offset too (2026-11-14 review: localtime was UTC then). */
+    recovery_time(a,now,&tm);strftime(stamp,sizeof(stamp),"%Y%m%d-%H%M%S",&tm);
+    /* One frame for the helper and for the fallback alike (2026-11-14 review: composed twice). */
+    bool ok=frame&&compose_native(a,frame,width,height,0,4,width,2400);
+    if(ok){
         a->shot_flash=a->now?a->now:1;a->dirty=true;
         if(screenshot_hand_over(a,frame,width,height,stamp)){free(frame);return;}
     }
-    bool ok=frame&&compose_native(a,frame,width,height,0,4,width,2400)&&screenshot_folder(folder,sizeof(folder),&removable);
+    /* A preview (the self-tests) writes no file anywhere (2026-11-14 review: it left PNGs on cards). */
+    if(a->preview){free(frame);toast(a,ok?"Screenshot taken (preview: not saved)":"Screenshot not saved");return;}
+    ok=ok&&screenshot_folder(folder,sizeof(folder),&removable);
     if(ok){
         for(int n=0;n<100;n++){snprintf(path,sizeof(path),n?"%s/recovery-%s-%d.png":"%s/recovery-%s.png",folder,stamp,n);if(access(path,F_OK))break;}
         ok=write_png(path,frame,width,height);}

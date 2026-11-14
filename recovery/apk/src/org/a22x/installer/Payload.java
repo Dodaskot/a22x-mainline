@@ -15,8 +15,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
-/** The recovery and BOOT images inside this APK (assets/images.json names them with size,
- *  SHA-256 and version) and their copies in the app's private folder for flashing. */
+/** The recovery and BOOT images this APK installs (assets/images.json names them with size,
+ *  SHA-256 and version) and their copies in the app's private folder for flashing. Since
+ *  2026-11-12 (the owner: "download BOOT and recovery from my repository, to make the APK
+ *  smaller") they are not inside the APK: images.json gives the address of each, the recovery's
+ *  release on GitHub and the Linux BOOT of the catalog, and the image is downloaded when it is
+ *  needed and checked against the SHA-256 the build wrote. An APK built with the images inside
+ *  still works the old way. */
 final class Payload {
     static final class Image {
         final String label;
@@ -26,12 +31,15 @@ final class Payload {
         final String version;
         /** The kernel release of a Linux BOOT; empty for other images. */
         final String release;
+        /** Where to download it, when it is not inside the APK. */
+        final String url;
 
         Image(String label, String asset, long size, String sha256, String version) {
-            this(label, asset, size, sha256, version, "");
+            this(label, asset, size, sha256, version, "", null);
         }
 
-        Image(String label, String asset, long size, String sha256, String version, String release) {
+        Image(String label, String asset, long size, String sha256, String version, String release, String url) {
+            this.url = url;
             this.release = release == null ? "" : release;
             this.label = label;
             this.asset = asset;
@@ -49,8 +57,10 @@ final class Payload {
         Map<String, Object> all = (Map<String, Object>) Json.parse(read(context.getAssets().open("images.json")));
         Map<String, Object> item = (Map<String, Object>) all.get(label);
         if (item == null) throw new IOException("no " + label + " image in this APK");
+        String url = (String) item.get("url");
+        if (url != null && !url.startsWith("https://github.com/")) throw new IOException("unexpected address");
         return new Image(label, (String) item.get("asset"), ((Number) item.get("size")).longValue(),
-                (String) item.get("sha256"), (String) item.get("version"), (String) item.get("release"));
+                (String) item.get("sha256"), (String) item.get("version"), (String) item.get("release"), url);
     }
 
     private static String read(InputStream in) throws IOException {
@@ -84,18 +94,34 @@ final class Payload {
             return file;
         }
         File part = new File(context.getFilesDir(), image.label + ".img.part");
-        try (InputStream in = context.getAssets().open(image.asset); OutputStream out = new FileOutputStream(part)) {
+        try (InputStream in = image.url != null ? open(image.url) : context.getAssets().open(image.asset);
+             OutputStream out = new FileOutputStream(part)) {
             byte[] buffer = new byte[1 << 16];
             int n;
-            while ((n = in.read(buffer)) > 0) out.write(buffer, 0, n);
+            long done = 0;
+            while ((n = in.read(buffer)) > 0) {
+                done += n;
+                if (done > image.size) throw new IOException("the download is larger than the image");
+                out.write(buffer, 0, n);
+            }
         }
         if (part.length() != image.size || !sha256(new FileInputStream(part)).equals(image.sha256)) {
             //noinspection ResultOfMethodCallIgnored
             part.delete();
-            throw new IOException("the image inside the APK does not match its checksum");
+            throw new IOException(image.url != null ? "the download does not match its checksum" : "the image inside the APK does not match its checksum");
         }
         if (!part.renameTo(file)) throw new IOException("could not keep the image");
         return file;
+    }
+
+    private static InputStream open(String address) throws IOException {
+        java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(address).openConnection();
+        c.setConnectTimeout(20000);
+        c.setReadTimeout(60000);
+        c.setRequestProperty("User-Agent", "a22x-installer");
+        c.setInstanceFollowRedirects(true);
+        if (c.getResponseCode() != 200) throw new IOException("HTTP " + c.getResponseCode() + " for " + address);
+        return c.getInputStream();
     }
 
     static String text(byte[] data) {

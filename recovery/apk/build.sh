@@ -19,13 +19,15 @@ work=$(mktemp -d "${TMPDIR:-/tmp}/a22x-apk.XXXXXX")
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work"/assets "$work"/gen "$work"/classes "$work"/test "$work"/dex "$work"/signer
 
+# 2026-11-12: the images are downloaded by the app (images.json names their addresses and SHA-256),
+# so the APK stays small; EMBED_IMAGES=1 puts them inside as before.
 cp "$RECOVERY_IMG" "$work/assets/recovery.img"
 cp "$BOOT_IMG" "$work/assets/boot.img"
 # The recovery's catalog, for the Plan card (2026-11-10): the same images its install pages offer.
 cp "$here/../catalog.json" "$work/assets/catalog.json"
-python3 - "$work/assets" "$RECOVERY_VERSION" "$BOOT_VERSION" "$here/.." <<'P'
+python3 - "$work/assets" "$RECOVERY_VERSION" "$BOOT_VERSION" "$here/.." "${EMBED_IMAGES:-0}" <<'P'
 import hashlib, json, os, sys
-folder, recovery, boot, source = sys.argv[1:5]
+folder, recovery, boot, source, embed = sys.argv[1:6]
 sys.path.insert(0, source)
 import bootimage
 def entry(name, version):
@@ -38,13 +40,45 @@ def entry(name, version):
         found['release'] = bootimage.linux_release(data) or ''
         assert found['release'], 'BOOT_IMG holds no Linux kernel release'
     return found
+images = {'recovery': entry('recovery', recovery), 'boot': entry('boot', boot)}
+if embed != '1':
+    # The recovery from its release on GitHub, the Linux BOOT from the catalog's address: both must
+    # be the very images given here, or the build stops. The app checks the SHA-256 again after its
+    # download, so a release published with another image only fails there (2026-11-12 review): a
+    # release that is already out is compared here; one not out yet must get exactly this image.
+    images['recovery']['url'] = 'https://github.com/Dodaskot/mainline-recovery/releases/download/v%s/recovery-a22x-%s.img' % (recovery, recovery)
+    import urllib.error, urllib.request
+    asset = 'recovery-a22x-%s.img' % recovery
+    try:
+        request = urllib.request.Request('https://api.github.com/repos/Dodaskot/mainline-recovery/releases/tags/v' + recovery,
+                                         headers={'Accept': 'application/vnd.github+json', 'User-Agent': 'a22x-apk-build'})
+        with urllib.request.urlopen(request, timeout=20) as answer:
+            release = json.load(answer)
+        published = [a for a in release.get('assets', []) if a.get('name') == asset]
+        assert published, 'release v%s has no %s' % (recovery, asset)
+        assert published[0].get('digest') == 'sha256:' + images['recovery']['sha256'], \
+            'RECOVERY_IMG is not the %s published in release v%s' % (asset, recovery)
+        print('recovery: the published %s is this image' % asset, file=sys.stderr)
+    except urllib.error.HTTPError as error:
+        if error.code != 404:
+            raise
+        print('recovery: release v%s is not out yet: publish exactly this image, SHA-256 %s' % (recovery, images['recovery']['sha256']), file=sys.stderr)
+    with open(os.path.join(source, 'catalog.json')) as f:
+        offer = json.load(f)['linux_boot']
+    assert offer['sha256'] == images['boot']['sha256'], 'BOOT_IMG is not the Linux BOOT the catalog names'
+    images['boot']['url'] = offer['url']
+    for name in ('recovery', 'boot'):
+        os.remove(os.path.join(folder, name + '.img'))
+        del images[name]['asset']
 with open(os.path.join(folder, 'images.json'), 'w') as f:
-    json.dump({'recovery': entry('recovery', recovery), 'boot': entry('boot', boot)}, f, indent=1)
+    json.dump(images, f, indent=1)
 P
 
 # The rules shared with the recovery are tested on this computer first.
 javac -nowarn --release 8 -d "$work/test" "$here"/src/org/a22x/installer/{Json,Handoff,Root,Scripts,Compat,Plan,Sha512Crypt}.java "$here"/test/org/a22x/installer/{HandoffTest,ScriptsMain}.java
 java -cp "$work/test" org.a22x.installer.HandoffTest
+javac -nowarn --release 8 -cp "$work/test" -d "$work/test" "$here"/src/org/a22x/installer/{Json,Root,AppUpdate}.java "$here"/test/org/a22x/installer/AppUpdateTest.java
+java -cp "$work/test" org.a22x.installer.AppUpdateTest
 # The backdrops are the recovery's own: every pixel of BackdropMath against its canvas_backdrop().
 cc -O2 -I "$here/../ui" -o "$work/backdrop_ref" "$here/test/backdrop_ref.c" -lm
 size=$("$work/backdrop_ref" "$work/backdrop-daylight.raw" "$work/backdrop-aurora.raw")

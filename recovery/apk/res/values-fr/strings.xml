@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">A22x Recovery</string>
+    <string name="app_name">Mainline Recovery</string>
     <string name="subtitle">Installateur pour le Galaxy A22 5G (SM-A226B)</string>
     <string name="root_missing">L’accès root n’a pas été accordé. Autorisez-le pour cette app dans votre gestionnaire root.</string>
     <string name="compat_title">Compatibilité</string>
@@ -158,4 +158,24 @@
     <string name="row_language">Langue</string>
     <string name="row_script">Script</string>
     <string name="hold_save_restart">Maintenir 2 s : enregistrer et redémarrer</string>
+    <string name="update_title">Mises à jour</string>
+    <string name="update_note">Cette app depuis les versions du projet sur GitHub, et le BOOT d\'Android gardé dans cache.</string>
+    <string name="update_installed">Installé : %1$s</string>
+    <string name="update_published">Publié : %1$s</string>
+    <string name="update_checking">Interrogation de GitHub…</string>
+    <string name="update_unreadable">Impossible de lire les versions. Vérifiez le réseau, puis rouvrez cette page.</string>
+    <string name="update_newer">Une app plus récente est publiée.</string>
+    <string name="update_current">Cette app est à jour.</string>
+    <string name="update_hold">Maintenez pour mettre à jour l\'app</string>
+    <string name="update_downloading">Téléchargement : %1$d%%</string>
+    <string name="update_installing">Installation de la mise à jour ; l\'app se ferme et se rouvre.</string>
+    <string name="boot_kept_title">BOOT d\'origine</string>
+    <string name="boot_kept_none">Pas encore gardé.</string>
+    <string name="boot_kept_path">Gardé dans cache : %1$s</string>
+    <string name="boot_kept_already">Déjà gardé dans cache.</string>
+    <string name="boot_kept_warn">Pas gardé : %1$s</string>
+    <string name="boot_kept_note">Gardé de lui-même à chaque ouverture de l\'app et démarrage d\'Android : la copie Magisk du BOOT d\'origine s\'il y en a une, sinon le BOOT actuel. Le recovery le reflashe depuis Flasher une partition.</string>
+    <string name="boot_keep_now">Garder maintenant</string>
+    <string name="home_update">MàJ</string>
+    <string name="home_update_sub">App, BOOT d\'origine</string>
 </resources>

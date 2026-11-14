@@ -8,3 +8,5 @@
 0008-power-supply-mt6359-fuel-gauge-say-what-the-RTC-core.patch
 0009-power-supply-mt6359-fuel-gauge-do-not-write-the-perc.patch
 0010-power-supply-mt6359-fuel-gauge-keep-the-percent-in-R.patch
+0011-drm-mediatek-boot-splash-from-the-recovery-s-current.patch
+0012-arm64-configs-add-a22x_recovery_defconfig.patch

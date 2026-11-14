@@ -12,6 +12,7 @@ checked to come back byte for byte from their parsed form, and the old files sta
 """
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -60,8 +61,18 @@ def main(argv):
     suffix = '.before-' + value[:8]
     for path in (profile_path, update_path):
         shutil.copy2(path, path.with_name(path.name + suffix))
-    profile_path.write_bytes(new_profile)
-    update_path.write_bytes(update_bytes(update))
+    # Both written whole first, then each put in place by rename (2026-11-14 review: a cut write left
+    # a truncated profile, or one that build-update.json no longer matched).
+    staged = []
+    for path, data in ((profile_path, new_profile), (update_path, update_bytes(update))):
+        temporary = path.with_name('.' + path.name + '.new')
+        with open(temporary, 'wb') as out:
+            out.write(data)
+            out.flush()
+            os.fsync(out.fileno())
+        staged.append((temporary, path))
+    for temporary, path in staged:
+        os.replace(temporary, path)
     print(json.dumps({'allowed': len(sealed['boot_sha256_allowed']), 'distro_platform_sha256': update['distro_platform_sha256'],
                       'distro_platform_file_sha256': update['distro_platform_file_sha256']}))
     return 0

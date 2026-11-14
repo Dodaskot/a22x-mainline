@@ -7,7 +7,11 @@
 #define A22X_LOCALE_UI_H
 #include "zones_data.h"
 
+/* The names shown for the regions of zones_data.h, as literals so that they are translated. They
+   follow tz_regions one for one: the count is checked here and each name against its region in the
+   self-tests (2026-11-14 review: the two lists could drift apart unnoticed). */
 static const char*const tz_region_labels[]={"Europe","America","Asia","Africa","Australia","Pacific","Atlantic","Indian Ocean","Antarctica","Arctic"};
+_Static_assert(sizeof(tz_region_labels)/sizeof(*tz_region_labels)==TZ_REGIONS,"one label for each region of zones_data.h");
 static const char*const sys_locales[]={"en_US","uk_UA","de_DE","fr_FR","pl_PL","es_ES","it_IT","pt_BR","nl_NL","cs_CZ","ro_RO","tr_TR","ru_RU"};
 static const char*const sys_locale_names[]={"English","Українська","Deutsch","Français","Polski","Español","Italiano","Português","Nederlands","Čeština","Română","Türkçe","Русский"};
 #define SYS_LOCALES 13u
@@ -20,10 +24,8 @@ static unsigned int locale_index(const App*a){
     return 0;
 }
 static const TzZone*tz_chosen(const App*a){return a->systems_tz>=0&&(unsigned int)a->systems_tz<TZ_ZONES?&tz_zones[a->systems_tz]:NULL;}
-static void tz_offset_text(int minutes,char*out,size_t size){
-    int m=minutes<0?-minutes:minutes;
-    if(m%60)snprintf(out,size,"%c%d:%02d",minutes<0?'-':'+',m/60,m%60);else snprintf(out,size,"%c%d",minutes<0?'-':'+',m/60);
-}
+/* +2 or +5:30: what utc_label writes after UTC (one formatter, 2026-11-14 review). */
+static void tz_offset_text(int minutes,char*out,size_t size){char label[24];utc_label(minutes,label,sizeof(label));snprintf(out,size,"%s",label+3);}
 static void tz_zone_offsets(const TzZone*z,char*out,size_t size){
     char a1[12],a2[12];tz_offset_text(z->january,a1,sizeof(a1));tz_offset_text(z->july,a2,sizeof(a2));
     if(z->january==z->july)snprintf(out,size,"UTC%s",a1);else snprintf(out,size,"UTC%s / %s",a1,a2);
@@ -105,7 +107,8 @@ static bool locale_action(App*a,int id){
     if(a->screen==SYSTEMS_SETUP){
         if(id==A_LOCALE_OPEN){screen(a,SYSTEMS_LOCALE);return true;}
         if(id==A_TZ_OPEN){
-            const TzZone*z=tz_chosen(a);a->systems_tz_region=z?z->region:0u;a->page_scroll=0;screen(a,SYSTEMS_TIMEZONE);return true;
+            /* The new system's zone, never the recovery's (2026-11-14 review). */
+            const TzZone*z=tz_chosen(a);a->tz_for_recovery=false;a->systems_tz_region=z?z->region:0u;a->page_scroll=0;screen(a,SYSTEMS_TIMEZONE);return true;
         }
         return false;
     }

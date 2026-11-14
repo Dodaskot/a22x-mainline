@@ -56,7 +56,10 @@ def checked(record):
     """The parts that may be applied: (networks as (ssid bytes, password), language, time zone)."""
     import wifi
     networks = []
-    for item in (record.get('wifi') or [])[:MAX_WIFI]:
+    # 2026-11-12 review: a "wifi" that is no list (an object, a number) raised TypeError after the
+    # file was already gone, and the language and time zone were lost with it. It is taken as empty.
+    listed = record.get('wifi')
+    for item in (listed if isinstance(listed, list) else [])[:MAX_WIFI]:
         if not isinstance(item, dict):
             continue
         ssid, password = item.get('ssid'), item.get('password', '')
@@ -94,6 +97,12 @@ def advance_clock(record, now=None, setter=None):
     return value
 
 
+# The hand-off runs before the interface: the busy list is waited for a short while in all, not for
+# each network (2026-11-14 reviews: minutes with no screen; then each network after the deadline still
+# had a try of its own, each try waiting for the lock).
+WAIT_SECONDS, RETRY_SECONDS = 20, 2
+
+
 def apply_record(record, remember=None, load=None, store=None):
     """Apply a handoff; returns what was taken, without secrets."""
     import settings
@@ -101,9 +110,29 @@ def apply_record(record, remember=None, load=None, store=None):
     remember = remember or wifi.remember
     load, store = load or settings.load, store or settings.store
     networks, language, zone = checked(record)
+    unsaved, busy = [], False
+    deadline = time.monotonic() + WAIT_SECONDS
     for ssid, password in reversed(networks):
-        remember(ssid, wifi.psk(ssid, password) if password else '')
-    changed = {}
+        # remember() changes nothing while the saved list cannot be read (None: the settings volume
+        # busy at the start, 2026-11-14 review of wifi.py); the hand-off file is taken already, so
+        # that is tried again until the deadline, and once it has passed no other network waits.
+        # A list that could not be written (False) is not tried again. What could not be saved is named.
+        if busy:
+            # Past the deadline: named unsaved at once, its key not even derived (2026-11-14 review).
+            unsaved.append(ssid.decode('utf-8', 'replace'))
+            continue
+        key = wifi.psk(ssid, password) if password else ''
+        while True:
+            saved = remember(ssid, key)
+            if saved is not None:
+                break
+            if time.monotonic() + RETRY_SECONDS > deadline:
+                busy = True
+                break
+            time.sleep(RETRY_SECONDS)
+        if not saved:
+            unsaved.append(ssid.decode('utf-8', 'replace'))
+    changed = {'wifi_not_saved': unsaved} if unsaved else {}
     if language or zone:
         current = load()
         if language:
@@ -139,7 +168,7 @@ def main(argv=None):
         clock = advance_clock(record)
         if clock:
             applied['clock_set_to'] = clock
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, TypeError, KeyError) as exc:
         print(json.dumps({'ok': False, 'error': str(exc)[:200]}))
         return 1
     try:

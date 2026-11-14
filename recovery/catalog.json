@@ -719,7 +719,8 @@
     202604
    ],
    "format": "img.xz",
-   "fit_note": "Treble GSI: made to start on older vendors too"
+   "fit_note": "Treble GSI: made to start on older vendors too",
+   "tried": "starts"
   },
   {
    "id": "infinity-x-3.12-gms",

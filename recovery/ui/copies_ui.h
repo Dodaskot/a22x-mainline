@@ -31,7 +31,7 @@ static bool start_copy_job(App*a,int kind){
     if(!a->copy_helper[0])return false;
     char*args[24];int n=0;args[n++]=a->python;args[n++]=a->copy_helper;
     if(a->device)args[n++]="--device";else{args[n++]="--fixture";args[n++]=a->fixture;}
-    args[n++]="--kind";args[n++]="android";
+    args[n++]="--kind";args[n++]="android";backup_password_args(a,args,&n,false);
     if(kind==J_COPY_LIST)args[n++]="copies";
     else{
         PhoneCopy*c=copy_current(a);if(!c)return false;
@@ -80,7 +80,8 @@ static void complete_copy_job(App*a,const Json*j,int kind,bool ok){
                 if(c->parts<COPY_PARTS)json_string(j,k,c->labels[c->parts],sizeof(c->labels[0]));
                 c->parts++; /* Counted beyond what is shown; a copy with more is restored whole. */
             }
-            if(c->volume[0]&&c->path[0]&&strlen(c->sha)==64&&c->parts)a->copy_count++;
+            c->locked=json_bool(j,json_get(j,i,"locked"),0)==1;c->encrypted=json_bool(j,json_get(j,i,"encrypted"),0)==1;c->wrong=json_bool(j,json_get(j,i,"wrong_password"),0)==1;
+            if(c->volume[0]&&c->path[0]&&((strlen(c->sha)==64&&c->parts)||c->locked))a->copy_count++;
         }
         array=json_get(j,0,"unmounted");
         for(int i=array+1;array>=0&&i<json_next(j,array)&&a->copy_waiting_count<COPY_WAITING;i=json_next(j,i)){
@@ -156,7 +157,8 @@ static void render_copies(App*a,int top){
         copy_when(a,c,when,sizeof(when));raw_text(true);ellipsis(a,122,y+14,480,1,TEXT,when);raw_text(false);
         human_bytes(c->bytes,size,sizeof(size));human_bytes(c->file_bytes,packed,sizeof(packed));
         int used=snprintf(line,sizeof(line),T("%u partitions, %s"),c->parts,size);
-        if(used>0&&(size_t)used<sizeof(line)){
+        if(c->locked)snprintf(line,sizeof(line),"%s  /  %s %s",tr(c->wrong?"another password":"protected: tap to open"),tr("archive"),packed);
+        else if(used>0&&(size_t)used<sizeof(line)){
             if(c->archive)snprintf(line+used,sizeof(line)-(size_t)used,"  /  %s %s",tr("archive"),packed);
             else snprintf(line+used,sizeof(line)-(size_t)used,"  /  %s",tr("folder"));
         }
@@ -234,6 +236,10 @@ static bool copies_action(App*a,int id){
     if(a->screen==LIST&&list_android(a)){
         if(id==A_COPY_REFRESH){if(ui_free(a)){a->copies_known=false;a->copy_error[0]=0;if(!start_copy_job(a,J_COPY_LIST))a->copies_known=true;a->dirty=true;}return true;}
         /* Android's own data starts left out of a restore: it replaces everything on userdata. */
+        if(id>=A_COPY_ITEM&&id<A_COPY_ITEM+(int)a->copy_count&&a->copies[id-A_COPY_ITEM].locked){
+            if(ui_free(a))backup_password_ask(a,J_COPY_LIST,a->copies[id-A_COPY_ITEM].wrong,LIST);
+            return true;
+        }
         if(id>=A_COPY_ITEM&&id<A_COPY_ITEM+(int)a->copy_count){if(ui_free(a)){a->copy_pick=id-A_COPY_ITEM;a->copy_off=copy_data_parts(&a->copies[a->copy_pick]);screen(a,COPY_DETAIL);}return true;}
         if(id>=A_COPY_MOUNT&&id<A_COPY_MOUNT+(int)a->copy_waiting_count){
             if(!ui_free(a))return true;

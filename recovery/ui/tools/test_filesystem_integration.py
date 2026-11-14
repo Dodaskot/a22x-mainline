@@ -75,6 +75,12 @@ def main():
             if operation == "files-roundtrip":
                 copied = root / "volumes/sdcard-p1/скопійовано.txt"
                 assert copied.read_text(encoding="utf-8") == EXPECTED_TEXT
+                # 2026-11-13: two folders archived on the card and extracted beside the archive.
+                archive = root / "volumes/sdcard-p1/A22xArchives/UI-архів.tar.zst"
+                out = root / "volumes/sdcard-p1/A22xArchives/UI-архів"
+                assert archive.is_file() and archive.read_bytes()[-8:] == b"a22xtar1", archive
+                assert sorted(p.name for p in out.iterdir()) == ["два", "один"], list(out.iterdir())
+                assert (out / "один/всередині.txt").read_text(encoding="utf-8") == "x\n"
                 state = json.loads((root / ".filesystem-state.json").read_text())
                 assert not state["userdata"]["mounted"], state
             reports.append({"workflow": operation, "exit": result.returncode,

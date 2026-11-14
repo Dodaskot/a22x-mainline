@@ -18,6 +18,8 @@ partitions, extents, groups and block devices. Extents are in 512-byte sectors o
 # SPDX-License-Identifier: MIT
 from __future__ import annotations
 
+import contextlib
+import fcntl
 import hashlib
 import json
 import os
@@ -59,6 +61,23 @@ def name_bytes(name):
     data = name.encode('ascii')
     require(0 < len(data) < NAME, 'INVALID_NAME', 'A partition name has 1 to 35 ASCII characters')
     return data.ljust(NAME, b'\0')
+
+
+BLKFLSBUF = 0x1261  # used through drop_cached: every writer drops the cache through it (2026-11-14 review)
+
+
+def drop_cached(fd):
+    """What was just written is read back from the storage, not from the page cache: a block
+    device's buffers are dropped (BLKFLSBUF), a regular file's pages let go. Here at the bottom,
+    where every writer can import it (2026-11-13 and 2026-11-14 reviews). On a block device a
+    BLKFLSBUF that fails is raised: a readback from the cache would pass whatever is on the eMMC
+    (2026-11-14 review of that)."""
+    import stat
+    if stat.S_ISBLK(os.fstat(fd).st_mode):
+        fcntl.ioctl(fd, BLKFLSBUF)
+        return
+    with contextlib.suppress(OSError, AttributeError):
+        os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
 
 
 def read_at(fd, offset, size):
@@ -207,13 +226,15 @@ class Super:
                 written = os.pwrite(self.fd, blob, offset)
                 require(written == len(blob), 'SHORT_WRITE', 'The metadata of super was not written')
         os.fsync(self.fd)
+        drop_cached(self.fd)
         for slot in range(self.geometry['metadata_slot_count']):
             for offset in metadata_offsets(self.geometry, slot):
                 require(read_at(self.fd, offset, len(blob)) == blob, 'READBACK_MISMATCH', 'The metadata of super did not read back')
 
-    def resize(self, name, size):
+    def resize(self, name, size, commit=True):
         """Make partition NAME exactly SIZE bytes (rounded up to the alignment of super), taking
-        free space after its own extents first; the group's maximum size is kept."""
+        free space after its own extents first; the group's maximum size is kept. Without COMMIT
+        only the metadata in memory changes, for several changes written at once by commit()."""
         p = self.partition(name)
         device = self.metadata['devices'][0]
         align = max(device['alignment'], SECTOR) // SECTOR
@@ -248,8 +269,12 @@ class Super:
                     break
             require(not need, 'NO_SPACE', 'super has not enough free space for this size')
         self._replace_extents(p, own)
-        self._commit()
+        if commit:
+            self._commit()
         return self.size_of(self.partition(name))
+
+    def commit(self):
+        self._commit()
 
     def remove(self, name):
         """Remove partition NAME from the metadata; its space becomes free."""

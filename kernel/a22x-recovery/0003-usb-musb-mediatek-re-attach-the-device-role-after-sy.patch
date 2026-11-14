@@ -1,7 +1,7 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From 9505b20eade00758acf46433f26b04308b651b0b Mon Sep 17 00:00:00 2001
 From: Dodaskot <pessdres@gmail.com>
 Date: Tue, 10 Nov 2026 06:17:00 +0100
-Subject: [PATCH 3/5] usb: musb: mediatek: re-attach the device role after
+Subject: [PATCH 03/12] usb: musb: mediatek: re-attach the device role after
  system sleep
 
 After s2idle the gadget of the Galaxy A22 5G (MT6833) stayed "not
@@ -22,7 +22,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  1 file changed, 25 insertions(+)
 
 diff --git a/drivers/usb/musb/mediatek.c b/drivers/usb/musb/mediatek.c
-index 6b3cc73ba..7f4bcd18a 100644
+index 6b3cc73ba0d8..7f4bcd18aa39 100644
 --- a/drivers/usb/musb/mediatek.c
 +++ b/drivers/usb/musb/mediatek.c
 @@ -592,8 +592,33 @@ static int mtk_musb_resume_noirq(struct device *dev)
@@ -59,3 +59,6 @@ index 6b3cc73ba..7f4bcd18a 100644
  };
  
  #ifdef CONFIG_OF
+-- 
+2.56.0
+

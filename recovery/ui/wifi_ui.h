@@ -175,6 +175,8 @@ static int complete_wifi_job(App*a,Json*doc,int kind,bool ok){
         if(kind==J_WIFI_SCAN)wifi_read_networks(a,doc);
         /* The joined network and its password go to the next installation's Wi-Fi page. */
         if(kind==J_WIFI_CONNECT&&a->wifi_connected)copy(a->wifi_password,sizeof(a->wifi_password),a->wifi_edit_password);
+        /* Joined, but not saved: said, not silent (2026-11-14 review). */
+        if(kind==J_WIFI_CONNECT&&json_bool(doc,json_get(doc,0,"remembered"),-1)==0)toast(a,"Joined, but this network could not be saved");
         if(kind==J_WIFI_CONNECT||kind==J_WIFI_DISCONNECT||kind==J_WIFI_FORGET){a->wifi_page=0;next=J_WIFI_SCAN;}
     }
     if(kind==J_WIFI_CONNECT){memset(a->wifi_edit_password,0,sizeof(a->wifi_edit_password));a->wifi_edit_saved=false;}

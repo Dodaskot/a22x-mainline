@@ -43,25 +43,53 @@ final class Root {
     private Root() {
     }
 
+    /** Magisk's su first (2026-11-12, on the phone: a TrebleDroid GSI puts its own /product/bin/su
+     *  earlier in PATH, which never asks Magisk, so the app got no root), then whatever su PATH finds. */
+    static final String[] SU = {"/debug_ramdisk/su", "/sbin/su", "/system/bin/su", "/system/xbin/su"};
+
+    static String su() {
+        for (String path : SU) {
+            if (new java.io.File(path).exists()) return path;
+        }
+        return "su";
+    }
+
     static Result run(String script, long timeoutSeconds) {
         Process process = null;
         try {
-            process = new ProcessBuilder("su").redirectErrorStream(true).start();
+            process = new ProcessBuilder(su()).redirectErrorStream(true).start();
             try (OutputStream in = process.getOutputStream()) {
                 in.write(("set -u\n" + script + "\nexit $?\n").getBytes(StandardCharsets.UTF_8));
             }
-            ByteArrayOutputStream collected = new ByteArrayOutputStream();
-            InputStream out = process.getInputStream();
-            byte[] buffer = new byte[8192];
-            int n;
-            while ((n = out.read(buffer)) > 0) {
-                if (collected.size() < (1 << 20)) collected.write(buffer, 0, n);
-            }
+            // 2026-11-12 review: the output was read to its end before the timeout was looked at, so a
+            // command that hung with its output open (su waiting for a prompt, a stuck pm install)
+            // held the thread for ever. The output is read beside; the process is waited for.
+            final ByteArrayOutputStream collected = new ByteArrayOutputStream();
+            final InputStream out = process.getInputStream();
+            Thread reader = new Thread(() -> {
+                byte[] buffer = new byte[8192];
+                int n;
+                try {
+                    while ((n = out.read(buffer)) > 0) {
+                        synchronized (collected) {
+                            if (collected.size() < (1 << 20)) collected.write(buffer, 0, n);
+                        }
+                    }
+                } catch (java.io.IOException ignored) {
+                    // The process was ended, or its output closed.
+                }
+            });
+            reader.setDaemon(true);
+            reader.start();
             if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
                 process.destroy();
+                reader.join(2000);
                 return new Result(124, "timed out");
             }
-            return new Result(process.exitValue(), collected.toString("UTF-8"));
+            reader.join(5000);
+            synchronized (collected) {
+                return new Result(process.exitValue(), collected.toString("UTF-8"));
+            }
         } catch (Exception e) {
             if (process != null) process.destroy();
             return new Result(127, String.valueOf(e.getMessage()));

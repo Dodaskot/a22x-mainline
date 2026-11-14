@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">A22x Recovery</string>
+    <string name="app_name">Mainline Recovery</string>
     <string name="subtitle">Installer für das Galaxy A22 5G (SM-A226B)</string>
     <string name="root_missing">Root-Zugriff wurde nicht gewährt. Erlauben Sie ihn dieser App in Ihrer Root-Verwaltung.</string>
     <string name="compat_title">Kompatibilität</string>
@@ -158,4 +158,24 @@
     <string name="row_language">Sprache</string>
     <string name="row_script">Skript</string>
     <string name="hold_save_restart">2 Sekunden halten: speichern und neu starten</string>
+    <string name="update_title">Aktualisierungen</string>
+    <string name="update_note">Diese App aus den Veröffentlichungen des Projekts auf GitHub und der BOOT von Android im Cache.</string>
+    <string name="update_installed">Installiert: %1$s</string>
+    <string name="update_published">Veröffentlicht: %1$s</string>
+    <string name="update_checking">GitHub wird gefragt…</string>
+    <string name="update_unreadable">Die Veröffentlichungen konnten nicht gelesen werden. Netz prüfen und die Seite erneut öffnen.</string>
+    <string name="update_newer">Eine neuere App ist veröffentlicht.</string>
+    <string name="update_current">Diese App ist aktuell.</string>
+    <string name="update_hold">Halten, um die App zu aktualisieren</string>
+    <string name="update_downloading">Download: %1$d%%</string>
+    <string name="update_installing">Das Update wird installiert; die App schließt und öffnet sich neu.</string>
+    <string name="boot_kept_title">Stock-BOOT</string>
+    <string name="boot_kept_none">Noch nicht gesichert.</string>
+    <string name="boot_kept_path">Im Cache gesichert: %1$s</string>
+    <string name="boot_kept_already">Bereits im Cache gesichert.</string>
+    <string name="boot_kept_warn">Nicht gesichert: %1$s</string>
+    <string name="boot_kept_note">Wird bei jedem Öffnen der App und Start von Android gesichert: Magisks Kopie des originalen BOOT, sonst der aktuelle BOOT. Das Recovery flasht ihn über „Partition flashen“ zurück.</string>
+    <string name="boot_keep_now">Jetzt sichern</string>
+    <string name="home_update">Updates</string>
+    <string name="home_update_sub">App, Stock-BOOT</string>
 </resources>

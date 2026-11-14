@@ -88,13 +88,16 @@ static void canvas_rounded(uint32_t*pixels,Bounds b,int left,int top,int right,i
     int width=right-left,height=bottom-top;
     if(width<=0||height<=0)return;
     float limit=(float)(width<height?width:height)*.5f;
-    if(radius>limit)radius=limit;
+    /* A radius cut down to a shape's size (a growing progress fill, a slider) changes from frame to
+       frame: it is not kept, or it filled the 32 places for good (2026-11-14 review). */
+    bool cut=radius>limit;
+    if(cut)radius=limit;
     if(radius<0)radius=0;
     int corner=(int)ceilf(radius);
     int x0=left>b.x0?left:b.x0,x1=right<b.x1?right:b.x1,y0=top>b.y0?top:b.y0,y1=bottom<b.y1?bottom:b.y1;
     if(x1<=x0)return;
     int inner0=left+corner>x0?left+corner:x0,inner1=right-corner<x1?right-corner:x1;
-    const CanvasCorner*table=width>=2*corner?canvas_corner(radius,corner):NULL;
+    const CanvasCorner*table=!cut&&width>=2*corner?canvas_corner(radius,corner):NULL;
     for(int y=y0;y<y1;y++){
         uint32_t*row=pixels+(size_t)y*NW;
         uint32_t color=first==last?first:canvas_mix(first,last,((float)(y-top)+.5f)/(float)height);
@@ -271,13 +274,15 @@ static void canvas_picture(uint32_t*out,Bounds b,int x0,int y0,const uint8_t*sou
         }
     }
 }
+/* The 8x8 ordered dither of the backdrop and the frosted copy, one table for both (2026-11-14 review). */
+static const unsigned char canvas_bayer[8][8]={{0,32,8,40,2,34,10,42},{48,16,56,24,50,18,58,26},{12,44,4,36,14,46,6,38},{60,28,52,20,62,30,54,22},
+    {3,35,11,43,1,33,9,41},{51,19,59,27,49,17,57,25},{15,47,7,39,13,45,5,37},{63,31,55,23,61,29,53,21}};
 /* Stretch a small backdrop to the panel. Ordered dither keeps the soft gradient from banding.
  * Panel rows between two source rows share them, so those are mixed across once for all of them. */
 static void canvas_backdrop(uint32_t*out,const uint8_t*source,int width,int height){
-    static const unsigned char bayer[8][8]={{0,32,8,40,2,34,10,42},{48,16,56,24,50,18,58,26},{12,44,4,36,14,46,6,38},{60,28,52,20,62,30,54,22},
-        {3,35,11,43,1,33,9,41},{51,19,59,27,49,17,57,25},{15,47,7,39,13,45,5,37},{63,31,55,23,61,29,53,21}};
-    static float top[3][NW],bottom[3][NW],noise[8][NW];
-    for(int y=0;y<8;y++)for(int x=0;x<NW;x++)noise[y][x]=(float)bayer[y][x&7]/64.f;
+    static float top[3][NW],bottom[3][NW],noise[8][NW];static bool noise_ready;
+    /* Worked out once, not at every call (2026-11-14 review). */
+    if(!noise_ready){for(int y=0;y<8;y++)for(int x=0;x<NW;x++)noise[y][x]=(float)canvas_bayer[y][x&7]/64.f;noise_ready=true;}
     int mixed=-1;
     for(int y=0;y<NH;y++){
         float fy=((float)y+.5f)*(float)height/(float)NH-.5f;fy=fy<0?0:fy;int y0=(int)fy,y1=y0+1<height?y0+1:y0;float ty=fy-(float)y0,keep=1-ty;
@@ -325,8 +330,6 @@ static void canvas_blur_line(uint16_t*line,int count,int stride){
 /* A frosted copy of a frame, made once and shown as a still picture: reduced eight times,
  * softened twice each way, and stretched back with dither so the gradients do not band. */
 static void canvas_blur(uint32_t*restrict out,const uint32_t*restrict source){
-    static const unsigned char bayer[8][8]={{0,32,8,40,2,34,10,42},{48,16,56,24,50,18,58,26},{12,44,4,36,14,46,6,38},{60,28,52,20,62,30,54,22},
-        {3,35,11,43,1,33,9,41},{51,19,59,27,49,17,57,25},{15,47,7,39,13,45,5,37},{63,31,55,23,61,29,53,21}};
     static uint16_t plane[3][BLUR_H][BLUR_W];
     static uint32_t upper[3][NW],lower[3][NW],noise[8][NW];
     static int first[NW],second[NW],weight[NW];
@@ -345,7 +348,7 @@ static void canvas_blur(uint32_t*restrict out,const uint32_t*restrict source){
     for(int x=0;x<NW;x++){
         int position=2*x+1-BLUR_STEP,cell=position<0?-1:position/(2*BLUR_STEP);
         weight[x]=position-cell*2*BLUR_STEP;first[x]=cell<0?0:cell;second[x]=cell+1<BLUR_W?cell+1:BLUR_W-1;
-        for(int y=0;y<8;y++)noise[y][x]=(uint32_t)bayer[y][x&7]*64u;
+        for(int y=0;y<8;y++)noise[y][x]=(uint32_t)canvas_bayer[y][x&7]*64u;
     }
     int mixed=-2;
     for(int y=0;y<NH;y++){

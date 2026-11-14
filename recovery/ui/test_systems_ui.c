@@ -16,6 +16,12 @@ int main(int argc,char**argv){
     SCHECK(test_press(a,A_SYSTEMS,50)&&a->screen==RESULT&&a->result_return==FILE_EDIT&&!a->job.pid&&!strcmp(a->fs_text,"unsaved system editor ґ"));
     a->fs_dirty=false;screen(a,OS_MENU);SCHECK(test_press(a,A_SYSTEMS,50)&&systems_settle(a)&&a->screen==SYSTEMS&&a->systems_known);
     if(!strcmp(which,"android-plan")){
+        /* 2026-11-14, on the phone: a check that found the storage busy is asked again a few seconds
+           later, not given up until the next start. */
+        {static const char busy[]="{\"ok\":false,\"operation\":\"show\",\"error\":{\"code\":\"OPERATION_BUSY\",\"message\":\"busy\"}}";
+         JsonToken t[16];Json bj;SCHECK(json_parse(&bj,busy,t,16)>0);a->now=1000;a->aplan_asked=true;
+         complete_aplan_job(a,&bj,J_APLAN_SHOW,false);SCHECK(!a->aplan_asked&&!a->aplan_known&&a->aplan_tries==1&&a->aplan_retry_at==1000+APLAN_RETRY_MS);
+         screen(a,HOME);android_plan_tick(a);SCHECK(!a->job.pid&&!a->aplan_asked);a->now=1000+APLAN_RETRY_MS;}
         /* 2026-11-10: the plan the Android app left in cache opens by itself over the home page. */
         screen(a,HOME);android_plan_tick(a);SCHECK(a->job.kind==J_APLAN_SHOW&&systems_settle(a));
         SCHECK(a->screen==APLAN&&a->aplan_valid&&!strcmp(a->aplan_catalog,"ubuntu-24.04")&&!a->aplan_erase&&a->aplan_script_present&&!strcmp(a->aplan_user,"olena"));

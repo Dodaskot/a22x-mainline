@@ -3,6 +3,7 @@ import contextlib
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import sys
 import tarfile
@@ -77,6 +78,20 @@ class ManagementTest(unittest.TestCase):
             self.assertEqual(archive.extractfile('logs/ui.stdout').read(), b'x' * mg.MAX_LOG)
             manifest = json.load(archive.extractfile('manifest.json'))
             self.assertTrue(manifest['files']['logs/ui.stdout']['tail_only'])
+
+    def test_many_long_logs_are_trimmed_instead_of_failing(self):
+        """2026-11-12 review: logs filled the budget to the byte, then the manifest went over it and the
+        whole export failed with DIAGNOSTICS_TOO_LARGE."""
+        names = ['boot.json', 'ui.log', 'ui.stdout', 'diagnostics.log', 'ssh-start.log', 'power-volumes.json',
+                 'power-storage.json', 'maintenance.log', 'display.log', 'android-last.json', 'android-last-kmsg.txt']
+        names += [f'{n}.{i}' for n in ('ui.log', 'ui.stdout') for i in range(1, mg.KEEP_LOGS + 1)]
+        for name in names:
+            (self.logs / name).write_bytes(os.urandom(mg.MAX_LOG // 2).hex().encode())
+        data = mg.archive_bytes(self.ctx)
+        with tarfile.open(fileobj=io.BytesIO(data), mode='r:gz') as archive:
+            members = archive.getmembers()
+        self.assertIn('manifest.json', [m.name for m in members])
+        self.assertLessEqual(sum(m.size for m in members), mg.MAX_TOTAL)
 
     def test_rotation_retains_last_four_runs_and_bounds_each_file(self):
         for i in range(7):

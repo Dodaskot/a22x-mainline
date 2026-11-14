@@ -84,10 +84,14 @@ static void complete_card_job(App*a,const Json*j,int kind,bool ok){
     snprintf(a->message,sizeof(a->message),"%s\n\n%s",text,tr("Mount the card in Files to use it."));
     a->card_known=false;a->result_return=CARD_PAGE;screen(a,RESULT);
 }
-static void open_card(App*a){
-    a->card_known=false;a->card_count=0;a->card_index=-1;a->card_linux=a->card_swap=0;a->card_error[0]=0;a->page_scroll=0;screen(a,CARD_PAGE);
-    /* A read that cannot start must not leave the page reading for ever. */
+/* A read that cannot start must not leave the page reading for ever: Read again and a return to the
+   page read through here too (2026-11-14 review). */
+static void card_read(App*a){
+    a->card_known=false;a->card_error[0]=0;
     if(!start_card_job(a,J_CARD_LIST)&&!a->preview){a->card_known=true;copy(a->card_error,sizeof(a->card_error),"The card cannot be read now.");}
+}
+static void open_card(App*a){
+    a->card_count=0;a->card_index=-1;a->card_linux=a->card_swap=0;a->page_scroll=0;screen(a,CARD_PAGE);card_read(a);
 }
 static void card_chips(App*a,int y,const char*title,const unsigned int*values,unsigned int count,unsigned int chosen,int action,const CardDisk*c,bool linux_row,bool enabled){
     text(a,52,y,0,ORANGE,title);
@@ -140,7 +144,7 @@ static void render_card(App*a){
 static bool card_action(App*a,int id){
     if(id==A_CARD&&(a->screen==WIPE||a->screen==CARD_PAGE)){
         if(!ui_free(a))return true;
-        if(a->screen==WIPE)open_card(a);else{a->card_known=false;a->card_error[0]=0;start_card_job(a,J_CARD_LIST);}
+        if(a->screen==WIPE)open_card(a);else card_read(a);
         return true;
     }
     if(a->screen!=CARD_PAGE)return false;

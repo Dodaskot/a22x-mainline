@@ -24,7 +24,6 @@ def patch(root):
 
     for name in ('src/fs_handles_db.c', 'src/mtp.c', 'src/mtp_properties.c', 'src/mtp_datasets.c',
                  'src/mtp_operations/mtp_ops_helpers.c',
-                 'src/mtp_operations/mtp_op_sendobject.c',
                  'src/mtp_operations/mtp_op_truncateobject.c'):
         change(name, '#include "buildconf.h"', '#include "buildconf.h"\n#include "mtp_guard.h"\n#include <errno.h>')
 
@@ -108,29 +107,10 @@ def patch(root):
 \tif (ret) errno = EACCES;''')
     change(name, 'gid = ctx->storages[i].uid;', 'gid = ctx->storages[i].gid;')
 
+    # SendObject is replaced whole by our usb/mtp_sendobject.c (it checks seek, container and actual
+    # lengths and the >4 GiB unknown-size sentinel, and reports write errors). 2026-11-14 review: the
+    # edits that stood here were written over by this copy and never reached the build.
     name = 'src/mtp_operations/mtp_op_sendobject.c'
-    change(name, '\tint sz;', '\tint sz;\n\tint write_error = 0;')
-    change(name, '''if( write(file, tmp_ptr, sz) != sz)
-\t\t\t\t\t\t\t{
-\t\t\t\t\t\t\t\t// TODO : Handle this error case properly
-\t\t\t\t\t\t\t}''', '''if (a22x_write_all(file, tmp_ptr, sz)) write_error = errno ? errno : EIO;''')
-    change(name, '''if( write(file, tmp_ptr, sz) != sz)
-\t\t\t\t\t\t\t\t{
-\t\t\t\t\t\t\t\t\t// TODO : Handle this error case properly
-\t\t\t\t\t\t\t\t}''', '''/* Continue consuming the USB transaction after an I/O error;
-\t\t\t\t\t\t\t\t * report failure rather than desynchronizing the next request. */
-\t\t\t\t\t\t\t\tif (!write_error && a22x_write_all(file, tmp_ptr, sz))
-\t\t\t\t\t\t\t\t\twrite_error = errno ? errno : EIO;''')
-    change(name, '''if( mtp_packet_hdr->code != MTP_OPERATION_SEND_PARTIAL_OBJECT )
-\t\t\t\t\t\t\tentry_close(ctx->fs_db, entry);''', '''if (sz < 0 && !write_error) write_error = EIO;
-\t\t\t\t\t\tif( mtp_packet_hdr->code != MTP_OPERATION_SEND_PARTIAL_OBJECT ) {
-\t\t\t\t\t\t\tif (entry_close(ctx->fs_db, entry) && !write_error)
-\t\t\t\t\t\t\t\twrite_error = errno ? errno : EIO;
-\t\t\t\t\t\t}''')
-    change(name, '\t\t\t\t\t\tresponse_code = MTP_RESPONSE_OK;',
-           '\t\t\t\t\t\tresponse_code = write_error ? posix_to_mtp_errcode(write_error) : MTP_RESPONSE_OK;')
-    # The complete reviewed operation additionally checks seek/container/actual
-    # lengths and the >4 GiB unknown-size sentinel. Keep its control flow in C.
     shutil.copy2(own / 'mtp_sendobject.c', root / name)
     name = 'src/mtp_operations/mtp_op_endeditobject.c'
     change(name, '#include "buildconf.h"', '#include "buildconf.h"\n#include <errno.h>')

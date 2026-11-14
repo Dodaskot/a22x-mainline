@@ -203,15 +203,19 @@ static inline void tm_modes(TerminalModel*t,bool set){
 static inline void tm_csi(TerminalModel*t,unsigned char final){
     if(t->ignore_csi)return;
     TmPage*p=tm_page(t);unsigned n=tm_param(t,0,1),zero=t->params[0];
-    unsigned top=p->origin?p->top:0,bottom=p->origin?p->bottom:t->rows-1;
+    /* As xterm's CursorUp and CursorDown: up stops at the top margin from any row at or below it,
+       down at the bottom margin from any row at or above it; past a margin the screen's edge
+       (2026-11-14 reviews: ESC[B at the region's foot left it, and the next LF no longer scrolled
+       the region; from below the region ESC[A went past the top margin). */
+    unsigned up=p->row>=p->top?p->top:0,down=p->row<=p->bottom?p->bottom:t->rows-1;
     if(t->private_csi&&final!='h'&&final!='l'&&final!='n')return;
     switch(final){
-    case 'A':p->row=p->row>top+tm_min(n,t->rows)?p->row-n:top;break;
-    case 'B':case 'e':p->row=tm_min(p->row+tm_min(n,t->rows),bottom);break;
+    case 'A':p->row=p->row>up+tm_min(n,t->rows)?p->row-n:up;break;
+    case 'B':case 'e':p->row=tm_min(p->row+tm_min(n,t->rows),down);break;
     case 'C':case 'a':p->col=tm_min(p->col+tm_min(n,t->cols),t->cols-1);break;
     case 'D':p->col=p->col>n?p->col-n:0;break;
-    case 'E':p->row=tm_min(p->row+tm_min(n,t->rows),bottom);p->col=0;break;
-    case 'F':p->row=p->row>top+tm_min(n,t->rows)?p->row-n:top;p->col=0;break;
+    case 'E':p->row=tm_min(p->row+tm_min(n,t->rows),down);p->col=0;break;
+    case 'F':p->row=p->row>up+tm_min(n,t->rows)?p->row-n:up;p->col=0;break;
     case 'G':case '`':p->col=tm_min(n-1,t->cols-1);break;
     case 'd':tm_position(t,n-1,p->col);break;
     case 'H':case 'f':tm_position(t,n-1,tm_param(t,1,1)-1);break;
@@ -259,7 +263,10 @@ static inline void tm_control(TerminalModel*t,unsigned char byte){
 static inline void tm_byte(TerminalModel*t,unsigned char byte){
 again:
     if(t->parser==TM_OSC||t->parser==TM_STRING){if(byte==27)t->parser=TM_STRING_ESC;else if(byte==7&&t->parser==TM_OSC)t->parser=TM_GROUND;else if(byte==24||byte==26)t->parser=TM_GROUND;return;}
-    if(t->parser==TM_STRING_ESC){if(byte=='\\'){t->parser=TM_GROUND;return;}t->parser=TM_STRING;if(byte==27)t->parser=TM_STRING_ESC;return;}
+    /* ESC that is not ST ends the string and starts a sequence of its own, as xterm does (2026-11-14
+       review: inside an OSC it switched to a string BEL no longer ended, and all later output was
+       swallowed until a chance ESC \). */
+    if(t->parser==TM_STRING_ESC){if(byte=='\\'){t->parser=TM_GROUND;return;}t->parser=TM_ESCAPE;goto again;}
     if(byte==24||byte==26){t->parser=TM_GROUND;t->utf_left=0;return;}
     if(byte==27){if(t->utf_left){tm_put(t,0xfffd);t->utf_left=0;}t->parser=TM_ESCAPE;return;}
     if(byte<32){if(t->utf_left){tm_put(t,0xfffd);t->utf_left=0;}tm_control(t,byte);return;}

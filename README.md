@@ -30,9 +30,10 @@ kernel #107 plus seven commits: branch
 [prebuilt v147 boot.img](releases/v147/README.md)
 ([v146](releases/v146/README.md), [v145](releases/v145/README.md)).
 
-**[A22x recovery](recovery/README.md)** ([українською](recovery/README.uk.md))
-is a Linux recovery for the RECOVERY partition, with its own kernel #137
-(branch [`a22x-recovery`](https://github.com/Dodaskot/linux-a22x/tree/a22x-recovery)).
+**[Mainline Recovery 1.0.1](recovery/README.md)** ([українською](recovery/README.uk.md))
+is a Linux recovery for the RECOVERY partition, with its own kernel #139
+(branch [`a22x-recovery`](https://github.com/Dodaskot/linux-a22x/tree/a22x-recovery):
+the phone's kernel, branch `a22x`, trimmed for the recovery).
 From its touch interface it installs Debian, Ubuntu, Fedora, Arch Linux ARM,
 Manjaro, Mobian or postmarketOS from a catalog or a file. You choose the
 desktop and extra shells (Phosh, GNOME, Plasma Mobile, Xfce, Sxmo, Lomiri), the
@@ -40,9 +41,10 @@ sign-in screen, the language, the account and the apps. Several systems can
 stay side by side with a shared `/home` and switch in both directions. The
 recovery README lists what works and the known problems, with screenshots and
 the [test results](recovery/docs/TEST_RESULTS.md). It also installs Android:
-Samsung's firmware, GSIs and ROM files. The recovery image for any SM-A226B and
-the installer app are published with the releases of
-[a22x-recovery](https://github.com/Dodaskot/a22x-recovery/releases).
+Samsung's firmware, GSIs and ROM files; LineageOS 20 by Loftenth was tested with
+it, and BakaSU by Kazaf 132 started. Decrypting Android's data is not available
+yet. The recovery image for any SM-A226B and the installer app are published with
+the releases of [mainline-recovery](https://github.com/Dodaskot/mainline-recovery/releases).
 
 v144 (kernel #107) added the minimal charging screen, kept kernel logs on
 UART instead of the display, and carried the MT6359 power-off and
@@ -129,8 +131,8 @@ for per-workload scores, driver changes and validation limits.
 kernel/patches/   143 patches on top of Linux v7.2 (git am), with series file
                   (same source as linux-a22x branch a22x / kernel #107)
 kernel/a22x-boot/ 7 patches above #107: BOOT kernel #138 (branch a22x-boot)
-kernel/a22x-recovery/ 10 patches above #107: recovery kernel #137 (branch a22x-recovery)
-kernel/config/    a22x-boot-k121.config, a22x-recovery-k120.config, a22x-v144.config (#107),
+kernel/a22x-recovery/ 12 patches above #107: recovery kernel #139 and its config (branch a22x-recovery)
+kernel/config/    a22x-boot-k121.config, a22x-recovery-k139.config, a22x-v144.config (#107),
                   historical v135 config + fragments
 kernel/build.sh   clone v7.2, apply the series, build Image.gz/DTBs/modules
 kernel/update-patches.sh  regenerate kernel/patches from the kernel tree
@@ -138,7 +140,7 @@ conn/             MediaTek connectivity drivers (WMT, BTIF, gen4m Wi-Fi, BT HCI)
                   ported out-of-tree from the Samsung GPL release, + systemd units
 boot/             mkboot.sh (boot.img for stock LK), initramfs init, flash.sh
 boot/charger/     static AArch64 minimal charger, host/ARM tests and build helper
-recovery/         A22x recovery 0.6: touch interface, Linux installer, tests (MIT)
+recovery/         Mainline Recovery 1.0.1: touch interface, Linux installer, tests (MIT)
 rootfs/           ALSA UCM profile, feedbackd theme
 tools/            bring-up helpers (memtool, clock/DT generators, smoke test)
 docs/             building/flashing guide, hardware notes, provenance

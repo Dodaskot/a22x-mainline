@@ -142,6 +142,14 @@ class InitWiring(unittest.TestCase):
 class TorchOff(unittest.TestCase):
     """torch_off from /init, run in a shell on a folder of LEDs: the flashlight goes dark before the
     power action (2026-11-11), and no other LED is touched."""
+    def test_the_restart_check_comes_before_the_tidying_of_cache(self):
+        # 2026-11-13 review: tidying (up to 120 s) came first and could push the check past its minute.
+        text = (ROOT / 'ramdisk/init').read_text()
+        resume, check, tidy = (text.index(x) for x in ('flash.py --device resume', 'restart_intent.py check', 'saved_boot.py --device tidy'))
+        self.assertLess(resume, check)
+        self.assertLess(check, tidy)
+        self.assertIn('[ -z "${auto_rc:-}" ] && [ ! -e /run/a22x-recovery/cache-tidy.json ]', text)
+
     def test_only_the_flash_led_goes_dark_before_the_power_action(self):
         import subprocess
         import tempfile
@@ -160,6 +168,45 @@ class TorchOff(unittest.TestCase):
             # A phone without such an LED: nothing to do, and no complaint.
             r = subprocess.run(['sh', '-c', function + 'torch_off "$1"; echo rc=$?', 'sh', str(leds / 'none')], capture_output=True, text=True, timeout=30)
             self.assertEqual((r.stdout.strip(), r.stderr), ('rc=0', ''))
+
+
+class CheckCache(unittest.TestCase):
+    """check_cache from /init (2026-11-12: cache mounted 185 times, "maximal mount count reached"):
+    e2fsck in preen mode on cache, before anything else at the start mounts it, its answer kept."""
+    def test_cache_is_checked_in_preen_mode_before_it_is_used(self):
+        import subprocess
+        import tempfile
+        text = (ROOT / 'ramdisk/init').read_text()
+        call = text.index('\ncheck_cache\n')
+        # Only the read of the theme (read-only, no journal replay) comes before; every helper after.
+        self.assertLess(text.index('/run/a22x-theme 2>/dev/null; then'), call)
+        for later in ('bcb.py --device arrive', 'android_log.py --device read', 'adbd.py', 'starting native recovery UI'):
+            self.assertLess(call, text.index(later), later)
+        function = text[text.index('check_cache() {'):text.index('\n}\n', text.index('check_cache() {')) + 3]
+        with tempfile.TemporaryDirectory(dir=os.environ.get('TMPDIR')) as tmp:
+            tmp = Path(tmp)
+            (tmp / 'cache.img').write_bytes(b'')
+            tool = tmp / 'e2fsck'
+            tool.write_text('#!/bin/sh\necho "e2fsck $*"\nexit 1\n')
+            tool.chmod(0o755)
+            r = subprocess.run(['sh', '-c', function + 'check_cache "$1" "$2"; echo rc=$?', 'sh', str(tmp / 'cache.img'), str(tmp / 'log')],
+                               capture_output=True, text=True, timeout=30, env=dict(os.environ, E2FSCK=str(tool), CHECK_LIMIT='timeout -s KILL 20'))
+            self.assertEqual((r.stdout.strip(), r.stderr), ('rc=0', ''))
+            self.assertEqual((tmp / 'log').read_text(), 'e2fsck -p %s\nexit=1\n' % (tmp / 'cache.img'))
+            # No cache, or no e2fsck: nothing happens, and the start goes on.
+            r = subprocess.run(['sh', '-c', function + 'check_cache "$1" "$2"; echo rc=$?', 'sh', str(tmp / 'none'), str(tmp / 'log2')],
+                               capture_output=True, text=True, timeout=30, env=dict(os.environ, E2FSCK=str(tool)))
+            self.assertEqual((r.stdout.strip(), (tmp / 'log2').exists()), ('rc=0', False))
+            r = subprocess.run(['sh', '-c', function + 'check_cache "$1" "$2"; echo rc=$?', 'sh', str(tmp / 'cache.img'), str(tmp / 'log3')],
+                               capture_output=True, text=True, timeout=30, env=dict(os.environ, E2FSCK=str(tmp / 'missing')))
+            self.assertEqual((r.stdout.strip(), (tmp / 'log3').exists()), ('rc=0', False))
+            # 2026-11-14 review: e2fsck -p waits for ever after a write error; the start goes on.
+            self.assertIn('${CHECK_LIMIT:-/bin/busybox timeout -s KILL 120} "$tool" -p "$dev"', function)
+            tool.write_text('#!/bin/sh\nexec sleep 30\n')
+            r = subprocess.run(['sh', '-c', function + 'check_cache "$1" "$2"; echo rc=$?', 'sh', str(tmp / 'cache.img'), str(tmp / 'log4')],
+                               capture_output=True, text=True, timeout=20,
+                               env=dict(os.environ, E2FSCK=str(tool), CHECK_LIMIT='timeout -s KILL 1'))
+            self.assertEqual((r.stdout.strip(), (tmp / 'log4').read_text()), ('rc=0', 'exit=137\n'))
 
 
 class BusyWait(unittest.TestCase):

@@ -1,7 +1,7 @@
 From 43f7ef4ed62ac5f4a17cbd2112767f6acec413b1 Mon Sep 17 00:00:00 2001
 From: Dodaskot <pessdres@gmail.com>
 Date: Thu, 12 Nov 2026 09:25:33 +0100
-Subject: [PATCH] power: supply: mt6359-fuel-gauge: keep the percent in
+Subject: [PATCH 10/12] power: supply: mt6359-fuel-gauge: keep the percent in
  RTC_AL_MTH, where the vendor keeps it
 
 The percent that Android's gauge keeps in the PMIC's RTC domain is not

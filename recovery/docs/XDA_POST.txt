@@ -1,0 +1,78 @@
+[CENTER][SIZE=6][B]Mainline Recovery 1.0.1 for the Galaxy A22 5G (SM-A226B)[/B][/SIZE]
+A touch recovery on the mainline Linux kernel, for every SM-A226B (64 GB and 128 GB)[/CENTER]
+
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/release-1.0.1-1.jpg[/IMG]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/release-1.0.1-2.jpg[/IMG]
+[I]Screenshots taken on the phone with 1.0.1.[/I]
+
+[SIZE=5][B]What it does[/B][/SIZE]
+
+[B]Android[/B]
+[LIST]
+[*]Samsung firmware straight from its ZIP, flashed as Odin does (without the bootloader, the modem and the PIT).
+[*]GSIs from the built-in catalog, or a ROM from a file: system image, 7z, payload.bin, block OTA, image ZIP.
+[*]Flashable ZIPs with their own installer, one or several in a row; [B]adb sideload[/B] works as in TWRP.
+[*]Root with Magisk or APatch; Samsung's stock BOOT back from the firmware.
+[*]Shows why Android did not start (from its last kernel log).
+[/LIST]
+
+[B]Linux[/B]
+[LIST]
+[*]Install Debian, Ubuntu, Fedora, Arch Linux ARM, Manjaro ARM or Mobian from the catalog over Wi-Fi, or from a file.
+[*]Several systems side by side with a shared /home; switch between them.
+[/LIST]
+
+[B]Backup and restore[/B]
+[LIST]
+[*]Copies of Android's partitions, EFS and IMEI, the recovery itself, Linux snapshots.
+[*]Copies can be protected with a password (they open with openssl on any computer).
+[/LIST]
+
+[B]Everything else[/B]
+[LIST]
+[*]Flash a partition (BOOT, DTBO, vbmeta, super and others), with the old content saved first.
+[*]Files: browse, edit, archives, check and repair ext4, F2FS and FAT.
+[*]Terminal, USB files (MTP), ADB and SSH over the USB cable, Wi-Fi.
+[*]Updates of the recovery from inside the recovery.
+[*]Six languages, three themes (and your own), 60/90 Hz, an optional password.
+[/LIST]
+
+[SIZE=5][B]New in 1.0.1[/B][/SIZE]
+[LIST]
+[*]The settings, the password and the saved Wi-Fi networks are kept in a free part of the [B]misc[/B] partition, twice, with checksums. A normal stock firmware flash does not touch them. Your settings from 1.0.0 are moved there by themselves at the first start.
+[*]Many fixes from code reviews. No new features.
+[/LIST]
+
+[SIZE=5][B]Tested by users[/B][/SIZE]
+[LIST]
+[*][B]LineageOS 20[/B] by [B]Loftenth[/B]: tested with this recovery.
+[*][B]BakaSU[/B] by [B]Kazaf 132[/B]: started successfully.
+[/LIST]
+Thank you both!
+
+[SIZE=5][B]Not available yet[/B][/SIZE]
+[LIST]
+[*][B]Decrypting Android's data is not available yet.[/B] So there is no file backup of /data; partition copies work.
+[/LIST]
+
+[SIZE=5][B]How to install[/B][/SIZE]
+[LIST=1]
+[*]Unlock the bootloader (this erases the phone).
+[*]In Download Mode flash the image to RECOVERY, for example with Heimdall:
+[CODE]heimdall flash --recovery recovery-a22x-1.0.1.img[/CODE]
+Or install it from a rooted Android with the app (mainline-recovery-installer-1.0.1.apk).
+[*]Start the recovery: phone off, USB cable to a computer, hold Volume up + Power.
+[/LIST]
+Already on 1.0.0 or 0.6.x? Settings > Updates finds 1.0.1.
+
+[SIZE=5][B]Downloads and source[/B][/SIZE]
+[LIST]
+[*]Download (image + app): [URL]https://github.com/Dodaskot/mainline-recovery/releases/tag/v1.0.1[/URL]
+[*]Source: [URL]https://github.com/Dodaskot/mainline-recovery[/URL]
+[*]Recovery kernel: [URL]https://github.com/Dodaskot/linux-a22x/tree/a22x-recovery[/URL] (the phone's mainline kernel, branch a22x, trimmed for the recovery)
+[*]Linux BOOT for the phone: [URL]https://gitlab.com/pessdres/a22x-mainline[/URL] (mirror: [URL]https://github.com/Dodaskot/a22x-mainline[/URL])
+[*]What changed: [URL]https://github.com/Dodaskot/mainline-recovery/blob/main/CHANGELOG.md[/URL]
+[*]Test results and technical details: [URL]https://github.com/Dodaskot/mainline-recovery/blob/main/docs/TEST_RESULTS.md[/URL]
+[/LIST]
+
+[SIZE=2]Flash at your own risk. Only for the SM-A226B: images made for other phones are refused. Download Mode always lets you flash the stock recovery back.[/SIZE]

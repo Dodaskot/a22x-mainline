@@ -87,6 +87,15 @@ class SevenZip(unittest.TestCase):
         with self.assertRaises(sevenzip.SevenZipError) as caught:
             sevenzip.entries(fd)
         self.assertEqual(caught.exception.code, 'NOT_7Z')
+        # 2026-11-13 review: damaged LZMA data raised lzma.LZMAError past every handler.
+        path = self.make('lzma.7z', '-m0=lzma2', files=('system.img',))
+        raw = bytearray(path.read_bytes())
+        for at in range(40, 400):
+            raw[at] ^= 0x5a
+        path.write_bytes(bytes(raw))
+        with self.assertRaises(sevenzip.SevenZipError) as caught:
+            self.read_all(path)
+        self.assertIn(caught.exception.code, ('DAMAGED_7Z', 'INVALID_7Z'))
 
 
 if __name__ == '__main__':

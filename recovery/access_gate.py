@@ -3,6 +3,11 @@
 
 The password stays on the phone: a computer never sees it, it only waits for the answer.
 This guards the recovery session. It cannot cover Download mode or a removed SD card.
+
+The door opens without asking only when settings that were read say so: no password, or the
+owner's choice not to be asked. Settings the interface has not copied to RAM yet are read from
+the disk; settings that cannot be read, or are damaged, keep it closed (2026-11-12, audit: before,
+a computer was let in when the copy in RAM did not appear within 30 s).
 """
 import json
 import os
@@ -17,21 +22,45 @@ SETTINGS = Path(os.environ.get('A22X_SETTINGS_RAM', '/run/a22x-recovery/settings
 WAIT_SECONDS = 120
 
 
+def device_settings():
+    """The settings as settings.py reads them from the disk; it leaves the copy in RAM."""
+    import settings
+    return settings.load()
+
+
 class Gate:
-    def __init__(self, base=BASE, settings=SETTINGS, poll=0.2):
+    def __init__(self, base=BASE, settings=SETTINGS, poll=0.2, disk=None):
         self.base, self.settings, self.poll = Path(base), Path(settings), poll
+        # The disk is read only for the copy in RAM the recovery itself keeps.
+        self.disk = disk if disk is not None else (device_settings if Path(settings) == SETTINGS else None)
+
+    def record(self, disk=True):
+        """The settings, checked as settings.py checks them; None when they cannot be read now."""
+        from settings import checked
+        try:
+            return checked(json.loads(self.settings.read_text()))
+        except (OSError, ValueError):
+            pass
+        if not disk or self.disk is None:
+            return None
+        try:
+            return checked(self.disk())
+        except Exception:  # damaged, unreadable or busy: nothing is known, so nothing opens
+            return None
 
     def required(self, wait=30):
-        """The UI writes the settings at startup; until then nobody can say there is no password."""
+        """Whether a computer must wait for the password: yes unless settings that were read say
+        no. The disk is asked once; then the copy in RAM is waited for until WAIT runs out."""
         deadline = time.monotonic() + wait
+        disk = True
         while True:
-            try:
-                record = json.loads(self.settings.read_text())
+            record = self.record(disk)
+            disk = False
+            if record is not None:
                 return bool(record.get('hash')) and record.get('access', 1) != 0
-            except (OSError, ValueError):
-                if time.monotonic() >= deadline:
-                    return False
-                time.sleep(self.poll)
+            if time.monotonic() >= deadline:
+                return True
+            time.sleep(self.poll)
 
     def granted(self):
         return (self.base / 'granted').is_file()
@@ -63,6 +92,12 @@ def console():
     for signum in (signal.SIGINT, signal.SIGQUIT, signal.SIGTSTP):
         signal.signal(signum, signal.SIG_IGN)
     gate = Gate()
+    # 2026-11-12 review: nothing is asked before someone is at the port. Deciding at once read the
+    # settings from the disk at every start, holding the storage lease while init's one-shot steps
+    # (flash.py resume, saved_boot.py tidy, handoff.py) needed it.
+    print('\nA22x recovery console. Press Enter.', flush=True)
+    while not sys.stdin.readline():
+        time.sleep(1)
     while gate.required():
         if gate.granted():
             break

@@ -1,8 +1,8 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From dcae33b578477a5d01b43ab2c6991cfb2ef959b5 Mon Sep 17 00:00:00 2001
 From: Dodaskot <pessdres@gmail.com>
 Date: Tue, 10 Nov 2026 06:17:00 +0100
-Subject: [PATCH 2/5] usb: gadget: f_ncm: retry the timeout flush while u_ether
- is busy
+Subject: [PATCH 02/12] usb: gadget: f_ncm: retry the timeout flush while
+ u_ether is busy
 
 The TX timer flushes the NTB that is still being filled by calling
 ndo_start_xmit(NULL). When every IN request is still in flight, u_ether
@@ -20,7 +20,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  1 file changed, 11 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/usb/gadget/function/f_ncm.c b/drivers/usb/gadget/function/f_ncm.c
-index bf02545b3..b6d1ea545 100644
+index bf02545b37a2..b6d1ea545a50 100644
 --- a/drivers/usb/gadget/function/f_ncm.c
 +++ b/drivers/usb/gadget/function/f_ncm.c
 @@ -1158,7 +1158,17 @@ static enum hrtimer_restart ncm_tx_timeout(struct hrtimer *data)
@@ -42,3 +42,6 @@ index bf02545b3..b6d1ea545 100644
  	}
  	return HRTIMER_NORESTART;
  }
+-- 
+2.56.0
+

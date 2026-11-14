@@ -20,6 +20,7 @@ ROM's own recovery would replace this one.
     android_rom.py extract PACKAGE --partition NAME --out FILE
 """
 import bz2
+import contextlib
 import hashlib
 import json
 import lzma
@@ -29,6 +30,8 @@ import re
 import struct
 import sys
 import zipfile
+
+from lp_metadata import drop_cached
 
 # update_engine's payload: "CrAU", version 2.
 PAYLOAD_MAGIC = b'CrAU'
@@ -127,7 +130,9 @@ class Payload:
         self.data_start = 24 + manifest_size + signature_size
         self.manifest = message(manifest)
         self.block_size = first(self.manifest, 3, 4096)
-        self.minor = first(self.manifest, 15, 0)
+        # update_metadata.proto, DeltaArchiveManifest: minor_version 12, partitions 13,
+        # dynamic_partition_metadata 15, partial_update 16 (2026-11-12 review: 15 and 16 were read).
+        self.minor = first(self.manifest, 12, 0)
         self.partitions = []
         for raw in self.manifest.get(13, []):
             part = message(raw)
@@ -139,8 +144,8 @@ class Payload:
                                     'incremental': old_info is not None,
                                     'operations': operations})
         self.groups = []
-        dynamic = first(self.manifest, 16)
-        if dynamic:
+        dynamic = first(self.manifest, 15)
+        if isinstance(dynamic, bytes) and dynamic:
             for raw in message(dynamic).get(1, []):
                 group = message(raw)
                 self.groups.append({'name': first(group, 1, b'').decode('ascii', 'replace'), 'size': first(group, 2, 0),
@@ -270,7 +275,7 @@ def inspect(path, logical=('system', 'vendor', 'product', 'odm')):
                     part = name.rsplit('/', 1)[-1][:-len('.transfer.list')]
                     data = next((n for n in (part + '.new.dat', part + '.new.dat.br') if n in names), None)
                     where, why = classify(part, logical)
-                    if where != 'refused' and data and data.endswith('.br'):
+                    if where != 'refused' and data and data.endswith('.br') and not os.path.exists(BROTLI):
                         where, why = 'refused', 'compressed with Brotli, which this recovery cannot read yet'
                     if where != 'refused' and not data:
                         where, why = 'refused', 'its data file is missing'
@@ -321,6 +326,128 @@ def transfer_size(data):
             for start, end in zip(numbers[1::2], numbers[2::2]):
                 blocks = max(blocks, end)
     return blocks * 4096
+
+
+BROTLI = os.environ.get('A22X_BROTLI', '/bin/brotli-dec')
+BLOCK = 4096
+
+
+def transfer_commands(data):
+    """A full block-based OTA's transfer list: [(command, [(start, end), ...])] in 4096-byte blocks.
+    Only new, zero and erase: a list that moves or patches old blocks is an incremental update."""
+    lines = data.decode('utf-8', 'replace').splitlines()
+    require(len(lines) >= 4 and lines[0].strip() in ('1', '2', '3', '4'), 'TRANSFER_LIST_INVALID', 'The transfer list of this ROM is not understood')
+    commands = []
+    for line in lines[(2 if lines[0].strip() == '1' else 4):]:
+        if not line.strip():
+            continue
+        command, _, ranges = line.partition(' ')
+        require(command in ('new', 'zero', 'erase'), 'TRANSFER_LIST_INCREMENTAL',
+                'This ROM is an incremental update: a full ROM is needed', command=command[:16])
+        try:
+            numbers = [int(n) for n in ranges.split(',')]
+        except ValueError:
+            numbers = []
+        require(len(numbers) >= 3 and numbers[0] == len(numbers) - 1 and numbers[0] % 2 == 0, 'TRANSFER_LIST_INVALID',
+                'The transfer list of this ROM is not understood')
+        pairs = list(zip(numbers[1::2], numbers[2::2]))
+        require(all(0 <= a < b for a, b in pairs), 'TRANSFER_LIST_INVALID', 'The transfer list of this ROM is not understood')
+        commands.append((command, pairs))
+    return commands
+
+
+def block_stream(archive, name):
+    """The bytes of NAME.new.dat in ARCHIVE; a .br member goes through the Brotli decoder. Returns
+    (read(n), finish()); finish raises when the decoder did not end well."""
+    member = archive.open(name)
+    if not name.endswith('.br'):
+        return member.read, member.close
+    import subprocess
+    import threading
+    process = subprocess.Popen([BROTLI], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
+    def feed():
+        try:
+            while True:
+                data = member.read(1 << 20)
+                if not data:
+                    break
+                process.stdin.write(data)
+        except (OSError, ValueError):
+            pass
+        finally:
+            with contextlib.suppress(OSError):
+                process.stdin.close()
+    feeder = threading.Thread(target=feed, daemon=True)
+    feeder.start()
+
+    def finish():
+        if process.poll() is None:
+            process.kill()
+        code = process.wait()
+        process.stdout.close()
+        feeder.join(10)
+        member.close()
+        require(code == 0, 'ROM_DATA_DAMAGED', 'The compressed image inside this ROM is damaged', member=name)
+    return process.stdout.read, finish
+
+
+def write_block_image(archive, part, fd, size, progress=None):
+    """Partition PART of a full block-based OTA written to the block device FD of SIZE bytes (2026-11-13,
+    a One UI port whose own updater wrote nothing in the installer's room): the new blocks from
+    PART.new.dat[.br] go where the transfer list says, zero ranges are zeroed, and everything written
+    is read back. Returns {'blocks', 'sha256'} of the new data."""
+    names = set(archive.namelist())
+    data_name = next((n for n in (part + '.new.dat.br', part + '.new.dat') if n in names), None)
+    require(data_name and part + '.transfer.list' in names, 'ROM_PART_MISSING', 'The ROM has no image of this partition', partition=part)
+    commands = transfer_commands(archive.read(part + '.transfer.list'))
+    top = max(end for _, pairs in commands for _, end in pairs)
+    require(top * BLOCK <= size, 'ROM_PART_TOO_LARGE', 'The image is larger than the partition', partition=part,
+            needed=top * BLOCK, size=size)
+    total = sum(end - start for command, pairs in commands if command == 'new' for start, end in pairs)
+    read, finish = block_stream(archive, data_name)
+    digest, done, zero = hashlib.sha256(), 0, bytes(1 << 20)
+    try:
+        for command, pairs in commands:
+            for start, end in pairs:
+                at, stop = start * BLOCK, end * BLOCK
+                while at < stop and command != 'erase':
+                    want = min(1 << 20, stop - at)
+                    if command == 'new':
+                        data = b''
+                        while len(data) < want:
+                            more = read(want - len(data))
+                            require(more, 'ROM_DATA_SHORT', 'The image inside this ROM ends early', partition=part)
+                            data += more
+                        digest.update(data)
+                        done += len(data)
+                    else:
+                        data = zero[:want]
+                    view = memoryview(data)
+                    while view:
+                        written = os.pwrite(fd, view, at)
+                        at += written
+                        view = view[written:]
+                    if progress and command == 'new':
+                        progress(part, done, total * BLOCK)
+        require(not read(1), 'ROM_DATA_LONG', 'The image inside this ROM is longer than its transfer list says', partition=part)
+    finally:
+        finish()
+    os.fsync(fd)
+    drop_cached(fd)
+    check = hashlib.sha256()
+    for command, pairs in commands:
+        if command != 'new':
+            continue
+        for start, end in pairs:
+            at, stop = start * BLOCK, end * BLOCK
+            while at < stop:
+                data = os.pread(fd, min(1 << 20, stop - at), at)
+                require(data, 'READBACK_MISMATCH', 'The partition does not read back', partition=part)
+                check.update(data)
+                at += len(data)
+    require(check.digest() == digest.digest(), 'READBACK_MISMATCH', 'The partition does not match the image after writing', partition=part)
+    return {'blocks': total, 'sha256': digest.hexdigest()}
 
 
 def op_list_groups(text):

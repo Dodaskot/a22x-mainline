@@ -89,7 +89,7 @@ class InstallPlan(unittest.TestCase):
                 status, result = self.run_helper('show')
                 self.assertEqual((status, result['valid'], result['problem']['code']), (0, False, code), result)
         (self.root / 'cache' / ip.PLAN).write_text('{"schema": "a22x.install-plan.v1", ')
-        self.assertEqual(self.run_helper('show')[1]['error']['code'], 'PLAN_DAMAGED')
+        self.assertEqual(self.run_helper('show')[1]['problem']['code'], 'PLAN_DAMAGED')
 
     def test_beside_the_current_system_no_account_is_needed(self):
         self.plan(erase_userdata=False, account=..., script=..., desktop='image', shells=[], apps=[])
@@ -106,6 +106,17 @@ class InstallPlan(unittest.TestCase):
         self.assertEqual(self.run_helper('forget', '--expected-sha256', digest)[1]['forgotten'], True)
         self.assertFalse((self.root / 'cache' / ip.PLAN).exists())
         self.assertEqual(self.run_helper('forget', '--expected-sha256', digest)[1]['forgotten'], False)
+
+    def test_a_plan_that_cannot_be_read_is_shown_and_can_be_forgotten(self):
+        """2026-11-12 review: a cut, too large or deeply nested plan had no digest and stayed for good."""
+        for data in (b'{"schema": "a22x.inst', b'[' * 65536, b'x' * (ip.LIMIT + 1)):
+            (self.root / 'cache' / ip.PLAN).write_bytes(data)
+            code, result = self.run_helper('show')
+            self.assertEqual(code, 0, result)
+            self.assertEqual((result['present'], result['valid'], result['sha256']), (True, False, hashlib.sha256(data).hexdigest()))
+            self.assertIn(result['problem']['code'], ('PLAN_DAMAGED', 'PLAN_TOO_LARGE'))
+            self.assertEqual(self.run_helper('forget', '--expected-sha256', result['sha256'])[1]['forgotten'], True)
+            self.assertFalse((self.root / 'cache' / ip.PLAN).exists())
 
     def test_prepare_mounts_what_the_installation_reads(self):
         self.plan()

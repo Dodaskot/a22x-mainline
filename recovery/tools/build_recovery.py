@@ -31,6 +31,9 @@ PINS = {
     'compact-runtime-v05-manifest.json': '7842c38fb417ffae50e56667ca646b0ad34bb7eeb4f1f5906b84a8869b0fd2d7',
     'mtp-v05-package-v2/manifest.json': 'ed7b036aa821404d57d1ce2da840faadfb4b4bf4fa51944099ce686389843a9e',
     'terminal-shell-v05-package/manifest.json': '43fad22a263421493d956ae89364182da9f0da08f00993f5d75b3ff23b583f11',
+    # It gives mkbootimg's arguments (cmdline, geometry, offsets) that GEOMETRY is checked against
+    # (2026-11-14 review: unpinned, a changed one changed the image and the check alike).
+    'input-manifest.json': '9d1be3ca6df9d15d0ff51d6856687df9990950bb7ea32f1a3a845dba9d04af77',
 }
 GEOMETRY = ('--header_version', '--pagesize', '--base', '--kernel_offset',
             '--ramdisk_offset', '--second_offset', '--tags_offset', '--dtb_offset', '--board')
@@ -247,7 +250,8 @@ def main():
         require(sha(root / item['path']) == item['previous_sha256'], 'Unexpected shared-library baseline')
     shutil.copytree(service_root, root, symlinks=True, dirs_exist_ok=True)
     for item in compact['files']:
-        require(not (root / item['path']).exists(), 'Compact overlay must not replace baseline files')
+        # lexists: a dangling link there would be written through (2026-11-14 review), as for MTP below.
+        require(not os.path.lexists(root / item['path']), 'Compact overlay must not replace baseline files')
     shutil.copytree(compact_root, root, symlinks=True, dirs_exist_ok=True)
     for item in usb['overlay_files']:
         require(not os.path.lexists(root / item['path'].lstrip('/')),
@@ -387,23 +391,13 @@ def main():
             "runpy.run_path(" + repr(str(root / 'opt/a22x-recovery/install.py')) + "); " \
             "print('ARM_RUNTIME_IMPORTS_PASS')"
     run('python-arm-imports', ['qemu-aarch64', '-L', root, root / 'usr/bin/python3', '-c', smoke], env=env)
-    run('backend-arm-help', ['qemu-aarch64', '-L', root, root / 'usr/bin/python3',
-                            root / 'opt/a22x-recovery/backend/recoveryctl.py', '--help'], env=env)
-    run('filesystem-arm-help', ['qemu-aarch64', '-L', root, root / 'usr/bin/python3',
-                               root / 'opt/a22x-recovery/filesystem.py', '--help'], env=env)
-    run('management-arm-help', ['qemu-aarch64', '-L', root, root / 'usr/bin/python3',
-                               root / 'opt/a22x-recovery/management.py', '--help'], env=env)
-    run('display-arm-help', ['qemu-aarch64', '-L', root, root / 'usr/bin/python3',
-                            root / 'opt/a22x-recovery/display.py', '--help'], env=env)
-    run('usb-files-arm-help', ['qemu-aarch64', '-L', root, root / 'usr/bin/python3',
-                              root / 'opt/a22x-recovery/usb_files.py', '--help'], env=env)
-    run('terminal-arm-help', ['qemu-aarch64', '-L', root, root / 'usr/bin/python3',
-                             root / 'opt/a22x-recovery/terminal.py', '--help'], env=env)
-    run('distro-arm-help', ['qemu-aarch64', '-L', root, root / 'usr/bin/python3',
-                           root / 'opt/a22x-recovery/distro.py', '--help'], env=env)
+    # Each helper answers --help on the ARM runtime: one list (2026-11-14 review: ten copies of one call).
+    for label, helper in (('backend', 'backend/recoveryctl.py'), ('filesystem', 'filesystem.py'),
+                          ('management', 'management.py'), ('display', 'display.py'), ('usb-files', 'usb_files.py'),
+                          ('terminal', 'terminal.py'), ('distro', 'distro.py'), ('installer', 'install.py')):
+        run(label + '-arm-help', ['qemu-aarch64', '-L', root, root / 'usr/bin/python3',
+                                  root / 'opt/a22x-recovery' / helper, '--help'], env=env)
     run('systems-wrapper-syntax', ['qemu-aarch64', root / 'bin/busybox', 'sh', '-n', systems_cli])
-    run('installer-arm-help', ['qemu-aarch64', '-L', root, root / 'usr/bin/python3',
-                              root / 'opt/a22x-recovery/install.py', '--help'], env=env)
     run('installer-wrapper-syntax', ['qemu-aarch64', root / 'bin/busybox', 'sh', '-n', install_cli])
     for name in ('umtprd', 'a22x-mtp-sandbox'):
         usb_elf = run(name + '-elf', ['aarch64-linux-gnu-readelf', '-h', '-l', '-d', root / 'bin' / name]).decode()

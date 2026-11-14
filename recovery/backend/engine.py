@@ -16,7 +16,7 @@ import time
 import uuid
 from pathlib import Path
 
-from common import (CHUNK, LABELS, PROFILE_NAMES, PROFILES, RESERVE, RETAINED_LABELS, RecoveryError,
+from common import (CHUNK, same_archive, LABELS, PROFILE_NAMES, PROFILES, RESERVE, RETAINED_LABELS, RecoveryError,
                     canonical, digest, fail, fsync_directory, hash_file, read_json, read_json_with_hash,
                     rename_noreplace, require_hash, stamp, utc, validate_name,
                     write_json_new)
@@ -551,7 +551,7 @@ def restore(context, plan, confirmation, progress=None):
             for entry in manifest["entries"]:
                 actual_stamp = archives[entry["label"]].verify(
                     progress, operation="restore", phase="verify-before-write", collect_chunks=True)
-                if actual_stamp != plan["archive_stamps"][entry["label"]]:
+                if not same_archive(actual_stamp, plan["archive_stamps"][entry["label"]]):
                     fail("PLAN_STALE", "Archive changed after restore planning", label=entry["label"])
             for part in parts:
                 if stamp(targets[part["label"]].fileno()) != part["stamp"]:

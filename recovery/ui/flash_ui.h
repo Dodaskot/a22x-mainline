@@ -22,12 +22,16 @@ static bool start_flash_job(App*a,int kind){
     if(a->job.pid||a->preview||!flash_job(kind))return false;
     char*args[20];int n=0;args[n++]=a->python;args[n++]=a->flash_helper;
     if(a->device)args[n++]="--device";else{args[n++]="--fixture";args[n++]=a->fixture;}
-    args[n++]=kind==J_FLASH_TARGETS?"targets":(kind==J_FLASH_CHECK?"check":"write");
-    if(kind!=J_FLASH_TARGETS){
+    args[n++]=kind==J_FLASH_TARGETS?"targets":(kind==J_FLASH_CHECK?"check":(kind==J_FLASH_MEMBERS?"members":"write"));
+    if(kind==J_FLASH_MEMBERS){
+        args[n++]="--volume";args[n++]=a->flash_volume;args[n++]="--volume-token";args[n++]=a->flash_volume_token;args[n++]="--path";args[n++]=a->flash_path;
+    }else if(kind!=J_FLASH_TARGETS){
         const char*label=flash_target_label(a);
         if(!label[0]||(kind==J_FLASH_WRITE&&!strcmp(label,"auto")))return false;
         args[n++]="--target";args[n++]=(char*)label;args[n++]="--volume";args[n++]=a->flash_volume;
         args[n++]="--volume-token";args[n++]=a->flash_volume_token;args[n++]="--path";args[n++]=a->flash_path;
+        /* An image chosen inside an archive (2026-11-13). */
+        if(a->flash_member[0]){args[n++]="--member";args[n++]=a->flash_member;}
         if(kind==J_FLASH_WRITE){args[n++]="--expected-sha256";args[n++]=a->flash_sha;args[n++]="--expected-identity";args[n++]=a->flash_identity;args[n++]="--confirm";}
         /* A logical partition grows to the checked image before it is written (2026-11-10). */
         static char payload[24];
@@ -39,11 +43,14 @@ static void complete_flash_job(App*a,const Json*j,int kind,bool ok){
     if(!ok){
         char code[96]="FLASH_FAILED",message[384]="The helper did not return a result.";
         if(j){int error=json_get(j,0,"error");if(error>=0){jstring(j,error,"code",code,sizeof(code));jstring(j,error,"message",message,sizeof(message));}}
-        if(kind==J_FLASH_TARGETS){a->flash_known=false;copy(a->flash_reason,sizeof(a->flash_reason),message);a->dirty=true;return;}
+        /* The partition list failed: what was asked to be flashed after it is dropped, or a later
+           ordinary Flash a partition went straight to that review (2026-11-14 review). */
+        if(kind==J_FLASH_TARGETS){a->flash_after_targets=false;a->flash_after_label[0]=0;a->flash_known=false;copy(a->flash_reason,sizeof(a->flash_reason),message);a->dirty=true;return;}
         a->flash_review_valid=false;files_problem(a,code,message,kind==J_FLASH_CHECK?flash_repick(a,nav_top(a)):flash_home(a));return;
     }
     if(kind==J_FLASH_TARGETS){
-        a->flash_target_count=0;int list=json_get(j,0,"targets");if(list<0||j->tokens[list].type!=J_ARRAY)return;
+        a->flash_target_count=0;int list=json_get(j,0,"targets");
+        if(list<0||j->tokens[list].type!=J_ARRAY){a->flash_after_targets=false;a->flash_after_label[0]=0;return;}
         for(int i=list+1;i<json_next(j,list)&&a->flash_target_count<FLASH_TARGETS;i=json_next(j,i)){
             FlashTarget*t=&a->flash_targets[a->flash_target_count];jstring(j,i,"label",t->label,sizeof(t->label));jstring(j,i,"title",t->title,sizeof(t->title));
             t->bytes=json_uint(j,json_get(j,i,"size_bytes"),0);t->logical=json_bool(j,json_get(j,i,"logical"),0)==1;t->room=json_uint(j,json_get(j,i,"room_bytes"),0);
@@ -55,11 +62,33 @@ static void complete_flash_job(App*a,const Json*j,int kind,bool ok){
            partitions are known now, so BOOT is chosen and the kept copy checked like any image. */
         if(a->flash_after_targets){
             a->flash_after_targets=false;a->flash_selected=-1;
-            for(unsigned int n=0;n<a->flash_target_count;n++)if(!strcmp(a->flash_targets[n].label,"boot"))a->flash_selected=(int)n;
+            /* Settings > Updates names the partition (2026-11-12): recovery or boot; BOOT otherwise. */
+            const char*wanted=a->flash_after_label[0]?a->flash_after_label:"boot";
+            for(unsigned int n=0;n<a->flash_target_count;n++)if(!strcmp(a->flash_targets[n].label,wanted))a->flash_selected=(int)n;
+            a->flash_after_label[0]=0;
             /* Not for a page that was left while the partitions were read. */
             if(a->flash_selected>=0&&!a->nav_hold)start_flash_job(a,J_FLASH_CHECK);
         }
         return;
+    }
+    if(kind==J_FLASH_MEMBERS){
+        a->flash_member_count=0;a->flash_members_installer=json_bool(j,json_get(j,0,"installer"),0)==1;
+        a->flash_members_rom=json_bool(j,json_get(j,0,"block_ota"),0)==1||json_bool(j,json_get(j,0,"payload"),0)==1;
+        int list=json_get(j,0,"members");
+        if(list>=0&&j->tokens[list].type==J_ARRAY)for(int i=list+1;i<json_next(j,list)&&a->flash_member_count<FLASH_MEMBERS_MAX;i=json_next(j,i)){
+            FlashMember*m=&a->flash_members[a->flash_member_count];jstring(j,i,"name",m->name,sizeof(m->name));jstring(j,i,"target",m->target,sizeof(m->target));
+            m->bytes=json_uint(j,json_get(j,i,"size"),0);if(m->name[0])a->flash_member_count++;
+        }
+        unsigned int usable=0,match=0,last=0;
+        for(unsigned int n=0;n<a->flash_member_count;n++)if(a->flash_members[n].target[0]){usable++;last=n;if(!strcmp(a->flash_members[n].target,flash_target_label(a)))match++;}
+        if(!usable){
+            files_problem(a,"NO_IMAGE_INSIDE",a->flash_members_installer?
+                "This ZIP holds no image to flash on its own. It installs itself: open Install, Android, ZIP with an installer.":
+                "The archive holds no image this recovery can flash.",flash_repick(a,nav_top(a)));return;
+        }
+        /* One image, for the partition already chosen: it is checked at once, as before. */
+        if(usable==1&&match==1){copy(a->flash_member,sizeof(a->flash_member),a->flash_members[last].name);start_flash_job(a,J_FLASH_CHECK);return;}
+        screen(a,FLASH_MEMBERS);return;
     }
     if(kind==J_FLASH_CHECK){
         int image=json_get(j,0,"image"),target=json_get(j,0,"target");char label[24]={0};if(target>=0)jstring(j,target,"label",label,sizeof(label));
@@ -67,7 +96,8 @@ static void complete_flash_job(App*a,const Json*j,int kind,bool ok){
         bool known=a->flash_restore?(!strcmp(label,"userdata")||!strcmp(label,"boot")):!strcmp(label,flash_target_label(a));
         if(image<0||!known){files_problem(a,"INVALID_FLASH_REVIEW","The helper did not describe the image.",flash_repick(a,nav_top(a)));return;}
         if(a->flash_restore)copy(a->flash_label,sizeof(a->flash_label),label);
-        a->flash_offline=json_bool(j,json_get(j,target,"offline"),1)!=0;a->flash_checksum[0]=0;
+        /* Not said is not offline: the hold stays off (2026-11-14 review: it was on by default). */
+        a->flash_offline=json_bool(j,json_get(j,target,"offline"),0)==1;a->flash_checksum[0]=0;
         a->flash_logical=json_bool(j,json_get(j,target,"logical"),0)==1;a->flash_size_now=json_uint(j,json_get(j,target,"size_bytes"),0);
         a->flash_size_after=json_uint(j,json_get(j,target,"new_size_bytes"),a->flash_size_now);a->flash_payload=json_uint(j,json_get(j,image,"payload_bytes"),0);jstring(j,image,"checksum_file",a->flash_checksum,sizeof(a->flash_checksum));
         jstring(j,image,"name",a->flash_name,sizeof(a->flash_name));jstring(j,image,"kind",a->flash_kind,sizeof(a->flash_kind));jstring(j,image,"sha256",a->flash_sha,sizeof(a->flash_sha));
@@ -146,7 +176,15 @@ static void render_flash_review(App*a){
     heading(a,a->flash_restore?"Restore from an image":"Review","Nothing has been written yet.",true);
     rounded(a,(Rect){28,240,664,120},24,PANEL);text(a,52,258,0,ORANGE,"PARTITION");text(a,52,296,2,TEXT,flash_target_label(a));
     rounded(a,(Rect){28,376,664,296},24,PANEL);text(a,52,394,0,ORANGE,"IMAGE");
-    raw_text(true);wrapped(a,52,432,606,1,TEXT,a->flash_name,2);raw_text(false);
+    raw_text(true);
+    if(a->flash_member[0]){
+        /* An image inside an archive: the image, then where it comes from (2026-11-13). */
+        const char*base=strrchr(a->flash_member,'/');base=base?base+1:a->flash_member;
+        const char*archive=strrchr(a->flash_path,'/');archive=archive?archive+1:a->flash_path;
+        ellipsis(a,52,432,606,1,TEXT,base);snprintf(line,sizeof(line),T("from %s"),archive);ellipsis(a,52,476,606,0,MUTED,line);
+        human_bytes(a->flash_payload?a->flash_payload:a->flash_bytes,size,sizeof(size));
+    }else wrapped(a,52,432,606,1,TEXT,a->flash_name,2);
+    raw_text(false);
     snprintf(line,sizeof(line),"%s  /  %s",tr(a->flash_kind),size);ellipsis(a,52,520,606,0,MUTED,line);
     text(a,52,566,0,ORANGE,"SHA-256");snprintf(line,sizeof(line),"%.32s",a->flash_sha);text(a,52,602,0,MUTED,line);snprintf(line,sizeof(line),"%.32s",a->flash_sha+32);text(a,52,634,0,MUTED,line);
     int y=700;
@@ -189,7 +227,30 @@ static bool pick_action(App*a,int id,void(*chosen)(App*)){
     }
     return !(id==A_BACK||id==A_FS_PREV||id==A_FS_NEXT||id==A_FS_REFRESH||id==A_FS_UP||id==A_FS_OPEN||id==A_FS_MOUNT_RO||id==A_DONE);
 }
-static void flash_chosen(App*a){FileVolume*v=current_volume(a);copy(a->flash_volume,sizeof(a->flash_volume),v->id);copy(a->flash_volume_token,sizeof(a->flash_volume_token),v->token);copy(a->flash_path,sizeof(a->flash_path),a->fs_selected.path);a->flash_pick=false;start_flash_job(a,J_FLASH_CHECK);}
+/* An archive (a ROM's ZIP, Samsung's tar, a 7z) is opened first, and its images offered (2026-11-13). */
+static bool archive_name(const char*path){
+    const char*dot=strrchr(path,'.');if(!dot)return false;
+    return !strcasecmp(dot,".zip")||!strcasecmp(dot,".tar")||!strcasecmp(dot,".md5")||!strcasecmp(dot,".7z");
+}
+static void flash_chosen(App*a){FileVolume*v=current_volume(a);copy(a->flash_volume,sizeof(a->flash_volume),v->id);copy(a->flash_volume_token,sizeof(a->flash_volume_token),v->token);copy(a->flash_path,sizeof(a->flash_path),a->fs_selected.path);a->flash_pick=false;a->flash_member[0]=0;
+    start_flash_job(a,!a->flash_restore&&archive_name(a->flash_path)?J_FLASH_MEMBERS:J_FLASH_CHECK);}
+static void render_flash_members(App*a){
+    heading(a,"Inside the archive","Choose the image to flash. Each goes to the partition its name says.",true);
+    int y=236;char line[200],size[48];
+    for(unsigned int n=0;n<a->flash_member_count&&y<1180;n++){
+        const FlashMember*m=&a->flash_members[n];bool usable=m->target[0]!=0;Rect r={28,y,664,112};
+        int action=A_FLASH_MEMBER+(int)n;surface(a,r,24,PANEL,usable?action:0);
+        raw_text(true);ellipsis(a,52,y+18,606,1,usable?TEXT:MUTED,m->name);raw_text(false);
+        human_bytes(m->bytes,size,sizeof(size));
+        if(usable)snprintf(line,sizeof(line),T("%s  /  for %s"),size,m->target);else snprintf(line,sizeof(line),"%s  /  %s",size,tr("not a partition this recovery writes"));
+        ellipsis(a,52,y+66,606,0,usable?GREEN:MUTED,line);
+        if(usable){icon(a,ICON_CHEVRON,646,y+40,30,MUTED);register_button(a,r,action,ui_free(a),0);}
+        y+=124;
+    }
+    if(a->flash_members_installer)text_tile(a,y+8,0,MUTED,a->flash_members_rom?
+        "This ZIP is also a whole ROM with its own installer. To install all of it, open Install, Android, ZIP with an installer.":
+        "This ZIP also has its own installer: open Install, Android, ZIP with an installer to run it.",4);
+}
 /* Everything a theme needs from the outside: the list, a file, and leaving again. */
 static bool theme_action(App*a,int id){
     if(id==A_THEME_ADD||id==A_TERMINAL_ADD){a->theme_pick=a->theme_return=id==A_THEME_ADD?THEME:TERMINAL_THEME;a->volume_scroll=0;a->fs_inventory_destination=FILE_VOLUMES;screen(a,FILE_VOLUMES);start_files_job(a,J_FS_INVENTORY);return true;}
@@ -211,7 +272,8 @@ static bool flash_action(App*a,int id){
         a->flash_restore=a->flash_pick=true;a->flash_review_valid=false;a->flash_label[0]=0;a->volume_scroll=0;a->fs_inventory_destination=FILE_VOLUMES;
         screen(a,FILE_VOLUMES);start_files_job(a,J_FS_INVENTORY);return true;
     }
-    if(id==A_FLASH||(id==A_DONE&&a->result_return==FLASH)){a->flash_restore=false;a->flash_pick=a->flash_review_valid=false;a->flash_known=false;a->flash_reason[0]=0;screen(a,FLASH);start_flash_job(a,J_FLASH_TARGETS);return true;}
+    if(id==A_BACK&&a->screen==FLASH){a->flash_after_targets=false;a->flash_after_label[0]=0;}  /* then the usual Back */
+    if(id==A_FLASH||(id==A_DONE&&a->result_return==FLASH)){a->flash_after_targets=false;a->flash_after_label[0]=0;a->flash_restore=false;a->flash_pick=a->flash_review_valid=false;a->flash_known=false;a->flash_reason[0]=0;screen(a,FLASH);start_flash_job(a,J_FLASH_TARGETS);return true;}
     if(id==A_FLASH_SUPER&&a->screen==FLASH){screen(a,FLASH_SUPER);return true;}
     if(id==A_BACK&&a->screen==FLASH_SUPER){screen(a,FLASH);return true;}
     if((a->screen==FLASH||a->screen==FLASH_SUPER)&&id>=A_FLASH_TARGET&&id<A_FLASH_TARGET+(int)a->flash_target_count){
@@ -227,6 +289,14 @@ static bool flash_action(App*a,int id){
         if(id==A_FLASH_CANCEL_PICK||(id==A_BACK&&a->screen==FILE_VOLUMES)){bool firmware=a->samsung_pick||a->zip_pick||a->rom_pick;enum Screen from=came_from_picker(a,flash_home(a));a->flash_pick=a->samsung_pick=a->stock_boot_pick=a->zip_pick=a->rom_pick=false;screen(a,firmware?ANDROID_MENU:from);return true;}
         return pick_action(a,id,a->rom_pick?rom_chosen:(a->zip_pick?zip_chosen:(a->samsung_pick?(a->stock_boot_pick?stock_boot_chosen:samsung_chosen):flash_chosen)));
     }
+    if(a->screen==FLASH_MEMBERS&&id>=A_FLASH_MEMBER&&id<A_FLASH_MEMBER+(int)a->flash_member_count){
+        const FlashMember*m=&a->flash_members[id-A_FLASH_MEMBER];if(!m->target[0])return true;
+        /* The partition follows the image: vendor.img inside goes to super/vendor. */
+        for(unsigned int n=0;n<a->flash_target_count;n++)if(!strcmp(a->flash_targets[n].label,m->target))a->flash_selected=(int)n;
+        if(strcmp(flash_target_label(a),m->target))return true;
+        copy(a->flash_member,sizeof(a->flash_member),m->name);start_flash_job(a,J_FLASH_CHECK);return true;
+    }
+    if(id==A_BACK&&a->screen==FLASH_MEMBERS){reopen(a,flash_repick(a,came_from(a,flash_home(a))));return true;}
     if(id==A_FLASH_CONFIRM&&a->screen==FLASH_REVIEW){if(a->flash_review_valid&&!a->flash_identical)start_flash_job(a,J_FLASH_WRITE);return true;}
     /* Flash a partition also opens from Root and after a stock BOOT was taken out: Back returns there. */
     if(id==A_BACK&&a->screen==FLASH){reopen(a,came_from(a,OS_MENU));return true;}

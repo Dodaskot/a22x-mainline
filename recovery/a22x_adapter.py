@@ -105,12 +105,64 @@ def make_parents(path):
         directory.chmod(0o700 if name.endswith(PRIVATE_DIRS) else 0o755)
 
 
+def inside(root, relative, follow=True):
+    """ROOT/RELATIVE as the system itself would see it from its own root (2026-11-12 review): an
+    absolute link counts from ROOT, ".." never climbs above it, so no path the image holds can lead
+    a write or a delete of this recovery, which runs as root, out of ROOT. With FOLLOW false a link
+    in the last place is returned itself (to be removed or replaced), not followed."""
+    base = Path(os.path.realpath(root))
+    pending = [part for part in str(relative).split('/') if part not in ('', '.')][::-1]
+    current, hops = base, 0
+    while pending:
+        part = pending.pop()
+        if part == '..':
+            if current != base:
+                current = current.parent
+            continue
+        candidate = current / part
+        if candidate.is_symlink() and (follow or pending):
+            hops += 1
+            if hops > 40:
+                die(f'Too many links in {relative}')
+            target = os.readlink(candidate)
+            if target.startswith('/'):
+                current = base
+            pending.extend([p for p in target.split('/') if p not in ('', '.')][::-1])
+            continue
+        current = candidate
+    return current
+
+
+def entry(root, relative):
+    """ROOT/RELATIVE with its parents resolved inside ROOT and its last name not followed."""
+    return inside(root, relative, follow=False)
+
+
+def glob_inside(root, pattern):
+    """The paths matching PATTERN under ROOT, every step resolved inside ROOT."""
+    import fnmatch
+    found = [Path(os.path.realpath(root))]
+    for part in [p for p in pattern.split('/') if p]:
+        following = []
+        for directory in found:
+            if any(c in part for c in '*?['):
+                try:
+                    names = sorted(os.listdir(directory))
+                except OSError:
+                    continue
+                following += [inside(root, (directory / n).relative_to(Path(os.path.realpath(root)))) for n in names if fnmatch.fnmatch(n, part)]
+            else:
+                following.append(inside(root, (directory / part).relative_to(Path(os.path.realpath(root)))))
+        found = [p for p in following if os.path.lexists(p)]
+    return found
+
+
 def write(root, relative, text, mode=0o644):
     write_bytes(root, relative, text.encode(), mode)
 
 
 def write_bytes(root, relative, data, mode=0o644):
-    path = root / relative
+    path = entry(root, relative)
     make_parents(path)
     if path.exists() or path.is_symlink():
         path.unlink()
@@ -120,7 +172,7 @@ def write_bytes(root, relative, data, mode=0o644):
 
 
 def link_unit(root, relative, target):
-    path = root / relative
+    path = entry(root, relative)
     make_parents(path)
     if path.exists() or path.is_symlink():
         path.unlink()
@@ -135,6 +187,10 @@ def remove(path):
 
 
 def clear(path):
+    """PATH (resolved inside the root by the caller, its last name not followed) made an empty
+    folder: a link there goes first, so nothing is emptied through it (2026-11-12 review)."""
+    if path.is_symlink() or (os.path.lexists(path) and not path.is_dir()):
+        path.unlink()
     path.mkdir(exist_ok=True)
     for child in path.iterdir():
         remove(child)
@@ -168,7 +224,7 @@ def rewrite_table(path, change):
 def adopt_first_account(root, name):
     """Clean install: the image's own first account (UID 1000, such as mobian or alarm) becomes the
     account typed in recovery and keeps its groups. Its password is replaced at the first start."""
-    passwd = root / 'etc/passwd'
+    passwd = inside(root, 'etc/passwd')
     users = [line.split(':') for line in passwd.read_text(errors='replace').splitlines() if line]
     if not name or any(row[0] == name for row in users):
         return None
@@ -183,7 +239,7 @@ def adopt_first_account(root, name):
         gecos[0] = name
         first[4] = ','.join(gecos)
     passwd.write_text(''.join(':'.join(r) + '\n' for r in users))
-    groups = [line.split(':') for line in (root / 'etc/group').read_text(errors='replace').splitlines() if line]
+    groups = [line.split(':') for line in inside(root, 'etc/group').read_text(errors='replace').splitlines() if line]
     own = any(row[0] == old and len(row) > 2 and row[2] == gid for row in groups)
     members = lambda field: ','.join(name if m == old else m for m in field.split(',') if m)
 
@@ -204,16 +260,16 @@ def adopt_first_account(root, name):
         if row and row[0] == old:
             row[0] = name
 
-    rewrite_table(root / 'etc/group', group_row)
-    rewrite_table(root / 'etc/gshadow', gshadow_row)
+    rewrite_table(inside(root, 'etc/group'), group_row)
+    rewrite_table(inside(root, 'etc/gshadow'), gshadow_row)
     for table in ('etc/shadow', 'etc/subuid', 'etc/subgid'):
-        rewrite_table(root / table, rename_first)
+        rewrite_table(inside(root, table), rename_first)
     # AccountsService keeps a name, session and picture per login.
     for kind in ('users', 'icons'):
-        record = root / 'var/lib/AccountsService' / kind / old
+        record = entry(root, 'var/lib/AccountsService/' + kind + '/' + old)
         if record.is_file() and not record.is_symlink() and not os.path.lexists(record.with_name(name)):
             record.rename(record.with_name(name))
-    source, target = root / old_home.lstrip('/'), root / 'home' / name
+    source, target = entry(root, old_home.lstrip('/')), entry(root, 'home/' + name)
     if old_home.startswith('/home/') and source.is_dir() and not source.is_symlink() and not os.path.lexists(target):
         source.rename(target)
     # Login screens that sign the default account in by name follow it.
@@ -224,7 +280,7 @@ def adopt_first_account(root, name):
              (r'(?m)^([ \t]*AutomaticLogin[ \t]*=[ \t]*)%s(?=[ \t]*$)' % word, r'\g<1>%s' % name),
              (r'(--autologin[ \t]+)%s(?=[ \t\n])' % word, r'\g<1>%s' % name))
     for pattern in LOGIN_CONFIGS:
-        for path in root.glob(pattern):
+        for path in glob_inside(root, pattern):
             if not path.is_file() or path.is_symlink():
                 continue
             text = path.read_text(errors='replace')
@@ -241,7 +297,7 @@ def adopt_first_account(root, name):
 
 def add_accounts(root, accounts, shadow):
     """Add the shared-home accounts with their exact names and numeric IDs."""
-    passwd, group = root / 'etc/passwd', root / 'etc/group'
+    passwd, group = inside(root, 'etc/passwd'), inside(root, 'etc/group')
     users = [line.split(':') for line in passwd.read_text().splitlines() if line]
     groups = [line.split(':') for line in group.read_text().splitlines() if line]
     shells = ('/bin/bash', '/usr/bin/bash', '/bin/sh')
@@ -288,7 +344,7 @@ def add_accounts(root, accounts, shadow):
             row[3] = ','.join(m for m in row[3].split(',') if m and m not in removed)
     passwd.write_text(''.join(':'.join(r) + '\n' for r in users))
     group.write_text(''.join(':'.join(r) + '\n' for r in groups))
-    table = root / 'etc/shadow'
+    table = inside(root, 'etc/shadow')
     rows = [line.split(':') for line in table.read_text().splitlines() if line] if table.is_file() else []
     rows = [row for row in rows if row[0] not in removed]
     for item in accounts:
@@ -311,7 +367,7 @@ def name_default_user(root, accounts):
     accounts that user is UID 1000, and plasma-mobile.service failed to start ("Failed to
     determine credentials for user '10000'", 2026-11-10). Name the first shared account there,
     for any image whose generators read that file."""
-    generators = root / 'usr/lib/systemd/system-generators'
+    generators = inside(root, 'usr/lib/systemd/system-generators')
     reads = False
     if generators.is_dir():
         for item in generators.iterdir():
@@ -516,7 +572,7 @@ def install_platform(root, args):
         # The image keeps its own /lib (the merged-/usr link); only its owner follows the platform
         # source, which the final check compares with the profile: postmarketOS ships the link as
         # root:1000, and its import stopped at PLATFORM_METADATA_MISMATCH, path "lib" (2026-11-10).
-        source_lib, image_lib = platform / 'lib', root / 'lib'
+        source_lib, image_lib = platform / 'lib', entry(root, 'lib')
         if source_lib.is_symlink() and image_lib.is_symlink() and os.readlink(source_lib) == os.readlink(image_lib):
             info = os.lstat(source_lib)
             os.chown(image_lib, info.st_uid, info.st_gid, follow_symlinks=False)
@@ -524,13 +580,20 @@ def install_platform(root, args):
             source = platform / relative
             if not os.path.lexists(source):
                 die(f'Installed system lacks {relative}')
-            copy_entry(source, root / relative)
+            copy_entry(source, entry(root, relative))
         # Optional files come from the installed system, else from the copy kept in recovery.
         fallback = getattr(args, 'platform_fallback', None)
         for relative in getattr(args, 'platform_optional', ()):
-            for base in (platform, Path(fallback) if fallback else None):
+            bases = [platform, Path(fallback) if fallback else None]
+            # 2026-11-14 review: a system installed before the sound profile's conf.d entry became a
+            # link again carries it as a plain file, which alsa-lib cannot follow to its folder; where
+            # the recovery's copy is a link and the installed one is not, the link is taken.
+            if (fallback and os.path.islink(Path(fallback) / relative) and os.path.lexists(platform / relative)
+                    and not os.path.islink(platform / relative)):
+                bases.reverse()
+            for base in bases:
                 if base is not None and os.path.lexists(base / relative):
-                    copy_entry(base / relative, root / relative)
+                    copy_entry(base / relative, entry(root, relative))
                     break
         return
     with tarfile.open(platform) as tar:
@@ -539,12 +602,17 @@ def install_platform(root, args):
                 # The image keeps its own /lib (the merged-/usr link); only its owner follows the
                 # platform profile, which the final check compares: postmarketOS ships the link
                 # as root:1000, and its import stopped at PLATFORM_METADATA_MISMATCH (2026-11-10).
-                link = root / 'lib'
+                link = entry(root, 'lib')
                 if link.is_symlink():
                     os.chown(link, item.uid, item.gid, follow_symlinks=False)
                 continue
-            tar.extract(item, root, set_attrs=False, numeric_owner=True, filter='fully_trusted')
-            target = root / item.name
+            # Written where the system would see it: under its own links, never out of ROOT.
+            target = entry(root, item.name)
+            make_parents(target)
+            if os.path.lexists(target) and not (item.isdir() and target.is_dir() and not target.is_symlink()):
+                remove(target)
+            item.name = target.relative_to(Path(os.path.realpath(root))).as_posix()
+            tar.extract(item, Path(os.path.realpath(root)), set_attrs=False, numeric_owner=True, filter='fully_trusted')
             os.chown(target, item.uid, item.gid, follow_symlinks=False)
             if not item.issym():
                 target.chmod(item.mode)
@@ -554,6 +622,8 @@ def copy_entry(source, target):
     info = os.lstat(source)
     make_parents(target)
     if stat.S_ISDIR(info.st_mode):
+        if target.is_symlink():
+            target.unlink()  # never filled through a link of the image (2026-11-12 review)
         target.mkdir(exist_ok=True)
         for child in source.iterdir():
             copy_entry(child, target / child.name)
@@ -573,23 +643,21 @@ def adapt(root, args, meta):
     identity = os_release(root)
     require_target(root)
     # The image kernel and bootloader cannot run here: BOOT stays in place.
-    for child in (root / 'usr/lib/modules').glob('*') if (root / 'usr/lib/modules').is_dir() else ():
+    modules = inside(root, 'usr/lib/modules')
+    for child in sorted(modules.iterdir()) if modules.is_dir() else ():
         remove(child)
-    clear(root / 'boot')
+    clear(entry(root, 'boot'))
+    firmware = inside(root, 'usr/lib/firmware')
     if not args.keep_firmware:
-        for child in (root / 'usr/lib/firmware').glob('*') if (root / 'usr/lib/firmware').is_dir() else ():
+        for child in sorted(firmware.iterdir()) if firmware.is_dir() else ():
             remove(child)
     install_platform(root, args)
     if not (root / 'lib').is_symlink() or os.readlink(root / 'lib') != 'usr/lib':
         die('Only merged-/usr systems are supported: /lib must link to usr/lib')
     for name in ('wmtload.py', 'wmtlaunch.py'):
-        remove(root / 'opt/a22x-conn' / name)
-    (root / 'opt/a22x-conn').mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(args.helpers / 'a22x-wmt', root / 'opt/a22x-conn/a22x-wmt')
-    shutil.copyfile(args.helpers / 'busybox', root / 'opt/a22x-conn/busybox')
+        remove(entry(root, 'opt/a22x-conn/' + name))
     for name in ('a22x-wmt', 'busybox'):
-        os.chown(root / 'opt/a22x-conn' / name, 0, 0)
-        (root / 'opt/a22x-conn' / name).chmod(0o755)
+        write_bytes(root, 'opt/a22x-conn/' + name, (args.helpers / name).read_bytes(), 0o755)
     write(root, 'opt/a22x-conn/conn-start.sh', (args.helpers / 'conn-start.sh').read_text(), 0o755)
     write(root, 'opt/a22x-conn/a22x-usbnet.sh', USB_SCRIPT, 0o755)
     write(root, 'etc/systemd/system/a22x-wmt-launcher.service', LAUNCHER_UNIT)
@@ -609,8 +677,8 @@ def adapt(root, args, meta):
     link_unit(root, 'etc/systemd/system/multi-user.target.wants/a22x-started.service',
               '/etc/systemd/system/a22x-started.service')
     # A root copied from another phone or kept from an earlier installation has not started here.
-    remove(root / STARTED_FILE)
-    remove(root / 'etc/systemd/network/10-usb0.network')
+    remove(entry(root, STARTED_FILE))
+    remove(entry(root, 'etc/systemd/network/10-usb0.network'))
     for unit in MASKED:
         link_unit(root, f'etc/systemd/system/{unit}', '/dev/null')
     if args.console:
@@ -628,11 +696,10 @@ def adapt(root, args, meta):
     write(root, 'etc/wireplumber/wireplumber.conf.d/50-a22x-loopback.conf', LOOPBACK_RULE)
     write(root, 'etc/wireplumber/main.lua.d/51-a22x-loopback.lua', LOOPBACK_RULE_LUA)
     write(root, 'etc/udev/rules.d/80-a22x-hide-internal.rules', UDISKS_RULE)
-    selinux = root / 'etc/selinux/config'
+    selinux = inside(root, 'etc/selinux/config')
     if selinux.is_file():
         selinux.write_text(re.sub(r'(?m)^SELINUX=.*$', 'SELINUX=disabled', selinux.read_text()))
-    (root / 'etc/cloud').mkdir(exist_ok=True) if (root / 'etc/cloud').is_dir() else None
-    if (root / 'etc/cloud').is_dir():
+    if inside(root, 'etc/cloud').is_dir():
         write(root, 'etc/cloud/cloud-init.disabled', '')
     add_accounts(root, meta['accounts'], meta['shadow'])
     name_default_user(root, meta['accounts'])
@@ -641,7 +708,7 @@ def adapt(root, args, meta):
     if ssh:
         name = Path(ssh).name
         link_unit(root, f'etc/systemd/system/multi-user.target.wants/{name}', '/' + ssh)
-        remove(root / 'etc/systemd/system/ssh.socket')
+        remove(entry(root, 'etc/systemd/system/ssh.socket'))
         write(root, 'etc/ssh/sshd_config.d/10-a22x.conf', SSHD_DROPIN)
         write(root, 'etc/systemd/system/a22x-sshkeys.service', SSH_KEYS_UNIT)
         link_unit(root, 'etc/systemd/system/multi-user.target.wants/a22x-sshkeys.service',
@@ -671,27 +738,20 @@ def adapt(root, args, meta):
         link_unit(root, 'etc/systemd/system/multi-user.target.wants/a22x-trial.service',
                   '/etc/systemd/system/a22x-trial.service')
     if args.authorized_key:
-        key = root / 'root/.ssh/authorized_keys'
-        key.parent.mkdir(parents=True, exist_ok=True)
-        key.parent.chmod(0o700)
-        os.chown(key.parent, 0, 0)
         text = args.authorized_key
-        key.write_text(text if text.startswith('ssh-') else Path(text).read_text())
-        os.chown(key, 0, 0)
-        key.chmod(0o600)
-    for name in ('dev', 'proc', 'sys', 'run'):
-        path = root / name
-        if path.is_symlink():
-            path.unlink()
-        clear(path)
-    for name in ('tmp', 'var/tmp'):
-        clear(root / name)
-    (root / 'tmp').chmod(0o1777)
-    (root / 'var/tmp').chmod(0o1777)
-    for child in (root / 'home').glob('*') if (root / 'home').is_dir() else ():
+        write(root, 'root/.ssh/authorized_keys', text if text.startswith('ssh-') else Path(text).read_text(), 0o600)
+        folder = inside(root, 'root/.ssh')
+        folder.chmod(0o700)
+        os.chown(folder, 0, 0)
+    for name in ('dev', 'proc', 'sys', 'run', 'tmp', 'var/tmp'):
+        clear(entry(root, name))
+    inside(root, 'tmp').chmod(0o1777)
+    inside(root, 'var/tmp').chmod(0o1777)
+    home = inside(root, 'home')
+    for child in sorted(home.iterdir()) if home.is_dir() else ():
         remove(child)
-    (root / 'home').mkdir(exist_ok=True)
-    remove(root / 'lost+found') if (root / 'lost+found').exists() else None
+    home.mkdir(exist_ok=True)
+    remove(entry(root, 'lost+found')) if os.path.lexists(entry(root, 'lost+found')) else None
     for special in walk_special(root):
         special.unlink()
     normalize_links(root)

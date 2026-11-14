@@ -750,12 +750,13 @@ def serve(context, args):
     if stop_connection:
         stop_result['storage_lease_held'] = False
         send(stop_connection, stop_result)
-    return 0 if record['clean'] else 2
+    # A session that never started is no success even when it was cleaned up (2026-11-14 review).
+    return 0 if record['clean'] and record.get('state') != 'failed' else 2
 
 
 def start(context, args):
-    inherited_start_guard()
-    dimensions(args.rows, args.cols)
+    # main() checked the inherited lease and the size before the context was made (2026-11-14
+    # review: both checked twice).
     context.ready()
     previous = context.record()
     require(not previous or not process_live(previous), 'TERMINAL_ACTIVE', 'Close the existing terminal session first')

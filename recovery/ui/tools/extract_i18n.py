@@ -9,14 +9,14 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCES = ('recovery_ui.c', 'systems_ui.h', 'install_ui.h', 'wifi_ui.h', 'installer_ui.h', 'images_ui.h', 'adb_ui.h', 'packages_ui.h', 'identity_ui.h', 'android_plan_ui.h', 'wipe_ui.h', 'androidlog_ui.h', 'android_ui.h', 'card_ui.h', 'copies_ui.h', 'source_ui.h', 'screenshot_ui.h', 'charger_ui.h', 'shells_ui.h', 'locale_ui.h', 'terminal_ui.h', 'flash_ui.h', 'theme.h')
-HELPERS = ('../flash.py', '../themes.py', '../sysinfo.py', '../samsung_firmware.py', '../android_gsi.py', '../saved_boot.py', '../sevenzip.py', '../root.py', '../bcb.py', '../clock.py', '../zip_install.py', '../sdcard.py', '../identity_backup.py', '../partition_archive.py')
+SOURCES = ('recovery_ui.c', 'systems_ui.h', 'install_ui.h', 'wifi_ui.h', 'installer_ui.h', 'images_ui.h', 'adb_ui.h', 'packages_ui.h', 'identity_ui.h', 'android_plan_ui.h', 'wipe_ui.h', 'androidlog_ui.h', 'updates_ui.h', 'android_ui.h', 'card_ui.h', 'copies_ui.h', 'source_ui.h', 'screenshot_ui.h', 'linuxdata_ui.h', 'charger_ui.h', 'shells_ui.h', 'locale_ui.h', 'terminal_ui.h', 'flash_ui.h', 'theme.h')
+HELPERS = ('../flash.py', '../themes.py', '../sysinfo.py', '../samsung_firmware.py', '../android_gsi.py', '../saved_boot.py', '../sevenzip.py', '../root.py', '../bcb.py', '../clock.py', '../zip_install.py', '../sdcard.py', '../identity_backup.py', '../partition_archive.py', '../linux_data.py', '../file_archive.py', '../archive_crypt.py')
 WORDS = {'archive', 'folder', 'read-only', 'finished', 'failed', 'not run', 'unavailable', 'mounted', 'offline', 'raw', 'active', 'yes', 'no', 'live', 'history', 'on', 'off', 'unknown',
          'backup', 'wipe', 'restore', '30 s', 'minimal', 'signed', 'none', 'arm64',
          'Europe', 'America', 'Asia', 'Africa', 'Australia', 'Pacific', 'Atlantic', 'Antarctica', 'Arctic'}
 NOT_TEXT = {'—', '%4d-%2d-%2dT%2d:%2d:%2dZ', 'recovery-%s.png', r'\x89PNG\r\n\x1a\n', 'IHDR', 'IDAT', 'IEND', 'en_US', 'uk_UA', 'de_DE', 'fr_FR', 'pl_PL', 'es_ES', 'it_IT', 'pt_BR', 'nl_NL', 'cs_CZ', 'ro_RO', 'tr_TR', 'ru_RU', 'English', 'Deutsch', 'Français', 'Polski', 'Español', 'Italiano', 'Português', 'Nederlands', 'Čeština', 'Română', 'Türkçe', 'UTC%s', 'UTC%s / %s', 'GDM', 'SDDM', 'LightDM', 'Phrog', '%s  /  Recovery %s', 'Galaxy A22 5G', 'Catppuccin Mocha', 'Catppuccin Latte', 'Dracula', 'Nord', 'Tokyo Night', 'Gruvbox Dark', 'Gruvbox Light', 'Solarized Dark', 'Solarized Light', '%.1000s/A22xBackups', 'SUBSYSTEM=power_supply', 'Charging', 'Full', 'DEVPATH=', 'SUBSYSTEM=block', 'not attached', '(no result buffer)', 'Example external repository', 'ext4 microSD - illustrative preview', 'ABC', 'EN', 'UK',
             'Esc', 'Tab', 'PYTHONUNBUFFERED', 'INSTALL-STOCK-', 'partclone-ext4-v2+zstd', 'LUKS', 'Plasma', 'Xfce', 'UTC%c%d', 'UTC%c%d:%02d', 'TZ', 'UTC0',
-            'SM-A226B  /  Recovery 0.6', 'A22x Recovery', 'Mainline Recovery', 'USB SSH', 'microSD', 'Android', 'Console', '%u Hz', '60 Hz', '90 Hz', 'Ctrl+C', 'Ctrl+D', 'GiB', 'KiB', 'MiB', 'TiB', 'GNOME', 'Phosh', 'Sxmo', 'Lomiri', 'Del', 'saved\\n', 'FILE TEST', 'PREVIEW', 'SHA-256'}
+            'SM-A226B  /  Recovery 0.6', 'Mainline Recovery', 'Mainline Recovery', 'USB SSH', 'microSD', 'Android', 'Console', '%u Hz', '60 Hz', '90 Hz', 'Ctrl+C', 'Ctrl+D', 'GiB', 'KiB', 'MiB', 'TiB', 'GNOME', 'Phosh', 'Sxmo', 'Lomiri', 'Del', 'saved\\n', 'FILE TEST', 'PREVIEW', 'SHA-256'}
 # Messages from the backup backend that a person is likely to meet.
 BACKEND_TEXT = {'BOOT holds no Linux kernel for this phone. Flash a Linux BOOT image first: Install, Flash a partition, boot',  # distro.py boot_identity (2026-11-11)
                 # android_gsi.py OLD_KERNEL_WARNING (2026-11-12).
@@ -36,7 +36,7 @@ BACKEND_TEXT = {'BOOT holds no Linux kernel for this phone. Flash a Linux BOOT i
                 'A vbmeta descriptor lies outside',
                 'Neither an AVB hash nor the kernel and ramdisk streams show that the image is complete',
                 'Not a device tree',
-                'Nothing in this boot image names the Galaxy A22 5G or its MT6833 chip',
+                'Nothing in this boot image names the Galaxy A22 5G (SM-A226B)',
                 'The AVB footer points outside the partition',
                 'The DT table is cut short',
                 'The DT table lies outside the partition',
@@ -80,7 +80,10 @@ BACKEND_TEXT = {'BOOT holds no Linux kernel for this phone. Flash a Linux BOOT i
                 'Only cache is wiped this way. Erase other volumes in Files',  # filesystem.py wipe (2026-11-10)
                 'This system was set up for another kernel and firmware. Install it again, or remove it',  # distro.py switch
                 # filesystem.py reason_text: shown under a volume that cannot be opened.
-                'Android logical-partition container; mapping is not implemented', 'Raw image; not a filesystem',
+                'Android logical-partition container; its partitions are listed as separate volumes', 'Raw image; not a filesystem',
+                # filesystem.py: a partition of super opened in Files (2026-11-12).
+                'The kernel did not open this partition of super', 'The partition of super is still in use',
+                'The partition of super is still mounted elsewhere', 'The opened partition does not match super',
                 'Firmware or service partition; file access is not admitted', 'This partition is already used by another block mapping',
                 'Filesystem unavailable; Android data may require decryption', 'Encrypted or unsupported filesystem',
                 'This kernel has no driver for the detected filesystem', 'Mounted outside the recovery filesystem manager',
@@ -140,6 +143,8 @@ def interface_text(path):
         text = text[:start] + text[text.index('\nstatic void usage(') if '\nstatic void usage(' in text[start:] else len(text):]
         cut = text.find('int main(')
         text = text[:cut] if cut > 0 else text
+    # A compile-time check's message is for whoever builds, never shown (2026-11-14 review).
+    text = re.sub(r'_Static_assert\([^;]*\);', '', text)
     return [match.group(1) for match in STRING.finditer(text)]
 
 

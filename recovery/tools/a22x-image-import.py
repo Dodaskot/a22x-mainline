@@ -45,7 +45,14 @@ def run(argv, **kw):
 
 
 def host_run(argv):
-    """libguestfs cannot start in the user namespace: the parent process runs it."""
+    """libguestfs cannot start in the user namespace: the parent process runs it. Run by real root
+    there is no namespace and no parent helper: it runs here (2026-11-14 review: KeyError)."""
+    if 'A22X_IMPORT_FDS' not in os.environ:
+        try:
+            run(argv)
+        except subprocess.CalledProcessError as error:
+            die(f'{argv[0]} failed with status {error.returncode}')
+        return
     log('host $ ' + ' '.join(argv)[:200])
     request, reply = (int(n) for n in os.environ['A22X_IMPORT_FDS'].split(','))
     os.write(request, json.dumps(argv).encode() + b'\n')
@@ -57,6 +64,14 @@ def host_run(argv):
         answer += block
     if answer.strip() != b'0':
         die(f'{argv[0]} failed with status {answer.decode().strip()}')
+
+
+def bundle_boots(profile):
+    """Every BOOT the profile admits, for the bundle to name all of them (2026-11-14 review: the first
+    of the sorted list was named as if it were the BOOT the bundle was made for). boot_sha256 keeps
+    the profile's own when it has one; distro.py reads it only as a well-formed hash."""
+    allowed = sorted(profile.get('boot_sha256_allowed') or [profile['boot_sha256']])
+    return profile.get('boot_sha256') or allowed[0], allowed
 
 
 def host_service(child, request, reply):
@@ -312,7 +327,7 @@ def build(args):
         bundle = {
             'schema': 'a22x.distro.bundle.v1', 'architecture': 'aarch64', 'id': args.id,
             'name': args.name or identity.get('PRETTY_NAME', args.id),
-            'boot_profile': profile['id'], 'boot_sha256': profile['boot_sha256_allowed'][0] if 'boot_sha256_allowed' in profile else profile['boot_sha256'],
+            'boot_profile': profile['id'], 'boot_sha256': bundle_boots(profile)[0], 'boot_sha256_allowed': bundle_boots(profile)[1],
             'platform_profile_sha256': args.profile_digest,
             'rootfs': {'file': archive.name, 'compression': 'gzip', 'sha256': sha256(archive),
                        'bytes': archive.stat().st_size},

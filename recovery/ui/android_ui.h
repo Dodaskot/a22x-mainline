@@ -85,10 +85,14 @@ static void complete_samsung_job(App*a,const Json*j,int kind,bool ok){
         files_problem(a,code,message,back);return;
     }
     if(kind==J_SAMSUNG_UNPACK){
-        /* The firmware ZIP is unpacked beside it: its AP is reviewed as any firmware folder. */
+        /* The firmware ZIP is unpacked beside it (or on userdata): its AP is reviewed as any firmware folder. */
         char ap[PATH_LEN]={0};jstring(j,0,"ap",ap,sizeof(ap));
         if(!ap[0]){files_problem(a,"SAMSUNG_FIRMWARE_FAILED","The firmware helper did not return a result.",ANDROID_MENU);return;}
         copy(a->samsung_path,sizeof(a->samsung_path),ap);
+        /* Unpacked on userdata when the ZIP's own volume had no room (2026-11-13). */
+        char volume[sizeof(a->samsung_volume)]={0},token[sizeof(a->samsung_token)]={0};
+        jstring(j,0,"volume",volume,sizeof(volume));jstring(j,0,"volume_token",token,sizeof(token));
+        if(volume[0]&&token[0]){copy(a->samsung_volume,sizeof(a->samsung_volume),volume);copy(a->samsung_token,sizeof(a->samsung_token),token);}
         if(!start_samsung_job(a,J_SAMSUNG_INSPECT))files_problem(a,"SAMSUNG_FIRMWARE_UNAVAILABLE","Wait for the current operation to finish.",ANDROID_MENU);
         return;
     }
@@ -133,7 +137,7 @@ static void complete_samsung_job(App*a,const Json*j,int kind,bool ok){
     char saved[192]={0};jstring(j,0,"saved_boot",saved,sizeof(saved));
     a->successful=true;copy(a->status,sizeof(a->status),a->android_gsi?"Android image installed":"Stock Android installed");
     snprintf(a->message,sizeof(a->message),T("%u partitions written and checked. userdata is ready for Android, and this recovery stays. The first start of Android takes several minutes."),written);
-    if(saved[0]){append(a->message,sizeof(a->message),"\n\n");append(a->message,sizeof(a->message),tr("The Linux BOOT is kept on cache:"));append(a->message,sizeof(a->message)," ");append(a->message,sizeof(a->message),saved);}
+    if(saved[0]){append(a->message,sizeof(a->message),"\n\n");append(a->message,sizeof(a->message),tr("The previous BOOT is kept on cache:"));append(a->message,sizeof(a->message)," ");append(a->message,sizeof(a->message),saved);}
     /* userdata is Android's now: no Linux switch or installation is pending on it any more. */
     a->android_installed=true;a->samsung_known=false;a->systems_reboot_blocked=a->install.reboot_blocked=false;
     a->result_return=ANDROID_MENU;screen(a,RESULT);
@@ -147,7 +151,11 @@ static const StoredImage*android_saved(const App*a,const CatalogImage*c){
 static void open_android_image(App*a,int n){
     a->android_selected=n;a->page_scroll=0;a->saved_note[0]=0;screen(a,ANDROID_IMAGE);
     /* Asked on every phone (2026-11-11): the helper says where the store is, userdata or a card. */
-    if(!a->job.pid){a->saved_known=false;start_images_job(a,J_IMAGES,NULL);}
+    /* 2026-11-12, on the phone: reached from Install > Android, the state of userdata was never read,
+       so "Mount userdata" stayed off. It is read first; the saved images follow (complete_job). */
+    if(!a->job.pid){a->saved_known=false;
+        if(!a->systems_known&&a->distro_helper[0]&&!a->preview&&(a->device||a->fixture[0]))(void)start_systems_job(a,J_SYS_STATUS);
+        else start_images_job(a,J_IMAGES,NULL);}
 }
 static void android_fact(App*a,int y,const char*label,const char*value){
     text(a,52,y,0,MUTED,label);raw_text(true);ellipsis(a,300,y,370,0,TEXT,value);raw_text(false);
@@ -295,11 +303,18 @@ static void complete_root_job(App*a,const Json*j,int kind,bool ok){
         append(a->message,sizeof(a->message),"\n");append(a->message,sizeof(a->message),kept);}
     a->android_installed=true;a->root_known=false;a->result_return=ANDROID_MENU;screen(a,RESULT);
 }
-static void open_root(App*a){a->root_known=false;a->root_selected=-1;a->root_key_tool=-1;memset(a->root_superkey,0,sizeof(a->root_superkey));a->page_scroll=0;screen(a,ROOT_PAGE);start_root_job(a,J_ROOT_LIST);}
+/* The list is read again; a read that cannot start (another job runs) ends as a failed one, with no
+   tools shown, and not as a page that reads for ever with the old tools enabled (2026-11-14 review). */
+static void root_read(App*a){
+    a->root_known=false;a->root_count=0;
+    if(!start_root_job(a,J_ROOT_LIST)&&!a->preview){a->root_known=true;copy(a->root_boot_kind,sizeof(a->root_boot_kind),"unknown");a->dirty=true;}
+}
+static void open_root(App*a){a->root_selected=-1;a->root_key_tool=-1;memset(a->root_superkey,0,sizeof(a->root_superkey));a->page_scroll=0;screen(a,ROOT_PAGE);root_read(a);}
 static void render_superkey_prompt(App*a){
     heading(a,"SuperKey","APatch asks for it in its app in Android.",true);
-    account_field(a,236,"SUPERKEY",a->fs_prompt,false,true,A_ROOT_KEY_FIELD);
+    account_field(a,236,"SUPERKEY",a->fs_prompt,!a->secret_show,true,A_ROOT_KEY_FIELD);
     bool ready=superkey_ok(a->fs_prompt);
+    button(a,(Rect){210,540,300,60},a->secret_show?"Hide":"Show",A_SECRET_SHOW,ui_free(a),false,0);
     wrapped(a,40,394,640,0,a->fs_prompt[0]&&!ready?ORANGE:MUTED,"8 to 63 characters without spaces, with a letter and a digit. It is kept nowhere: remember it.",3);
     render_keyboard(a);
     button(a,(Rect){28,1370,256,84},"Cancel",A_BACK,ui_free(a),false,0);
@@ -390,7 +405,7 @@ static bool root_action(App*a,int id){
         int n=id-A_ROOT_KEY;
         if(n<(int)a->root_count&&a->root_tools[n].needs_key&&ui_free(a)){
             if(a->root_key_tool!=n)memset(a->root_superkey,0,sizeof(a->root_superkey));
-            a->root_key_tool=n;a->fs_prompt_kind=J_ROOT_SUPERKEY;copy(a->fs_prompt,sizeof(a->fs_prompt),a->root_superkey);
+            a->root_key_tool=n;a->secret_show=false;a->secret_typed_at=0;a->fs_prompt_kind=J_ROOT_SUPERKEY;copy(a->fs_prompt,sizeof(a->fs_prompt),a->root_superkey);
             a->prompt_cursor=strlen(a->fs_prompt);a->prompt_scroll=0;screen(a,FILE_PROMPT);
         }
         return true;
@@ -409,7 +424,7 @@ static bool root_action(App*a,int id){
         /* The stock BOOT on cache goes through Flash a partition, as "Flash it to BOOT". */
         a->flash_restore=a->flash_pick=a->flash_review_valid=false;a->flash_known=false;a->flash_reason[0]=0;
         copy(a->flash_volume,sizeof(a->flash_volume),"cache");copy(a->flash_volume_token,sizeof(a->flash_volume_token),a->root_cache_token);
-        copy(a->flash_path,sizeof(a->flash_path),a->root_stock_path);a->flash_after_targets=true;screen(a,FLASH);start_flash_job(a,J_FLASH_TARGETS);return true;
+        copy(a->flash_path,sizeof(a->flash_path),a->root_stock_path);a->flash_member[0]=0;a->flash_after_targets=true;screen(a,FLASH);/* 2026-11-14 review: a list that cannot start drops the pending flash */if(!start_flash_job(a,J_FLASH_TARGETS)&&!a->preview){a->flash_after_targets=false;a->flash_after_label[0]=0;}return true;
     }
     return false;
 }
@@ -484,7 +499,7 @@ static void render_samsung_review(App*a){
         samsung_section(a,&y,"INSTEAD",TEXT,"instead");
         samsung_section(a,&y,"NOT WRITTEN",MUTED,"refused");
         y+=text_tile(a,y,0,MUTED,a->android_gsi?"Everything is checked as it is read and read back after writing. It takes a few minutes; then restart into Android.":
-                   "Everything is checked as it is read and read back after writing. A Linux BOOT is kept on cache first. It takes about ten minutes; then restart into Android.",5)+24;
+                   "Everything is checked as it is read and read back after writing. The BOOT there now is kept on cache first. It takes about ten minutes; then restart into Android.",5)+24;
     }
     a->page_content=y+a->page_scroll-230+16;a->clip_active=false;scroll_indicator(a,(Rect){698,230,5,page_height(a)},a->page_scroll,a->page_content,ORANGE);
     button(a,(Rect){28,1320,664,104},"Hold 5 seconds to install",A_SAMSUNG_CONFIRM,free_ui&&a->samsung_known&&!a->samsung_blockers[0],true,5000);
@@ -540,9 +555,10 @@ static void zip_result(App*a,bool ok,const char*code,const char*changed,const ch
         }
         append(a->message,sizeof(a->message),"\n");
     }
+    if(ok&&a->zip_reset){append(a->message,sizeof(a->message),tr("Android's BOOT changed. On this Samsung, Android starts with a changed BOOT only after its data is formatted: everything in Android is erased, the SD card stays."));append(a->message,sizeof(a->message),"\n\n");}
     append(a->message,sizeof(a->message),log);
     a->root_known=false;a->result_return=ANDROID_MENU;a->zip_ran=true;
-    a->zip_restart_at=ok&&a->zip_restart&&a->allow_power?a->now+ZIP_RESTART_MS:0;a->zip_restart_shown=0;
+    a->zip_restart_at=ok&&a->zip_restart&&a->allow_power&&!a->zip_reset?a->now+ZIP_RESTART_MS:0;a->zip_restart_shown=0;
     /* The list stays as it was reviewed, should the owner go back to it. */
     if(a->zip_count)zip_item_to_review(a,&a->zip_queue[a->zip_count-1]);
     screen(a,RESULT);
@@ -613,6 +629,9 @@ static void zip_lines(const Json*j,int list,char*out,size_t size,bool translate,
     for(int i=list+1;i<json_next(j,list);i=json_next(j,i),at++){
         char line[248];if(at+last<count||json_string(j,i,line,sizeof(line))<=0)continue;
         if(out[0])append(out,size,"\n");
+        /* A line with sizes in it: its words are translated, the sizes stay (2026-11-13). */
+        static const char fit[]="super is laid out for this ROM first: ";
+        if(translate&&!strncmp(line,fit,sizeof(fit)-1)){append(out,size,tr(fit));append(out,size,line+sizeof(fit)-1);continue;}
         append(out,size,translate?tr(line):line);
     }
 }
@@ -627,6 +646,8 @@ static void complete_zip_job(App*a,const Json*j,int kind,bool ok){
         ZipItem*it=a->zip_at<a->zip_count?&a->zip_queue[a->zip_at]:NULL;
         if(it){it->state=ok?1:2;copy(it->changed,sizeof(it->changed),changed);}
         a->root_known=false;
+        if(a->zip_at==0)a->zip_reset=false;
+        if(ok&&json_bool(j,json_get(j,0,"android_boot_changed"),0)==1)a->zip_reset=true;
         if(ok&&it&&a->zip_at+1<a->zip_count){
             /* The next one in the list: its review is put back, and its installer starts. */
             a->zip_at++;zip_item_to_review(a,&a->zip_queue[a->zip_at]);
@@ -701,6 +722,8 @@ static bool zip_action(App*a,int id){
         a->zip_adding=false;
         screen(a,FILE_VOLUMES);start_files_job(a,J_FS_INVENTORY);return true;
     }
+    /* From the result page: Android's data formatted after its BOOT changed (2026-11-13). */
+    if(id==A_ZIP_RESET&&a->screen==RESULT){if(ui_free(a)){a->zip_ran=a->zip_reset=false;a->wipe_android=true;a->reset_page=false;screen(a,WIPE_REVIEW);}return true;}
     if(a->screen!=ZIP_REVIEW)return false;
     if(id==A_ZIP_ADD){
         if(!ui_free(a)||!a->zip_count||a->zip_count>=ZIP_QUEUE)return true;
@@ -760,7 +783,7 @@ static bool samsung_action(App*a,int id){
         /* The kept copy on cache goes through Flash a partition: checked, reviewed, held. */
         a->flash_restore=a->flash_pick=a->flash_review_valid=false;a->flash_known=false;a->flash_reason[0]=0;
         copy(a->flash_volume,sizeof(a->flash_volume),"cache");copy(a->flash_volume_token,sizeof(a->flash_volume_token),a->stock_boot_token);
-        copy(a->flash_path,sizeof(a->flash_path),a->stock_boot_path);a->flash_after_targets=true;screen(a,FLASH);start_flash_job(a,J_FLASH_TARGETS);return true;
+        copy(a->flash_path,sizeof(a->flash_path),a->stock_boot_path);a->flash_member[0]=0;a->flash_after_targets=true;screen(a,FLASH);/* 2026-11-14 review: a list that cannot start drops the pending flash */if(!start_flash_job(a,J_FLASH_TARGETS)&&!a->preview){a->flash_after_targets=false;a->flash_after_label[0]=0;}return true;
     }
     if(a->screen==ANDROID_IMAGE){
         const CatalogImage*c=a->android_selected>=0&&(unsigned int)a->android_selected<a->catalog_count?&a->catalog[a->android_selected]:NULL;

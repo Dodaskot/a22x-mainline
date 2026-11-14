@@ -3,6 +3,8 @@
     package="org.a22x.installer">
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- The app's own update from the project's releases on GitHub (2026-11-12). -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Three launcher entries, one per theme; the app enables only the one of the chosen theme,
          so the home screen shows that theme's icon and Android 12+ its splash screen. -->
     <application

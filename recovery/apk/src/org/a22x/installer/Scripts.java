@@ -62,6 +62,75 @@ final class Scripts {
             + "  return 0\n"
             + "}\n";
 
+    /** Android's BOOT kept on cache by the app itself, at every start of the app and of Android
+     *  (2026-11-12, the owner: "the stock BOOT backed up on cache, so that the APK does it by
+     *  itself"). A rooted phone's BOOT is patched; Magisk keeps the original it patched in
+     *  /data/magisk_backup_<sha1>/boot.img.gz, so that one is kept as the stock BOOT
+     *  (stock-<build>-<sha12>.img). Without it the BOOT there is kept (android-<kernel>-<sha12>.img),
+     *  marked with the root in it, so the recovery keeps only the newest rooted one. Only a whole
+     *  Android boot image, once per content. Prints A22X:KEPT <path> or A22X:WARN <why>. */
+    static final String KEEP_BOOT_AUTO =
+            // 2026-11-12 review: one run at a time (the app's start, Android's start and Keep now may
+            // overlap and shared one temporary file); a lock older than ten minutes is a dead run's.
+            "keep_boot_auto() {\n"
+            + "  L=/data/local/tmp/a22x-keep-boot.lock\n"
+            + "  [ -d \"$L\" ] && [ -n \"$(find \"$L\" -maxdepth 0 -mmin +10 2>/dev/null)\" ] && rmdir \"$L\" 2>/dev/null\n"
+            + "  mkdir \"$L\" 2>/dev/null || { echo A22X:WARN busy; return 0; }\n"
+            + "  keep_boot_auto_locked; r=$?; rmdir \"$L\" 2>/dev/null; return $r\n"
+            + "}\n"
+            + "keep_boot_auto_locked() {\n"
+            + "  src=; kind=current; root=\n"
+            + "  for f in /data/magisk_backup_*/boot.img.gz; do [ -f \"$f\" ] && { src=$f; kind=stock; }; done\n"
+            + "  b=; for d in /dev/block/by-name/boot /dev/block/bootdevice/by-name/boot /dev/block/platform/*/by-name/boot; do\n"
+            + "    [ -e \"$d\" ] && { b=$(readlink -f \"$d\"); break; }; done\n"
+            + "  if [ \"$kind\" = current ]; then\n"
+            + "    [ -n \"$b\" ] && [ -b \"$b\" ] || { echo A22X:WARN no-boot; return 0; }\n"
+            + "    [ -d /data/adb/magisk ] && root=magisk; [ -d /data/adb/ap ] && root=apatch\n"
+            + "  fi\n"
+            + "  c=/cache; m=\n"
+            + "  if ! grep -q ' /cache ' /proc/mounts; then\n"
+            + "    dev=$(readlink -f /dev/block/by-name/cache 2>/dev/null || true)\n"
+            + "    [ -b \"$dev\" ] || dev=$(readlink -f /dev/block/bootdevice/by-name/cache 2>/dev/null || true)\n"
+            + "    [ -b \"$dev\" ] || { echo A22X:WARN no-cache; return 0; }\n"
+            + "    c=/data/local/tmp/a22x-cache-auto; mkdir -p \"$c\"\n"
+            + "    mount -t ext4 -o nosuid,nodev,noexec \"$dev\" \"$c\" || { echo A22X:WARN cache-mount; return 0; }\n"
+            + "    m=1\n"
+            + "  fi\n"
+            + "  dir=\"$c/a22x-recovery/saved-boot\"; (umask 077; mkdir -p \"$dir\")\n"
+            + "  tmp=\"$dir/.part-app-auto\"; rm -f \"$tmp\"\n"
+            + "  part=$(blockdev --getsize64 \"$b\" 2>/dev/null); [ -n \"$part\" ] || part=33554432\n"
+            + "  free=$(df -k \"$dir\" | awk 'NR==2{print $4}')\n"
+            + "  if [ \"${free:-0}\" -lt $((part / 1024 + 8192)) ]; then echo A22X:WARN cache-full; sync; [ -z \"$m\" ] || umount \"$c\"; return 0; fi\n"
+            + "  if [ \"$kind\" = stock ]; then gzip -dc \"$src\" > \"$tmp\" 2>/dev/null || zcat \"$src\" > \"$tmp\"; else cat \"$b\" > \"$tmp\"; fi\n"
+            + "  ok=$?\n"
+            + "  osv=$(od -An -tu4 -j44 -N4 \"$tmp\" 2>/dev/null | tr -d ' ')\n"
+            + "  if [ \"$ok\" != 0 ]; then rm -f \"$tmp\"; echo A22X:WARN cache-full; sync; [ -z \"$m\" ] || umount \"$c\"; return 0; fi\n"
+            + "  if [ \"$(head -c 8 \"$tmp\")\" != ANDROID! ] || [ -z \"$osv\" ] || [ \"$osv\" = 0 ]; then\n"
+            + "    rm -f \"$tmp\"; echo A22X:WARN not-android; sync; [ -z \"$m\" ] || umount \"$c\"; return 0\n"
+            + "  fi\n"
+            + "  sync; sha=$(sha256sum \"$tmp\" | cut -d' ' -f1); size=$(stat -c %s \"$tmp\")\n"
+            + "  rel=$(printf %s \"$(uname -r)\" | tr -c 'A-Za-z0-9._+-' '_' | cut -c1-48)\n"
+            + "  build=$(printf %s \"$(getprop ro.build.version.incremental)\" | tr -c 'A-Za-z0-9._+-' '_' | cut -c1-40)\n"
+            + "  if [ \"$kind\" = stock ]; then name=\"stock-$build-$(echo \"$sha\" | cut -c1-12).img\"; else name=\"android-$rel-$(echo \"$sha\" | cut -c1-12).img\"; fi\n"
+            // Kept already only when the image itself is there, not only its description (2026-11-12).
+            + "  have=; for s in \"$dir\"/*.sha256; do [ -f \"$s\" ] || continue; read -r h n < \"$s\"; [ \"$h\" = \"$sha\" ] && [ -f \"$dir/$n\" ] && have=1; done\n"
+            + "  if [ -n \"$have\" ]; then rm -f \"$tmp\"; echo \"A22X:KEPT already\"; else\n"
+            + "    {\n"
+            + "      mv \"$tmp\" \"$dir/$name\"\n"
+            + "      printf '{\\n \"schema\": \"a22x.saved-boot.v1\",\\n \"kind\": \"android\",\\n \"release\": \"%s\",\\n \"build\": \"%s\",\\n"
+            + " \"source\": \"app\",\\n \"root\": \"%s\",\\n \"sha256\": \"%s\",\\n \"bytes\": %s,\\n \"saved\": %s\\n}\\n' \"$rel\" \"$build\" \"$root\" \"$sha\" \"$size\" \"$(date +%s)\" > \"$dir/$name.json\"\n"
+            + "      echo \"$sha  $name\" > \"$dir/$name.sha256\"\n"
+            + "      echo \"A22X:KEPT /a22x-recovery/saved-boot/$name\"\n"
+            + "    }\n"
+            + "  fi\n"
+            + "  sync; [ -z \"$m\" ] || umount \"$c\"\n"
+            + "  return 0\n"
+            + "}\n";
+
+    static String keepBootAuto() {
+        return KEEP_BOOT_AUTO + "keep_boot_auto\n";
+    }
+
     /** A Linux BOOT handed to the recovery instead of flashed from Android (2026-11-11): kept where
      *  the recovery keeps BOOT copies, a22x-recovery/saved-boot/linux-<release>-<sha12>.img with
      *  .json and .sha256. Since 0.6.178 a Linux system installed by the recovery takes its BOOT

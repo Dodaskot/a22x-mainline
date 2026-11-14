@@ -22,9 +22,14 @@ def real(path):
     for _ in range(8):
         text = debugfs(f'stat {path}')
         match = re.search(r'Fast link dest: (.+)', text)
-        if not match:
+        if match:
+            target = match[1].strip()
+        elif re.search(r'Type: symlink', text):
+            # A target of 60 bytes or more lives in a data block (2026-11-14 review: such a link was
+            # dumped as its own text instead of what it names).
+            target = debugfs(f'cat {path}').strip()
+        else:
             return path
-        target = match[1].strip()
         path = target if target.startswith('/') else str(Path(path).parent / target)
     raise SystemExit('link loop ' + path)
 

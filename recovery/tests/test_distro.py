@@ -746,19 +746,34 @@ class TestArchiveBoundary(unittest.TestCase):
                     d.scan_archive(stream.fileno(), 'none', expected)
             self.assertEqual(caught.exception.code, 'ARCHIVE_MEMBER_TOO_LARGE')
 
+    def archive(self, headers, count=10):
+        stream = tempfile.TemporaryFile()
+        with tarfile.open(fileobj=stream, mode='w', format=tarfile.PAX_FORMAT) as out:
+            for i in range(count):
+                item = tarfile.TarInfo('x%d' % i)
+                item.pax_headers = dict(headers)
+                out.addfile(item)
+        stream.seek(0)
+        expected = hashlib.sha256(stream.read()).hexdigest()
+        return stream, expected
+
     def test_aggregate_pax_budget(self):
-        with tempfile.TemporaryFile() as stream:
-            with tarfile.open(fileobj=stream, mode='w', format=tarfile.PAX_FORMAT) as out:
-                for i in range(10):
-                    item = tarfile.TarInfo('x%d' % i)
-                    item.pax_headers = {'unknown': 'x' * 100}
-                    out.addfile(item)
-            stream.seek(0)
-            expected = hashlib.sha256(stream.read()).hexdigest()
-            with mock.patch.object(d, 'MAX_ARCHIVE_METADATA', 2000):
-                with self.assertRaises(fs.FilesystemError) as caught:
-                    d.scan_archive(stream.fileno(), 'none', expected)
-            self.assertEqual(caught.exception.code, 'ARCHIVE_METADATA_TOO_LARGE')
+        """What stays in memory for the whole scan (paths and kept attributes) has a budget."""
+        stream, expected = self.archive({'SCHILY.xattr.user.note': 'x' * 100})
+        with stream, mock.patch.object(d, 'MAX_ARCHIVE_METADATA', 2000):
+            with self.assertRaises(fs.FilesystemError) as caught:
+                d.scan_archive(stream.fileno(), 'none', expected)
+        self.assertEqual(caught.exception.code, 'ARCHIVE_METADATA_TOO_LARGE')
+
+    def test_pax_headers_not_kept_do_not_add_up(self):
+        """2026-11-12 review: every member's pax header was counted for the whole archive, so a pax
+        rootfs of 50000 files was refused although nothing of the headers stays in memory."""
+        stream, expected = self.archive({'unknown': 'x' * 100})
+        with stream, mock.patch.object(d, 'MAX_ARCHIVE_METADATA', 2000):
+            with self.assertRaises(fs.FilesystemError) as caught:
+                d.scan_archive(stream.fileno(), 'none', expected)
+        # The whole archive was read: it stops only at the end, for having no /sbin and /home.
+        self.assertEqual(caught.exception.code, 'INVALID_ROOTFS')
 
     def test_inherited_pax_member_budget(self):
         with tempfile.TemporaryFile() as stream:

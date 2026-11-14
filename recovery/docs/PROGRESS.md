@@ -189,7 +189,10 @@ cleared it. The way out was a long Power press.
 
 Limits stated then and still true: Download mode, a removed SD card and the
 Linux systems are not protected by the recovery password. A forgotten password
-is reset by deleting `a22x-recovery/settings.json` from `cache`.
+was reset then by deleting `a22x-recovery/settings.json` from `cache`; since
+1.0.1 the settings with a password leave `.a22x-recovery-password` at the volume's
+root, and settings missing beside it are damaged: the reset erases userdata too
+(Settings, "reset damaged settings"), as Android's does.
 
 **Build 33** (`6540ddb5…`, recovery kernel #111). A correction: build 30's
 "418,856 bytes free" was wrong (the count missed the DTB and the AVB limit);

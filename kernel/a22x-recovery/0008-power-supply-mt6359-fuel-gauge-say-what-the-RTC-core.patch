@@ -1,7 +1,7 @@
 From c30ac5b6501b3faed3fbe723a6ac19e6486e620c Mon Sep 17 00:00:00 2001
 From: Dodaskot <pessdres@gmail.com>
 Date: Thu, 12 Nov 2026 01:44:17 +0100
-Subject: [PATCH 8/8] power: supply: mt6359-fuel-gauge: say what the RTC core
+Subject: [PATCH 08/12] power: supply: mt6359-fuel-gauge: say what the RTC core
  holds after a store
 
 The percent written to RTC_AL_HOU reads back, yet a restart finds the

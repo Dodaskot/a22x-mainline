@@ -33,7 +33,8 @@ def main():
         picture = picture.crop((left, top, left + size[0], top + size[1]))
         theme['image'] = {'width': size[0], 'height': size[1], 'data': base64.b64encode(zlib.compress(picture.tobytes(), 9)).decode()}
     data = json.dumps(theme, ensure_ascii=False, separators=(',', ':')).encode()
-    code, name, _, compiled = themes.compile_theme(data, args.output.stem)
+    # The code as the phone makes it from the file name (2026-11-14 review: the raw stem was refused).
+    code, name, _, compiled = themes.compile_theme(data, themes.code_from_name(args.output.stem))
     args.output.write_bytes(data)
     print(f'{args.output}: {code} ({name}), file {len(data)} bytes, compiled {len(compiled)} bytes')
 

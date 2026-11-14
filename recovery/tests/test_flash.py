@@ -121,6 +121,83 @@ class Flash(unittest.TestCase):
         self.assertEqual(code, 0, written)
         self.assertEqual((self.root / 'targets' / 'recovery').read_bytes()[:8], b'ANDROID!')
 
+    def journals(self):
+        return sorted(p.name for p in (self.root / 'sd' / flash.ROLLBACK_FOLDER).glob('*' + flash.PENDING_SUFFIX))
+
+    def test_a_failed_write_puts_the_saved_copy_back(self):
+        """2026-11-12 audit: the old content came back only by hand."""
+        before = (self.root / 'targets' / 'boot').read_bytes()
+        code, checked, _ = self.check('boot', self.image(boot_image(), 'boot.img'))
+        real, calls = flash.read_back, []
+
+        def first_wrong(*args):
+            calls.append(1)
+            return '0' * 64 if len(calls) == 1 else real(*args)
+        with mock.patch.object(flash, 'read_back', first_wrong):
+            code, done, _ = self.write('boot', '/boot.img', checked)
+        self.assertEqual((code, done['error']['code'], done['error']['details']['rollback_restored']), (2, 'READBACK_MISMATCH', True))
+        self.assertEqual((self.root / 'targets' / 'boot').read_bytes(), before)
+        self.assertEqual(self.journals(), [])
+
+    def test_a_partition_written_another_way_after_a_left_journal_is_left_alone(self):
+        """2026-11-12 review: a journal left behind, then BOOT flashed with Odin (or a second flash).
+        Its content is neither this write's nor the saved copy's: resume leaves it, and the journal goes."""
+        code, checked, _ = self.check('boot', self.image(boot_image(), 'boot.img'))
+        with mock.patch.object(flash, 'end_pending', lambda *a: None):
+            code, done, _ = self.write('boot', '/boot.img', checked)
+        self.assertEqual((code, len(self.journals())), (0, 1))
+        odin = bytearray((self.root / 'targets' / 'boot').read_bytes())
+        odin[:len(odin) // 2] = bytes(range(256)) * (len(odin) // 2 // 256)
+        (self.root / 'targets' / 'boot').write_bytes(bytes(odin))
+        code, result, _ = self.run_helper('resume')
+        self.assertEqual([r['outcome'] for r in result['resumed']], ['changed'])
+        self.assertEqual(((self.root / 'targets' / 'boot').read_bytes(), self.journals()), (bytes(odin), []))
+
+    def test_a_journal_that_cannot_be_read_goes_and_does_not_hide_the_others(self):
+        code, checked, _ = self.check('boot', self.image(boot_image(), 'boot.img'))
+        with mock.patch.object(flash, 'end_pending', lambda *a: None):
+            code, done, _ = self.write('boot', '/boot.img', checked)
+        self.assertEqual(len(self.journals()), 1)
+        (self.root / 'sd' / flash.ROLLBACK_FOLDER / ('aaa-20260101-000000.img' + flash.PENDING_SUFFIX)).write_text('')
+        code, result, _ = self.run_helper('resume')
+        self.assertEqual(sorted(r['outcome'] for r in result['resumed']), ['completed', 'unreadable'])
+        self.assertEqual(self.journals(), [])
+
+    def test_a_write_cut_short_is_finished_or_undone_at_the_next_start(self):
+        before = (self.root / 'targets' / 'boot').read_bytes()
+        code, checked, _ = self.check('boot', self.image(boot_image(), 'boot.img'))
+        with mock.patch.object(flash, 'end_pending', lambda *a: None):  # the power went before the journal went
+            code, done, _ = self.write('boot', '/boot.img', checked)
+        self.assertEqual(code, 0, done)
+        self.assertEqual(len(self.journals()), 1)
+        written = (self.root / 'targets' / 'boot').read_bytes()
+        code, result, _ = self.run_helper('resume')
+        self.assertEqual((code, [r['outcome'] for r in result['resumed']]), (0, ['completed']))
+        self.assertEqual(((self.root / 'targets' / 'boot').read_bytes(), self.journals()), (written, []))
+        # Cut in the middle of a write of another image: its first half new, the rest still old.
+        # The saved copy comes back.
+        other = boot_image() + bytes(range(256)) * 64  # the same boot image with 16 KiB more after it
+        code, checked2, _ = self.check('boot', self.image(other, 'boot2.img'))
+        self.assertEqual(code, 0, checked2)
+        with mock.patch.object(flash, 'end_pending', lambda *a: None):
+            code, done, _ = self.write('boot', '/boot2.img', checked2)
+        self.assertEqual(code, 0, done)
+        new = (self.root / 'targets' / 'boot').read_bytes()
+        self.assertNotEqual(new, written)
+        changed = [at for at in range(0, len(new), 4096) if new[at:at + 4096] != written[at:at + 4096]]
+        self.assertGreater(len(changed), 2)
+        torn = bytearray(new)
+        half = changed[len(changed) // 2]
+        torn[half:] = written[half:]
+        torn[half - 100:half] = b'\x77' * 100  # one page caught in the middle
+        (self.root / 'targets' / 'boot').write_bytes(bytes(torn))
+        if bytes(torn) != new and bytes(torn) != written:
+            code, result, _ = self.run_helper('resume')
+            self.assertEqual([r['outcome'] for r in result['resumed']], ['restored'])
+            self.assertEqual(((self.root / 'targets' / 'boot').read_bytes(), self.journals()), (written, []))
+        self.assertEqual(self.run_helper('resume')[1]['resumed'], [])
+        self.assertNotEqual(before, written)
+
     def ext_image(self, size=1 << 22):
         """A filesystem image as dd saves a partition: a superblock, some data, mostly zeros."""
         data = bytearray(size)
@@ -401,12 +478,36 @@ class Flash(unittest.TestCase):
         self.assertTrue(kept.name.startswith('linux-7.2.0-a22x'))
         self.assertEqual(kept.read_bytes(), before)
         self.assertEqual(json.loads(Path(str(kept) + '.json').read_text())['kind'], 'linux')
-        # Without a cache volume nothing is kept, and the write still goes on.
+        # Without a cache volume and without a card that can take a copy, there is no way back: the
+        # write is refused (2026-11-12, on the phone: BOOT was written with no copy at all).
         self.volumes([{'id': 'usb-p1', 'path': 'usb', 'fs_type': 'exfat', 'mounted': True, 'read_only': True}])
         path = self.image(linux, 'linux.img')
         code, checked, _ = self.check('boot', path)
+        written = (self.root / 'targets/boot').read_bytes()
         code, done, _ = self.write('boot', path, checked)
-        self.assertEqual((code, done['kept_boot']), (0, None))
+        self.assertEqual((code, done['error']['code']), (2, 'ROLLBACK_UNAVAILABLE'))
+        self.assertEqual((self.root / 'targets/boot').read_bytes(), written)
+
+    def test_an_archive_says_which_images_it_holds_and_where_they_go(self):
+        """2026-11-13, the owner: a ROM's ZIP should be opened and its images offered; its BOOT then
+        goes on BOOT straight from the ZIP."""
+        import zipfile
+        path = self.root / 'usb' / 'rom.zip'
+        with zipfile.ZipFile(path, 'w') as z:
+            z.writestr('META-INF/com/google/android/update-binary', '#!/sbin/sh\n')
+            z.writestr('system.transfer.list', '4\n1\n0\n0\nnew 2,0,1\n')
+            z.writestr('boot.img', boot_image())
+            z.writestr('lk.img', b'x' * 4096)
+        code, listed, _ = self.run_helper('members', '--volume', 'usb-p1', '--volume-token', self.token(), '--path', '/rom.zip')
+        self.assertEqual(code, 0, listed)
+        self.assertEqual((listed['archive'], listed['installer'], listed['block_ota']), ('zip', True, True))
+        self.assertEqual({m['name']: m['target'] for m in listed['members']}, {'boot.img': 'boot', 'lk.img': ''})
+        code, checked, _ = self.run_helper('check', '--target', 'boot', '--volume', 'usb-p1', '--volume-token', self.token(),
+                                           '--path', '/rom.zip', '--member', 'boot.img')
+        self.assertEqual(code, 0, checked)
+        code, refused, _ = self.run_helper('members', '--volume', 'usb-p1', '--volume-token', self.token(),
+                                           '--path', self.image(boot_image(), 'plain.img'))
+        self.assertEqual(refused['error']['code'], 'NOT_AN_ARCHIVE')
 
     def test_unusual_boot_header_warns_but_a_user_may_continue(self):
         code, checked, _ = self.check('boot', self.image(boot_image(board=b'OTHERBOARD')))
@@ -421,10 +522,10 @@ class Settings(unittest.TestCase):
         os.environ['A22X_SETTINGS_RAM'] = str(self.root / 'ram.json')
         sys.modules.pop('settings', None)
         self.settings = importlib.import_module('settings')
-        self.real_read_disk = self.settings.read_disk
+        self.real_read_disk = self.settings.read_volumes  # the volume store; misc: test_settings_misc
         self.disk = {}
         self.writable = True
-        patcher = mock.patch.multiple(self.settings, read_disk=lambda: dict(self.disk), write_disk=self.save)
+        patcher = mock.patch.multiple(self.settings, read_disk=lambda details=None: dict(self.disk), write_disk=self.save)
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -530,7 +631,7 @@ class Settings(unittest.TestCase):
         @contextlib.contextmanager
         def lock(*args):
             yield
-        with mock.patch.object(self.settings.fs, 'DeviceContext', Context), mock.patch.object(self.settings, 'operation_lock', lock):
+        with mock.patch.object(self.settings.fs, 'DeviceContext', Context), mock.patch.object(self.settings, 'lease', lock):
             with self.assertRaises(OSError):
                 self.real_read_disk()
         found = self.root / 'cache-root'
@@ -538,7 +639,10 @@ class Settings(unittest.TestCase):
         @contextlib.contextmanager
         def present(context, label, mode):
             yield found
-        with mock.patch.object(self.settings.fs, 'DeviceContext', Context), mock.patch.object(self.settings, 'operation_lock', lock), \
+        class Found(Context):
+            def volume(self, label):
+                return {'mounted': False, 'mountable': True, 'volume_token': 't'}
+        with mock.patch.object(self.settings.fs, 'DeviceContext', Found), mock.patch.object(self.settings, 'lease', lock), \
                 mock.patch.object(self.settings, 'volume_root', present):
             self.assertEqual(self.real_read_disk(), {})
 
@@ -728,6 +832,31 @@ class FlashLogical(unittest.TestCase):
         with mock.patch.object(flash, 'ROLLBACK_LIMIT', 4 * self.MIB):
             code, result, _ = self.check('super/system', self.image(bytes(self.MIB), 'small.img'))
         self.assertEqual(result['warnings'][:1], ['This partition is too large to save first'])
+
+    def test_a_failed_write_inside_super_puts_the_saved_copy_back(self):
+        """2026-11-12 review: a write into odm that failed after it began left odm half written."""
+        import test_lp_metadata as tl
+        import lp_metadata as lp
+        odm = 4349952
+        tl.make_super(self.root / 'targets/super', parts=(('system', 8 * self.MIB), ('odm', odm), ('vendor', 4 * self.MIB)))
+        s, _ = self.partition('odm')
+        current = b''.join(s.chunks('odm'))
+        changed = bytearray(current)
+        changed[100:200] = bytes(range(100))
+        path = self.image(bytes(changed), 'odm-changed.img')
+        code, result, _ = self.check('super/odm', path)
+        self.assertEqual(code, 0, result)
+        real = lp.Super.read_partition
+        calls = []
+
+        def wrong_once(self_, name):
+            calls.append(name)
+            return '0' * 64 if len(calls) == 1 else real(self_, name)
+        with mock.patch.object(lp.Super, 'read_partition', wrong_once):
+            code, done, _ = self.write('super/odm', path, result, result['image']['payload_bytes'])
+        self.assertEqual((code, done['error']['code'], done['error']['details']['rollback_restored']), (2, 'READBACK_MISMATCH', True))
+        s, _ = self.partition('odm')
+        self.assertEqual(b''.join(s.chunks('odm')), current)
 
     def test_too_large_or_unchecked_is_refused(self):
         path = self.image(bytes(30 * self.MIB), 'huge.img')

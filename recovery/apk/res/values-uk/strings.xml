@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">A22x Recovery</string>
+    <string name="app_name">Mainline Recovery</string>
     <string name="subtitle">Інсталятор для Galaxy A22 5G (SM-A226B)</string>
     <string name="root_missing">Доступ root не надано. Дозвольте його для цього застосунку в менеджері root.</string>
     <string name="compat_title">Сумісність</string>
@@ -158,4 +158,24 @@
     <string name="row_language">Мова</string>
     <string name="row_script">Скрипт</string>
     <string name="hold_save_restart">Утримуйте 2 с: зберегти й перезапустити</string>
+    <string name="update_title">Оновлення</string>
+    <string name="update_note">Цей застосунок із випусків проєкту на GitHub і BOOT Android, збережений у cache.</string>
+    <string name="update_installed">Встановлено: %1$s</string>
+    <string name="update_published">Опубліковано: %1$s</string>
+    <string name="update_checking">Питаю GitHub…</string>
+    <string name="update_unreadable">Не вдалося прочитати випуски. Перевірте мережу й відкрийте сторінку ще раз.</string>
+    <string name="update_newer">Опубліковано новіший застосунок.</string>
+    <string name="update_current">Застосунок актуальний.</string>
+    <string name="update_hold">Утримайте, щоб оновити застосунок</string>
+    <string name="update_downloading">Завантаження: %1$d%%</string>
+    <string name="update_installing">Встановлюю оновлення; застосунок закриється й відкриється знову.</string>
+    <string name="boot_kept_title">Стоковий BOOT</string>
+    <string name="boot_kept_none">Ще не збережено.</string>
+    <string name="boot_kept_path">Збережено в cache: %1$s</string>
+    <string name="boot_kept_already">Уже збережено в cache.</string>
+    <string name="boot_kept_warn">Не збережено: %1$s</string>
+    <string name="boot_kept_note">Зберігається сам щоразу, коли відкривається застосунок і стартує Android: копія оригінального BOOT від Magisk, якщо вона є, інакше поточний BOOT. Recovery прошиває його назад через «Прошити розділ».</string>
+    <string name="boot_keep_now">Зберегти зараз</string>
+    <string name="home_update">Оновлення</string>
+    <string name="home_update_sub">APK, стоковий BOOT</string>
 </resources>

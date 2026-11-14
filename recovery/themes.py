@@ -16,6 +16,7 @@ import json
 import os
 from pathlib import Path
 import re
+import secrets
 import stat
 import struct
 import sys
@@ -23,7 +24,7 @@ import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import filesystem as fs
-from operation_lock import operation_lock
+from operation_lock import lease
 import settings
 
 MAGIC = b'A22XTHM1'
@@ -243,18 +244,31 @@ def read_chosen(context, volume, token, path):
             return source.read(SOURCE_LIMIT + 1)
 
 
+def code_from_name(stem):
+    """A theme's code from its file name, when the theme gives none; tools/pack_theme.py uses it too."""
+    return re.sub(r'[^a-z0-9-]+', '-', stem.lower()).strip('-')[:23]
+
+
 def write_file(folder, name, data):
     folder.mkdir(mode=0o700, parents=True, exist_ok=True)
-    temporary = folder / (name + '.new')
-    fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600)
+    # A name of its own for each write: two imports of one theme no longer share NAME.new (2026-11-14 review).
+    temporary = folder / ('.%s.%d.%s.new' % (name, os.getpid(), secrets.token_hex(4)))
+    fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600)
     try:
-        view = memoryview(data)
-        while view:
-            view = view[os.write(fd, view):]
-        os.fsync(fd)
-    finally:
-        os.close(fd)
-    temporary.replace(folder / name)
+        try:
+            view = memoryview(data)
+            while view:
+                view = view[os.write(fd, view):]
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+        temporary.replace(folder / name)
+    except BaseException:
+        # A write that failed leaves nothing (2026-11-14 review: each failed import left its own
+        # temporary file on a full cache).
+        with contextlib.suppress(OSError):
+            temporary.unlink()
+        raise
 
 
 def on_disk(context, change):
@@ -262,22 +276,16 @@ def on_disk(context, change):
     if context.mode != 'device':
         change(context.root / settings.THEMES)
         return True
+    # The volume the settings are read from, chosen as settings chooses it, and no other (2026-11-14
+    # review: a theme written to userdata after cache refused it was not read at the next start;
+    # a volume Files had opened read-only refused every theme, though settings reopen it).
     try:
-        with operation_lock(context.lock_path, context.mode):
-            for label in settings.VOLUMES:
-                try:
-                    volume = context.volume(label)
-                    # Browsing this volume read-only: the next one would not be read at the next start.
-                    if volume['mounted'] and volume['read_only']:
-                        return False
-                    with settings.volume_root(context, label, 'rw') as root:
-                        change(root / settings.THEMES)
-                        return True
-                except (OSError, fs.FilesystemError):
-                    continue
-    except OSError:
-        pass
-    return False
+        with lease(context.lock_path, context.mode):
+            with settings.settings_root(context, 'rw') as (_, root):
+                change(root / settings.THEMES)
+                return True
+    except (OSError, ValueError, fs.FilesystemError):
+        return False
 
 
 def install(context, code, data):
@@ -297,7 +305,9 @@ def install(context, code, data):
 def remove(context, code):
     """A theme that comes with the image cannot leave it, so a note hides it instead."""
     require(re.fullmatch(r'[a-z0-9-]{3,23}', code), 'THEME_BAD_CODE', 'This is not a theme name')
-    bundled = (BUNDLED / (code + '.theme')).is_file()
+    # A failed look at the image is an error, never "not bundled" (2026-11-14 review: the theme then
+    # came back after a restart, its note never written).
+    bundled = settings.present(BUNDLED / (code + '.theme'))
     (settings.RAM_THEMES / (code + '.theme')).unlink(missing_ok=True)
     if bundled:
         write_file(settings.RAM_THEMES, code + '.hidden', b'')
@@ -350,7 +360,7 @@ def main(argv=None):
                 result = {'kept': restore(context)}
                 code, name, flags = '', '', 0
             else:
-                stem = re.sub(r'[^a-z0-9-]+', '-', Path(args.path).stem.lower()).strip('-')[:23]
+                stem = code_from_name(Path(args.path).stem)
                 code, name, flags, data = compile_theme(read_chosen(context, args.volume, args.expected_volume_token, args.path), stem)
                 result = {'kept': install(context, code, data)}
         print(json.dumps({'ok': True, 'operation': args.command, 'code': code, 'name': name, 'interface': bool(flags & FLAG_UI),

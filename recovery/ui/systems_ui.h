@@ -464,7 +464,7 @@ static int complete_systems_job(App*a,const Json*j,int kind,bool ok){
         a->systems_review_recovery=false;a->systems_plan_valid=false;copy(a->systems_reason,sizeof(a->systems_reason),message);
         /* 2026-11-08: a refused status reopened the error page from its own Back button forever;
            the reason is shown on the Systems page instead, which can be left. */
-        if(kind==J_SYS_STATUS){a->systems_known=false;if(a->screen!=APLAN&&a->screen!=BACKUP)screen(a,SYSTEMS);else a->dirty=true;return J_NONE;}
+        if(kind==J_SYS_STATUS){a->systems_known=false;if(a->screen!=APLAN&&a->screen!=BACKUP&&a->screen!=ANDROID_IMAGE)screen(a,SYSTEMS);else a->dirty=true;return J_NONE;}
         /* A system that cannot be switched to can still be removed, unless it is the running one. */
         a->systems_remove_offer=kind==J_SYS_SWITCH_PLAN&&systems_id(a->systems_plan_slot)&&strcmp(code,"ALREADY_ACTIVE")&&strcmp(code,"SWITCH_PENDING")&&strcmp(code,"SLOT_UNAVAILABLE");
         files_problem(a,code,message,SYSTEMS);return J_NONE;
@@ -476,7 +476,7 @@ static int complete_systems_job(App*a,const Json*j,int kind,bool ok){
         if(a->systems_review_recovery){a->systems_review_recovery=false;if(strcmp(a->systems_expected_transaction,a->systems_transaction)){files_problem(a,"TRANSACTION_CHANGED","The interrupted transaction changed. Review the refreshed Systems screen.",SYSTEMS);return J_NONE;}screen(a,SYSTEMS_RECOVER);}
         /* The refresh after a userdata mount from New system or the catalog keeps that page:
            it used to jump to Systems, so the mount there seemed to do nothing (2026-11-08, on the phone). */
-        else if(a->screen==SYSTEMS_NEW||a->screen==SYSTEMS_CATALOG||a->screen==APLAN||a->screen==BACKUP)a->dirty=true;
+        else if(a->screen==SYSTEMS_NEW||a->screen==SYSTEMS_CATALOG||a->screen==APLAN||a->screen==BACKUP||a->screen==ANDROID_IMAGE||a->screen==SYSTEMS_IMAGES)a->dirty=true;
         else screen(a,SYSTEMS);
         return J_NONE;
     }

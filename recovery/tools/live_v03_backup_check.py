@@ -25,8 +25,6 @@ import uuid
 RECOVERY_BYTES = 40 * 1024 * 1024
 REPOSITORY = Path('/mnt/backup/A22xBackups')
 RUN = Path('/run/a22x-recovery')
-LOCK = '/run/lock/a22x-mainline-recovery.lock'
-ENV_FD = 'A22X_RECOVERY_LOCK_FD'
 
 
 def require(value, message):
@@ -56,7 +54,10 @@ def main(argv=None):
     from storage import DeviceContext
     import filesystem as fs
     import management
-    from operation_lock import operation_lock
+    # The lock's one definition, from --source-root like every other module (2026-11-14 reviews: a copy
+    # of its path here, then a module-level import from the tool's own folder, which fails where the
+    # tool is copied alone and binds another tree than the one checked).
+    from operation_lock import DEVICE_LOCK as LOCK, ENV_FD, operation_lock
 
     unique = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + uuid.uuid4().hex[:8]
     record = args.record_dir or RUN / ('v03-backup-check-' + unique)

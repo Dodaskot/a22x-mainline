@@ -178,7 +178,20 @@ as a guessed type. Reading a filesystem root is not evidence that Android CE
 data has been decrypted.
 
 Boot, recovery and vbmeta are raw images. Super is a logical-partition
-container; this helper does not map its contents yet. Bootloader, modem, TEE,
+container; each partition its metadata names (slot 0) is a volume of its own,
+`super-system`, `super-vendor` and so on (2026-11-12), with `container: "super"`,
+its `extents` and `write_supported: false` (`LOGICAL_PARTITION_READ_ONLY`).
+`mount --mode ro` opens it as Android's first-stage init does, through a
+device-mapper `linear` table over those extents (`dm_linear.py`), but always
+with `DM_READONLY_FLAG`: the kernel opens super for reading alone, marks the new
+disk read-only and holds super exclusively while the mapping exists, so it shows
+among super's holders. `unmount` removes the mapping; `unmount-all` also removes
+a mapping the metadata no longer names. Before super itself is read or written,
+`install.py` `check_offline` closes them under the operation lease (taking it
+when its caller does not hold it) and reads the storage graph again; while
+another operation holds the lease nothing is closed and super is refused.
+A mapping whose live table no longer matches the metadata is reported as
+`LOGICAL_MAPPING_CHANGED` and can only be unmounted. Bootloader, modem, TEE,
 calibration and other service partitions are not opened for probing or mounted.
 `crypto.android_decryption`, credential unlock and fscrypt key installation
 remain false. These capabilities are not enabled by a writable Linux mount.

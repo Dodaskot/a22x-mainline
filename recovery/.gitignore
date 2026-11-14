@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+# build outputs of ui/
+ui/*.o
+ui/a22x-recovery-ui
+ui/a22x-recovery-ui-aarch64
+ui/*-test
+ui/*-work/
+ui/*.log
+ui/*.ppm
+ui/*.png
+ui/*-results.json
+# what a build takes from your own phone, and what it makes
+platform-private/
+platform-public/
+build-v06-*/
+*.img
+*.apk

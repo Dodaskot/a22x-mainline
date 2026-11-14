@@ -1,8 +1,8 @@
 From e139657b524a1f3c3c702b838451492e84986af2 Mon Sep 17 00:00:00 2001
 From: Dodaskot <pessdres@gmail.com>
 Date: Thu, 12 Nov 2026 01:09:29 +0100
-Subject: [PATCH 7/8] power: supply: mt6359-fuel-gauge: check the start against
- the cell's curve
+Subject: [PATCH 07/12] power: supply: mt6359-fuel-gauge: check the start
+ against the cell's curve
 
 The gauge counted charge from one reading of the voltage taken under the
 load of a starting system. In the flat middle of this cell's curve that

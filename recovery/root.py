@@ -128,28 +128,31 @@ def apatch_bundle(context):
     return {'kptools': tool, 'kpimg': image, 'version': version, 'sha256': hashlib.sha256(data).hexdigest(), 'size': len(data)}
 
 
+def tool_row(context, ident, tool):
+    """One root tool with its newest version; without network, why it needs it."""
+    row = {'id': ident, 'name': tool['name'], 'supported': tool['supported'], 'reason': tool.get('reason', '')}
+    if tool.get('bundled'):
+        bundle = apatch_bundle(context)
+        if bundle:
+            row.update({'version': "KernelPatch " + bundle['version'], 'file': 'kpimg', 'size': bundle['size'],
+                        'sha256': bundle['sha256'], 'bundled': True, 'needs_key': True})
+        else:
+            row.update({'supported': False, 'reason': 'This build of the recovery has no APatch'})
+    elif context.mode == 'fixture':
+        row.update((context.config.get('root') or {}).get(ident, {}))
+    else:
+        try:
+            row.update(latest(tool['repo'], tool['asset']))
+        except (OSError, ValueError, fs.FilesystemError) as error:
+            row['error'] = getattr(error, 'code', None) or 'NETWORK_UNAVAILABLE'
+    return row
+
+
 def tools(context):
     """The root tools with their newest version; without network, the names and why they need it."""
     # Certificates need the date: on the phone, a clock that cannot be right asks a time server first.
     clock.ensure(context.mode)
-    found = []
-    for ident, tool in TOOLS.items():
-        row = {'id': ident, 'name': tool['name'], 'supported': tool['supported'], 'reason': tool.get('reason', '')}
-        if tool.get('bundled'):
-            bundle = apatch_bundle(context)
-            if bundle:
-                row.update({'version': "KernelPatch " + bundle['version'], 'file': 'kpimg', 'size': bundle['size'],
-                            'sha256': bundle['sha256'], 'bundled': True, 'needs_key': True})
-            else:
-                row.update({'supported': False, 'reason': 'This build of the recovery has no APatch'})
-        elif context.mode == 'fixture':
-            row.update((context.config.get('root') or {}).get(ident, {}))
-        else:
-            try:
-                row.update(latest(tool['repo'], tool['asset']))
-            except (OSError, ValueError, fs.FilesystemError) as error:
-                row['error'] = getattr(error, 'code', None) or 'NETWORK_UNAVAILABLE'
-        found.append(row)
+    found = [tool_row(context, ident, tool) for ident, tool in TOOLS.items()]
     try:
         stock = next((b for b in saved_boot.saved_boots(context) if b['kind'] == 'android' and not b['root']), None)
     except fs.FilesystemError:
@@ -161,31 +164,33 @@ def tools(context):
 
 
 def vbmeta_image(context):
+    """vbmeta whole, read in a loop that refuses a short read (2026-11-13 review)."""
     target = context.target('vbmeta')
-    fd = context.open_target(target)
-    try:
-        return target, os.pread(fd, target['size_bytes'], 0)
-    finally:
-        os.close(fd)
+    return target, install.target_bytes(context, target)
 
 
-def verification_on(context):
-    """Whether vbmeta still has Android's verification on (flags without bit 2): a patched BOOT then
-    changes the verified-boot state, and Android's data must be erased once."""
+def verification_state(context):
+    """True while vbmeta still has Android's verification on (flags without bit 2): a patched BOOT
+    then changes the verified-boot state, and Android's data must be erased once. False when it is
+    off. None when vbmeta cannot be read or is no AVB image: then nothing is known."""
     try:
         _, data = vbmeta_image(context)
     except (OSError, KeyError, fs.FilesystemError):
-        return False
-    return data[:4] == b'AVB0' and not struct.unpack_from('>I', data, 120)[0] & 2
+        return None
+    if len(data) < 124 or data[:4] != b'AVB0':
+        return None
+    return not struct.unpack_from('>I', data, 120)[0] & 2
+
+
+def verification_on(context):
+    """2026-11-13 review: a vbmeta that could not be read was taken for verification off, and a
+    patched BOOT went in while it was on; Android then would not open its data. Unknown counts as on."""
+    return verification_state(context) is not False
 
 
 def boot_state(context):
     target = context.target('boot')
-    fd = context.open_target(target)
-    try:
-        data = os.pread(fd, target['size_bytes'], 0)
-    finally:
-        os.close(fd)
+    data = install.target_bytes(context, target)
     found = saved_boot.describe_boot(data)
     return {'kind': found['kind'] or 'unknown', 'release': found['release'], 'magisk': found['root'] == 'magisk',
             'root': found['root']}
@@ -310,6 +315,8 @@ def prepare_vbmeta(context, progress):
 
 def install_root(context, ident, expected_sha256, confirmed, progress, erase_data=False, superkey=None):
     require(confirmed, 'CONFIRMATION_REQUIRED', 'Installing root must be confirmed')
+    require(verification_state(context) is not None, 'VBMETA_UNREADABLE',
+            'The vbmeta partition cannot be read as an AVB image, so whether verification is off is not known')
     require(not verification_on(context), 'ROOT_NEEDS_VBMETA',
             'Root on this Samsung needs vbmeta with verification off, flashed in Download mode: prepare it first')
     prepared = prepared_in_place(context)
@@ -327,7 +334,11 @@ def install_root(context, ident, expected_sha256, confirmed, progress, erase_dat
     if tool.get('bundled'):
         require(isinstance(superkey, str) and SUPERKEY.fullmatch(superkey), 'SUPERKEY_INVALID',
                 'The SuperKey needs 8 to 63 characters without spaces, with a letter and a digit')
-    release = next(t for t in tools(context)['tools'] if t['id'] == ident)
+    # Only this tool's release (2026-11-13 review: every tool was asked for over the network, and BOOT
+    # and vbmeta read again, for one row; APatch offline waited for Magisk's release).
+    if not tool.get('bundled'):
+        clock.ensure(context.mode)
+    release = tool_row(context, ident, tool)
     require(release.get('supported'), 'ROOT_UNSUPPORTED', release.get('reason') or 'Not for this phone')
     require(release.get('sha256') == expected_sha256, 'ROOT_RELEASE_CHANGED', 'A newer release came out since it was shown. Review again')
     work = WORK if context.mode == 'device' else context.root / 'root-work'
@@ -369,11 +380,7 @@ def patch_and_flash(context, ident, tool, release, work, progress, superkey=None
         apk = work / release['file']
         download(context, release['url'], release['size'], release['sha256'], apk, progress)
     target = context.target('boot')
-    fd = context.open_target(target)
-    try:
-        boot = os.pread(fd, target['size_bytes'], 0)
-    finally:
-        os.close(fd)
+    boot = install.target_bytes(context, target)  # 2026-11-13 review: a short read is refused
     # Patched as the image itself, without the mark that keeps this recovery: flashing puts it back.
     # With the mark in the tail kptools found no unused tail and repacked a BOOT larger than its
     # partition (2026-11-11, on the phone).

@@ -155,6 +155,17 @@ class Screenshot(unittest.TestCase):
             code, done = self.save('busy.png')
         self.assertEqual((code, done['where']), (0, 'card'))
 
+    def test_a_held_operation_lock_keeps_every_volume_as_it_is(self):
+        # 2026-11-13 review: the fixture's mount took no lock, as the phone's does not; the lock is
+        # taken here, so a job that holds it (a card being partitioned) is never interrupted.
+        from operation_lock import operation_lock
+        self.volumes(sd=(False, True), cache=(True, True))
+        ctx = fs.FixtureContext(self.root)
+        with operation_lock(ctx.lock_path, ctx.mode):
+            code, done = self.save()
+        self.assertEqual((code, done['where']), (0, 'ram'))
+        self.assertEqual((self.state('sdcard-p1'), self.state('cache')), ((False, True), (True, True)))
+
     def test_old_screenshots_leave_cache_when_they_take_too_much(self):
         self.volumes(sd=None, cache=(True, False))
         folder = self.root / 'cache/a22x-recovery/screenshots'

@@ -19,6 +19,8 @@ public class SyncReceiver extends BroadcastReceiver {
         new Thread(() -> {
             try {
                 RecoveryStore.sendHandoff(app, null, null);
+                // After a start of Android, its BOOT is kept on cache too (2026-11-12).
+                if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) MainActivity.keepBoot(app);
             } catch (Exception ignored) {
                 // The next change or start tries again.
             } finally {

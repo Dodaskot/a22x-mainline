@@ -149,6 +149,16 @@ def stamp(fd: int) -> dict:
             "size": st.st_size, "mtime_ns": st.st_mtime_ns, "ctime_ns": st.st_ctime_ns}
 
 
+def same_archive(one, other):
+    """Whether two stamps of an archive file name the same unchanged file, read again later. exFAT
+    numbers an inode only while it stays cached, so a long read in between gave a closed archive a
+    new inode and a valid plan PLAN_STALE (2026-11-13 review); the content is checked against the
+    manifest anyway, and size and times still change with any write."""
+    if not isinstance(one, dict) or not isinstance(other, dict):
+        return one == other
+    return {k: v for k, v in one.items() if k != "inode"} == {k: v for k, v in other.items() if k != "inode"}
+
+
 def directory_identity(st, filesystem):
     """What names a directory between two runs: exFAT numbers an inode only while it stays cached."""
     return {"device": st.st_dev, "inode": None if filesystem == "exfat" else st.st_ino}

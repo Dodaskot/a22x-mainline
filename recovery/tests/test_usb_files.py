@@ -192,7 +192,12 @@ class LifecycleTests(unittest.TestCase):
             try:
                 self.cli('stop', '--expected-session-token', record['session_token'])
             except Exception:
-                os.kill(record['pid'], signal.SIGTERM)
+                # The supervisor may end between the look and the stop (it does once its responder
+                # has exited): nothing is left to stop then.
+                try:
+                    os.kill(record['pid'], signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
         if self.context.socket_dir.exists():
             for path in self.context.socket_dir.iterdir():
                 path.unlink()
@@ -311,6 +316,96 @@ class LifecycleTests(unittest.TestCase):
         self.assertFalse(status['available'])
         self.assertEqual(status['reason'], 'SERVICE_STALE')
         self.assertFalse(self.context.record()['clean'])
+
+
+class StopAndSignalTests(unittest.TestCase):
+    """2026-11-14 review: status while stopping, a stop that outlasts its wait, and a signal during setup."""
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='a22x-usb-stop-')
+        self.root = Path(self.temp.name)
+        for name in ('data', 'cache'):
+            (self.root / name).mkdir()
+        (self.root / 'filesystem-fixture.json').write_text(json.dumps({'schema': 'a22x.filesystem.fixture.v1', 'volumes': [
+            {'id': 'userdata', 'path': 'data', 'mounted': True, 'read_only': False},
+            {'id': 'cache', 'path': 'cache', 'mounted': True, 'read_only': False}]}))
+        self.context = usb.Context(argparse.Namespace(mode='fixture', fixture=self.root))
+        self.addCleanup(self.temp.cleanup)
+
+    def test_a_stopping_supervisor_is_not_asked(self):
+        record = {'state': 'stopping', 'pid': os.getpid(), 'process_start': usb.process_start(os.getpid()),
+                  'session_token': 'a' * 64, 'exports': [], 'clean': False}
+        from unittest import mock
+        with mock.patch.object(self.context, 'record', return_value=record), \
+                mock.patch.object(usb, 'request', side_effect=AssertionError('no request while stopping')):
+            self.assertEqual(usb.status(self.context)['state'], 'stopping')
+        record['state'] = 'active'
+        with mock.patch.object(self.context, 'record', return_value=record), \
+                mock.patch.object(usb, 'request', side_effect=TimeoutError('timed out')):
+            found = usb.status(self.context)
+        self.assertEqual((found['ok'], found['state'], found['reason']), (True, 'active', 'SERVICE_BUSY'))
+
+    def test_a_stop_that_outlasts_its_wait_is_pending_not_failed(self):
+        from unittest import mock
+        record = {'state': 'stopping', 'pid': os.getpid(), 'process_start': usb.process_start(os.getpid()),
+                  'session_token': 'b' * 64, 'exports': [], 'clean': False}
+        out = []
+        with mock.patch.object(usb.Context, 'record', return_value=record), \
+                mock.patch.object(usb, 'request', side_effect=TimeoutError('timed out')), \
+                mock.patch('builtins.print', lambda text, **k: out.append(text)):
+            code = usb.main(['--mode', 'fixture', '--fixture', str(self.root), 'stop', '--expected-session-token', 'b' * 64])
+        found = json.loads(out[-1])
+        self.assertEqual((code, found['ok'], found['reason']), (0, True, 'USB_STOP_PENDING'))
+
+    def test_a_signal_during_setup_unwinds_through_the_cleanup(self):
+        from unittest import mock
+        selected = usb.status(self.context)['candidates'][0]
+        args = argparse.Namespace(volume=selected['id'], expected_volume_token=selected['volume_token'],
+                                  expected_mount_token=selected['mount_token'], read_only=True, session_token='c' * 64)
+        real = usb.process_start
+
+        def started_then_signal(pid):
+            # The responder is running and the gadget would be unbound: SIGTERM arrives now.
+            value = real(pid)
+            if pid != os.getpid():
+                os.kill(os.getpid(), signal.SIGTERM)
+            return value
+        old = [signal.getsignal(n) for n in (signal.SIGTERM, signal.SIGINT)]
+        self.addCleanup(lambda: [signal.signal(n, h) for n, h in zip((signal.SIGTERM, signal.SIGINT), old)])
+        with mock.patch.object(usb, 'process_start', started_then_signal), mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop(usb.ENV_FD, None)
+            self.assertEqual(usb.serve(self.context, args), 2)
+        record = self.context.record()
+        self.assertEqual((record['state'], record['clean'], record['reason']), ('failed', True, 'USB_STOP_REQUESTED'))
+        with operation_lock(self.context.fs.lock_path, 'fixture'):
+            pass
+
+    def test_a_second_signal_during_the_cleanup_does_not_cut_it_short(self):
+        # 2026-11-14 review: a second SIGTERM while the export was torn down raised inside the cleanup,
+        # the gadget was never restored and the record stayed unclean.
+        from unittest import mock
+        selected = usb.status(self.context)['candidates'][0]
+        args = argparse.Namespace(volume=selected['id'], expected_volume_token=selected['volume_token'],
+                                  expected_mount_token=selected['mount_token'], read_only=True, session_token='d' * 64)
+        real_start, real_stop = usb.process_start, usb.child_stop
+
+        def started_then_signal(pid):
+            value = real_start(pid)
+            if pid != os.getpid():
+                os.kill(os.getpid(), signal.SIGTERM)
+            return value
+
+        def stop_with_another_signal(child):
+            os.kill(os.getpid(), signal.SIGTERM)
+            return real_stop(child)
+        old = [signal.getsignal(n) for n in (signal.SIGTERM, signal.SIGINT)]
+        self.addCleanup(lambda: [signal.signal(n, h) for n, h in zip((signal.SIGTERM, signal.SIGINT), old)])
+        with mock.patch.object(usb, 'process_start', started_then_signal), \
+                mock.patch.object(usb, 'child_stop', stop_with_another_signal), mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop(usb.ENV_FD, None)  # restored when the patch ends (2026-11-14 review)
+            self.assertEqual(usb.serve(self.context, args), 2)
+        record = self.context.record()
+        self.assertEqual((record['state'], record['clean']), ('failed', True))
+        self.assertEqual([signal.getsignal(n) for n in (signal.SIGTERM, signal.SIGINT)], old)
 
 
 if __name__ == '__main__':

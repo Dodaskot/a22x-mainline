@@ -67,7 +67,10 @@ def unpacked_size(url, size):
 def entries():
     found = []
     for repository, name, maker in REPOSITORIES:
-        releases = api('repos/%s/releases?per_page=1' % repository)
+        # The newest release that is neither a draft nor a pre-release, as /releases/latest gives it
+        # (2026-11-14 review: per_page=1 took a pre-release for a stable build).
+        releases = [r for r in (api('repos/%s/releases?per_page=10' % repository) or [])
+                    if not r.get('prerelease') and not r.get('draft')]
         if not releases:
             continue
         release = releases[0]
@@ -84,6 +87,9 @@ def entries():
                 continue
             kind = 'gms' if 'GAPPS' in file.upper() else ('microg' if 'MICROG' in file.upper() else 'vanilla')
             ident = re.sub(r'[^a-z0-9.]+', '-', (name + ' ' + version + ' ' + kind).lower()).strip('-')
+            # Two images of one kind in one release (2026-11-14 review: the same id twice): the file names it.
+            if any(item['id'] == ident for item in found):
+                ident = re.sub(r'[^a-z0-9.]+', '-', (ident + ' ' + file.removesuffix('.img.xz')).lower()).strip('-')[:80]
             url = asset['browser_download_url']
             found.append({'id': ident, 'category': 'port', 'name': name + ' ' + version, 'version': release['published_at'][:10],
                           'android': android, 'sdk': {'15': 35, '16': 36, '17': 37}.get(android, 0), 'variant': kind,

@@ -654,7 +654,7 @@ class PanelPower(unittest.TestCase):
         self.assertEqual(self.run_light('toggle', dark=True)[0], ['panel on', 'light on'])
         self.assertEqual(self.run_light('brightness', 40, dark=True)[0], ['panel on', 'light 40'])
         self.assertEqual(self.run_light('brightness', 40)[0], ['light 40'])
-        self.assertEqual(self.run_light('brightness', 0)[0], ['light 0', 'panel off'])
+        # A brightness of 0 never gets here: percent_raw refuses it (2026-11-13 review: a dead branch).
 
     def test_the_service_remembers_turning_the_panel_off(self):
         self.assertTrue(self.run_light('blank')[1].io.panel_off)

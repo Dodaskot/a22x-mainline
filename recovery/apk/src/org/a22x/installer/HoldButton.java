@@ -90,43 +90,45 @@ final class HoldButton extends View {
         }
     }
 
+    /** The hold is timed by the clock; the animator only draws it (2026-11-12 review: with the
+     *  system's animator duration scale at 0, as "Remove animations" or battery saver set it, the
+     *  animator ended at once and a single tap flashed the recovery). */
+    private final Runnable fire = this::complete;
+
     private void start() {
         if (animator != null) animator.cancel();
+        removeCallbacks(fire);
         done = false;
+        long remaining = Math.max(1L, (long) (holdMs * (1f - progress)));
         animator = ValueAnimator.ofFloat(progress, 1f);
-        animator.setDuration((long) (holdMs * (1f - progress)));
+        animator.setDuration(remaining);
         animator.setInterpolator(new LinearInterpolator());
         animator.addUpdateListener(a -> {
+            if (done) return;
             progress = (Float) a.getAnimatedValue();
             invalidate();
         });
-        animator.addListener(new AnimatorListenerAdapter() {
-            private boolean cancelled;
-
-            @Override
-            public void onAnimationCancel(Animator a) {
-                cancelled = true;
-            }
-
-            @Override
-            public void onAnimationEnd(Animator a) {
-                if (cancelled || done) return;
-                done = true;
-                try {
-                    Vibrator vibrator = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
-                    if (vibrator != null) vibrator.vibrate(40);
-                } catch (RuntimeException ignored) {
-                    // No vibration, the action still runs.
-                }
-                progress = 0;
-                invalidate();
-                action.run();
-            }
-        });
         animator.start();
+        postDelayed(fire, remaining);
+    }
+
+    private void complete() {
+        if (done) return;
+        done = true;
+        if (animator != null) animator.cancel();
+        try {
+            Vibrator vibrator = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
+            if (vibrator != null) vibrator.vibrate(40);
+        } catch (RuntimeException ignored) {
+            // No vibration, the action still runs.
+        }
+        progress = 0;
+        invalidate();
+        action.run();
     }
 
     private void release() {
+        removeCallbacks(fire);
         if (animator != null && !done) {
             animator.cancel();
             ValueAnimator back = ValueAnimator.ofFloat(progress, 0f);

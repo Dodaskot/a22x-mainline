@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">A22x Recovery</string>
+    <string name="app_name">Mainline Recovery</string>
     <string name="subtitle">Installer for the Galaxy A22 5G (SM-A226B)</string>
     <string name="root_missing">Root access was not granted. Allow it for this app in your root manager.</string>
     <string name="compat_title">Compatibility</string>
@@ -158,4 +158,24 @@
     <string name="row_language">Language</string>
     <string name="row_script">Setup script</string>
     <string name="hold_save_restart">Hold 2 seconds: save and restart</string>
+    <string name="update_title">Updates</string>
+    <string name="update_note">This app from the project\'s releases on GitHub, and Android\'s BOOT kept on cache.</string>
+    <string name="update_installed">Installed: %1$s</string>
+    <string name="update_published">Published: %1$s</string>
+    <string name="update_checking">Asking GitHub…</string>
+    <string name="update_unreadable">The releases could not be read. Check the network, then open this page again.</string>
+    <string name="update_newer">A newer app is published.</string>
+    <string name="update_current">This app is up to date.</string>
+    <string name="update_hold">Hold to update the app</string>
+    <string name="update_downloading">Downloading: %1$d%%</string>
+    <string name="update_installing">Installing the update; the app closes and opens again.</string>
+    <string name="boot_kept_title">Stock BOOT</string>
+    <string name="boot_kept_none">Not kept yet.</string>
+    <string name="boot_kept_path">Kept on cache: %1$s</string>
+    <string name="boot_kept_already">Already kept on cache.</string>
+    <string name="boot_kept_warn">Not kept: %1$s</string>
+    <string name="boot_kept_note">Kept by itself whenever the app opens and Android starts: Magisk\'s copy of the original BOOT when there is one, else the BOOT there. The recovery flashes it back from Flash a partition.</string>
+    <string name="boot_keep_now">Keep it now</string>
+    <string name="home_update">Updates</string>
+    <string name="home_update_sub">App, stock BOOT</string>
 </resources>

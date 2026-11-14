@@ -43,6 +43,7 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import stat
@@ -52,9 +53,11 @@ import sys
 import time
 
 import filesystem as fs
+from lp_metadata import drop_cached  # the one way to drop what a node remembers
 import install
 from install import require
 from operation_lock import operation_lock
+import archive_crypt
 import partition_archive as archive
 
 SCHEMA = 'a22x.identity-backup.v1'
@@ -116,7 +119,6 @@ def use(kind, labels=None):
         CHOSEN = chosen
 MAX_MANIFEST = 1 << 16
 CHUNK = install.CHUNK
-BLKFLSBUF = 0x1261
 
 
 def emmc_identity():
@@ -158,6 +160,8 @@ class Device:
         return found
 
     def check_offline(self, part):
+        if part['label'] == 'super':
+            self.install.close_logical()  # what Files opened in super (install.py)
         self.install.raw.graph.require_unmounted(part['device'], self.install.raw.mounts)
         self.install.raw.graph.require_no_holders(part['device'])
 
@@ -178,7 +182,7 @@ class Device:
 
     def flush(self, fd):
         os.fsync(fd)
-        fcntl.ioctl(fd, BLKFLSBUF)
+        drop_cached(fd)
 
     def zero(self, fd, start, length):
         """The range made zeros by the kernel, which this phone's eMMC does by trimming it: far
@@ -393,7 +397,7 @@ def save_archive(context, volume, parts, progress):
             stamp = PREFIX + time.strftime('-%Y%m%d-%H%M%S', time.gmtime())
             taken = set(os.listdir(top))
             for attempt in range(100):
-                name = stamp + ('-%d' % attempt if attempt else '') + archive.SUFFIX
+                name = stamp + ('-%d' % attempt if attempt else '') + archive.new_suffix()
                 partial = '.' + name + '.partial'
                 if name in taken or partial in taken:
                     continue
@@ -540,14 +544,14 @@ def checked_manifest(data):
 
 
 def is_archive(path):
-    return ARCHIVE and isinstance(path, str) and path.endswith(archive.SUFFIX)
+    return ARCHIVE and isinstance(path, str) and path.endswith(archive.SUFFIXES)
 
 
 @contextlib.contextmanager
 def backup_archive(context, volume, path):
     """An archive copy, opened: its descriptor, its manifest, the manifest's SHA-256 and bytes."""
     parts = fs.path_parts(path)
-    require(len(parts) == 2 and parts[0] == FOLDER and parts[1].endswith(archive.SUFFIX) and not parts[1].startswith('.'),
+    require(len(parts) == 2 and parts[0] == FOLDER and parts[1].endswith(archive.SUFFIXES) and not parts[1].startswith('.'),
             'INVALID_BACKUP_PATH', 'Choose an archive inside %s' % FOLDER)
     with fs.PinnedVolume(context.fs, volume) as pin, pin.directory('/' + FOLDER) as top:
         fd = os.open(parts[1], os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=top)
@@ -612,6 +616,7 @@ def copy_row(context, path, manifest, manifest_sha, file_bytes=None):
     """What a list says of one copy; FILE_BYTES is the size of an archive on its volume."""
     return {'path': path, 'created_utc': manifest.get('created_utc'),
             'same_phone': manifest.get('device_identity') == context.identity or not SAME_PHONE,
+            'data_same_phone': manifest.get('device_identity') == context.identity,
             'partitions': len(manifest['partitions']), 'manifest_sha256': manifest_sha,
             'bytes': sum(r['size_bytes'] for r in manifest['partitions']),
             'labels': [r['label'] for r in manifest['partitions']],
@@ -636,10 +641,23 @@ def volume_copies(context, volume):
         try:
             if is_archive(path):
                 with backup_archive(context, volume, path) as (fd, manifest, manifest_sha, _raw):
-                    rows.append(copy_row(context, path, manifest, manifest_sha, os.fstat(fd).st_size))
+                    rows.append({**copy_row(context, path, manifest, manifest_sha, os.fstat(fd).st_size),
+                                 'encrypted': path.endswith(archive.ENCRYPTED_SUFFIX), 'locked': False})
             else:
                 with backup_folder(context, volume, path) as (_folder, manifest, manifest_sha):
                     rows.append(copy_row(context, path, manifest, manifest_sha))
+        except archive.ArchiveError as error:
+            if error.code not in ('PASSWORD_REQUIRED', 'WRONG_PASSWORD'):
+                continue
+            # 2026-11-13: a copy protected with a password is listed, closed: its name says when it
+            # was made; what is in it is shown once the password opens it.
+            stamp = re.search(r'-(\d{4})(\d\d)(\d\d)-(\d\d)(\d\d)(\d\d)', name)
+            with fs.PinnedVolume(context.fs, volume) as pin, pin.directory('/' + FOLDER) as top:
+                size = os.stat(name, dir_fd=top, follow_symlinks=False).st_size
+            rows.append({'path': path, 'created_utc': '%s-%s-%sT%s:%s:%sZ' % stamp.groups() if stamp else None, 'same_phone': True,
+                         'data_same_phone': False, 'partitions': 0, 'manifest_sha256': '', 'bytes': 0, 'labels': [],
+                         'archive': True, 'file_bytes': size, 'encrypted': True, 'locked': True,
+                         'wrong_password': error.code == 'WRONG_PASSWORD'})
         except (OSError, ValueError, fs.FilesystemError):
             continue
     return rows
@@ -742,7 +760,8 @@ def facts(context, manifest, manifest_sha, progress):
                 if r['label'] in current and geometry(current[r['label']]) == {k: r.get(k) for k in geometry(current[r['label']])}]
     found = {'manifest_sha256': manifest_sha, 'created_utc': manifest.get('created_utc'), 'same_phone': same_phone,
              'partitions': [{'label': r['label'], 'size_bytes': r['size_bytes']} for r in manifest['partitions']],
-             'restorable': same_phone and len(matching) == len(wanted)}
+             'restorable': same_phone and len(matching) == len(wanted),
+             'data_restorable': manifest.get('device_identity') == context.identity}
     if KIND == 'android':
         held = locked_rows(context, [r for r in wanted if r['label'] in matching], current, progress)
         found['locked'] = held
@@ -891,6 +910,10 @@ def restore_archive(context, args, progress):
         # Android's data goes back only when it is asked for by name, and only whole.
         wanted = [row for row in manifest['partitions'] if row['label'] not in RETIRED
                   and (row['label'] in CHOSEN if CHOSEN is not None else row['label'] not in OPTIONAL)]
+        # 2026-11-12 review: Android's system may come from any A22x, its encrypted data only from this
+        # one: another phone's key cannot be unwrapped here, and Android would ask for a reset.
+        require(manifest.get('device_identity') == context.identity or not any(r['label'] in DATA_LABELS for r in wanted),
+                'OTHER_PHONE_DATA', "This copy's Android data belongs to another phone: restore it without its data")
         require(wanted, 'INVALID_ARGUMENT', 'Choose partitions that this copy holds')
         together([row['label'] for row in wanted], [row['label'] for row in manifest['partitions']])
         targets = {}
@@ -953,24 +976,40 @@ def restore(context, args, progress):
             require(manifest.get('device_identity') == context.identity or not SAME_PHONE, 'OTHER_PHONE',
                     'This backup belongs to another phone. Restoring it would give this phone a foreign identity')
             current = {p['label']: p for p in context.parts()}
-            targets = []
-            for row in manifest['partitions']:
-                if row['label'] in RETIRED:
-                    continue
+            targets, held = [], []
+            # 2026-11-12 review: an Android copy in a folder (made before the archive) takes the same
+            # rules as an archive: the partitions asked for, its data only on the phone it came from,
+            # and the partitions the bootloader locks left as they are instead of failing halfway.
+            rows = [row for row in manifest['partitions'] if row['label'] not in RETIRED]
+            if KIND == 'android':
+                rows = [row for row in rows if (row['label'] in CHOSEN if CHOSEN is not None else row['label'] not in OPTIONAL)]
+                require(manifest.get('device_identity') == context.identity or not any(r['label'] in DATA_LABELS for r in rows),
+                        'OTHER_PHONE_DATA', "This copy's Android data belongs to another phone: restore it without its data")
+            for row in rows:
                 part = current.get(row['label'])
                 require(part is not None and geometry(part) == {k: row.get(k) for k in geometry(part)}, 'GEOMETRY_MISMATCH',
                         'The partition layout differs from the backup', label=row['label'])
                 context.check_offline(part)
                 targets.append((row, part))
+            if KIND == 'android':
+                held = locked_rows(context, rows, current, progress)
+                require('vbmeta' not in held or vbmeta_off(context, current), 'VBMETA_IN_DOWNLOAD_MODE',
+                        "The copy has another vbmeta, the bootloader locks vbmeta while the phone runs, and verification is on: "
+                        "flash the copy's vbmeta in Download mode first")
+                targets = [(row, part) for row, part in targets if row['label'] not in context.locked()]
             verify_files(folder, manifest, progress)
             changed = []
             for row, part in targets:
                 if read_part(context, part, progress) != row['sha256']:
                     changed.append(part)
             if not changed:
-                return {'restored': [], 'identical': True, 'before': None, 'manifest_sha256': manifest_sha}
+                return {'restored': [], 'identical': not held, 'left_locked': held, 'before': None, 'manifest_sha256': manifest_sha}
             # The content being replaced is kept: a restore is reversible the same way.
             before = save(context, args.volume, changed, progress, prefix='before-restore')
+            if KIND == 'android':
+                for row, part in targets:
+                    if row['label'] == 'boot' and part in changed:
+                        keep_boot(context, part, row['sha256'], progress)
             done = []
             for row, part in targets:
                 if part not in changed:
@@ -1000,7 +1039,7 @@ def restore(context, args, progress):
                 # 2026-11-11: as Flash a partition does, or Samsung's Android puts its own recovery back.
                 with contextlib.suppress(OSError, ValueError, fs.FilesystemError):
                     marked = mark_boot(context, current['boot'])
-            return {'restored': done, 'identical': False, 'before': before['path'], 'manifest_sha256': manifest_sha,
+            return {'restored': done, 'identical': False, 'left_locked': held, 'before': before['path'], 'manifest_sha256': manifest_sha,
                     'keeps_recovery': bool(marked)}
 
 
@@ -1011,6 +1050,9 @@ def parser():
     mode.add_argument('--fixture', type=Path)
     result.add_argument('--kind', choices=sorted(KINDS), default='identity')
     result.add_argument('--labels', default='')
+    # 2026-11-13: the password that opens protected copies, and whether a new copy is protected with it.
+    result.add_argument('--password-file')
+    result.add_argument('--encrypt', action='store_true')
     commands = result.add_subparsers(dest='command', required=True)
     commands.add_parser('list')
     commands.add_parser('backup').add_argument('--volume', required=True)
@@ -1033,12 +1075,16 @@ def main(argv=None):
     def progress(phase, label, done, total):
         now = time.monotonic()
         if (phase, label) != last[0] or now - last[1] >= 0.2 or done == total:
-            print(json.dumps({'event': 'progress', 'operation': args.command, 'phase': phase, 'partition': label,
-                              'bytes_done': done, 'bytes_total': total}, separators=(',', ':')), file=sys.stderr, flush=True)
+            with contextlib.suppress(OSError, ValueError):  # best effort: a write never depends on it (2026-11-12 review)
+                print(json.dumps({'event': 'progress', 'operation': args.command, 'phase': phase, 'partition': label,
+                                  'bytes_done': done, 'bytes_total': total}, separators=(',', ':')), file=sys.stderr, flush=True)
             last[:] = [(phase, label), now]
 
     try:
         use(args.kind, args.labels)
+        archive.PASSWORD = archive_crypt.read_password(args.password_file)
+        archive.ENCRYPT = bool(args.encrypt and ARCHIVE)
+        require(not archive.ENCRYPT or archive.PASSWORD, 'PASSWORD_REQUIRED', 'A protected copy needs a password')
         context = Fixture(args.fixture) if args.fixture else Device()
         result = {'list': lambda: listing(context), 'backup': lambda: backup(context, args, progress),
                   'verify': lambda: verify(context, args, progress), 'restore': lambda: restore(context, args, progress),

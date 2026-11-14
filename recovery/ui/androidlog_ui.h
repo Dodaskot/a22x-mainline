@@ -9,9 +9,25 @@
 #ifndef A22X_ANDROIDLOG_UI_H
 #define A22X_ANDROIDLOG_UI_H
 
+/* A partition write cut short by a power loss is finished or undone by init (flash.py resume,
+ * 2026-11-12 audit); the home page says so once. */
+static void flash_resume_note(App*a){
+    static bool checked;if(checked)return;checked=true;
+    int fd=open("/run/a22x-recovery/flash-resume.json",O_RDONLY|O_NOFOLLOW|O_CLOEXEC);if(fd<0)return;
+    char data[4096];ssize_t n=read(fd,data,sizeof(data)-1);close(fd);if(n<=0)return;data[n]=0;
+    JsonToken t[128];Json j;if(json_parse(&j,data,t,128)<1)return;int list=json_get(&j,0,"resumed");
+    if(list<0||j.tokens[list].type!=J_ARRAY)return;
+    for(int i=list+1;i<j.count&&j.tokens[i].start<j.tokens[list].end;i=json_next(&j,i)){
+        char label[40]={0},outcome[16]={0},line[200];jstring(&j,i,"label",label,sizeof(label));jstring(&j,i,"outcome",outcome,sizeof(outcome));
+        const char*text=!strcmp(outcome,"restored")?"A write to %s was cut short: its old content was put back":
+            !strcmp(outcome,"kept")?"A write to %s was cut short and could not be undone: flash it again":NULL;
+        if(text){snprintf(line,sizeof(line),T(text),label);toast(a,line);return;}
+    }
+}
 static void android_log_poll(App*a){
     if(a->alog_checked||a->preview)return;
     if(a->screen!=HOME||a->locked||a->job.pid||a->pointer_down)return;
+    flash_resume_note(a);
     const char*path=getenv("A22X_RECOVERY_ANDROID_LOG");if(!path||!*path)path="/run/a22x-recovery/android-last.json";
     if(!a->alog_since)a->alog_since=a->now?a->now:1;
     int fd=open(path,O_RDONLY|O_NOFOLLOW|O_CLOEXEC);

@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import struct
 import sys
 import tempfile
 import unittest
@@ -40,12 +41,18 @@ class Root(unittest.TestCase):
         data = apk.read_bytes()
         (self.root / 'install-fixture.json').write_text(json.dumps({
             'schema': 'a22x.install.fixture.v1', 'device': {'model': 'SM-A226B', 'identity': 'fixture:test'},
-            'targets': {'boot': {'path': 'targets/boot', 'size_bytes': 4 * MIB}},
+            'targets': {'boot': {'path': 'targets/boot', 'size_bytes': 4 * MIB},
+                        'vbmeta': {'path': 'targets/vbmeta', 'size_bytes': 1 << 16}},
             'root': {'magisk': {'version': 'v31.1', 'file': apk.name, 'url': 'https://github.com/topjohnwu/Magisk/releases/download/v31.1/' + apk.name,
                                 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()}}}))
         (self.root / 'filesystem-fixture.json').write_text(json.dumps({'schema': 'a22x.filesystem.fixture.v1', 'volumes': [
             {'id': 'cache', 'path': 'cache', 'fs_type': 'ext4', 'mounted': True, 'read_only': True}]}))
         self.sha = hashlib.sha256(data).hexdigest()
+        # The phone's vbmeta with verification off (flags 3), as root needs it here.
+        from test_flash import vbmeta
+        off = bytearray(vbmeta(b'samsung') + bytes((1 << 16) - 327))
+        struct.pack_into('>I', off, 120, 3)
+        (self.root / 'targets/vbmeta').write_bytes(bytes(off))
         props = {'ro.product.bootimage.device': 'a22x', 'ro.product.bootimage.model': 'SM-A226B'}
         patched = tb.boot(tb.kernel('4.14.186-27218697'), tb.ramdisk(props, {'.backup/.magisk': b'KEEPVERITY=true\n'}),
                           tb.dt_table(tb.fdt('MT6833', ['mediatek,MT6833'])))
@@ -192,6 +199,13 @@ class Root(unittest.TestCase):
         code, refused, _ = self.run_helper('install', '--id', 'kernelsu', '--expected-sha256', self.sha, '--confirm')
         self.assertEqual((code, refused['error']['code']), (2, 'ROOT_UNKNOWN'))
 
+    def test_a_vbmeta_that_cannot_be_read_is_not_taken_for_verification_off(self):
+        # 2026-11-13 review: a vbmeta read error counted as verification off, and a patched BOOT went in.
+        (self.root / 'targets/vbmeta').write_bytes(bytes(1 << 16))
+        code, refused, _ = self.run_helper('install', '--id', 'magisk', '--expected-sha256', self.sha, '--confirm')
+        self.assertEqual((code, refused['error']['code']), (2, 'VBMETA_UNREADABLE'))
+        self.assertEqual((self.root / 'targets/boot').read_bytes()[:4], stock_boot()[:4])
+
     def test_with_verification_on_root_turns_it_off_and_resets_android_data_once(self):
         """2026-11-10 on the phone: stock vbmeta + a patched BOOT = Android cannot mount its data
         (misc: --prompt_and_wipe_data). As the Magisk app does for Samsung: vbmeta flags 3, data erased
@@ -226,6 +240,17 @@ class Root(unittest.TestCase):
         (self.root / 'targets/vbmeta').write_bytes(made)  # flashed in Download mode
         listed = self.run_helper('list')[1]
         self.assertEqual((listed['verification'], listed['needs_data_reset']), (False, True))
+        # 2026-11-13 review: a reset of Android's data done another way (Wipe > Data for Android, an
+        # installation) counts as the one that is needed; root then needs no second one.
+        import samsung_firmware
+        import install
+        with contextlib.redirect_stdout(io.StringIO()):
+            samsung_firmware.reset_data(install.FixtureContext(self.root), True, lambda *a: None)
+        listed = self.run_helper('list')[1]
+        self.assertEqual((listed['verification'], listed['needs_data_reset']), (False, False))
+        code, prepared, _ = self.run_helper('prepare-vbmeta')
+        self.assertEqual(code, 0, prepared)
+        (self.root / 'misc').write_bytes(bytes(misc))  # Android asks again
         code, refused, _ = self.run_helper('install', '--id', 'magisk', '--expected-sha256', self.sha, '--confirm')
         self.assertEqual((code, refused['error']['code']), (2, 'ROOT_NEEDS_DATA_RESET'))
         code, done, _ = self.run_helper('install', '--id', 'magisk', '--expected-sha256', self.sha, '--confirm', '--erase-data')

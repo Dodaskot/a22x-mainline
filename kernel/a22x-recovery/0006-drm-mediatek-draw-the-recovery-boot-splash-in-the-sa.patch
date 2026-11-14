@@ -1,8 +1,8 @@
 From 923c5c9f82d2eb6cb1ed6c6f75e419e08e5d89e1 Mon Sep 17 00:00:00 2001
 From: Dodaskot <pessdres@gmail.com>
 Date: Tue, 10 Nov 2026 11:18:15 +0100
-Subject: [PATCH] drm/mediatek: draw the recovery boot splash in the saved
- theme
+Subject: [PATCH 06/12] drm/mediatek: draw the recovery boot splash in the
+ saved theme
 
 The A22x recovery has three built-in themes (Graphite, Daylight, Aurora),
 and its interface draws its start screen in the one the user saved. The
@@ -22,7 +22,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  2 files changed, 64430 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/gpu/drm/mediatek/mtk_boot_splash.c b/drivers/gpu/drm/mediatek/mtk_boot_splash.c
-index 2415f29fd..e84c2b07e 100644
+index 2415f29fdbe2..e84c2b07e41e 100644
 --- a/drivers/gpu/drm/mediatek/mtk_boot_splash.c
 +++ b/drivers/gpu/drm/mediatek/mtk_boot_splash.c
 @@ -4,8 +4,10 @@
@@ -172,7 +172,7 @@ index 2415f29fd..e84c2b07e 100644
  		msleep(33);
  	}
 diff --git a/drivers/gpu/drm/mediatek/mtk_boot_splash_logo.h b/drivers/gpu/drm/mediatek/mtk_boot_splash_logo.h
-index 37cf344aa..2dd25f99a 100644
+index 37cf344aa6ac..2dd25f99a65a 100644
 --- a/drivers/gpu/drm/mediatek/mtk_boot_splash_logo.h
 +++ b/drivers/gpu/drm/mediatek/mtk_boot_splash_logo.h
 @@ -4,8 +4,13 @@

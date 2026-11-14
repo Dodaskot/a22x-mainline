@@ -16,21 +16,21 @@ static int aplan_index(const char*const*list,unsigned int count,const char*id){
 }
 static bool start_aplan_job(App*a,int kind){
     if(a->job.pid||a->preview||!a->distro_helper[0]||!aplan_job(kind))return false;
-    /* install_plan.py sits beside the other helpers in /opt/a22x-recovery. */
-    copy(a->aplan_helper,sizeof(a->aplan_helper),a->distro_helper);char*slash=strrchr(a->aplan_helper,'/');
-    if(slash&&(size_t)(slash-a->aplan_helper)+20<sizeof(a->aplan_helper))strcpy(slash+1,"install_plan.py");else return false;
+    if(!sibling_helper(a,"install_plan.py",a->aplan_helper,sizeof(a->aplan_helper)))return false;
     char*args[10];int n=0;args[n++]=a->python;args[n++]=a->aplan_helper;
     if(a->device)args[n++]="--device";else{args[n++]="--fixture";args[n++]=a->fixture;}
     if(kind==J_APLAN_SHOW)args[n++]="show";
     else if(kind==J_APLAN_PREPARE)args[n++]="prepare";
     else{if(strlen(a->aplan_sha)!=64)return false;args[n++]="forget";args[n++]="--expected-sha256";args[n++]=a->aplan_sha;}
-    args[n]=NULL;enum Screen back=a->result_return;bool ok=launch_job(a,kind,args);a->result_return=back;return ok;
+    args[n]=NULL;return launch_job(a,kind,args);   /* quiet: launch_job keeps result_return (2026-11-14 review) */
 }
 /* Once after startup, behind whatever is on screen; never while locked or during the splash. */
 static void android_plan_tick(App*a){
-    if(a->aplan_asked||a->preview||!a->distro_helper[0]||a->job.pid||a->screen==SPLASH||a->locked)return;
+    if(a->aplan_asked||a->preview||!a->distro_helper[0]||a->job.pid||a->screen==SPLASH||a->locked||a->now<a->aplan_retry_at)return;
     a->aplan_asked=true;start_aplan_job(a,J_APLAN_SHOW);
 }
+#define APLAN_RETRY_MS 3000u
+#define APLAN_TRIES 5u   /* 3, 6, 12, 24 and 48 s: a few short checks, not one every 3 s (2026-11-14 review) */
 static void complete_aplan_job(App*a,const Json*j,int kind,bool ok){
     if(kind==J_APLAN_FORGET){
         a->aplan_forget_after=false;
@@ -48,6 +48,13 @@ static void complete_aplan_job(App*a,const Json*j,int kind,bool ok){
         a->aplan_pending=true;a->systems_known=false;
         if(!start_systems_job(a,J_SYS_STATUS)){a->aplan_pending=false;copy(a->aplan_error,sizeof(a->aplan_error),tr("Systems could not be read."));a->dirty=true;}
         return;
+    }
+    /* At the start another helper may hold the storage lease (2026-11-14, on the phone: the check
+       ended OPERATION_BUSY and a plan from the Android app was not offered until a restart). It is
+       asked again, each time twice as late, for about a minute and a half. */
+    if(!ok&&j&&a->aplan_tries<APLAN_TRIES){
+        char code[48]={0};int e=json_get(j,0,"error");if(e>=0)jstring(j,e,"code",code,sizeof(code));
+        if(!strcmp(code,"OPERATION_BUSY")){a->aplan_asked=false;a->aplan_retry_at=a->now+((uint64_t)APLAN_RETRY_MS<<a->aplan_tries);a->aplan_tries++;return;}
     }
     a->aplan_known=true;a->aplan_present=a->aplan_valid=false;a->aplan_error[0]=0;
     if(!ok||!j){a->dirty=true;return;}

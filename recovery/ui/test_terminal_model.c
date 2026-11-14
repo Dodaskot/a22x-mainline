@@ -52,6 +52,15 @@ int main(void){
 
     CHECK(tm_init(t,3,20));feed(t,"a\033]52;c;SECRET\007b\033Pignored\033\\c\033]0;title\033\\d");CHECK(row_is(t,0,"abcd")&&tm_page(t)->col==4);
     feed(t,"\033(0lqk\033(B");CHECK(at(t,0,4)==0x250c&&at(t,0,5)==0x2500&&at(t,0,6)==0x2510);
+    /* 2026-11-14 review: an OSC cut by ESC that is not ST ends there; the next OSC ends at BEL. */
+    feed(t,"\r\033[K\033]0;t\033]0;u\007e");CHECK(t->parser==TM_GROUND&&at(t,0,0)=='e');
+    /* 2026-11-14 reviews: as xterm, up stops at the top margin from any row at or below it, down at
+       the bottom margin from any row at or above it; beyond a margin, at the screen's edge. */
+    CHECK(tm_init(t,6,10));feed(t,"\033[2;4r\033[3;1H\033[9B");CHECK(tm_page(t)->row==3);
+    feed(t,"\033[9A");CHECK(tm_page(t)->row==1);feed(t,"\033[6;1H\033[9A");CHECK(tm_page(t)->row==1);
+    feed(t,"\033[1;1H\033[9B");CHECK(tm_page(t)->row==3);feed(t,"\033[1;1H\033[9A");CHECK(tm_page(t)->row==0);
+    feed(t,"\033[6;1H\033[9B");CHECK(tm_page(t)->row==5);feed(t,"\033[5;1H\033[9E");CHECK(tm_page(t)->row==5&&tm_page(t)->col==0);
+    CHECK(tm_init(t,3,20));
     feed(t,"\033[1;");CHECK(t->parser==TM_CSI);feed(t,"2HZ");CHECK(at(t,0,1)=='Z');
     feed(t,"\033[99999999999999999999999999999999999;99999999999999999999999999H@");CHECK(at(t,2,19)=='@');
     feed(t,"\033[1;1H\033[");for(unsigned n=0;n<100;n++)feed(t,"1;");feed(t,"mX");CHECK(at(t,0,0)=='X'&&t->param_count<=TM_PARAMS);

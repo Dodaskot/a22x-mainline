@@ -120,6 +120,11 @@ final class RecoveryStore {
         return Handoff.networkProblem(name, null) == null ? name : null;
     }
 
+    /** Android's BOOT, the original Magisk patched when there is one, kept on cache (Scripts.KEEP_BOOT_AUTO). */
+    static Root.Result keepBootAuto() {
+        return Root.run(Scripts.keepBootAuto(), 180);
+    }
+
     static Root.Result restartIntoRecovery() {
         return Root.run("sync; reboot recovery", 60);
     }

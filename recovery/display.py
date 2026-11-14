@@ -257,6 +257,9 @@ def backlight_guard_worker(channel, parent_fd, io, last):
     except BaseException:
         result = 112
     try:
+        # 2026-11-13 review: this copy forked with panel_off false; with the panel off (bl_power 4)
+        # its read refused the state it exists for, and the light stayed off. Either state is fine.
+        io.panel_off = True
         requested, actual = io.read()
         if requested == 0 or actual == 0:
             io.write(last)
@@ -849,10 +852,10 @@ def light(operation, percent, controller, backlight):
     dark = backlight.status().get('blanked') is True
     if operation == 'toggle':
         operation = 'wake' if dark else 'blank'
-    if dark and (operation == 'wake' or (operation == 'brightness' and percent)):
-        panel_power(controller, backlight, True)
+    if dark and operation in ('wake', 'brightness'):
+        panel_power(controller, backlight, True)  # a brightness is never 0 (percent_raw refuses it)
     changed = backlight.brightness(percent) if operation == 'brightness' else getattr(backlight, operation)()
-    if operation == 'blank' or (operation == 'brightness' and not percent):
+    if operation == 'blank':
         panel_power(controller, backlight, False)
     return changed
 
@@ -1021,6 +1024,10 @@ def serve(boot_id):
         while running:
             if backlight is not None:
                 try:
+                    if not backlight.guarded() and 0 in backlight.io.read():
+                        # 2026-11-13 review: the guard died while dark; the light alone came back on a
+                        # panel still off, and later wakes saw nothing dark to bring back.
+                        panel_power(controller, backlight, True)
                     backlight.tick()
                 except (OSError, DisplayError) as error:
                     backlight.fault = str(error)

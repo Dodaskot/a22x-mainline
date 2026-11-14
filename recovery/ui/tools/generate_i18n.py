@@ -20,14 +20,33 @@ def unquote(line):
 
 
 def read_po(path):
-    catalog, msgid = {}, None
-    for line in path.read_text().splitlines():
-        if line.startswith('msgid '):
-            msgid = unquote(line)
-        elif line.startswith('msgstr ') and msgid:
-            value = unquote(line)
+    """msgid -> msgstr of a catalog, also in the form gettext tools write long entries in: the
+    keyword with "" and the text in the quoted lines that follow (2026-11-14 review: only one-line
+    entries were read, and a catalog saved by msgmerge or Poedit lost every long translation)."""
+    catalog, msgid, key, parts = {}, None, None, []
+
+    def close():
+        nonlocal msgid
+        if key == 'msgid':
+            msgid = ''.join(parts)
+        elif key == 'msgstr' and msgid:
+            value = ''.join(parts)
             if value:
                 catalog[msgid] = value
+    for line in path.read_text().splitlines():
+        stripped = line.strip()
+        if stripped.startswith('"') and key:
+            parts.append(unquote(stripped))
+            continue
+        close()
+        key, parts = None, []
+        if line.startswith('msgid '):
+            key, parts = 'msgid', [unquote(line)]
+        elif line.startswith('msgstr '):
+            key, parts = 'msgstr', [unquote(line)]
+        elif not line.startswith('#'):
+            msgid = None if not stripped else msgid
+    close()
     return catalog
 
 

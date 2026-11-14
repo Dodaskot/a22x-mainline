@@ -228,11 +228,116 @@ def inspect(context, volume, token, path):
             'plan_sha256': digest, 'write_bytes': sum(w['size'] for w in ordered)}
 
 
+UNPACK_STORE = 'A22xFirmware'
+
+
+def same_member(out, info):
+    """A file already unpacked from this very ZIP entry: its size and the CRC kept beside it."""
+    try:
+        marker_fd = fs.open_regular(info.filename + '.crc', dir_fd=out)
+        try:
+            return (os.stat(info.filename, dir_fd=out, follow_symlinks=False).st_size == info.file_size
+                    and os.pread(marker_fd, 64, 0).decode().strip() == '%08x' % info.CRC)
+        finally:
+            os.close(marker_fd)
+    except (OSError, fs.FilesystemError):
+        return False
+
+
+def unpack_into(pin, folder, out_name, archive, members, total, progress):
+    """The tars of the ZIP into FOLDER/OUT_NAME on the pinned volume; what is left of a failed
+    run never looks unpacked (.part- files and the CRC written last)."""
+    unpacked, done = [], 0
+    with pin.directory(folder) as parent:
+        with contextlib.suppress(FileExistsError):
+            os.mkdir(out_name, 0o700, dir_fd=parent)
+        out = os.open(out_name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=parent)
+        try:
+            pin.check_fd(out)
+            for info in members:
+                if same_member(out, info):
+                    done += info.file_size
+                    unpacked.append(info.filename)
+                    continue
+                part, marker = '.part-' + info.filename, info.filename + '.crc'
+                for stale in (part, marker):
+                    with contextlib.suppress(FileNotFoundError):
+                        os.unlink(stale, dir_fd=out)
+                target = os.open(part, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600, dir_fd=out)
+                try:
+                    with archive.open(info) as stream:  # zipfile checks the CRC at the member's end
+                        while True:
+                            data = stream.read(4 << 20)
+                            if not data:
+                                break
+                            view, at = memoryview(data), 0
+                            while at < len(data):
+                                at += os.write(target, view[at:])
+                            done += len(data)
+                            progress('Unpacking', {'label': name_kind(info.filename), 'size_bytes': total}, done)
+                    os.fsync(target)
+                except BaseException as error:
+                    os.close(target)
+                    with contextlib.suppress(OSError):
+                        os.unlink(part, dir_fd=out)
+                    if isinstance(error, (zlib.error, zipfile.BadZipFile, EOFError)):
+                        fail('FIRMWARE_DAMAGED', 'The firmware file is damaged', file=info.filename, reason=str(error)[:200])
+                    raise
+                os.close(target)
+                os.rename(part, info.filename, src_dir_fd=out, dst_dir_fd=out)
+                side = os.open(marker, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600, dir_fd=out)
+                try:
+                    os.write(side, ('%08x\n' % info.CRC).encode())
+                    os.fsync(side)
+                finally:
+                    os.close(side)
+                unpacked.append(info.filename)
+            os.fsync(out)
+        finally:
+            os.close(out)
+    return unpacked
+
+
+def room_for(pin, folder, out_name, members):
+    """(bytes still to unpack into FOLDER/OUT_NAME, bytes free there)."""
+    with pin.directory(folder) as parent:
+        try:
+            out = os.open(out_name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=parent)
+        except FileNotFoundError:
+            need = sum(i.file_size for i in members)
+            room = os.fstatvfs(parent)
+        else:
+            try:
+                need = sum(i.file_size for i in members if not same_member(out, i))
+                room = os.fstatvfs(out)
+            finally:
+                os.close(out)
+    return need, room.f_bavail * room.f_frsize
+
+
+def writable(context, volume):
+    """The volume mounted for writing, or None when it cannot be (encrypted, unsupported, busy)."""
+    now = context.fs.volume(volume)
+    if not now['mountable'] or not now['write_supported']:
+        return None
+    if now['mounted'] and not now['read_only']:
+        return now
+    if now['mounted'] and now.get('mount_owner') != 'filesystem':
+        return None
+    try:
+        context.fs.mount(volume, 'rw', True, now['volume_token'])
+    except fs.FilesystemError:
+        return None
+    return context.fs.volume(volume)
+
+
 def unpack_zip(context, volume, token, path, confirmed, progress):
     """Samsung's firmware as one ZIP (samfw.com and others: AP, BL, CP, CSC and HOME_CSC tars, each
     deflated) unpacked beside it into a folder named after it, each tar checked by the ZIP's CRC.
     The tars are then installed as any firmware folder; a file already unpacked from the same ZIP
-    entry is kept. Userdata, where they usually lie, is formatted for Android at the end anyway."""
+    entry is kept. When there is no room beside it (2026-11-13, on the phone: a 5.8 GB ZIP needs
+    7.2 GB more on a 16 GB card), they go to userdata (A22xFirmware/), which the installation
+    formats for Android at its end anyway; userdata encrypted by Android cannot take them."""
     require(confirmed, 'CONFIRMATION_REQUIRED', 'Unpacking the firmware must be confirmed')
     relative = fs.clean_path(path)
     folder, _, name = relative.rpartition('/')
@@ -242,91 +347,38 @@ def unpack_zip(context, volume, token, path, confirmed, progress):
     if volume_now['mounted'] and volume_now['read_only'] and volume_now.get('mount_owner') == 'filesystem':
         context.fs.mount(volume, 'rw', True, token)
     out_name = name[:-4]
-    unpacked, total = [], 0
     with flash.source_file(context, volume, token, '/' + relative) as fd, flash.shared_offset(fd) as handle, \
-            zipfile.ZipFile(handle) as archive, fs.PinnedVolume(context.fs, volume, token, writing=True) as pin:
+            zipfile.ZipFile(handle) as archive:
         members = [i for i in archive.infolist() if not i.is_dir() and name_kind(i.filename)
                    and i.filename.lower().endswith(('.tar.md5', '.tar'))]
         require(sum(1 for i in members if name_kind(i.filename) == 'AP') == 1, 'AP_NOT_IN_ZIP', 'The ZIP holds no AP file, or several')
         require(len(members) <= 8 and all('/' not in i.filename.strip('/') for i in members), 'FIRMWARE_UNREADABLE',
                 'The firmware file holds too many entries')
         total = sum(i.file_size for i in members)
-        with pin.directory(folder) as parent:
-            with contextlib.suppress(FileExistsError):
-                os.mkdir(out_name, 0o700, dir_fd=parent)
-            out = os.open(out_name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=parent)
-            try:
-                pin.check_fd(out)
-                done = 0
-                need = 0
-                for info in members:
-                    marker = info.filename + '.crc'
-                    try:
-                        same = (os.stat(info.filename, dir_fd=out, follow_symlinks=False).st_size == info.file_size and
-                                os.pread(fs.open_regular(marker, dir_fd=out), 64, 0).decode().strip() == '%08x' % info.CRC)
-                    except (OSError, fs.FilesystemError):
-                        same = False
-                    if not same:
-                        need += info.file_size
-                room = os.fstatvfs(out)
-                require(room.f_bavail * room.f_frsize > need + (64 << 20), 'INSUFFICIENT_SPACE',
-                        'There is not enough space beside the ZIP to unpack the firmware', required_bytes=need,
-                        available_bytes=room.f_bavail * room.f_frsize)
-                for info in members:
-                    marker = info.filename + '.crc'
-                    try:
-                        marker_fd = fs.open_regular(marker, dir_fd=out)
-                        try:
-                            same = (os.stat(info.filename, dir_fd=out, follow_symlinks=False).st_size == info.file_size
-                                    and os.pread(marker_fd, 64, 0).decode().strip() == '%08x' % info.CRC)
-                        finally:
-                            os.close(marker_fd)
-                    except (OSError, fs.FilesystemError):
-                        same = False
-                    if same:
-                        done += info.file_size
-                        unpacked.append(info.filename)
-                        continue
-                    part = '.part-' + info.filename
-                    with contextlib.suppress(FileNotFoundError):
-                        os.unlink(part, dir_fd=out)
-                    with contextlib.suppress(FileNotFoundError):
-                        os.unlink(marker, dir_fd=out)
-                    target = os.open(part, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600, dir_fd=out)
-                    try:
-                        with archive.open(info) as stream:  # zipfile checks the CRC at the member's end
-                            while True:
-                                data = stream.read(4 << 20)
-                                if not data:
-                                    break
-                                view, at = memoryview(data), 0
-                                while at < len(data):
-                                    at += os.write(target, view[at:])
-                                done += len(data)
-                                progress('Unpacking', {'label': name_kind(info.filename), 'size_bytes': total}, done)
-                        os.fsync(target)
-                    except BaseException as error:
-                        os.close(target)
-                        with contextlib.suppress(OSError):
-                            os.unlink(part, dir_fd=out)
-                        if isinstance(error, (zlib.error, zipfile.BadZipFile, EOFError)):
-                            fail('FIRMWARE_DAMAGED', 'The firmware file is damaged', file=info.filename, reason=str(error)[:200])
-                        raise
-                    os.close(target)
-                    os.rename(part, info.filename, src_dir_fd=out, dst_dir_fd=out)
-                    side = os.open(marker, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600, dir_fd=out)
-                    try:
-                        os.write(side, ('%08x\n' % info.CRC).encode())
-                        os.fsync(side)
-                    finally:
-                        os.close(side)
-                    unpacked.append(info.filename)
-                os.fsync(out)
-            finally:
-                os.close(out)
+        reserve = 64 << 20
+        with fs.PinnedVolume(context.fs, volume, token, writing=True) as pin:
+            need, free = room_for(pin, folder, out_name, members)
+            if free > need + reserve:
+                unpacked = unpack_into(pin, folder, out_name, archive, members, total, progress)
+                where_volume, where = volume, '/' + (folder + '/' if folder else '') + out_name
+        if free <= need + reserve:
+            data = writable(context, 'userdata') if volume != 'userdata' else None
+            if data is None:
+                message = 'There is not enough space beside the ZIP to unpack the firmware, and userdata is encrypted by Android. Free space beside the ZIP, or format userdata in Wipe (the installation formats it for Android anyway), then choose the ZIP again'  # noqa: E501 - one text for the translations
+                fail('INSUFFICIENT_SPACE', message, required_bytes=need, available_bytes=free)
+            with fs.PinnedVolume(context.fs, 'userdata', data['volume_token'], writing=True) as pin:
+                with pin.directory('') as parent:
+                    with contextlib.suppress(FileExistsError):
+                        os.mkdir(UNPACK_STORE, 0o700, dir_fd=parent)
+                need, free = room_for(pin, UNPACK_STORE, out_name, members)
+                require(free > need + reserve, 'INSUFFICIENT_SPACE',
+                        'There is not enough space beside the ZIP or on userdata to unpack the firmware',
+                        required_bytes=need, available_bytes=free)
+                unpacked = unpack_into(pin, UNPACK_STORE, out_name, archive, members, total, progress)
+                where_volume, where = 'userdata', '/' + UNPACK_STORE + '/' + out_name
     ap = next(n for n in unpacked if name_kind(n) == 'AP')
-    where = '/' + (folder + '/' if folder else '') + out_name
-    return {'folder': where, 'ap': where + '/' + ap, 'files': unpacked, 'bytes': total}
+    return {'folder': where, 'ap': where + '/' + ap, 'files': unpacked, 'bytes': total,
+            'volume': where_volume, 'volume_token': context.fs.volume(where_volume)['volume_token']}
 
 
 def verify_md5(context, volume, token, item, progress):
@@ -372,13 +424,38 @@ def ap_member(context, volume, token, path, wanted, limit):
             fail('TAR_MEMBER_MISSING', 'The package has no such image', member=wanted)
 
 
+def lz4_bounded(packed, limit, seconds=60):
+    """PACKED decoded by lz4, at most LIMIT bytes and SECONDS long (2026-11-13 review: a damaged or
+    hostile boot.img.lz4 could fill the recovery's RAM with gigabytes before its size was checked)."""
+    import tempfile
+    with tempfile.TemporaryFile() as source:
+        source.write(packed)
+        source.seek(0)
+        proc = subprocess.Popen((flash.LZ4, '-dc'), stdin=source, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        out, deadline = bytearray(), time.monotonic() + seconds
+        try:
+            while True:
+                require(time.monotonic() < deadline, 'INVALID_COMPRESSED_IMAGE', 'The compressed file takes too long to unpack')
+                data = proc.stdout.read(1 << 20)
+                if not data:
+                    break
+                out.extend(data)
+                require(len(out) <= limit, 'INVALID_COMPRESSED_IMAGE', 'The compressed file unpacks larger than a BOOT can be')
+            code = proc.wait(timeout=max(1, deadline - time.monotonic()))
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait()
+            proc.stdout.close()
+    require(code == 0 and len(out) > 0, 'INVALID_COMPRESSED_IMAGE', 'The compressed file is damaged')
+    return bytes(out)
+
+
 def extract_boot(context, volume, token, path, progress):
     """Samsung's BOOT taken out of the firmware and kept on cache: the way back from a custom kernel."""
     packed, source, build = ap_member(context, volume, token, path, 'boot.img.lz4', BOOT_LZ4_LIMIT)
     progress('Unpacking', {'label': 'boot', 'size_bytes': len(packed)}, 0)
-    done = subprocess.run((flash.LZ4, '-dc'), input=packed, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-    require(done.returncode == 0 and 0 < len(done.stdout) <= BOOT_LIMIT, 'INVALID_COMPRESSED_IMAGE', 'The compressed file is damaged')
-    image = done.stdout
+    image = lz4_bounded(packed, BOOT_LIMIT)
     try:
         info = bootimage.inspect_boot(image)
     except bootimage.ImageError as error:
@@ -415,11 +492,7 @@ def protected_state(context, volume, token, write, progress):
                                  member=write['member'], image_bytes=None, confirm=True)
     image = flash.check(context, args, progress)['image']['sha256']
     target = context.target(write['target'])
-    fd = context.open_target(target)
-    try:
-        now = os.pread(fd, target['size_bytes'], 0)
-    finally:
-        os.close(fd)
+    now = install.target_bytes(context, target)  # 2026-11-13 review: a short read is refused
     if hashlib.sha256(now).hexdigest() == image:
         return 'same'
     if write['target'] == 'vbmeta' and now[:4] == b'AVB0' and struct.unpack_from('>I', now, 120)[0] & 2:
@@ -500,6 +573,14 @@ def android_data(context, progress):
         cleared = bcb.clear_wipe_request(context)
     except OSError:
         cleared = False
+    # 2026-11-13 review: the vbmeta prepared for root, now in its partition, asks for this very reset
+    # until its copy goes; left there, root asked to erase the freshly set up data once more.
+    import root
+    import saved_boot
+    with contextlib.suppress(OSError, fs.FilesystemError):
+        prepared = root.prepared_in_place(context)
+        if prepared:
+            saved_boot.remove_from_cache(context, prepared)
     os.sync()
     return {'cache_removed': wiped['removed'], 'userdata': 'android', 'metadata': 'erased', 'request_cleared': cleared}
 

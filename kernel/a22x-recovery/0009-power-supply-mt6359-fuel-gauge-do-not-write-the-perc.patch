@@ -1,8 +1,8 @@
 From 41c3332eac14b2ac2ce84797662398001302fe36 Mon Sep 17 00:00:00 2001
 From: Dodaskot <pessdres@gmail.com>
 Date: Thu, 12 Nov 2026 08:12:53 +0100
-Subject: [PATCH] power: supply: mt6359-fuel-gauge: do not write the percent to
- the RTC
+Subject: [PATCH 09/12] power: supply: mt6359-fuel-gauge: do not write the
+ percent to the RTC
 
 The percent written to RTC_AL_HOU[15:8] never reached the RTC's core on
 SM-A226B, whatever was tried:

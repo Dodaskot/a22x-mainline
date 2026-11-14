@@ -74,6 +74,7 @@ class Keys:
     """Approved computers, one adb public key per line. PERSIST(lines) keeps them past a restart."""
     def __init__(self, path, persist=None):
         self.path, self.persist = Path(path), persist
+        self.lock = threading.Lock()
 
     def lines(self):
         try:
@@ -90,17 +91,25 @@ class Keys:
                 continue
         return found
 
-    def add(self, line):
-        parse_android_key(line)
-        lines = self.lines()
-        if line.strip() not in lines:
+    def merge(self, new_lines):
+        """NEW_LINES added to the RAM copy in one replace; True when anything was new. One lock for
+        this and add: the load from cache appended to a file add had just replaced (2026-11-12 review)."""
+        with self.lock:
+            lines = self.lines()
+            extra = [line.strip() for line in new_lines if line.strip() and line.strip() not in lines]
+            if not extra:
+                return False
             self.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
             temporary = self.path.with_name('.' + self.path.name + '.new')
-            temporary.write_text(''.join(item + '\n' for item in lines + [line.strip()]))
+            temporary.write_text(''.join(item + '\n' for item in lines + list(dict.fromkeys(extra))))
             os.chmod(temporary, 0o600)
             temporary.replace(self.path)
-            if self.persist:
-                self.persist(self.lines())
+            return True
+
+    def add(self, line):
+        parse_android_key(line)
+        if self.merge([line]) and self.persist:
+            self.persist(self.lines())
 
 
 class Approval:
@@ -262,10 +271,12 @@ class Stream:
         self.ready.set()
 
     def incoming(self, data):
+        # 2026-11-12 review: OKAY was sent on arrival, so the computer sent at link speed and a push
+        # to a slower card piled up in RAM until the recovery ran out of memory. The computer sends
+        # the next block of a stream only after its OKAY, which now comes when the data is taken.
         with self.inbox_lock:
             self.inbox.append(data)
             self.inbox_event.set()
-        self.c.send(A_OKAY, self.local, self.remote)
 
     def read(self, timeout=None):
         """Bytes from the computer; b'' when the stream ended."""
@@ -273,11 +284,18 @@ class Stream:
             with self.inbox_lock:
                 if self.inbox:
                     data = b''.join(self.inbox)
+                    taken = len(self.inbox)
                     self.inbox.clear()
                     self.inbox_event.clear()
-                    return data
-                if self.ended:
-                    return b''
+                else:
+                    taken = 0
+                    if self.ended:
+                        return b''
+            if taken:
+                for _ in range(taken):
+                    with contextlib.suppress(OSError, Closed):
+                        self.c.send(A_OKAY, self.local, self.remote)
+                return data
             if not self.inbox_event.wait(timeout):
                 return None
 
@@ -462,23 +480,32 @@ def service_sync(stream, service):
             except OSError as exc:
                 problem = f'{target}: {exc.strerror}'
             mtime = 0
-            while True:
-                header, pending = stream.read_exact(8, pending)
-                ident, length = header[:4], struct.unpack('<I', header[4:])[0]
-                if ident == b'DATA':
-                    if length > SYNC_DATA_MAX:
-                        raise Closed('sync data too large')
-                    data, pending = stream.read_exact(length, pending)
-                    if fd is not None and problem is None:
-                        try:
-                            os.write(fd, data)
-                        except OSError as exc:
-                            problem = f'{target}: {exc.strerror}'
-                elif ident == b'DONE':
-                    mtime = length
-                    break
-                else:
-                    raise Closed('unexpected sync message')
+            try:
+                while True:
+                    header, pending = stream.read_exact(8, pending)
+                    ident, length = header[:4], struct.unpack('<I', header[4:])[0]
+                    if ident == b'DATA':
+                        if length > SYNC_DATA_MAX:
+                            raise Closed('sync data too large')
+                        data, pending = stream.read_exact(length, pending)
+                        if fd is not None and problem is None:
+                            try:
+                                os.write(fd, data)
+                            except OSError as exc:
+                                problem = f'{target}: {exc.strerror}'
+                    elif ident == b'DONE':
+                        mtime = length
+                        break
+                    else:
+                        raise Closed('unexpected sync message')
+            except BaseException:
+                # 2026-11-12 review: a push cut short (Ctrl-C, cable) left the file open in this
+                # long-lived daemon and the part file on the volume, which then could not be unmounted.
+                if fd is not None:
+                    os.close(fd)
+                    with contextlib.suppress(OSError):
+                        os.unlink(temporary)
+                raise
             if fd is not None:
                 # 2026-11-12, on the owner's phone: a pushed recovery image read back with 16 MiB of
                 # zeros in its middle after the volume was mounted again, though adb had said "pushed"
@@ -731,6 +758,24 @@ class EndpointTransport:
     """adb messages over the two bulk endpoints. A read returns one USB transfer at most."""
     def __init__(self, out_fd, in_fd):
         self.out_fd, self.in_fd = out_fd, in_fd
+        self.lock, self.detached, self.closed = threading.Lock(), False, False
+
+    def detach(self):
+        """From the control thread, when the USB configuration goes away: the endpoints are replaced
+        by /dev/null under the same numbers, so the serving thread's next read ends the connection.
+        Closing them here let another thread's new file take a number the serving thread then wrote
+        adb messages into and closed (2026-11-12 review)."""
+        with self.lock:
+            if self.detached or self.closed:
+                return
+            self.detached = True
+            null = os.open('/dev/null', os.O_RDWR | os.O_CLOEXEC)
+            try:
+                for fd in (self.out_fd, self.in_fd):
+                    with contextlib.suppress(OSError):
+                        os.dup2(null, fd, inheritable=False)
+            finally:
+                os.close(null)
 
     def read(self, size):
         data = bytearray()
@@ -755,11 +800,14 @@ class EndpointTransport:
             view = view[written:]
 
     def close(self):
-        for fd in (self.out_fd, self.in_fd):
-            try:
-                os.close(fd)
-            except OSError:
-                pass
+        """Only by the serving thread, once."""
+        with self.lock:
+            if self.closed:
+                return
+            self.closed = True
+            for fd in (self.out_fd, self.in_fd):
+                with contextlib.suppress(OSError):
+                    os.close(fd)
 
 
 def serve_ffs(folder, keys, approve, log=None, gate=None, ready=None):
@@ -771,20 +819,39 @@ def serve_ffs(folder, keys, approve, log=None, gate=None, ready=None):
     os.write(control, ffs_strings())
     if ready:
         ready()
-    current = None
+    session = {'enabled': False, 'current': None, 'thread': None}
+
+    def sessions():
+        # 2026-11-12, on the owner's phone: a connection that ended while the cable stayed in (the
+        # password refused on the phone, or the computer's adb server restarted) left nobody reading
+        # the endpoints, and the computer saw the phone "offline" until the cable was pulled. While
+        # the configuration is enabled, every ended connection is followed by a new one.
+        while session['enabled']:
+            try:
+                out_fd = os.open(folder / 'ep1', os.O_RDONLY | os.O_CLOEXEC)
+                in_fd = os.open(folder / 'ep2', os.O_WRONLY | os.O_CLOEXEC)
+            except OSError:
+                time.sleep(0.5)
+                continue
+            session['current'] = Connection(EndpointTransport(out_fd, in_fd), keys, approve, 'usb', log, gate)
+            session['current'].serve()
+            session['current'] = None
+            time.sleep(0.2)
     while True:
         event = os.read(control, 12)
         if len(event) < 12:
             continue
         kind, request_type = event[8], event[0]
-        if kind == FFS_ENABLE and current is None:
-            out_fd = os.open(folder / 'ep1', os.O_RDONLY | os.O_CLOEXEC)
-            in_fd = os.open(folder / 'ep2', os.O_WRONLY | os.O_CLOEXEC)
-            current = Connection(EndpointTransport(out_fd, in_fd), keys, approve, 'usb', log, gate)
-            threading.Thread(target=current.serve, daemon=True).start()
-        elif kind in (FFS_DISABLE, FFS_UNBIND) and current is not None:
-            current.transport.close()
-            current = None
+        if kind == FFS_ENABLE and not session['enabled']:
+            session['enabled'] = True
+            if session['thread'] is None or not session['thread'].is_alive():
+                session['thread'] = threading.Thread(target=sessions, daemon=True)
+                session['thread'].start()
+        elif kind in (FFS_DISABLE, FFS_UNBIND) and session['enabled']:
+            session['enabled'] = False
+            current = session['current']
+            if current is not None:
+                current.transport.detach()
         elif kind == FFS_SETUP:
             # No control requests of its own: acknowledge, as AOSP adbd does.
             try:
@@ -811,6 +878,14 @@ def serve_tcp(address, port, keys, approve, log=None, ready=None, gate=None):
     while True:
         sock, peer = server.accept()
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        # 2026-11-12 review: a computer that went away without a word (cable pulled, laptop asleep)
+        # held its connection for ever, and a sideload with it the storage lease. Keepalive ends it
+        # within about a minute.
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 30)
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_USER_TIMEOUT, 60000)
         connection = Connection(SocketTransport(sock), keys, approve, '%s:%d' % peer, log, gate)
         threading.Thread(target=connection.serve, daemon=True).start()
 
@@ -837,8 +912,12 @@ def cache_keys(mode, action):
 def store_keys(lines):
     def write(path):
         path.parent.mkdir(mode=0o700, exist_ok=True)
+        # 2026-11-12 review: the RAM list replaced the file, so when the load at start had failed
+        # (storage busy), approving one computer erased every computer kept before. Kept ones stay.
+        kept = [line.strip() for line in path.read_text().splitlines() if line.strip()] if path.is_file() else []
+        lines_all = kept + [line for line in lines if line not in kept]
         temporary = path.with_name('.adb_keys.new')
-        temporary.write_text(''.join(line + '\n' for line in lines))
+        temporary.write_text(''.join(line + '\n' for line in lines_all))
         os.chmod(temporary, 0o600)
         temporary.replace(path)
         return True
@@ -848,16 +927,25 @@ def store_keys(lines):
 def load_keys(keys):
     """The approved computers saved on cache, into the RAM copy the daemon reads."""
     lines = cache_keys('ro', lambda path: path.read_text().splitlines() if path.is_file() else [])
-    for line in lines or []:
+    if lines is None:
+        return False
+    good = []
+    for line in lines:
         try:
             parse_android_key(line)
         except (ValueError, struct.error):
             continue
-        keys.path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-        if line.strip() not in keys.lines():
-            with open(keys.path, 'a') as out:
-                out.write(line.strip() + '\n')
-            os.chmod(keys.path, 0o600)
+        good.append(line)
+    keys.merge(good)
+    return True
+
+
+def load_keys_soon(keys, tries=30, pause=2.0):
+    """The load at start, again until it works: init's one-shot steps hold the storage then."""
+    for _ in range(tries):
+        if load_keys(keys):
+            return
+        time.sleep(pause)
 
 
 def main(argv=None):
@@ -871,18 +959,19 @@ def main(argv=None):
     args = parser.parse_args(argv)
     log = lambda *items: print('adbd:', *items, file=sys.stderr, flush=True)
     keys = Keys(args.keys, store_keys if args.persist else None)
-    gate = None
+
+    # 2026-11-12 review: the recovery's password was asked only with --persist; an approved key
+    # gives a root shell, so the access settings are asked always, as SSH and the console do.
+    def gate(peer):
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import access_gate
+        return access_gate.Gate().allow('adb', peer)
     if args.persist:
-        def gate(peer):
-            sys.path.insert(0, str(Path(__file__).resolve().parent))
-            import access_gate
-            return access_gate.Gate().allow('adb', peer)
+        load_keys(keys) or threading.Thread(target=load_keys_soon, args=(keys,), daemon=True).start()
     # The USB interface is published first: init binds the UDC only once it is there.
     if args.ffs:
         threading.Thread(target=serve_ffs, args=(args.ffs, keys, Approval(args.requests), log, gate),
                          daemon=True).start()
-    if args.persist:
-        load_keys(keys)
     serve_tcp(args.address, args.port, keys, Approval(args.requests), log, gate=gate)
 
 

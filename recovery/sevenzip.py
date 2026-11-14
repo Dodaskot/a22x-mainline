@@ -35,6 +35,21 @@ def fail(code, message):
     raise SevenZipError(code, message)
 
 
+def guarded(function):
+    """What a damaged archive makes the decoders raise is said as SevenZipError, which every caller
+    handles (2026-11-13 review: a cut .7z gave lzma.LZMAError, StopIteration or IndexError, and a
+    traceback instead of an answer)."""
+    def wrapper(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except SevenZipError:
+            raise
+        except (lzma.LZMAError, StopIteration, IndexError, KeyError, struct.error, EOFError, OverflowError, TypeError) as error:
+            raise SevenZipError('INVALID_7Z', 'The 7z archive is damaged') from error
+    wrapper.__name__, wrapper.__doc__ = function.__name__, function.__doc__
+    return wrapper
+
+
 class Cursor:
     def __init__(self, data):
         self.data, self.at = data, 0
@@ -229,6 +244,7 @@ def filters_of(item):
     return chain or None
 
 
+@guarded
 def read_header(fd, size):
     head = os.pread(fd, 32, 0)
     if len(head) != 32 or head[:6] != SIGNATURE:
@@ -260,6 +276,7 @@ def read_header(fd, size):
     fail('INVALID_7Z', 'The 7z header is damaged')
 
 
+@guarded
 def entries(fd):
     """The files of the archive: name, size, folder, offset of its data in the folder's output, CRC."""
     st = os.fstat(fd)
@@ -326,6 +343,7 @@ def entries(fd):
 class EntryReader:
     """One file of the archive, decoded as it is read; its CRC32 is checked at its end."""
 
+    @guarded
     def __init__(self, fd, info, entry):
         self.fd, self.entry = fd, entry
         item = info['folders'][entry['folder']]
@@ -354,6 +372,7 @@ class EntryReader:
             if out:
                 return out
 
+    @guarded
     def read(self, count):
         while self.skip:  # A file after others in a solid folder: their output is passed over.
             data = self._decoded(min(self.skip, 1 << 20))
@@ -369,6 +388,7 @@ class EntryReader:
         self.crc = zlib.crc32(data, self.crc)
         return data
 
+    @guarded
     def finish(self):
         if self.left:
             fail('SHORT_7Z', 'The 7z archive ended early')

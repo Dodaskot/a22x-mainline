@@ -15,6 +15,7 @@ does not stay behind.
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import sys
 
@@ -28,8 +29,11 @@ def misc_path(context):
 
 
 def read(path):
-    """{'command', 'recovery': [lines], 'reason', 'wipe'}; an empty command when nothing is asked."""
+    """{'command', 'recovery': [lines], 'reason', 'wipe'}; an empty command when nothing is asked.
+    A "misc" that is not the phone's own asks nothing: a card's could ask for a wipe."""
     try:
+        if not internal(path):
+            raise OSError('misc is not on the internal storage')
         with open(path, 'rb') as f:
             data = f.read(SIZE)
     except OSError:
@@ -43,8 +47,18 @@ def read(path):
             'wipe': command == 'boot-recovery' and any(line in WIPE_ARGUMENTS for line in lines)}
 
 
+def internal(path):
+    """Whether PATH is a partition of the internal eMMC (2026-11-13 review: a card or stick with an
+    Android layout has a "misc" of its own, and by-partlabel may name it instead of the phone's)."""
+    if Path(path) != MISC:
+        return True  # a fixture's file
+    return re.fullmatch(r'/dev/mmcblk0p[0-9]+', os.path.realpath(path)) is not None
+
+
 def clear(path):
     """The message cleared, as recovery does once it acted on it; True when there was one."""
+    if not internal(path):
+        raise OSError('misc is not on the internal storage')
     if not read(path)['command']:
         return False
     fd = os.open(path, os.O_RDWR | os.O_CLOEXEC)

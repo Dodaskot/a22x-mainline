@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">A22x Recovery</string>
+    <string name="app_name">Mainline Recovery</string>
     <string name="subtitle">Instalator dla Galaxy A22 5G (SM-A226B)</string>
     <string name="root_missing">Nie przyznano dostępu root. Zezwól na niego tej aplikacji w menedżerze root.</string>
     <string name="compat_title">Zgodność</string>
@@ -158,4 +158,24 @@
     <string name="row_language">Język</string>
     <string name="row_script">Skrypt</string>
     <string name="hold_save_restart">Przytrzymaj 2 s: zapisz i uruchom ponownie</string>
+    <string name="update_title">Aktualizacje</string>
+    <string name="update_note">Ta aplikacja z wydań projektu na GitHub i BOOT Androida zapisany w cache.</string>
+    <string name="update_installed">Zainstalowano: %1$s</string>
+    <string name="update_published">Opublikowano: %1$s</string>
+    <string name="update_checking">Pytam GitHub…</string>
+    <string name="update_unreadable">Nie udało się odczytać wydań. Sprawdź sieć i otwórz stronę ponownie.</string>
+    <string name="update_newer">Opublikowano nowszą aplikację.</string>
+    <string name="update_current">Aplikacja jest aktualna.</string>
+    <string name="update_hold">Przytrzymaj, aby zaktualizować aplikację</string>
+    <string name="update_downloading">Pobieranie: %1$d%%</string>
+    <string name="update_installing">Instaluję aktualizację; aplikacja zamknie się i otworzy ponownie.</string>
+    <string name="boot_kept_title">Fabryczny BOOT</string>
+    <string name="boot_kept_none">Jeszcze nie zapisano.</string>
+    <string name="boot_kept_path">Zapisano w cache: %1$s</string>
+    <string name="boot_kept_already">Już zapisano w cache.</string>
+    <string name="boot_kept_warn">Nie zapisano: %1$s</string>
+    <string name="boot_kept_note">Zapisywany sam przy każdym otwarciu aplikacji i starcie Androida: kopia oryginalnego BOOT od Magiska, jeśli jest, w przeciwnym razie bieżący BOOT. Recovery wgrywa go z powrotem przez Wgraj partycję.</string>
+    <string name="boot_keep_now">Zapisz teraz</string>
+    <string name="home_update">Aktualizuj</string>
+    <string name="home_update_sub">Aplikacja, BOOT</string>
 </resources>

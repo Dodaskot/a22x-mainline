@@ -229,7 +229,12 @@ int main(int argc,char**argv){
         DCHECK(!a->settings_pid&&a->settings_dirty&&a->settings_retry_at==a->now+SETTINGS_RETRY_MS);
         settings_flush(a);DCHECK(!a->settings_pid); /* Not at once either. */
         a->now+=SETTINGS_RETRY_MS;settings_flush(a);DCHECK(a->settings_pid);SETTLE();DCHECK(a->settings_dirty);
-        a->now+=SETTINGS_RETRY_MS;settings_flush(a);DCHECK(a->settings_pid);SETTLE();DCHECK(!a->settings_dirty&&!a->settings_pid);
+        /* The next try twice as late (2026-11-14 review: every 10 s for as long as the recovery ran). */
+        DCHECK(a->settings_retry_at==a->now+2*SETTINGS_RETRY_MS);a->now+=SETTINGS_RETRY_MS;settings_flush(a);DCHECK(!a->settings_pid);
+        a->now+=SETTINGS_RETRY_MS;settings_flush(a);DCHECK(a->settings_pid);SETTLE();DCHECK(!a->settings_dirty&&!a->settings_pid&&!a->settings_retries);
+        /* A new change does not wait for a grown pause (2026-11-14 review). */
+        a->settings_retries=5;a->settings_retry_at=a->now+SETTINGS_RETRY_MAX_MS;settings_changed(a);
+        DCHECK(!a->settings_retries&&!a->settings_retry_at);a->settings_dirty=false;
         a->now+=2*SETTINGS_RETRY_MS;settings_flush(a);DCHECK(!a->settings_pid);a->device=false;goto done;
     }
     if(!strcmp(which,"vblank-stays")){

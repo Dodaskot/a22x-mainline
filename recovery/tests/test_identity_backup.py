@@ -353,6 +353,65 @@ class AndroidArchive(unittest.TestCase):
         code, again = self.run_helper('backup', '--volume', 'sdcard-p1')
         self.assertEqual([p['phase'] for p in self.progress if p['phase'] != 'Reading'][0], 'Finishing the archive')
 
+    def test_a_copy_protected_with_a_password(self):
+        """2026-11-13: with a password the copy is encrypted; it is listed closed without it, opens,
+        verifies, restores and is deleted with it, and openssl opens it on a computer."""
+        import archive_crypt
+        secret = self.root / 'password'
+        secret.write_text('таємниця 7\n')
+        code, refused = self.run_helper('--encrypt', 'backup', '--volume', 'sdcard-p1')
+        self.assertEqual((code, refused['error']['code']), (2, 'PASSWORD_REQUIRED'))
+        code, result = self.run_helper('--password-file', str(secret), '--encrypt', 'backup', '--volume', 'sdcard-p1')
+        self.assertEqual(code, 0, result)
+        self.assertTrue(result['path'].endswith('.tar.zst.enc'), result)
+        file = self.root / 'sd' / result['path'].lstrip('/')
+        blob = file.read_bytes()
+        self.assertTrue(blob.startswith(b'Salted__') and self.data['boot'][:64] not in blob)
+        if shutil.which('openssl'):
+            plain = subprocess.run(['openssl', 'enc', '-d', '-aes-256-ctr', '-pbkdf2', '-iter', str(archive_crypt.ROUNDS), '-md', 'sha256',
+                                    '-pass', 'pass:таємниця 7'], input=blob[:-archive_crypt.TRAILER], capture_output=True, check=True).stdout
+            unpacked = subprocess.run(['zstd', '-q', '-d', '-c'], input=plain, stdout=subprocess.PIPE, check=True).stdout
+            with tarfile.open(fileobj=io.BytesIO(unpacked)) as tar:
+                self.assertEqual(tar.extractfile('boot.img').read(), self.data['boot'])
+        # Without the password it is listed closed, with what its name and size say.
+        code, listed = self.run_helper('copies')
+        row = listed['backups'][0]
+        self.assertEqual((row['locked'], row['encrypted'], row['partitions'], row['file_bytes']), (True, True, 0, len(blob)), row)
+        self.assertTrue(row['created_utc'].endswith('Z'))
+        code, refused = self.run_helper('verify', '--volume', 'sdcard-p1', '--path', result['path'])
+        self.assertEqual((code, refused['error']['code']), (2, 'PASSWORD_REQUIRED'))
+        wrong = self.root / 'wrong'
+        wrong.write_text('other')
+        code, refused = self.run_helper('--password-file', str(wrong), 'verify', '--volume', 'sdcard-p1', '--path', result['path'])
+        self.assertEqual((code, refused['error']['code']), (2, 'WRONG_PASSWORD'))
+        code, listed = self.run_helper('--password-file', str(wrong), 'copies')
+        self.assertTrue(listed['backups'][0]['locked'] and listed['backups'][0]['wrong_password'])
+        # With it: open in the list, verified, restored.
+        code, listed = self.run_helper('--password-file', str(secret), 'copies')
+        row = listed['backups'][0]
+        self.assertEqual((row['locked'], row['encrypted'], row['partitions'], row['manifest_sha256']), (False, True, 3, result['manifest_sha256']))
+        code, verified = self.run_helper('--password-file', str(secret), 'verify', '--volume', 'sdcard-p1', '--path', result['path'])
+        self.assertTrue(code == 0 and verified['verified'], verified)
+        (self.root / 'parts' / 'boot').write_bytes(os.urandom(3 << 20))
+        code, done = self.run_helper('--password-file', str(secret), 'restore', '--volume', 'sdcard-p1', '--path', result['path'],
+                                     '--expected-manifest-sha256', result['manifest_sha256'], '--confirm')
+        self.assertEqual((code, done.get('restored')), (0, ['boot']), done)
+        self.assertEqual(self.part('boot'), self.data['boot'])
+        # One byte of the encrypted archive changed: found before anything is written.
+        damaged = bytearray(blob)
+        damaged[len(blob) // 2] ^= 1
+        file.write_bytes(bytes(damaged))
+        (self.root / 'parts' / 'boot').write_bytes(os.urandom(3 << 20))
+        before = self.part('boot')
+        code, failed = self.run_helper('--password-file', str(secret), 'restore', '--volume', 'sdcard-p1', '--path', result['path'],
+                                       '--expected-manifest-sha256', result['manifest_sha256'], '--confirm')
+        self.assertEqual((code, failed['error']['code']), (2, 'BACKUP_DAMAGED'), failed)
+        self.assertEqual(self.part('boot'), before)
+        file.write_bytes(blob)
+        code, gone = self.run_helper('--password-file', str(secret), 'delete', '--volume', 'sdcard-p1', '--path', result['path'],
+                                     '--expected-manifest-sha256', result['manifest_sha256'], '--confirm')
+        self.assertEqual(code, 0, gone)
+
     def test_userdata_and_a_read_only_card_take_no_archive(self):
         code, result = self.run_helper('backup', '--volume', 'userdata')
         self.assertEqual((code, result['error']['code']), (2, 'DESTINATION_NOT_ALLOWED'))

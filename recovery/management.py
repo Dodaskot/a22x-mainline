@@ -91,12 +91,17 @@ def status(context):
             'linux_qualification_source': 'backend inventory capabilities.linux_qualification'}
 
 
+MANIFEST_RESERVE = 256 * 1024
+
+
 def _add_input(items, records, name, path, limit=MAX_LOG):
     try:
         data, truncated = read_bounded(path, limit)
     except (OSError, fs.FilesystemError):
         return
-    if sum(map(len, items.values())) + len(data) > MAX_TOTAL:
+    # Room is kept for the manifest written last (2026-11-12 review: with long logs the whole export
+    # failed with DIAGNOSTICS_TOO_LARGE, just when there was most to look at).
+    if sum(map(len, items.values())) + len(data) > MAX_TOTAL - MANIFEST_RESERVE:
         return
     items[name] = data
     records[name] = {'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(),
@@ -106,13 +111,6 @@ def _add_input(items, records, name, path, limit=MAX_LOG):
 def archive_bytes(context):
     items, records = {}, {}
     run = context.root / 'management-logs' if context.mode == 'fixture' else RUN
-    names = ['boot.json', 'ui.log', 'ui.stdout', 'diagnostics.log', 'ssh-start.log',
-             'power-volumes.json', 'power-storage.json', 'maintenance.log', 'display.log',
-             'android-last.json', 'android-last-kmsg.txt']  # how Android's last start ended (android_log.py)
-    names += [f'{n}.{i}' for n in ('ui.log', 'ui.stdout') for i in range(1, KEEP_LOGS + 1)]
-    for name in names:
-        _add_input(items, records, 'logs/' + name, run / name)
-    _add_input(items, records, 'logs/ssh-server.log', run / 'ssh/server.log')
     if context.mode == 'device':
         for name in ('build.json', 'kernel-capabilities.json', 'service-runtime.json',
                      'compact-runtime.json', 'linux-toolchain.json',
@@ -136,6 +134,13 @@ def archive_bytes(context):
             records['logs/dmesg.txt'] = {'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest(), 'tail_only': len(p.stdout) > MAX_LOG}
         except (OSError, subprocess.SubprocessError):
             pass
+    names = ['boot.json', 'ui.log', 'ui.stdout', 'diagnostics.log', 'ssh-start.log',
+             'power-volumes.json', 'power-storage.json', 'maintenance.log', 'display.log',
+             'android-last.json', 'android-last-kmsg.txt']  # how Android's last start ended (android_log.py)
+    names += [f'{n}.{i}' for n in ('ui.log', 'ui.stdout') for i in range(1, KEEP_LOGS + 1)]
+    for name in names:
+        _add_input(items, records, 'logs/' + name, run / name)
+    _add_input(items, records, 'logs/ssh-server.log', run / 'ssh/server.log')
     report = {'schema': 'a22x.diagnostics.archive.v1',
               'created_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
               'mode': context.mode, 'status': status(context), 'files': records,

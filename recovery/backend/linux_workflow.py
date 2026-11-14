@@ -13,6 +13,8 @@ import fcntl
 import gzip
 import hashlib
 import os
+import lzma
+import zlib
 import select
 import shutil
 import stat
@@ -24,7 +26,7 @@ import time
 import uuid
 from pathlib import Path
 
-from common import (CHUNK, RecoveryError, digest, directory_identity, fail, fsync_directory, hash_file,
+from common import (CHUNK, RecoveryError, digest, directory_identity, same_archive, fail, fsync_directory, hash_file,
                     no_symlinks, open_regular_fd, read_json, read_json_with_hash,
                     rename_noreplace, require_hash, stamp, utc, validate_name, write_json_new)
 from storage import operation_lock
@@ -172,6 +174,10 @@ def _plan_base(context, operation, parts, repo, tools):
             "toolchain_sha256": tools["manifest_sha256"],
             "qualification": qualified.admission(context, parts, tools),
             "created_utc": utc(), "expires_unix": time.time() + (BACKUP_TTL if operation == "backup" else DESTRUCTIVE_TTL),
+            # 2026-11-13 review: the wall clock jumps by decades here (the RTC says 2086 until the
+            # network sets it), which made a five-minute plan live for sixty years or die at once.
+            # The plan is bound to this boot, so the boot clock times it.
+            "expires_boottime": time.clock_gettime(time.CLOCK_BOOTTIME) + (BACKUP_TTL if operation == "backup" else DESTRUCTIVE_TTL),
             "destructive": operation != "backup", "required_hold_ms": 0 if operation == "backup" else 3000,
             "backup_schema": MANIFEST_SCHEMA, "data_format": DATA_FORMAT,
             "full_device_backup": False, "auto_reboot": False}
@@ -186,7 +192,7 @@ def _check_plan(context, plan, operation, confirmation, tools):
         fail("PLAN_CHANGED", "The reviewed Linux plan changed")
     if confirmation != plan["confirmation_token"]:
         fail("CONFIRMATION_MISMATCH", "Confirmation does not identify this exact Linux plan")
-    if not isinstance(plan.get("expires_unix"), (int, float)) or time.time() > plan["expires_unix"]:
+    if not isinstance(plan.get("expires_boottime"), (int, float)) or time.clock_gettime(time.CLOCK_BOOTTIME) > plan["expires_boottime"]:
         fail("PLAN_EXPIRED", "Create and review a fresh Linux plan")
     if plan.get("mode") != context.mode or plan.get("device") != context.device:
         fail("WRONG_DEVICE", "Linux plan belongs to another device or execution mode")
@@ -310,19 +316,49 @@ def _manifest(context, plan, entries):
                             "No secure erasure, atomic restore or automatic reboot."]}
 
 
+TESTED_LINUX_BOOTS = frozenset((LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K116, LINUX_BOOT_K121,
+                                LINUX_BOOT_K122, LINUX_BOOT_K138))
+
+
+def _backup_boot_admitted(qualification, directory, entry):
+    """Whether the BOOT of a copy may be restored: the qualified one, a tested one, or by its contents
+    a whole Linux BOOT of this phone. One rule for the plan and the run (2026-11-13 review: two lists
+    that had to be kept equal by hand)."""
+    sha = entry["raw_sha256"]
+    return sha == qualification["linux_boot_sha256"] or sha in TESTED_LINUX_BOOTS or _linux_boot_in_backup(directory, entry)
+
+
 def _linux_boot_in_backup(directory, entry):
     """Whether a backup's BOOT holds a complete Linux BOOT for this phone (2026-11-10: judged by its
     contents with bootimage.py instead of a list of tested hashes)."""
+    # 2026-11-13 review: a damaged archive raised zlib.error past every handler, a FIFO in its place
+    # blocked for ever under the lease, and each call put the recovery's folder first on sys.path
+    # (where its storage.py hides backend/storage.py). A regular file only, every error a "no", and
+    # bootimage found at the end of the path.
     try:
-        with gzip.open(Path(directory) / entry["archive"], "rb") as archive:
-            raw = archive.read(int(entry["raw_bytes"]) + 1)
-    except (OSError, EOFError, ValueError, KeyError, TypeError):
+        name = str(entry["archive"])
+        if "/" in name or name in ("", ".", ".."):
+            return False
+        fd = os.open(Path(directory) / name, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK)
+        try:
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                return False
+            with gzip.GzipFile(fileobj=os.fdopen(os.dup(fd), "rb"), mode="rb") as archive:
+                raw = archive.read(int(entry["raw_bytes"]) + 1)
+        finally:
+            os.close(fd)
+    except (OSError, EOFError, ValueError, KeyError, TypeError, zlib.error):
         return False
     if len(raw) != entry["raw_bytes"] or hashlib.sha256(raw).hexdigest() != entry.get("raw_sha256"):
         return False
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    root = str(Path(__file__).resolve().parents[1])
+    if root not in sys.path:
+        sys.path.append(root)
     import bootimage
-    return bootimage.linux_release(raw) is not None
+    try:
+        return bootimage.linux_release(raw) is not None
+    except (ValueError, struct.error, zlib.error, lzma.LZMAError):
+        return False
 
 
 def load_manifest(context, backup_path):
@@ -382,7 +418,7 @@ def _verify_archives(archives, progress, operation, expected=None):
     result = {}
     for label in LABELS:
         result[label] = archives[label].verify(progress, operation=operation, phase="verify-before-write", collect_chunks=True)
-        if expected is not None and result[label] != expected[label]:
+        if expected is not None and not same_archive(result[label], expected[label]):
             fail("PLAN_STALE", "Linux backup archive changed since review", label=label)
     return result
 
@@ -477,8 +513,10 @@ def make_destructive_plan(context, backup_path, operation, progress=None):
     with operation_lock(context) as lease:
         context = context.refresh()
         path, manifest, manifest_sha = load_manifest(context, backup_path)
-        if manifest["device"] != context.device or manifest["source_mode"] != context.mode or manifest.get("source_contract") != context.contract:
-            fail("WRONG_DEVICE", "Linux backup does not belong to this exact device/storage contract")
+        # 2026-11-13: a snapshot of any SM-A226B with this layout, not of one phone's eMMC alone.
+        if (manifest["device"].get("model") != context.device.get("model") or manifest["source_mode"] != context.mode
+                or manifest.get("source_contract") != context.contract):
+            fail("WRONG_DEVICE", "Linux backup was made for another model or storage layout")
         parts = _parts(context)
         if qualified.geometry_record(parts) != manifest.get("source_geometry"):
             fail("TARGET_SIZE_MISMATCH", "Linux backup partition identity and geometry differ from this device")
@@ -497,8 +535,7 @@ def make_destructive_plan(context, backup_path, operation, progress=None):
         boot_sha = _boot_hash(context, parts[0], progress, operation + "-plan")
         backup_boot_sha = manifest["entries"][0]["raw_sha256"]
         blockers = list(qualification["blockers"])
-        if context.mode == "device" and qualification["eligible"] and backup_boot_sha not in (qualification["linux_boot_sha256"], LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K121, LINUX_BOOT_K116, LINUX_BOOT_K122, LINUX_BOOT_K138) \
-                and not _linux_boot_in_backup(path, manifest["entries"][0]):
+        if context.mode == "device" and qualification["eligible"] and not _backup_boot_admitted(qualification, path, manifest["entries"][0]):
             blockers.append("LINUX_BOOT_NOT_QUALIFIED")
         if operation == "wipe":
             if boot_sha != backup_boot_sha:
@@ -548,6 +585,9 @@ def capabilities(context):
     try:
         tools = qualified.toolchain(context)
         qualification = qualified.admission(context, tools=tools)
+        # A geometry this workflow does not admit is not offered, instead of failing after the
+        # user chose it (2026-11-13 review).
+        _parts(context)  # on the phone it checks the qualified geometry
         available = True
     except (RecoveryError, OSError, ValueError, KeyError, TypeError) as exc:
         available = False
@@ -621,10 +661,18 @@ def _open_target(context, part, tools, plan):
     # There is deliberately no call to DeviceContext.open_partition(write=True)
     # and no enable flag on that generic raw/Android API.
     qualified.require_admission(context, _parts(context), tools, plan["qualification"])
-    number, size = qualified.GEOMETRY[part["label"]]
-    if part.get("partition_number") != number or part["size_bytes"] != size:
+    number = qualified.GEOMETRY[part["label"]][0]
+    if part.get("partition_number") != number or not qualified.size_admitted(part["label"], part["size_bytes"]):
         fail("LINUX_TARGET_FORBIDDEN", "Physical target is outside the fixed Linux partition allowlist")
-    fd = os.open(part["path"], os.O_RDWR | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_EXCL)
+    # 2026-11-13 review, checked on the phone: mke2fs opens its device with O_EXCL itself (its mount
+    # check and EXT2_FLAG_EXCLUSIVE), so with this process holding userdata exclusively every wipe
+    # ended "apparently in use by the system" / "Resource busy". For the format the exclusive claim
+    # is proven free here and then left to mke2fs, which holds it for the whole write and refuses a
+    # device that was mounted or claimed meanwhile; a restore keeps its own claim.
+    formats = plan["operation"] == "wipe" and part["label"] == "userdata"
+    if formats:
+        os.close(os.open(part["path"], os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_EXCL))
+    fd = os.open(part["path"], os.O_RDWR | os.O_NOFOLLOW | os.O_CLOEXEC | (0 if formats else os.O_EXCL))
     try:
         target = os.fdopen(fd, "r+b", buffering=0, closefd=False)
         _check_target_fd(target, part, physical=True)
@@ -805,13 +853,13 @@ def _write_raw(archive, target, part, state, guard, progress=None):
 
 def _format_userdata(target, part, tools, lease, plan, state, guard, progress):
     block_size = 4096
-    if part["size_bytes"] % block_size:
-        fail("GEOMETRY_MISMATCH", "Qualified userdata format requires exact 4096-byte block geometry")
+    # A userdata grown to the end of the eMMC ends 3584 bytes into a block: ext4 takes the whole ones.
+    blocks = part["size_bytes"] // block_size
     guard(True)
     fd = target.fileno()
     argv = [tools["paths"]["mkfs.ext4"], "-t", "ext4", "-F", "-q", "-b", str(block_size),
             "-U", plan["new_filesystem_uuid"], "-L", "linux-wiped", "-E",
-            "nodiscard,lazy_itable_init=0,lazy_journal_init=0", f"/proc/self/fd/{fd}", str(part["size_bytes"] // block_size)]
+            "nodiscard,lazy_itable_init=0,lazy_journal_init=0", f"/proc/self/fd/{fd}", str(blocks)]
     state["write_started"] = True
     child = _WriterChild(argv, inherited_fds=(lease, fd), input_pipe=False, mkfs_config=tools["mkfs_config"])
     try:
@@ -823,7 +871,7 @@ def _format_userdata(target, part, tools, lease, plan, state, guard, progress):
     state["fsync_completed"] = True
     probe = _compact().probe_source(fd, part["size_bytes"], progress=progress, tool_paths=tools["paths"], inherited_fds=(lease,))
     if (probe["uuid"] != plan["new_filesystem_uuid"] or probe["block_size"] != block_size
-            or probe["block_count"] * block_size != part["size_bytes"]):
+            or probe["block_count"] != blocks):
         fail("WIPE_READBACK_MISMATCH", "New ext4 UUID or exact filesystem geometry differs from the reviewed format")
     guard(True)
     state.update(readback_verified=True, new_filesystem=probe, secure_erasure=False)
@@ -838,13 +886,12 @@ def execute(context, plan, confirmation, progress=None):
         tools = qualified.toolchain(context)
         parts, repo = _check_plan(context, plan, operation, confirmation, tools)
         path, manifest, manifest_sha = load_manifest(context, plan["backup_path"])
-        if (manifest_sha != plan["manifest_sha256"] or manifest["device"] != context.device
+        if (manifest_sha != plan["manifest_sha256"] or manifest["device"].get("model") != context.device.get("model")
                 or manifest["source_mode"] != context.mode or manifest.get("source_contract") != context.contract
                 or manifest.get("source_geometry") != qualified.geometry_record(parts)):
             fail("PLAN_STALE", "The sealed source backup or target contract changed after review")
         backup_boot = manifest["entries"][0]["raw_sha256"]
-        if context.mode == "device" and backup_boot not in (plan["qualification"]["linux_boot_sha256"], LINUX_BOOT_K108, LINUX_BOOT_CHARGER_OFF, LINUX_BOOT_K116, LINUX_BOOT_K121, LINUX_BOOT_K122, LINUX_BOOT_K138) \
-                and not _linux_boot_in_backup(path, manifest["entries"][0]):
+        if context.mode == "device" and not _backup_boot_admitted(plan["qualification"], path, manifest["entries"][0]):
             fail("LINUX_BOOT_NOT_QUALIFIED", "This backup BOOT image is outside the tested Linux boot allowlist")
         for part in parts:
             if _fingerprint(context, part) != plan["target_fingerprints"][part["label"]]:
@@ -984,7 +1031,7 @@ def qualify_to_images(backup_path, output_directory, implementation_record, tool
         fail("INSUFFICIENT_SPACE", "Host lacks room for the restored allocated filesystem blocks", free_bytes=free, required_bytes=required)
     parts = [{"label": entry["label"], "size_bytes": entry["raw_bytes"]} for entry in manifest["entries"]]
     for part in parts:
-        if part["size_bytes"] != qualified.GEOMETRY[part["label"]][1]:
+        if not qualified.size_admitted(part["label"], part["size_bytes"]):
             fail("GEOMETRY_MISMATCH", "Qualification requires the full admitted A226B partition geometry")
     with contextlib.ExitStack() as stack:
         archives = _archives(stack, path, manifest, parts, tools, None)

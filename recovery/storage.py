@@ -71,7 +71,7 @@ def probe_ext4(fd):
             'filesystem_uuid': '-'.join([uid[:8], uid[8:12], uid[12:16], uid[16:20], uid[20:]])}
 
 
-def inspect_sd():
+def inspect_sd(listing=False):
     if (PARENT / 'device/type').read_text().strip() != 'SD':
         raise StorageError('SECOND_MMC_IS_NOT_AN_SD_CARD')
     if (PART / 'partition').read_text().strip() != '1' or PART.resolve().parent != PARENT.resolve():
@@ -90,12 +90,19 @@ def inspect_sd():
     finally:
         os.close(fd)
     target = [m for m in mounts() if m['devno'] == devno]
-    if any(m['mountpoint'] != str(MOUNTPOINT) for m in target):
-        raise StorageError('SD_ALREADY_MOUNTED_ELSEWHERE')
+    elsewhere = [m['mountpoint'] for m in target if m['mountpoint'] != str(MOUNTPOINT)]
+    if elsewhere:
+        # 2026-11-13, on the phone: a card open in Files made the Storage page fail at once. Listed,
+        # it is a card that is not the backup store yet; Mount lets the Files mount go first.
+        if not listing:
+            raise StorageError('SD_ALREADY_MOUNTED_ELSEWHERE')
+        target = []
     occupied = [m for m in mounts() if m['mountpoint'] == str(MOUNTPOINT)]
     if occupied and (len(occupied) != 1 or occupied[0]['devno'] != devno):
         raise StorageError('BACKUP_MOUNTPOINT_OCCUPIED')
     values.update({'mounted': bool(target), 'mountpoint': str(MOUNTPOINT)})
+    if elsewhere:
+        values['mounted_elsewhere'] = elsewhere[0]
     if target:
         usage = os.statvfs(MOUNTPOINT)
         values.update({'total_bytes': usage.f_blocks * usage.f_frsize,
@@ -117,12 +124,29 @@ def operation_gate(action):
         yield
 
 
+def release_files_mount():
+    """2026-11-13, on the phone: a card that Files (or a page that only looked at it) had mounted kept
+    the backup store from taking it: SD_ALREADY_MOUNTED_ELSEWHERE. Such a mount of the filesystem
+    helper is let go first, by its own ordinary unmount, which refuses while it is in use."""
+    try:
+        devno = (PART / 'dev').read_text().strip()
+    except OSError:
+        return
+    if not any(m['devno'] == devno and m['mountpoint'] != str(MOUNTPOINT) for m in mounts()):
+        return
+    helper = Path(__file__).with_name('filesystem.py')
+    subprocess.run([sys.executable, '-B', str(helper), '--device', 'unmount', '--volume', 'sdcard-p1'],
+                   capture_output=True, timeout=60)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('action', choices=('inventory', 'mount', 'umount'))
     args = ap.parse_args()
     try:
         admission()
+        if args.action == 'mount':
+            release_files_mount()
         STATE.mkdir(mode=0o700, exist_ok=True)
         with operation_gate(args.action), (STATE / 'storage.lock').open('a') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -131,7 +155,7 @@ def main():
                 print(json.dumps({'ok': True, 'action': args.action, 'mounted': False,
                                   'mountpoint': str(MOUNTPOINT)}))
                 return 0
-            info = inspect_sd()
+            info = inspect_sd(listing=args.action == 'inventory')
             if args.action == 'mount' and not info['mounted']:
                 MOUNTPOINT.mkdir(mode=0o700, parents=True, exist_ok=True)
                 if MOUNTPOINT.is_symlink() or any(MOUNTPOINT.iterdir()):

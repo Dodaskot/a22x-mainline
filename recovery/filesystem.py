@@ -19,11 +19,15 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import stat
 import struct
 import subprocess
 import sys
+import time
 
+import dm_linear
+import lp_metadata
 from operation_lock import operation_lock as recovery_operation_lock
 
 MAX_TEXT = 1024 * 1024
@@ -46,6 +50,9 @@ FS_LABELS = frozenset(('userdata', 'cache', 'metadata', 'system', 'vendor',
                        'product', 'system_ext', 'odm', 'vendor_dlkm', 'odm_dlkm'))
 VERIFIED_LABELS = FS_LABELS - frozenset(('userdata', 'cache', 'metadata'))
 RAW_LABELS = frozenset(('boot', 'recovery', 'super', 'vbmeta', 'dtbo'))
+# Android's partitions in super (2026-11-12): each one a volume of its own ("super-system" and so
+# on), opened for reading only through a read-only device-mapper table ("a22x-ro-system").
+LOGICAL_PREFIX, MAPPING_PREFIX = 'super-', 'a22x-ro-'
 
 
 # Internal partitions that can be erased, as in TWRP. Everything else stays out of reach.
@@ -70,9 +77,13 @@ def format_admitted(volume, fs_type, external):
         fail('UNSUPPORTED_FILESYSTEM', 'This filesystem is not offered for this volume')
 
 
-# TWRP's "Repair file system": e2fsck for ext2/3/4. The recovery has no fsck for F2FS or FAT.
-CHECK_TYPES = frozenset(('ext2', 'ext3', 'ext4'))
+# TWRP's "Repair file system": e2fsck for ext2/3/4; since 2026-11-13 fsck.f2fs and fsck.fat too
+# (Arch Linux ARM's f2fs-tools and dosfstools, run with the recovery's bundled glibc).
+EXT_TYPES = frozenset(('ext2', 'ext3', 'ext4'))
+CHECK_TYPES = EXT_TYPES | frozenset(('f2fs', 'vfat'))
 E2FSCK = '/sbin/e2fsck'
+FSCK_F2FS = '/bin/fsck.f2fs'
+FSCK_FAT = '/bin/fsck.fat'
 
 
 def check_admitted(volume, external):
@@ -82,7 +93,10 @@ def check_admitted(volume, external):
     if volume.get('mounted'):
         fail('VOLUME_MOUNTED', 'Unmount the volume before checking it')
     if volume.get('fs_type') not in CHECK_TYPES:
-        fail('UNSUPPORTED_FILESYSTEM', 'This recovery checks and repairs ext2, ext3 and ext4 only')
+        fail('UNSUPPORTED_FILESYSTEM', 'This recovery checks and repairs ext2, ext3, ext4, F2FS and FAT')
+    if volume.get('fscrypt_feature') and volume.get('fs_type') == 'f2fs':
+        # Android's own data: Android checks it itself at every start, with the fsck made for it.
+        fail('CHECK_FORBIDDEN', "Android's encrypted data is checked by Android itself at its start")
 
 
 def run_e2fsck(path, tool=E2FSCK):
@@ -95,6 +109,31 @@ def run_e2fsck(path, tool=E2FSCK):
         fail('CHECK_FAILED', 'The filesystem could not be checked', exit_code=rc, output=output)
     if rc & 4:
         fail('CHECK_ERRORS_LEFT', 'The check found errors it could not repair', exit_code=rc, output=output)
+    return {'result': 'repaired' if rc else 'clean', 'exit_code': rc, 'output': output}
+
+
+def run_fsck(path, fs_type, tools=None):
+    """Check and repair one filesystem by its kind. fsck.f2fs and fsck.fat exit as fsck does: 0 for a
+    clean filesystem, 1 after repairs, 4 when errors stay, 8 or more when they could not work."""
+    tools = tools or {'f2fs': FSCK_F2FS, 'vfat': FSCK_FAT, 'ext': E2FSCK}
+    if fs_type in EXT_TYPES:
+        return run_e2fsck(path, tools['ext'])
+    argv = [tools['f2fs'], '-f', '-y', str(path)] if fs_type == 'f2fs' else [tools['vfat'], '-a', '-w', str(path)]
+    if not os.path.exists(argv[0]):
+        fail('CHECK_UNAVAILABLE', 'This build of the recovery has no check for this filesystem', tool=argv[0])
+    done = subprocess.run(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors='replace')
+    rc, output = done.returncode, done.stdout[-600:]
+    if rc < 0 or rc >= 8:
+        fail('CHECK_FAILED', 'The filesystem could not be checked', exit_code=rc, output=output)
+    if rc & 4:
+        fail('CHECK_ERRORS_LEFT', 'The check found errors it could not repair', exit_code=rc, output=output)
+    if rc and fs_type == 'vfat':
+        # fsck.fat exits 1 for "repaired" and for "could not read the device" alike (2026-11-13, on
+        # the phone: an empty file counted as repaired). A second pass that changes nothing decides.
+        again = subprocess.run([tools['vfat'], '-n', str(path)], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, text=True, errors='replace')
+        if again.returncode != 0:
+            fail('CHECK_FAILED', 'The filesystem could not be checked', exit_code=again.returncode, output=again.stdout[-600:])
     return {'result': 'repaired' if rc else 'clean', 'exit_code': rc, 'output': output}
 
 
@@ -251,7 +290,10 @@ def all_namespace_mounts():
 
 def reason_text(code):
     return {
-        'LOGICAL_PARTITION_CONTAINER': 'Android logical-partition container; mapping is not implemented',
+        'LOGICAL_PARTITION_CONTAINER': 'Android logical-partition container; its partitions are listed as separate volumes',
+        'LOGICAL_PARTITION_READ_ONLY': 'Android partition inside super; opened for reading only',
+        'LOGICAL_PARTITION_LAYOUT_UNSUPPORTED': 'Parts of this partition lie outside super',
+        'LOGICAL_MAPPING_CHANGED': 'The opened partition no longer matches super; unmount it, then open it again',
         'RAW_IMAGE_NOT_FILESYSTEM': 'Raw image; not a filesystem',
         'PROTECTED_FIRMWARE_OR_SERVICE_PARTITION': 'Firmware or service partition; file access is not admitted',
         'PARTITION_HAS_BLOCK_HOLDERS': 'This partition is already used by another block mapping',
@@ -299,7 +341,9 @@ def probe_magic(data):
         if log_size <= 6 and struct.unpack_from('<I', sb, 32)[0] != 0:
             out.update(fs_type='ext4', filesystem_uuid=uuid_text(sb[104:120]),
                        filesystem_label=sb[120:136].split(b'\0', 1)[0].decode('utf-8', 'replace'),
-                       fscrypt_feature=bool(incompat & 0x10000))
+                       fscrypt_feature=bool(incompat & 0x10000),
+                       # Its journal holds writes not yet in place (EXT4_FEATURE_INCOMPAT_RECOVER).
+                       needs_recovery=bool(incompat & 0x4))
             return out
     for offset in (1024, 5120):
         if len(data) >= offset + 128 and data[offset:offset + 4] == b'\x10\x20\xf5\xf2':
@@ -357,6 +401,26 @@ def ssh_session_active():
         except (OSError, ValueError, TypeError, KeyError):
             continue
     return False
+
+
+def logical_partitions(fd, size):
+    """The partitions super's metadata names (slot 0: this phone has no A/B slots), the extents
+    that hold them and what their first blocks say. Read only. An empty partition is left out."""
+    meta = lp_metadata.Super(fd)
+    devices = meta.metadata['devices']
+    rows = []
+    for part in meta.metadata['partitions']:
+        extents = meta.extents_of(part)
+        if not extents or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,40}', part['name']):
+            continue
+        usable = len(devices) == 1 and all(e['type'] == lp_metadata.TARGET_LINEAR and e['device'] == 0 and e['sectors'] > 0
+                                           and (e['start'] + e['sectors']) * 512 <= size for e in extents)
+        info = {'fs_type': None, 'filesystem_uuid': None, 'filesystem_label': '', 'fscrypt_feature': None}
+        if usable:
+            info = probe_magic(os.pread(fd, min(8192, extents[0]['sectors'] * 512), extents[0]['start'] * 512))
+        rows.append({'name': part['name'], 'size_bytes': sum(e['sectors'] for e in extents) * 512,
+                     'extents': [[e['start'], e['sectors']] for e in extents], 'usable': usable, 'info': info})
+    return rows
 
 
 def mount_options(fs_type, mode):
@@ -452,7 +516,7 @@ class BaseContext:
             'teegris_transport_qualified': False, 'fscrypt_key_installation': False,
             'note': 'A recognizable filesystem or a successful mount does not imply Android data is decrypted.'},
             'capabilities': {'mount': True, 'read_files': True, 'write_files': True,
-                             'raw_partition_restore': False, 'logical_super_mapping': False,
+                             'raw_partition_restore': False, 'logical_super_mapping': self.mode == 'device',
                              'copy_directories': True, 'recursive_delete': False,
                              'file_metadata': True, 'chmod': True, 'chown': True,
                              'resolve_symlinks': True}}
@@ -603,6 +667,9 @@ class FixtureContext(BaseContext):
     def nested_mounts(self, volume, relative):
         return []
 
+    def is_mountpoint(self, volume, relative):
+        return False
+
     def sync_usb(self):
         return {'mounted': [], 'dropped': [], 'volumes': self.usb_volumes()}
 
@@ -638,7 +705,12 @@ class DeviceContext(BaseContext):
 
     def volumes(self):
         result, state, mounts = [], self.state(), read_mounts()
+        container = None
         supported = {line.split()[-1] for line in Path('/proc/filesystems').read_text().splitlines() if line.split()}
+        # 2026-11-12 review: two USB disks both gave usb-p1 (DUPLICATE_VOLUME_ID, and every command
+        # failed). The first USB disk keeps usb-pN; the next ones are usb-2-pN, usb-3-pN...
+        usb_disks = sorted(entry.name for entry in Path('/sys/class/block').iterdir()
+                           if re.fullmatch(r'sd[a-z]{1,2}', entry.name) and '/usb' in str(entry.resolve()))
         for entry in sorted(Path('/sys/class/block').iterdir()):
             usb_name = re.fullmatch(r'sd[a-z]{1,2}[0-9]*', entry.name) is not None
             if not usb_name and not re.fullmatch(r'mmcblk[01]p[0-9]+', entry.name):
@@ -666,9 +738,14 @@ class DeviceContext(BaseContext):
             fields = dict(line.split('=', 1) for line in (real / 'uevent').read_text().splitlines() if '=' in line)
             number = 0 if whole_disk else int((real / 'partition').read_text())
             label = fields.get('PARTNAME', '')
-            ident = 'usb-p' + str(number) if usb else 'sdcard-p' + str(number) if external else (label if re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,63}', label) else 'partition-' + str(number))
+            disk = (real if whole_disk else real.parent).name
+            usb_index = usb_disks.index(disk) if usb and disk in usb_disks else 0
+            usb_ident = ('usb-%d-p' % (usb_index + 1) if usb_index else 'usb-p') + str(number)
+            ident = usb_ident if usb else 'sdcard-p' + str(number) if external else (label if re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,63}', label) else 'partition-' + str(number))
             devno = (real / 'dev').read_text().strip()
             size = int((real / 'size').read_text()) * 512
+            if external and size == 0:
+                continue  # a card reader without a card (2026-11-12 review: ENOMEDIUM failed every command)
             start = 0 if whole_disk else int((real / 'start').read_text())
             path = Path('/dev') / entry.name
             st = path.lstat()
@@ -678,7 +755,12 @@ class DeviceContext(BaseContext):
             info = {'fs_type': None, 'filesystem_uuid': None, 'fscrypt_feature': None}
             block_read_only = None
             if candidate:
-                fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+                try:
+                    fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+                except OSError:
+                    if external:
+                        continue  # a removable medium gone or not there: not a volume now
+                    raise
                 try:
                     actual = os.fstat(fd)
                     if actual.st_rdev != st.st_rdev or not stat.S_ISBLK(actual.st_mode):
@@ -739,9 +821,192 @@ class DeviceContext(BaseContext):
                       'write_supported': reason is None and write_reason is None,
                       'read_only_reason': reason_text(write_reason), 'read_only_reason_code': write_reason, **info}
             result.append(volume)
+            if internal and label == 'super':
+                container = volume
+        if container is not None:
+            result += self._logical_volumes(container, supported, state, mounts)
         if len({v['id'] for v in result}) != len(result):
             fail('DUPLICATE_VOLUME_ID', 'GPT volume identifiers are not unique')
         return result
+
+    def _logical_volumes(self, container, supported, state, mounts):
+        """Android's partitions in super, each a volume of its own (2026-11-12). They are opened for
+        reading only, through a read-only device-mapper table (dm_linear.py) that holds super while
+        it exists, so no helper writes super under them."""
+        found = self._read_super(container)
+        mapped = dm_linear.devices() if found else {}
+        rows = []
+        for part in found:
+            ident, mapping = LOGICAL_PREFIX + part['name'], MAPPING_PREFIX + part['name']
+            info = part['info']
+            fs = info['fs_type']
+            reason = None
+            if not part['usable']:
+                reason = 'LOGICAL_PARTITION_LAYOUT_UNSUPPORTED'
+            elif fs not in SUPPORTED_FS or info.get('fscrypt_feature'):
+                reason = 'ENCRYPTED_OR_UNSUPPORTED_FILESYSTEM'
+            elif fs not in supported:
+                reason = 'FILESYSTEM_DRIVER_UNAVAILABLE'
+            devno, path = '', ''
+            if mapping in mapped:
+                devno, path = mapped[mapping][0], '/dev/' + mapped[mapping][1]
+                try:
+                    live, read_only = dm_linear.status(mapping)
+                except (OSError, dm_linear.DmError):
+                    live, read_only = None, False
+                if live != dm_linear.linear_table(part['extents'], container['device']) or not read_only:
+                    reason = 'LOGICAL_MAPPING_CHANGED'
+            token = digest({'id': ident, 'container': container['volume_token'], 'extents': part['extents'],
+                            'filesystem': fs, 'filesystem_uuid': info.get('filesystem_uuid')})
+            target, mount_id, owner = str(MOUNT_BASE / ident), None, None
+            current = [m for m in mounts if devno and m['devno'] == devno]
+            record = state['volumes'].get(ident, {})
+            if current:
+                mount = current[0]
+                if (len(current) == 1 and mount['root'] == '/' and mount['mountpoint'] == target and 'ro' in mount['options']
+                        and record.get('volume_token') == token and record.get('mount_id') == mount['mount_id']):
+                    owner = 'filesystem'
+                elif reason is None:
+                    reason = 'VOLUME_MOUNTED_OUTSIDE_MANAGER'
+                target, mount_id = mount['mountpoint'], mount['mount_id']
+            rows.append({'id': ident, 'label': part['name'], 'path': path, 'device': devno,
+                         'device_identity': container['device_identity'],
+                         'partition_number': container['partition_number'], 'size_bytes': part['size_bytes'],
+                         'external': False, 'mountable': reason is None, 'reason': reason_text(reason),
+                         'reason_code': reason, 'mounted': bool(current), 'block_read_only': True if devno else None,
+                         'read_only_guarded': bool(devno), 'read_only': True, 'mountpoint': target,
+                         'mount_id': mount_id, 'mount_owner': owner, 'volume_token': token, 'mode': 'device',
+                         'write_supported': False, 'read_only_reason': reason_text('LOGICAL_PARTITION_READ_ONLY'),
+                         'read_only_reason_code': 'LOGICAL_PARTITION_READ_ONLY',
+                         'container': 'super', 'container_path': container['path'], 'container_device': container['device'],
+                         'logical_partition': part['name'], 'extents': part['extents'],
+                         'mapping': mapping if devno else None, **info})
+        return rows
+
+    def _read_super(self, container):
+        """The partitions super's metadata names; none when it cannot be read (super then stays a
+        raw container)."""
+        try:
+            fd = os.open(container['path'], os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+        except OSError:
+            return []
+        try:
+            st = os.fstat(fd)
+            if not stat.S_ISBLK(st.st_mode) or f'{os.major(st.st_rdev)}:{os.minor(st.st_rdev)}' != container['device']:
+                fail('BLOCK_IDENTITY_CHANGED', 'super changed during the probe')
+            return logical_partitions(fd, container['size_bytes'])
+        except (lp_metadata.MetadataError, OSError, struct.error):
+            return []
+        finally:
+            os.close(fd)
+
+    def _mapping_node(self, devno, volume):
+        """The /dev node of a mapping, checked against the kernel: read-only, the partition's size,
+        and super its only slave."""
+        sysfs = (Path('/sys/dev/block') / devno).resolve()
+        node = Path('/dev') / sysfs.name
+        for _ in range(100):  # devtmpfs adds the node as the disk appears
+            with suppress(FileNotFoundError):
+                st = node.lstat()
+                if stat.S_ISBLK(st.st_mode) and f'{os.major(st.st_rdev)}:{os.minor(st.st_rdev)}' == devno:
+                    break
+            time.sleep(0.02)
+        else:
+            fail('BLOCK_IDENTITY_CHANGED', 'The opened partition has no device node')
+        slaves = sorted(entry.name for entry in (sysfs / 'slaves').iterdir())
+        if ((sysfs / 'ro').read_text().strip() != '1' or int((sysfs / 'size').read_text()) * 512 != volume['size_bytes']
+                or slaves != [Path(volume['container_path']).name]):
+            fail('LOGICAL_MAPPING_CHANGED', 'The opened partition does not match super')
+        return str(node)
+
+    def _mount_logical(self, volume):
+        """Open a partition of super for reading: map it read-only, then mount it read-only."""
+        ident = volume['id']
+        if volume['mounted']:
+            return {'volume': volume}
+        target = MOUNT_BASE / ident
+        absolute_no_symlinks(target, missing=True)
+        target.mkdir(mode=0o700, parents=True, exist_ok=True)
+        if any(target.iterdir()) or any(m['mountpoint'] == str(target) for m in read_mounts()):
+            fail('MOUNTPOINT_OCCUPIED', 'The dedicated volume mountpoint is not empty')
+        mapping = MAPPING_PREFIX + volume['logical_partition']
+        devno = volume['device']
+        if not devno:
+            try:
+                devno = dm_linear.create(mapping, dm_linear.linear_table(volume['extents'], volume['container_device']))
+            except (OSError, dm_linear.DmError) as error:
+                fail('LOGICAL_MAPPING_FAILED', 'The kernel did not open this partition of super',
+                     errno=getattr(error, 'errno', None))
+        options = mount_options(volume['fs_type'], 'ro')
+        try:
+            path = self._mapping_node(devno, volume)
+            if any(m['devno'] == devno for m in all_namespace_mounts()):
+                fail('VOLUME_MOUNTED_ELSEWHERE', 'The partition is mounted in another namespace')
+            self._command('mount', ['-t', volume['fs_type'], '-o', options, path, str(target)])
+        except BaseException:
+            if not any(m['devno'] == devno for m in all_namespace_mounts()):
+                with suppress(OSError, dm_linear.DmError):
+                    dm_linear.remove(mapping)
+            raise
+        current = [m for m in read_mounts() if m['mountpoint'] == str(target)]
+        if (len(current) != 1 or current[0]['devno'] != devno or current[0]['root'] != '/'
+                or 'ro' not in current[0]['options']):
+            fail('MOUNT_IDENTITY_MISMATCH', 'The observed mount does not match the requested volume')
+        state = self.state()
+        state['volumes'][ident] = {'volume_token': volume['volume_token'], 'mount_id': current[0]['mount_id'], 'logical': True}
+        atomic_state(self.state_path, state)
+        result = self.volume(ident, volume['volume_token'])
+        if result['mount_owner'] != 'filesystem':
+            fail('MOUNT_STATE_MISMATCH', 'The new mount was not admitted')
+        return {'volume': result, 'mount_options': options}
+
+    def _unmap(self, mapping, devno):
+        if any(m['devno'] == devno for m in all_namespace_mounts()):
+            fail('LOGICAL_PARTITION_BUSY', 'The partition of super is still mounted elsewhere')
+        try:
+            dm_linear.remove(mapping)
+        except OSError as error:
+            fail('LOGICAL_PARTITION_BUSY', 'The partition of super is still in use', errno=error.errno)
+
+    def _unmount_logical(self, volume):
+        if volume['mounted']:
+            if volume['mount_owner'] != 'filesystem':
+                fail('UNMANAGED_MOUNT', 'This helper will not unmount an unrelated filesystem')
+            if self.nested_mounts(volume, '/'):
+                fail('NESTED_MOUNT', 'Nested mounts must be removed before unmounting this volume')
+            # Normal unmount flushes nothing here (read-only) and fails while busy; never lazy or forced.
+            self._command('umount', [volume['mountpoint']])
+        state = self.state()
+        if state['volumes'].pop(volume['id'], None) is not None:
+            atomic_state(self.state_path, state)
+        if volume.get('mapping'):
+            self._unmap(volume['mapping'], volume['device'])
+        result = self.volume(volume['id'], volume['volume_token'])
+        if result['mounted'] or result['device']:
+            fail('UNMOUNT_NOT_OBSERVED', 'The partition of super is still open')
+        return {'volume': result}
+
+    def close_logical(self):
+        """Close what was opened in super: unmount each partition and remove its mapping, also a
+        mapping super's metadata no longer names. Before super itself is read or written
+        (install.py check_offline), and by unmount-all. Returns the volumes closed."""
+        closed = []
+        for volume in self.volumes():
+            if volume.get('container') == 'super' and (volume['mounted'] or volume.get('mapping')):
+                self._unmount_logical(volume)
+                closed.append(volume['id'])
+        for mapping, (devno, _) in dm_linear.devices().items():
+            if not mapping.startswith(MAPPING_PREFIX):
+                continue
+            for mount in read_mounts():
+                if mount['devno'] == devno and mount['mountpoint'].startswith(str(MOUNT_BASE / LOGICAL_PREFIX)):
+                    self._command('umount', [mount['mountpoint']])
+            self._unmap(mapping, devno)
+            state = self.state()
+            if state['volumes'].pop(LOGICAL_PREFIX + mapping[len(MAPPING_PREFIX):], None) is not None:
+                atomic_state(self.state_path, state)
+            closed.append(LOGICAL_PREFIX + mapping[len(MAPPING_PREFIX):])
+        return closed
 
     def _block_ro(self, volume, value=None):
         """Change only the partition's kernel read-only flag, never its contents."""
@@ -822,6 +1087,8 @@ class DeviceContext(BaseContext):
             self.confirm(confirmed)
             if not volume['write_supported']:
                 fail('WRITE_NOT_QUALIFIED', 'This filesystem is admitted only for reading', reason=volume['read_only_reason'])
+        if volume.get('container') == 'super':
+            return self._mount_logical(volume)
         options = mount_options(volume['fs_type'], mode)
         if (volume['mounted'] and volume['read_only'] == (mode == 'ro')
                 and (mode == 'rw' or volume['read_only_guarded'])):
@@ -876,11 +1143,20 @@ class DeviceContext(BaseContext):
                 'f2fs': ['/bin/make_f2fs', '-g', 'android', '-f', '-O', 'project_quota,extra_attr', '-O', 'casefold',
                          '-C', 'utf8', '-O', 'compression', '-O', 'extra_attr'],
                 'vfat': ['/bin/busybox', 'mkdosfs', '-F', '32', '-n', 'A22X']}[fs_type]
+        if ident == 'userdata' and fs_type == 'f2fs':
+            # 2026-11-12 review: userdata for Android gets the features install.py's reset uses, the
+            # ones Samsung's own userdata.img has and its kernel 4.14 mounts (no casefold).
+            tool = ['/bin/make_f2fs', '-g', 'android', '-f', '-O', 'quota', '-O', 'compression', '-O', 'extra_attr', '-l', 'data']
         done = subprocess.run([*tool, volume['path']], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               text=True, errors='replace')
         if done.returncode:
             fail('FORMAT_FAILED', 'The filesystem could not be created', output=done.stdout[-400:])
         os.sync()
+        if ident == 'userdata':
+            # 2026-11-12 review: an unfinished switch of Linux systems went with userdata; its guard in
+            # RAM (distro.py) would block installing and a normal start until the recovery restarted.
+            with suppress(FileNotFoundError):
+                os.unlink('/run/a22x-recovery/distro-transaction.json')
         return {'volume': self.volume(ident), 'formatted': fs_type}
 
     def resize(self, ident, confirmed=False, expected=None):
@@ -897,12 +1173,14 @@ class DeviceContext(BaseContext):
         self.confirm(confirmed)
         volume = self.volume(ident, expected)
         check_admitted(volume, volume.get('external') is True)
-        result = run_e2fsck(volume['path'])
+        result = run_fsck(volume['path'], volume['fs_type'])
         os.sync()
         return {'volume': self.volume(ident), 'checked': volume['fs_type'], **result}
 
     def unmount(self, ident, expected=None):
         volume = self.volume(ident, expected)
+        if volume.get('container') == 'super':
+            return self._unmount_logical(volume)
         if not volume['mounted']:
             self._release_read_only(volume)
             return {'volume': self.volume(ident, volume['volume_token'])}
@@ -921,19 +1199,25 @@ class DeviceContext(BaseContext):
             fail('UNMOUNT_NOT_OBSERVED', 'The volume is still mounted')
         return {'volume': result}
 
-    def sync_usb(self):
-        """Follow removable USB storage: drop vanished sticks, open new ones read-only."""
-        state, dropped, mounted = self.state(), [], []
+    def drop_vanished(self):
+        """Mounts of removable media that left without an unmount: a USB stick, and since the
+        2026-11-12 review a microSD card too (its mount stayed for ever, and unmount-all, needed
+        before every restart, failed). Nothing more can reach them, so they are detached."""
+        state, dropped = self.state(), []
         for mount in read_mounts():
             target = Path(mount['mountpoint'])
-            if (target.parent == MOUNT_BASE and target.name.startswith('usb-')
+            if (target.parent == MOUNT_BASE and target.name.startswith(('usb-', 'sdcard-'))
                     and not (Path('/sys/dev/block') / mount['devno']).exists()):
-                # The stick left without an unmount, so nothing more can reach it.
                 self._command('umount', ['-l', str(target)])
                 state['volumes'].pop(target.name, None)
                 dropped.append(target.name)
         if dropped:
             atomic_state(self.state_path, state)
+        return dropped
+
+    def sync_usb(self):
+        """Follow removable USB storage: drop vanished sticks, open new ones read-only."""
+        dropped, mounted = self.drop_vanished(), []
         for volume in self.volumes():
             if volume['id'].startswith('usb-') and volume['mountable'] and not volume['mounted']:
                 try:
@@ -944,8 +1228,11 @@ class DeviceContext(BaseContext):
         return {'mounted': mounted, 'dropped': dropped, 'volumes': self.usb_volumes()}
 
     def unmount_all(self):
-        result = []
+        self.drop_vanished()
+        result = self.close_logical()
         for volume in self.volumes():
+            if volume.get('container') == 'super':
+                continue
             if volume['mounted'] and volume['mount_owner'] == 'filesystem':
                 self.unmount(volume['id'], volume['volume_token'])
                 result.append(volume['id'])
@@ -959,6 +1246,11 @@ class DeviceContext(BaseContext):
     def nested_mounts(self, volume, relative):
         base = volume['mountpoint'].rstrip('/') + clean_path(relative).rstrip('/')
         return [m for m in read_mounts() if m['mountpoint'].startswith(base + '/')]
+
+    def is_mountpoint(self, volume, relative):
+        """Whether the folder itself has something mounted on it, a bind of the same filesystem too."""
+        base = volume['mountpoint'].rstrip('/') + clean_path(relative).rstrip('/')
+        return any(m['mountpoint'] == base for m in read_mounts())
 
 
 class PinnedVolume:
@@ -1477,6 +1769,12 @@ def make_directory(context, ident, path, confirmed=False, expected=None):
         check_absent(directory, name)
         pin.recheck()
         os.mkdir(name, mode=0o755, dir_fd=directory)
+        # The recovery runs with umask 077, which made every new folder 0700 (2026-11-12 review).
+        made = os.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=directory)
+        try:
+            os.fchmod(made, 0o755)
+        finally:
+            os.close(made)
         os.fsync(directory)
         return {'volume': ident, 'path': clean_path(path), 'created': True}
 
@@ -1524,6 +1822,9 @@ def rename_entry(context, ident, path, destination, confirmed=False, expected=No
             return {'volume': ident, 'path': source_path, 'destination': destination_path}
 
 
+FAT_FILE_LIMIT = (4 << 30) - 1
+
+
 def copy_file(context, ident, path, destination_volume, destination, confirmed=False,
               expected=None, expected_destination=None, expected_sha=None):
     context.confirm(confirmed)
@@ -1541,6 +1842,9 @@ def copy_file(context, ident, path, destination_volume, destination, confirmed=F
                 usage = os.fstatvfs(target_dir)
                 if usage.f_bavail * usage.f_frsize < os.fstat(source).st_size + 1024 * 1024:
                     fail('INSUFFICIENT_SPACE', 'The destination lacks space for this file and a small reserve')
+                if target_pin.volume.get('fs_type') == 'vfat' and os.fstat(source).st_size > FAT_FILE_LIMIT:
+                    # 2026-11-12 review: the copy ran until FAT32 refused it at 4 GiB.
+                    fail('FILE_TOO_LARGE', 'FAT32 holds no file of 4 GiB or more: use a card formatted exFAT or ext4')
                 target = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600, dir_fd=target_dir)
                 while True:
                     data = os.read(source, CHUNK)
@@ -1943,6 +2247,70 @@ def delete_entry(context, ident, path, confirmed=False, expected=None, expected_
         return {'volume': ident, 'path': clean_path(path), 'deleted_type': entry_type(before)}
 
 
+MANY_LIMIT = 4096
+
+
+def selection_file(path):
+    """The selection the interface wrote into its private RAM folder: {"all": bool, "names": [...]}.
+    With all, the names are the ones left out; else the ones chosen."""
+    try:
+        with open(path, 'rb') as f:
+            data = json.loads(f.read((1 << 20) + 1).decode('utf-8'))
+    except (OSError, ValueError) as error:
+        fail('INVALID_SELECTION', 'The selection could not be read', reason=str(error)[:200])
+    names = data.get('names') if isinstance(data, dict) else None
+    if not isinstance(names, list) or len(names) > MANY_LIMIT or not isinstance(data.get('all', False), bool):
+        fail('INVALID_SELECTION', 'The selection is not a list of names')
+    for name in names:
+        if not isinstance(name, str) or name in ('', '.', '..') or '/' in name or '\0' in name or len(os.fsencode(name)) > 255:
+            fail('INVALID_SELECTION', 'A selected name is not a name in this folder')
+    return bool(data.get('all', False)), names
+
+
+def delete_many(context, ident, path, everything, names, confirmed=False, expected=None, progress=None):
+    """Several entries of one folder deleted at once (2026-11-13, the owner: select with a long press,
+    delete the selected, select all). Folders go with everything in them, removed by descriptor so a
+    symlink is removed and never followed; a folder holding another mount stays. With EVERYTHING,
+    NAMES are the entries left out. What could not be deleted is named, the rest still goes."""
+    context.confirm(confirmed)
+    deleted, failed, folder = [], [], clean_path(path)
+    with PinnedVolume(context, ident, expected, writing=True) as pin, pin.directory(folder) as directory:
+        present = sorted(os.listdir(directory))
+        if everything:
+            chosen = [name for name in present if name not in set(names)]
+        else:
+            chosen = list(dict.fromkeys(names))
+        if len(chosen) > MANY_LIMIT:
+            fail('SELECTION_TOO_LARGE', 'Too many entries are selected at once', count=len(chosen))
+        for at, name in enumerate(chosen):
+            if progress:
+                progress(name, at, len(chosen))
+            try:
+                pin.recheck()
+                info = os.stat(name, dir_fd=directory, follow_symlinks=False)
+                if stat.S_ISDIR(info.st_mode):
+                    inner = folder.rstrip('/') + '/' + name
+                    # 2026-11-13 review: a folder that is itself a mount point (a bind of /home, proc
+                    # in a system being set up) had everything on that filesystem removed.
+                    if (info.st_dev != pin.stat.st_dev or context.is_mountpoint(pin.volume, inner)
+                            or context.nested_mounts(pin.volume, inner)):
+                        fail('NESTED_MOUNT', 'A folder holding another mount is not deleted')
+                    shutil.rmtree(name, dir_fd=directory)
+                else:
+                    os.unlink(name, dir_fd=directory)
+                deleted.append(name)
+            except FileNotFoundError:
+                failed.append({'name': name, 'code': 'NOT_FOUND'})
+            except FilesystemError as error:
+                failed.append({'name': name, 'code': error.code})
+            except OSError as error:
+                failed.append({'name': name, 'code': errno.errorcode.get(error.errno, 'IO_ERROR')})
+        os.fsync(directory)
+    if progress:
+        progress('', len(chosen), len(chosen))
+    return {'volume': ident, 'path': folder, 'deleted': len(deleted), 'failed': failed[:64], 'failed_count': len(failed)}
+
+
 class Parser(argparse.ArgumentParser):
     def error(self, message):
         fail('INVALID_ARGUMENT', message)
@@ -1971,6 +2339,12 @@ def parser():
         repair.add_argument('--volume', required=True)
         repair.add_argument('--expected-volume-token')
         repair.add_argument('--confirm', action='store_true')
+    many = commands.add_parser('delete-many')
+    many.add_argument('--volume', required=True)
+    many.add_argument('--expected-volume-token')
+    many.add_argument('--path', required=True)
+    many.add_argument('--selection-file', required=True)
+    many.add_argument('--confirm', action='store_true')
     for action in ('mount', 'unmount', 'list', 'read', 'stat', 'resolve', 'chmod', 'chown',
                    'write', 'mkdir', 'rename', 'copy', 'copy-tree', 'delete'):
         command = commands.add_parser(action)
@@ -2009,7 +2383,11 @@ def parser():
 
 # Wipe → Cache, as TWRP's (2026-11-10): everything on the volume except what the recovery keeps there
 # (its settings, keys, saved Wi-Fi networks, plans and scripts in a22x-recovery).
-WIPE_KEEP = {'cache': ('a22x-recovery', 'lost+found')}
+# The mark of a recovery password, at a volume's root (settings.py); it stays with the settings it
+# guards through every wipe of cache's contents (2026-11-14 reviews: every Samsung firmware install
+# and Wipe cache removed it; then its name was written twice).
+PASSWORD_MARK = '.a22x-recovery-password'
+WIPE_KEEP = {'cache': ('a22x-recovery', PASSWORD_MARK, 'lost+found')}
 
 
 def wipe_contents(context, ident, confirmed=False, expected=None):
@@ -2071,6 +2449,9 @@ def dispatch(context, args):
             return context.format(v, args.fs, args.confirm, expected)
         if action == 'wipe':
             return wipe_contents(context, v, args.confirm, expected)
+        if action == 'delete-many':
+            everything, names = selection_file(args.selection_file)
+            return delete_many(context, v, args.path, everything, names, args.confirm, expected)
         if action == 'check':
             return context.check(v, args.confirm, expected)
         if action == 'resize':
@@ -2110,8 +2491,16 @@ def dispatch(context, args):
         return delete_entry(context, v, args.path, args.confirm, expected, args.expected_sha256)
 
 
+def cancelled(signum, frame):
+    """Cancel from the interface (SIGTERM) as an error, so a copy cut short removes its staging
+    files the way a failed one does (2026-11-12 review: Python ended at once and left them)."""
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)  # the cleanup itself is not cut short again
+    fail('CANCELLED', 'The operation was cancelled')
+
+
 def main(argv=None):
     operation = 'unknown'
+    signal.signal(signal.SIGTERM, cancelled)
     try:
         args = parser().parse_args(argv)
         operation = args.operation

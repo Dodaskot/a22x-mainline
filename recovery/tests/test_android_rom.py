@@ -12,6 +12,7 @@ import struct
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,7 +53,7 @@ def operation(kind, offset, data, start, blocks, digest=True):
     return body
 
 
-def payload(partitions, groups=(), incremental=()):
+def payload(partitions, groups=(), incremental=(), partial=False):
     """A version 2 payload.bin: PARTITIONS is [(name, content, how)], HOW 'replace', 'xz', 'bz2' or 'zero'."""
     blobs, parts = bytearray(), []
     for name, content, how in partitions:
@@ -73,7 +74,9 @@ def payload(partitions, groups=(), incremental=()):
     if groups:
         dynamic = b''.join(field(1, field(1, g.encode()) + field(2, size) + b''.join(field(3, n.encode()) for n in names))
                            for g, size, names in groups)
-        manifest += field(16, dynamic)
+        manifest += field(15, dynamic)  # dynamic_partition_metadata (update_metadata.proto)
+    if partial:
+        manifest += field(16, 1)  # partial_update
     head = b'CrAU' + struct.pack('>QQI', 2, len(manifest), 0)
     return head + manifest + bytes(blobs)
 
@@ -116,6 +119,14 @@ class Packages(unittest.TestCase):
         refused = self.run_main(['extract', str(path), '--partition', 'lk', '--out', str(self.root / 'lk.img')])
         self.assertEqual(refused, 2)
         self.assertFalse((self.root / 'lk.img').exists())
+
+    def test_a_partial_update_payload_is_read(self):
+        """2026-11-12 review: partial_update (field 16) was taken for the partition groups, and its
+        number 1 failed the reading with a TypeError and no answer."""
+        data = payload([('boot', os.urandom(BLOCK), 'replace')], groups=[('main', 1 << 30, ['system'])], partial=True)
+        path = self.zip('partial.zip', {'payload.bin': data, 'META-INF/com/android/metadata': 'pre-device=a22x\n'})
+        info = rom.inspect(path)
+        self.assertEqual((info['format'], info['groups'][0]['name']), ('payload', 'main'))
 
     def run_main(self, argv):
         import contextlib
@@ -186,6 +197,60 @@ class Packages(unittest.TestCase):
         self.assertEqual(rom.classify('system', ('system',)), ('logical', None))
         self.assertEqual(rom.classify('system_ext', ('system',))[0], 'logical')
         self.assertEqual(rom.classify('mystery', ())[0], 'refused')
+
+
+class BlockImages(unittest.TestCase):
+    """2026-11-13: a full block-based OTA (a One UI port) written by the recovery itself."""
+    def package(self, new, listing, name='odm.new.dat'):
+        path = Path(tempfile.mkdtemp(prefix='a22x-block-', dir=os.environ.get('TMPDIR'))) / 'rom.zip'
+        self.addCleanup(shutil.rmtree, path.parent, True)
+        with zipfile.ZipFile(path, 'w') as z:
+            z.writestr('odm.transfer.list', listing)
+            z.writestr(name, new)
+        return zipfile.ZipFile(path)
+
+    def test_new_and_zero_ranges_land_where_the_list_says_and_are_read_back(self):
+        new = os.urandom(3 * BLOCK)
+        listing = '4\n6\n0\n0\nerase 2,0,8\nnew 4,4,5,0,2\nzero 2,2,4\n'
+        with tempfile.TemporaryFile() as device:
+            device.write(b'\xaa' * 8 * BLOCK)
+            device.flush()
+            done = rom.write_block_image(self.package(new, listing), 'odm', device.fileno(), 8 * BLOCK)
+            device.seek(0)
+            got = device.read()
+        self.assertEqual(done, {'blocks': 3, 'sha256': hashlib.sha256(new).hexdigest()})
+        self.assertEqual(got[4 * BLOCK:5 * BLOCK], new[:BLOCK])
+        self.assertEqual(got[:2 * BLOCK], new[BLOCK:])
+        self.assertEqual(got[2 * BLOCK:4 * BLOCK], bytes(2 * BLOCK))
+        self.assertEqual(got[5 * BLOCK:], b'\xaa' * 3 * BLOCK)
+
+    def test_what_does_not_fit_or_is_incremental_or_short_is_refused(self):
+        with tempfile.TemporaryFile() as device:
+            device.write(bytes(4 * BLOCK))
+            device.flush()
+            for new, listing, code in ((bytes(BLOCK), '4\n9\n0\n0\nnew 2,8,9\n', 'ROM_PART_TOO_LARGE'),
+                                       (bytes(BLOCK), '4\n2\n0\n0\nmove 2,0,1 2,1,2\n', 'TRANSFER_LIST_INCREMENTAL'),
+                                       (bytes(BLOCK), '4\n2\n0\n0\nnew 2,0,2\n', 'ROM_DATA_SHORT'),
+                                       (bytes(3 * BLOCK), '4\n2\n0\n0\nnew 2,0,2\n', 'ROM_DATA_LONG')):
+                with self.assertRaises(rom.RomError) as caught:
+                    rom.write_block_image(self.package(new, listing), 'odm', device.fileno(), 4 * BLOCK)
+                self.assertEqual(caught.exception.code, code)
+
+    def test_a_brotli_image_goes_through_the_decoder(self):
+        decoder = os.environ.get('A22X_TEST_BROTLI_DEC')
+        encoder = shutil.which('brotli')
+        if not decoder or not encoder:
+            self.skipTest('no brotli encoder and decoder on this computer')
+        import subprocess
+        new = (b'kkrt ' * 4096)[:2 * BLOCK]
+        packed = subprocess.run([encoder, '-c'], input=new, capture_output=True, check=True).stdout
+        with tempfile.TemporaryFile() as device, mock.patch.object(rom, 'BROTLI', decoder):
+            device.write(bytes(2 * BLOCK))
+            device.flush()
+            done = rom.write_block_image(self.package(packed, '4\n2\n0\n0\nnew 2,0,2\n', 'odm.new.dat.br'), 'odm', device.fileno(), 2 * BLOCK)
+            device.seek(0)
+            self.assertEqual(device.read(), new)
+        self.assertEqual(done['blocks'], 2)
 
 
 if __name__ == '__main__':

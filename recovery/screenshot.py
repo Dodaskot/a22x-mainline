@@ -28,6 +28,7 @@ import sys
 import zlib
 
 import filesystem as fs
+from operation_lock import operation_lock
 
 CARD_FOLDER = 'A22xScreenshots'
 CACHE_FOLDER = 'a22x-recovery/screenshots'
@@ -120,8 +121,19 @@ def prune(folder, limit):
 
 def store(context, volume, folder, name, data, limit=None):
     """DATA in FOLDER on VOLUME, which is opened for writing for the moment when it is not, and
-    left as it was found. Refused with a code when the volume cannot take it now."""
+    left as it was found. Refused with a code when the volume cannot take it now.
+
+    A volume that has to be mounted for this is mounted under the recovery's operation lock, taken
+    without waiting: while a job holds it (a card being partitioned, cache in use), the screenshot
+    goes elsewhere (2026-11-13 review: the mount came between a partition table and its mkfs)."""
     found = context.volume(volume)
+    if not found['mounted'] or found['read_only']:
+        with operation_lock(context.lock_path, context.mode):
+            return store_now(context, volume, folder, name, data, limit, context.volume(volume))
+    return store_now(context, volume, folder, name, data, limit, found)
+
+
+def store_now(context, volume, folder, name, data, limit, found):
     was_mounted, was_read_only = found['mounted'], found['read_only']
     opened = False
     if not was_mounted or was_read_only:
@@ -129,7 +141,7 @@ def store(context, volume, folder, name, data, limit=None):
             fs.fail('VOLUME_READ_ONLY', 'The volume cannot be opened for writing')
         if was_mounted and found.get('mount_owner') != 'filesystem':
             fs.fail('VOLUME_READ_ONLY', 'The volume is mounted read-only by another part of the recovery')
-        context.mount(volume, 'rw', True, found['volume_token'])  # needs the storage lease: busy while a job runs
+        context.mount(volume, 'rw', True, found['volume_token'])
         opened = True
     try:
         with fs.PinnedVolume(context, volume, writing=True) as pin:

@@ -40,6 +40,7 @@ import tempfile
 import time
 
 import filesystem as fs
+from lp_metadata import drop_cached  # the one way to drop what a node remembers
 from filesystem import fail
 from operation_lock import operation_lock
 
@@ -50,7 +51,7 @@ MBR_BYTES = (1 << 32) * SECTOR  # An MBR table addresses 2 TiB.
 HEAD = 1 << 20             # Erased at both ends of the medium and at the head of each partition.
 TYPES = {'files': 0x0c, 'linux': 0x83, 'swap': 0x82}
 FILESYSTEMS = {'files': 'vfat', 'linux': 'ext4', 'swap': 'swap'}
-BLKRRPART, BLKGETSIZE64, BLKFLSBUF = 0x125f, 0x80081272, 0x1261
+BLKRRPART, BLKGETSIZE64 = 0x125f, 0x80081272
 BUSYBOX = '/bin/busybox'
 MKFS = {'files': [BUSYBOX, 'mkdosfs', '-F', '32', '-n', 'A22X'],
         'linux': ['/sbin/mkfs.ext4', '-F', '-q', '-L', 'linux'],
@@ -221,7 +222,7 @@ class Media:
                 # mkfs wrote through the partitions, which keep their own cache: what this node
                 # remembers of those sectors is dropped before they are read through it.
                 with contextlib.suppress(OSError):
-                    fcntl.ioctl(fd, BLKFLSBUF)
+                    drop_cached(fd)
             sector0 = os.pread(fd, SECTOR, 0)
             table, rows = self.partitions(disk, fd)
             shown = []

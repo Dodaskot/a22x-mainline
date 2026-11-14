@@ -23,10 +23,31 @@ SOURCE_FILES = (
     "backend/recoveryctl.py", "backend/streaming.py", "backend/restore_support.py",
     "backend/qualification.py", "backend/linux_workflow.py", "backend/partclone_image.py",
     "backend/qualify_linux.py", "operation_lock.py",
+    # 2026-11-13 review: bootimage.py decides whether a BOOT in a copy may be restored
+    # (_linux_boot_in_backup), so a change of it must make the capsule stale as well.
+    "bootimage.py",
 )
 TOOL_NAMES = frozenset({"partclone.ext4", "partclone.chkimg", "partclone.restore",
                         "zstd", "e2fsck", "blkid", "dumpe2fs", "mkfs.ext4"})
 GEOMETRY = {"boot": (41, 33554432), "userdata": (54, 53393489920)}
+# 2026-11-13, the owner: "the Linux backup did not work". A Linux installation grows userdata to the
+# end of the eMMC (storage.userdata_fits); this workflow refused that size.
+DISK = Path("/sys/block/mmcblk0/size")
+PHONE = Path("/etc/a22x-recovery/device.json")
+
+
+def size_admitted(label, size):
+    """Whether a partition may have SIZE: BOOT its own. userdata on the phone: partition 54 of this
+    phone's eMMC, 64 GB or 128 GB (storage.userdata_fits). Elsewhere (a computer qualifying a
+    snapshot) the same rule for any admitted eMMC (storage.userdata_possible), as that eMMC is not
+    known there; the phone decides by its own before anything is written. GEOMETRY's own size stays
+    admitted: fixtures give it theirs."""
+    if label != "userdata":
+        return size == GEOMETRY[label][1]
+    import storage
+    if PHONE.is_file() and DISK.is_file():
+        return storage.userdata_fits(size, int(DISK.read_text()))
+    return size == GEOMETRY["userdata"][1] or storage.userdata_possible(size)
 
 
 def _trusted_regular(path, *, executable=False):
@@ -128,8 +149,8 @@ def device_binding(context, parts):
     if [p["label"] for p in parts] != ["boot", "userdata"]:
         fail("LINUX_TARGET_FORBIDDEN", "Linux v2 admits exactly BOOT and userdata")
     for part in parts:
-        number, size = GEOMETRY[part["label"]]
-        if part.get("partition_number") != number or part["size_bytes"] != size:
+        number = GEOMETRY[part["label"]][0]
+        if part.get("partition_number") != number or not size_admitted(part["label"], part["size_bytes"]):
             fail("GEOMETRY_MISMATCH", "Physical Linux workflow geometry differs from the qualified A226B")
         node = context.nodes[part["device"]]
         if context.graph.physical_roots(part["device"]) != {context.internal_disk}:
@@ -167,7 +188,7 @@ def validate_acceptance(acceptance, record):
             or acceptance.get("target_kind") != "owned-new-regular-files"
             or acceptance.get("target_e2fsck_exit") != 0
             or isinstance(acceptance.get("target_e2fsck_exit"), bool)
-            or acceptance.get("userdata_bytes") != GEOMETRY["userdata"][1]
+            or not size_admitted("userdata", acceptance.get("userdata_bytes") or 0)
             or acceptance.get("source_device") != record["binding"]["device"]
             or acceptance.get("implementation_sha256") != digest(record)):
         fail("INVALID_QUALIFICATION", "Acceptance does not describe this exact implementation, physical source and owned image target")
@@ -191,14 +212,36 @@ def make_capsule(record, acceptance):
     return value
 
 
+def built_in_admission(context, parts, tools):
+    """2026-11-13, the owner: the restore of Linux snapshots on every SM-A226B, as on the phone it was
+    proven on. The capsule had tied it to one phone's eMMC; what it proved belongs to this build, its
+    tools and this model's partition layout, and those are what is checked here: the model, the
+    partitions by number, name, disk and admitted size, and every pinned tool by its hash (toolchain).
+    The archives are still read whole before a write, BOOT is admitted by its contents, and every
+    write is read back. The id names this build and layout, so a plan reviewed under another goes stale."""
+    device_binding(context, parts)
+    source_hashes = {name: _sha(SOURCE_ROOT / name, trusted=True) for name in SOURCE_FILES}
+    build = digest({"workflow": WORKFLOW, "model": "SM-A226B", "sources": source_hashes,
+                    "toolchain": tools["manifest_sha256"], "contract": context.contract,
+                    "sizes": {p["label"]: p["size_bytes"] for p in parts}})
+    return {"status": "qualified", "eligible": True, "capsule_id": build, "basis": "built-in",
+            "blockers": [], "linux_boot_sha256": None}
+
+
 def admission(context, parts=None, tools=None):
-    """Return honest capability status. Missing/changed evidence never enables writes."""
+    """Return honest capability status. A capsule made for this phone and build is used when it is
+    there; otherwise the build's own admission (built_in_admission). Missing tools or another
+    layout never enable writes."""
     if context.mode == "fixture":
         return {"status": "fixture-only", "eligible": True, "capsule_id": None,
                 "blockers": [], "linux_boot_sha256": None}
     try:
         parts = parts or [context.partition(label) for label in ("boot", "userdata")]
         tools = tools or toolchain(context)
+    except (RecoveryError, OSError, ValueError, KeyError, TypeError) as exc:
+        return {"status": "unqualified", "eligible": False, "capsule_id": None,
+                "blockers": [getattr(exc, "code", "LINUX_QUALIFICATION_UNAVAILABLE")], "linux_boot_sha256": None}
+    try:
         _trusted_regular(CAPSULE_PATH)
         value = read_json(CAPSULE_PATH)
         if not isinstance(value, dict) or value.get("schema") != "a22x.linux.qualification.v1" or value.get("workflow") != WORKFLOW:
@@ -212,12 +255,15 @@ def admission(context, parts=None, tools=None):
         validate_acceptance(value.get("acceptance"), record)
         if value.get("linux_boot_sha256") != value["acceptance"]["boot_raw_sha256"]:
             fail("INVALID_QUALIFICATION", "Capsule boot allowlist differs from qualified Linux BOOT")
-        return {"status": "qualified", "eligible": True, "capsule_id": capsule_id,
+        return {"status": "qualified", "eligible": True, "capsule_id": capsule_id, "basis": "capsule",
                 "blockers": [], "linux_boot_sha256": value["linux_boot_sha256"]}
+    except (RecoveryError, OSError, ValueError, KeyError, TypeError):
+        pass  # no capsule, or one of another phone or build: the build's own admission decides
+    try:
+        return built_in_admission(context, parts, tools)
     except (RecoveryError, OSError, ValueError, KeyError, TypeError) as exc:
         return {"status": "unqualified", "eligible": False, "capsule_id": None,
-                "blockers": [getattr(exc, "code", "LINUX_QUALIFICATION_UNAVAILABLE")],
-                "linux_boot_sha256": None}
+                "blockers": [getattr(exc, "code", "LINUX_QUALIFICATION_UNAVAILABLE")], "linux_boot_sha256": None}
 
 
 def require_admission(context, parts, tools, expected):

@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import handoff  # noqa: E402
@@ -48,7 +49,7 @@ class TestHandoff(unittest.TestCase):
                            {'ssid': 'A' * 40, 'password': 'long-enough'}, 'junk'],
                   'language': 'uk', 'timezone': 'Europe/Kyiv'}
         remembered, stored = [], []
-        applied = handoff.apply_record(record, remember=lambda ssid, key: remembered.append((ssid, key)),
+        applied = handoff.apply_record(record, remember=lambda ssid, key: remembered.append((ssid, key)) or True,
                                        load=lambda: {'language': 'en', 'timezone': '', 'theme': 'graphite'},
                                        store=lambda current: stored.append(dict(current)))
         self.assertEqual(remembered, [(b'Open net', ''), (b'Home', wifi.psk(b'Home', 'secret-pass'))])
@@ -56,6 +57,40 @@ class TestHandoff(unittest.TestCase):
         self.assertEqual(applied['wifi'], ['Home', 'Open net'])
         self.assertEqual((applied['language'], applied['timezone'], applied['source']), ('uk', 'Europe/Kyiv', 'android-app'))
         self.assertNotIn('secret-pass', json.dumps(applied))
+
+    def test_a_busy_saved_list_is_waited_for_and_what_was_not_saved_is_named(self):
+        # 2026-11-14: remember() changes nothing while the list cannot be read; the hand-off is taken
+        # already, so it tries again, and names a network it still could not save.
+        record = {'schema': 'a22x.handoff.v1', 'wifi': [{'ssid': 'Home', 'password': 'secret-pass'}]}
+        answers = [None, None, True]
+        with mock.patch.object(handoff.time, 'sleep'):
+            applied = handoff.apply_record(record, remember=lambda ssid, key: answers.pop(0),
+                                           load=dict, store=lambda current: None)
+        self.assertNotIn('wifi_not_saved', applied)
+        # A list that could not be written is not tried again (2026-11-14 review).
+        calls = []
+        with mock.patch.object(handoff.time, 'sleep', side_effect=AssertionError('no wait for a failed write')):
+            applied = handoff.apply_record(record, remember=lambda ssid, key: calls.append(ssid) or False,
+                                           load=dict, store=lambda current: None)
+        self.assertEqual((applied['wifi_not_saved'], len(calls)), (['Home'], 1))
+
+    def test_the_start_waits_for_a_busy_list_a_short_while_in_all(self):
+        # 2026-11-14 review: each network waited about 30-60 s, before the interface came up.
+        record = {'schema': 'a22x.handoff.v1', 'wifi': [{'ssid': 'Net %d' % i, 'password': 'password%d' % i} for i in range(8)]}
+        now, tried = [0.0], []
+
+        def busy(ssid, key):
+            tried.append(ssid)
+            now[0] += 3  # each try waits for the lock itself
+        with mock.patch.object(handoff.time, 'monotonic', lambda: now[0]), \
+                mock.patch.object(handoff.time, 'sleep', lambda seconds: now.__setitem__(0, now[0] + seconds)), \
+                mock.patch.object(wifi, 'psk', wraps=wifi.psk) as psk:
+            applied = handoff.apply_record(record, remember=busy, load=dict, store=lambda current: None)
+        # One deadline for all: no network waits past it, nor gets a try of its own after it.
+        self.assertLessEqual(now[0], handoff.WAIT_SECONDS + 3)
+        self.assertEqual(set(tried), {b'Net 7'})
+        self.assertEqual(len(applied['wifi_not_saved']), 8)
+        self.assertEqual(psk.call_count, 1)  # derived once, and not for the networks past the deadline
 
     def test_strange_language_and_zone_change_nothing(self):
         stored = []
@@ -73,10 +108,19 @@ class TestHandoff(unittest.TestCase):
             self.assertIsNone(handoff.advance_clock({'time_utc': strange}, now=0, setter=moved.append))
         self.assertEqual(moved, [1794306000])
 
+    def test_wifi_that_is_no_list_does_not_lose_the_rest(self):
+        """2026-11-12 review: an object as "wifi" raised TypeError after the file was gone."""
+        for value in ({'ssid': 'Home', 'password': 'secret-pass'}, 7, 'Home'):
+            stored = []
+            applied = handoff.apply_record({'schema': 'a22x.handoff.v1', 'wifi': value, 'language': 'uk'},
+                                           remember=lambda ssid, key: None, load=lambda: {'language': 'en'},
+                                           store=lambda current: stored.append(dict(current)))
+            self.assertEqual((applied['wifi'], stored), ([], [{'language': 'uk'}]))
+
     def test_at_most_eight_networks(self):
         record = {'schema': 'a22x.handoff.v1', 'wifi': [{'ssid': 'Net %d' % i, 'password': 'password%d' % i} for i in range(12)]}
         remembered = []
-        handoff.apply_record(record, remember=lambda ssid, key: remembered.append(ssid), load=dict, store=lambda c: None)
+        handoff.apply_record(record, remember=lambda ssid, key: remembered.append(ssid) or True, load=dict, store=lambda c: None)
         self.assertEqual(len(remembered), handoff.MAX_WIFI)
 
 

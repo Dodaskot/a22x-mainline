@@ -29,7 +29,7 @@ def usable():
 def functions():
     """Every function of the script, without its main flow."""
     text = SCRIPT.read_text()
-    return text[text.index('oem_cleanup() {'):text.index('resolv_link=$(readlink')]
+    return text[text.index('oem_cleanup() {'):text.index('# The resolver link as the system had it')]
 
 
 @unittest.skipUnless(usable(), 'needs busybox and user namespaces')
@@ -96,6 +96,18 @@ class Shells(unittest.TestCase):
 
     def session(self, shells, greeter, new_user='user'):
         self.run_sh('session', f'SHELLS="{shells}"\nGREETER={greeter}\nNEW_USER={new_user}\n')
+
+    def test_home_launchers_get_shims_only_where_programs_live(self):
+        # 2026-11-13 review: root made a file at any path a launcher in a home named.
+        self.stub('firefox')
+        apps = 'home/user/.local/share/applications/'
+        self.write(apps + 'firefox.desktop', '[Desktop Entry]\nExec=/usr/lib/firefox/firefox %u\n')
+        self.write(apps + 'evil.desktop', '[Desktop Entry]\nExec=/etc/sudoers.d/firefox\n')
+        self.write(apps + 'up.desktop', '[Desktop Entry]\nExec=/usr/lib/../../etc/cron.d/firefox\n')
+        self.run_sh('home_shims')
+        self.assertIn('exec /usr/bin/firefox', self.read('usr/lib/firefox/firefox'))
+        self.assertFalse((self.root / 'etc/sudoers.d').exists())
+        self.assertFalse((self.root / 'etc/cron.d').exists())
 
     def test_lomiri_describes_the_phone_to_deviceinfo(self):
         # lomiri-session takes its grid unit from deviceinfo: 8 px for an unknown device replaced

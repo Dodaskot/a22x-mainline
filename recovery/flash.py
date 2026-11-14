@@ -14,7 +14,6 @@ calibration data are never reachable from here.
 """
 import argparse
 import contextlib
-import fcntl
 import hashlib
 import json
 import lzma
@@ -74,7 +73,6 @@ CHECKSUM_FILE_LIMIT = 1 << 20
 PREFIX = 8192
 ROLLBACK_LIMIT = 64 * 1024 * 1024
 ROLLBACK_FOLDER = 'A22xPartitionBackups'
-BLKFLSBUF = 0x1261
 
 
 class Lz4Reader:
@@ -311,6 +309,63 @@ def zip_member(fd, member=None):
     return chosen.filename, start, start + chosen.compress_size, chosen.compress_type, chosen.CRC
 
 
+IMAGE_SUFFIXES = ('.img', '.img.lz4', '.img.ext4.lz4', '.ext4.lz4', '.bin.lz4')
+LOGICAL_NAMES = ('system', 'vendor', 'product', 'odm', 'system_ext', 'vendor_dlkm', 'odm_dlkm')
+
+
+def image_target(name, labels):
+    """The partition an image inside an archive is for, by its file name (boot.img -> boot,
+    vendor.img -> super/vendor, Samsung's boot.img.lz4 -> boot); '' when none this recovery writes."""
+    base = name.rsplit('/', 1)[-1].lower()
+    for suffix in sorted(IMAGE_SUFFIXES, key=len, reverse=True):
+        if base.endswith(suffix):
+            base = base[:-len(suffix)]
+            break
+    else:
+        return ''
+    wanted = 'super/' + base if base in LOGICAL_NAMES else base
+    return wanted if wanted in labels else ''
+
+
+def members(context, args):
+    """2026-11-13, the owner: the recovery should open an archive and say what in it can be flashed
+    (a ROM ZIP carries its BOOT, a firmware tar its images). The images in a ZIP, a tar or a 7z, with
+    the partition each is for, and what else the archive is: a ROM with its own installer, a block
+    OTA, an A/B payload."""
+    labels = {row['label'] for row in targets(context)['targets']}
+    with source_file(context, args.volume, args.volume_token, args.path) as fd:
+        head = os.pread(fd, 6, 0)
+        found, extra = [], {'installer': False, 'block_ota': False, 'payload': False}
+        if head == sevenzip.SIGNATURE:
+            kind = '7z'
+            files, _ = sevenzip.entries(fd)
+            listing = [(f['name'], f.get('size', 0)) for f in files]
+        elif head[:4] == b'PK\x03\x04':
+            kind = 'zip'
+            with shared_offset(fd) as handle, zipfile.ZipFile(handle) as archive:
+                infos = [i for i in archive.infolist() if not i.is_dir()]
+            listing = [(i.filename, i.file_size) for i in infos]
+            names = {name for name, _ in listing}
+            extra['installer'] = 'META-INF/com/google/android/update-binary' in names
+            extra['block_ota'] = any(name.endswith('.transfer.list') for name in names)
+            extra['payload'] = 'payload.bin' in names
+        elif os.pread(fd, 5, 257) == b'ustar':
+            kind = 'tar'
+            with shared_offset(fd) as handle, tarfile.open(fileobj=handle, mode='r:') as archive:
+                listing = [(m.name, m.size) for m in archive.getmembers() if m.isreg()]
+        else:
+            fs.fail('NOT_AN_ARCHIVE', 'This file is an image itself, not an archive')
+        for name, size in listing[:4096]:
+            lower = name.lower()
+            if not any(lower.endswith(suffix) for suffix in IMAGE_SUFFIXES):
+                continue
+            # A ZIP's images are read stored or deflated, as .img; a tar's also through LZ4.
+            if kind != 'tar' and not lower.endswith('.img'):
+                continue
+            found.append({'name': name, 'size': size, 'target': image_target(name, labels)})
+    return {'archive': kind, 'members': found[:64], **extra}
+
+
 def open_reader(fd, compression, size=0):
     if size > install.MAX_SOURCE or os.fstat(fd).st_size > install.MAX_SOURCE or compression in ('zstd', 'xz') or compression[:4] in ('zip', 'zip:', 'tar:') or compression[:2] == '7z':
         return DecodedReader(fd, compression, size or install.MAX_SOURCE)
@@ -363,7 +418,7 @@ def filesystem_kind(prefix):
 
 def detect(fd, compression):
     """Which partition an image belongs on, from its first bytes."""
-    largest = install.GEOMETRY['userdata'][2]
+    largest = install.MAX_TARGET  # userdata of a 128 GB phone too (2026-11-13 review)
     image_format = layout(fd, compression, largest)
     reader = open_reader(fd, compression, largest)
     prefix = bytearray()
@@ -493,21 +548,41 @@ def source_file(context, volume, token, path):
 def rollback_volume(context, size, skip_cache=False, make_room=False):
     """A mounted writable volume for the old content, removable storage first. Cache is small
     (200 MiB): with SKIP_CACHE it is passed over (the BOOT is already kept there once), and with
-    MAKE_ROOM what lies there twice is removed before it is found full (2026-11-11)."""
-    for volume in sorted(context.fs.volumes(), key=lambda v: (not v.get('external'), v['id'])):
-        if (volume.get('mounted') and not volume.get('read_only') and volume.get('write_supported')
+    MAKE_ROOM what lies there twice is removed before it is found full (2026-11-11).
+    2026-11-12, on the phone: cache and the card were mounted read-only by the recovery itself, so
+    no copy was kept and BOOT was written with no way back. The recovery's own read-only mount of
+    cache or a card is opened for writing for the copy, and one not mounted is mounted."""
+    def room(volume):
+        info = os.statvfs(volume['mountpoint'])
+        return info.f_bavail * info.f_frsize
+    volumes = sorted(context.fs.volumes(), key=lambda v: (not v.get('external'), v['id']))
+    for volume in volumes:
+        cache = volume['id'] == 'cache'
+        if cache and skip_cache:
+            continue
+        own = volume.get('external') or cache
+        if not (volume.get('mounted') and not volume.get('read_only') and volume.get('write_supported')
                 and volume.get('mount_owner') in ('filesystem', 'storage')):
-            cache = volume['id'] == 'cache'
-            if cache and skip_cache:
+            if not own or volume.get('container'):
                 continue
-            info = os.statvfs(volume['mountpoint'])
-            if cache and make_room and info.f_bavail * info.f_frsize < size + install.CHUNK:
-                with contextlib.suppress(fs.FilesystemError, OSError):
-                    with fs.PinnedVolume(context.fs, 'cache', writing=True) as pin:
-                        saved_boot.make_room(pin)
-                info = os.statvfs(volume['mountpoint'])
-            if info.f_bavail * info.f_frsize >= size + install.CHUNK:
-                return volume
+            try:
+                if volume.get('mounted') and volume.get('read_only') and volume.get('mount_owner') == 'filesystem':
+                    context.fs.mount(volume['id'], 'rw', True, volume['volume_token'])
+                elif not volume.get('mounted') and volume.get('mountable'):
+                    context.fs.mount(volume['id'], 'rw', True, volume['volume_token'])
+                else:
+                    continue
+                volume = context.fs.volume(volume['id'])
+            except (fs.FilesystemError, OSError):
+                continue
+            if not (volume.get('mounted') and not volume.get('read_only') and volume.get('write_supported')):
+                continue
+        if cache and make_room and room(volume) < size + install.CHUNK:
+            with contextlib.suppress(fs.FilesystemError, OSError):
+                with fs.PinnedVolume(context.fs, 'cache', writing=True) as pin:
+                    saved_boot.make_room(pin)
+        if room(volume) >= size + install.CHUNK:
+            return volume
     return None
 
 
@@ -519,15 +594,44 @@ def rollback_folders(volume):
     return (ROLLBACK_FOLDER,)
 
 
-def save_rollback(context, target, progress, chunks=None, skip_cache=False):
+PENDING_SUFFIX = '.pending.json'
+# 2026-11-12 review: beside the journal, a short hash of every page of the new image. resume then
+# undoes only what this write left half done (each page the new one or the old one), never a later
+# write made another way (Odin, a second flash).
+PAGES_SUFFIX = '.pending.pages'
+PAGE = 4096
+PAGE_HASH = 8
+TORN_PAGES = 8
+
+
+def page_hash(data):
+    return hashlib.blake2b(data, digest_size=PAGE_HASH).digest()
+
+
+def page_hashes(chunks):
+    out = bytearray()
+    for data in chunks:
+        for at in range(0, len(data), PAGE):
+            out += page_hash(data[at:at + PAGE])
+    return bytes(out)
+
+
+def save_rollback(context, target, progress, chunks=None, skip_cache=False, pending=None):
     """The current content of TARGET, kept before it is written. CHUNKS: its bytes in order, for a
     partition inside super (2026-11-10); otherwise they are read from the target's own device.
-    On cache only the newest copy of a partition stays: the one written here."""
+    On cache only the newest copy of a partition stays: the one written here.
+    PENDING (2026-11-12 audit): what is about to be written. It is kept beside the copy as
+    NAME.pending.json until the write is over, so that a write cut short by a power loss is
+    finished or undone at the next start of the recovery (resume)."""
     if target['size_bytes'] > ROLLBACK_LIMIT:
         return None
     volume = rollback_volume(context, target['size_bytes'], skip_cache, make_room=True)
     if volume is None:
-        return None
+        if skip_cache:
+            return None  # the BOOT is kept on cache as a saved BOOT: that is its way back
+        # 2026-11-12, on the phone: written with no copy at all, a cut write had no way back.
+        fs.fail('ROLLBACK_UNAVAILABLE', 'There is no room to keep the old content first: free space on cache or insert a card',
+                partition=target['label'], required_bytes=target['size_bytes'])
     stamp = target['label'].replace('/', '-') + time.strftime('-%Y%m%d-%H%M%S', time.gmtime())
     source = context.open_target(target) if chunks is None else None
 
@@ -558,18 +662,43 @@ def save_rollback(context, target, progress, chunks=None, skip_cache=False):
                         break
                 else:
                     fs.fail('ROLLBACK_NAME_EXHAUSTED', 'The old content could not be saved')
+                digest = hashlib.sha256()
                 try:
                     done = 0
                     for data in (own() if chunks is None else chunks):
                         install.write_all(out, data)
+                        digest.update(data)
                         done += len(data)
                         progress('Saving the current partition', target, done)
                     require(done == target['size_bytes'], 'TARGET_READ_FAILED', 'The current partition could not be read')
                     os.fsync(out)
+                    if pending is not None:
+                        pending = dict(pending)
+                        pages = pending.pop('pages', None)
+                        if pages is not None:
+                            sidecar = os.open(name + PAGES_SUFFIX, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW | os.O_CLOEXEC,
+                                              0o600, dir_fd=folder)
+                            try:
+                                install.write_all(sidecar, pages)
+                                os.fsync(sidecar)
+                            finally:
+                                os.close(sidecar)
+                            pending.update(pages=name + PAGES_SUFFIX, page_size=PAGE, page_hash=PAGE_HASH)
+                        journal = os.open(name + PENDING_SUFFIX, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW | os.O_CLOEXEC,
+                                          0o600, dir_fd=folder)
+                        try:
+                            install.write_all(journal, json.dumps({**pending, 'label': target['label'], 'partuuid': target.get('partuuid'),
+                                                                   'size_bytes': target['size_bytes'], 'copy': name,
+                                                                   'copy_sha256': digest.hexdigest()}).encode())
+                            os.fsync(journal)
+                        finally:
+                            os.close(journal)
+                        os.fsync(folder)
                 except BaseException:
                     # A copy cut short is not a copy: nothing half-saved stays behind.
-                    with contextlib.suppress(OSError):
-                        os.unlink(name, dir_fd=folder)
+                    for suffix in ('', PAGES_SUFFIX, PENDING_SUFFIX):
+                        with contextlib.suppress(OSError):
+                            os.unlink(name + suffix, dir_fd=folder)
                     raise
                 finally:
                     os.close(out)
@@ -580,7 +709,64 @@ def save_rollback(context, target, progress, chunks=None, skip_cache=False):
     finally:
         if source is not None:
             os.close(source)
-    return {'volume': volume.get('label') or volume['id'], 'path': '/' + '/'.join(parts) + '/' + name}
+    return {'volume': volume.get('label') or volume['id'], 'volume_id': volume['id'], 'path': '/' + '/'.join(parts) + '/' + name,
+            'sha256': digest.hexdigest(), 'pending': pending is not None}
+
+
+def copy_reader(context, rollback):
+    """The saved copy, opened for reading on its pinned volume: (pin, fd)."""
+    pin = fs.PinnedVolume(context.fs, rollback['volume_id'])
+    try:
+        with pin.parent(rollback['path']) as (folder, name):
+            return pin, fs.open_regular(name, dir_fd=folder)
+    except BaseException:
+        pin.close()
+        raise
+
+
+def restore_copy(context, target, rollback, progress):
+    """Put the saved copy back on TARGET: only a copy whose SHA-256 is still the one saved, and the
+    partition is read back. True when it is back."""
+    pin, fd = copy_reader(context, rollback)
+    try:
+        digest, done = hashlib.sha256(), 0
+        while done < target['size_bytes']:
+            data = os.pread(fd, min(install.CHUNK, target['size_bytes'] - done), done)
+            require(data, 'ROLLBACK_DAMAGED', 'The saved copy is shorter than the partition')
+            digest.update(data)
+            done += len(data)
+        if digest.hexdigest() != rollback['sha256']:
+            return False
+        writer = context.open_target(target, write=True)
+        try:
+            done = 0
+            while done < target['size_bytes']:
+                data = os.pread(fd, min(install.CHUNK, target['size_bytes'] - done), done)
+                context.check_target(writer, target)
+                install.write_all(writer, data, offset=done)
+                done += len(data)
+                progress('Putting the old content back', target, done)
+            os.fsync(writer)
+            lp.drop_cached(writer)
+        finally:
+            os.close(writer)
+        return read_back(context, target, progress) == rollback['sha256']
+    finally:
+        os.close(fd)
+        pin.close()
+
+
+def end_pending(context, rollback):
+    """The write is over (done, or undone): its journal goes."""
+    if not rollback or not rollback.get('pending'):
+        return
+    with contextlib.suppress(OSError, fs.FilesystemError):
+        with fs.PinnedVolume(context.fs, rollback['volume_id'], writing=True) as pin:
+            with pin.parent(rollback['path']) as (folder, name):
+                os.unlink(name + PENDING_SUFFIX, dir_fd=folder)
+                with contextlib.suppress(FileNotFoundError):
+                    os.unlink(name + PAGES_SUFFIX, dir_fd=folder)
+                os.fsync(folder)
 
 
 def open_super(context, write=False):
@@ -705,38 +891,70 @@ def write_logical(context, args, progress, name):
                 current = found.size_of(found.partition(name))
                 # The old content first, before super's metadata or the partition changes.
                 rollback = save_rollback(context, {'label': args.target, 'size_bytes': current}, progress, found.chunks(name))
-                if args.image_bytes > current:
-                    found.resize(name, args.image_bytes)  # The metadata, every copy, read back.
-                total = found.size_of(found.partition(name))
-                image_format = layout(fd, compression, total)
-                reader = open_reader(fd, compression, total)
-                shown = {'label': args.target, 'size_bytes': total}
-                image, length = hashlib.sha256(), 0
-
-                def stream():
-                    nonlocal length
-                    for data in install.decode_image(reader, image_format, total):
-                        if reader.payload_bytes is None:  # The image itself; then the zeros to the end.
-                            image.update(data)
-                            length += len(data)
-                        yield data
                 try:
-                    _, _, whole_sha = found.write_chunks(name, stream(), lambda done, all_: progress('Writing', shown, done))
-                finally:
-                    close_reader(reader)
-                image_sha = image.hexdigest()
-                if context.mode == 'device':
-                    fcntl.ioctl(sfd, BLKFLSBUF)
-                if length != args.image_bytes or image_sha != args.expected_sha256:
-                    fs.fail('IMAGE_CHANGED', 'The file changed during the write. Flash the partition again from a good image',
-                            rollback=rollback)
-                observed = found.read_partition(name)
-                if observed != whole_sha:
-                    fs.fail('READBACK_MISMATCH', 'The partition does not match the image after writing', rollback=rollback)
+                    result = write_logical_content(context, args, progress, name, fd, compression, found, sfd, current, rollback)
+                except BaseException as error:
+                    # 2026-11-12 review: a failed write inside super put nothing back, unlike the other
+                    # partitions. The saved copy goes back at once, at its old size.
+                    if rollback is not None and not isinstance(error, KeyboardInterrupt):
+                        restored = False
+                        with contextlib.suppress(OSError, ValueError, fs.FilesystemError, lp.MetadataError):
+                            if found.size_of(found.partition(name)) != current:
+                                found.resize(name, current)
+                            pin, copy = copy_reader(context, rollback)
+                            try:
+                                def saved():
+                                    done = 0
+                                    while done < current:
+                                        data = os.pread(copy, min(install.CHUNK, current - done), done)
+                                        if not data:
+                                            raise ValueError('The saved copy is shorter than the partition')
+                                        done += len(data)
+                                        yield data
+                                found.write_chunks(name, saved())
+                            finally:
+                                os.close(copy)
+                                pin.close()
+                            restored = found.read_partition(name) == rollback['sha256']
+                        if isinstance(error, fs.FilesystemError):
+                            error.details['rollback_restored'] = restored
+                    raise
             finally:
                 os.close(sfd)
-        return {'target': {'label': args.target, 'size_bytes': total, 'logical': True, 'resized_from': current},
-                'sha256': image_sha, 'partition_sha256': observed, 'verified': True, 'rollback': rollback, 'recorded': False}
+        return result
+
+
+def write_logical_content(context, args, progress, name, fd, compression, found, sfd, current, rollback):
+    """The image written into logical partition NAME of super and read back (write_logical puts the saved copy back when this fails)."""
+    if args.image_bytes > current:
+        found.resize(name, args.image_bytes)  # The metadata, every copy, read back.
+    total = found.size_of(found.partition(name))
+    image_format = layout(fd, compression, total)
+    reader = open_reader(fd, compression, total)
+    shown = {'label': args.target, 'size_bytes': total}
+    image, length = hashlib.sha256(), 0
+
+    def stream():
+        nonlocal length
+        for data in install.decode_image(reader, image_format, total):
+            if reader.payload_bytes is None:  # The image itself; then the zeros to the end.
+                image.update(data)
+                length += len(data)
+            yield data
+    try:
+        _, _, whole_sha = found.write_chunks(name, stream(), lambda done, all_: progress('Writing', shown, done))
+    finally:
+        close_reader(reader)
+    image_sha = image.hexdigest()
+    lp.drop_cached(sfd)
+    if length != args.image_bytes or image_sha != args.expected_sha256:
+        fs.fail('IMAGE_CHANGED', 'The file changed during the write. Flash the partition again from a good image',
+                rollback=rollback)
+    observed = found.read_partition(name)
+    if observed != whole_sha:
+        fs.fail('READBACK_MISMATCH', 'The partition does not match the image after writing', rollback=rollback)
+    return {'target': {'label': args.target, 'size_bytes': total, 'logical': True, 'resized_from': current},
+            'sha256': image_sha, 'partition_sha256': observed, 'verified': True, 'rollback': rollback, 'recorded': False}
 
 
 def judge(label, data):
@@ -866,29 +1084,58 @@ def write(context, args, progress):
             require(identity(fd) == args.expected_identity, 'IMAGE_CHANGED', 'The file changed after it was checked')
             compression = container(fd, getattr(args, 'member', None))
             image_format = layout(fd, compression, target['size_bytes'])
+            pending = {'new_sha256': args.expected_sha256, 'started': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}
+            if target['size_bytes'] <= ROLLBACK_LIMIT:
+                # The new image read once before anything is written: its page hashes go beside the
+                # journal, and a file that is not the checked one stops here.
+                digest = hashlib.sha256()
+                reader = open_reader(fd, compression, target['size_bytes'])
+                try:
+                    def checked():
+                        for data in install.fixed_chunks(install.decode_image(reader, image_format, target['size_bytes'])):
+                            digest.update(data)
+                            yield data
+                    pending['pages'] = page_hashes(checked())
+                finally:
+                    close_reader(reader)
+                require(digest.hexdigest() == args.expected_sha256, 'IMAGE_CHANGED', 'The file changed after it was checked')
             # A BOOT kept on cache as a saved BOOT is not kept there a second time.
-            rollback = save_rollback(context, target, progress, skip_cache=bool(kept and (kept['kept'] or kept.get('note') == 'identical')))
-            writer = context.open_target(target, write=True)
-            reader = open_reader(fd, compression, target['size_bytes'])
-            digest, position = hashlib.sha256(), 0
+            rollback = save_rollback(context, target, progress, skip_cache=bool(kept and (kept['kept'] or kept.get('note') == 'identical')),
+                                     pending=pending)
             try:
-                for data in install.fixed_chunks(install.decode_image(reader, image_format, target['size_bytes'])):
-                    context.check_target(writer, target)
-                    install.write_all(writer, data, offset=position)
-                    digest.update(data)
-                    position += len(data)
-                    progress('Writing', target, position)
-                os.fsync(writer)
-                if context.mode == 'device':
-                    fcntl.ioctl(writer, BLKFLSBUF)
-            finally:
-                close_reader(reader)
-                os.close(writer)
-        require(digest.hexdigest() == args.expected_sha256, 'IMAGE_CHANGED',
-                'The file changed during the write. Flash the partition again from a good image', rollback=rollback)
-        observed = read_back(context, target, progress)
-        require(observed == args.expected_sha256, 'READBACK_MISMATCH',
-                'The partition does not match the image after writing', rollback=rollback)
+                writer = context.open_target(target, write=True)
+                reader = open_reader(fd, compression, target['size_bytes'])
+                digest, position = hashlib.sha256(), 0
+                try:
+                    for data in install.fixed_chunks(install.decode_image(reader, image_format, target['size_bytes'])):
+                        context.check_target(writer, target)
+                        install.write_all(writer, data, offset=position)
+                        digest.update(data)
+                        position += len(data)
+                        progress('Writing', target, position)
+                    os.fsync(writer)
+                    lp.drop_cached(writer)
+                finally:
+                    close_reader(reader)
+                    os.close(writer)
+                require(digest.hexdigest() == args.expected_sha256, 'IMAGE_CHANGED',
+                        'The file changed during the write. Flash the partition again from a good image', rollback=rollback)
+                observed = read_back(context, target, progress)
+                require(observed == args.expected_sha256, 'READBACK_MISMATCH',
+                        'The partition does not match the image after writing', rollback=rollback)
+            except BaseException as error:
+                # 2026-11-12 audit: a write that failed puts the saved copy back at once.
+                if rollback is not None and not isinstance(error, KeyboardInterrupt):
+                    try:
+                        restored = restore_copy(context, target, rollback, progress)
+                    except (OSError, fs.FilesystemError):
+                        restored = False
+                    if restored:
+                        end_pending(context, rollback)
+                    if isinstance(error, fs.FilesystemError):
+                        error.details['rollback_restored'] = restored
+                raise
+        end_pending(context, rollback)
         # 2026-11-10: an Android BOOT gets the mark that keeps this recovery (saved_boot.keep_recovery):
         # Samsung's Android otherwise puts its own recovery back at its next start.
         marked = saved_boot.keep_recovery(context, target) if args.target == 'boot' else None
@@ -900,6 +1147,150 @@ def write(context, args, progress):
                 'keeps_recovery': bool(marked)}
 
 
+def resume(context, progress):
+    """At the start of the recovery (2026-11-12 audit): a write whose journal is still beside its
+    saved copy was cut short, by a power loss or a crash. The partition is read: the new image
+    whole means the write was over; the old content means nothing was written; anything else gets
+    the saved copy back, when its SHA-256 is still the saved one. A journal stays only when the
+    copy could not be put back."""
+    results = []
+    for volume in context.fs.volumes():
+        if not volume.get('volume_token') or not (volume['mounted'] or volume['mountable']):
+            continue
+        if volume.get('container') or not (volume.get('external') or volume['id'].startswith(('sdcard', 'usb-')) or volume['id'] in ('cache', 'userdata')):
+            continue
+        mounted_here = not volume['mounted']
+        try:
+            if mounted_here:
+                context.fs.mount(volume['id'], 'ro', False, volume['volume_token'])
+            found = []
+            with fs.PinnedVolume(context.fs, volume['id']) as pin:
+                path = '/'.join(rollback_folders(volume))
+                try:
+                    with pin.directory(path) as folder:
+                        names = sorted(name for name in os.listdir(folder) if name.endswith(PENDING_SUFFIX))
+                        for name in names:
+                            # 2026-11-12 review: one journal that cannot be read no longer hides the others.
+                            try:
+                                journal = fs.open_regular(name, dir_fd=folder)
+                                try:
+                                    record = json.loads(os.read(journal, 65536))
+                                finally:
+                                    os.close(journal)
+                                if not isinstance(record, dict) or not isinstance(record.get('copy'), str) or record['copy'] + PENDING_SUFFIX != name:
+                                    raise ValueError('not a journal')
+                                found.append((name, record))
+                            except (OSError, fs.FilesystemError, ValueError):
+                                found.append((name, None))
+                except (OSError, fs.FilesystemError):
+                    continue
+            for name, record in found:
+                if record is None:
+                    results.append(drop_journal(context, volume, path, name))
+                else:
+                    results.append(resume_one(context, volume, path, record, progress))
+        except (OSError, fs.FilesystemError):
+            continue
+        finally:
+            if mounted_here:
+                with contextlib.suppress(OSError, fs.FilesystemError):
+                    context.fs.unmount(volume['id'])
+    return {'resumed': results}
+
+
+def writable(context, volume_id):
+    if context.fs.volume(volume_id)['read_only']:
+        context.fs.mount(volume_id, 'rw', True, context.fs.volume(volume_id)['volume_token'])
+
+
+def drop_journal(context, volume, path, name):
+    """A journal nobody can read says nothing: it goes; the copy beside it stays."""
+    result = {'label': None, 'volume': volume.get('label') or volume['id'], 'outcome': 'unreadable'}
+    try:
+        writable(context, volume['id'])
+        with fs.PinnedVolume(context.fs, volume['id'], writing=True) as pin:
+            with pin.directory(path) as folder:
+                os.unlink(name, dir_fd=folder)
+                with contextlib.suppress(FileNotFoundError):
+                    os.unlink(name[:-len(PENDING_SUFFIX)] + PAGES_SUFFIX, dir_fd=folder)
+                os.fsync(folder)
+    except (OSError, fs.FilesystemError) as error:
+        result['error'] = getattr(error, 'code', None) or type(error).__name__
+    return result
+
+
+def cut_short(context, target, rollback, record):
+    """Whether the partition is what this very write leaves when it stops early: every page the
+    new image's or the saved copy's, and at most TORN_PAGES pages caught in the middle, then only
+    with pages of the new image there too. Anything else was written another way."""
+    size = target['size_bytes']
+    if record.get('page_size') != PAGE or record.get('page_hash') != PAGE_HASH or not isinstance(record.get('pages'), str):
+        return False
+    pages_total = (size + PAGE - 1) // PAGE
+    pin, copy = copy_reader(context, rollback)
+    try:
+        with pin.parent(rollback['path']) as (folder, _):
+            sidecar = fs.open_regular(record['pages'], dir_fd=folder)
+        try:
+            new = os.pread(sidecar, pages_total * PAGE_HASH + 1, 0)
+        finally:
+            os.close(sidecar)
+        if len(new) != pages_total * PAGE_HASH:
+            return False
+        reader = context.open_target(target)
+        try:
+            ours = torn = 0
+            done = 0
+            while done < size:
+                length = min(install.CHUNK, size - done)
+                now, old = os.pread(reader, length, done), os.pread(copy, length, done)
+                if len(now) != length or len(old) != length:
+                    return False
+                for at in range(0, length, PAGE):
+                    index = (done + at) // PAGE
+                    here, before = page_hash(now[at:at + PAGE]), page_hash(old[at:at + PAGE])
+                    wanted = new[index * PAGE_HASH:(index + 1) * PAGE_HASH]
+                    if here == wanted:
+                        ours += here != before
+                    elif here != before:
+                        torn += 1
+                        if torn > TORN_PAGES:
+                            return False
+                done += length
+        finally:
+            os.close(reader)
+        return torn == 0 or ours > 0
+    finally:
+        os.close(copy)
+        pin.close()
+
+
+def resume_one(context, volume, path, record, progress):
+    label = record.get('label')
+    result = {'label': label, 'volume': volume.get('label') or volume['id'], 'outcome': 'kept'}
+    try:
+        target = context.target(label)
+        require(target['size_bytes'] == record.get('size_bytes') and target.get('partuuid') == record.get('partuuid'),
+                'TARGET_CHANGED', 'The partition is not the one that was written')
+        rollback = {'volume_id': volume['id'], 'path': '/' + path + '/' + record['copy'], 'sha256': record['copy_sha256'], 'pending': True}
+        now = read_back(context, target, progress)
+        if now == record.get('new_sha256'):
+            result['outcome'] = 'completed'
+        elif now == record['copy_sha256']:
+            result['outcome'] = 'unchanged'
+        elif cut_short(context, target, rollback, record):
+            result['outcome'] = 'restored' if restore_copy(context, target, rollback, progress) else 'kept'
+        else:
+            # 2026-11-12 review: written another way since (Odin, a later flash): left as it is.
+            result['outcome'] = 'changed'
+        if result['outcome'] != 'kept':
+            writable(context, volume['id'])
+            end_pending(context, rollback)
+    except (OSError, ValueError, KeyError, fs.FilesystemError) as error:
+        result['error'] = getattr(error, 'code', None) or type(error).__name__
+    return result
+
+
 def parser():
     result = argparse.ArgumentParser()
     mode = result.add_mutually_exclusive_group(required=True)
@@ -907,6 +1298,11 @@ def parser():
     mode.add_argument('--fixture', type=Path)
     commands = result.add_subparsers(dest='command', required=True)
     commands.add_parser('targets')
+    commands.add_parser('resume')
+    listed = commands.add_parser('members')
+    listed.add_argument('--volume', required=True)
+    listed.add_argument('--volume-token', required=True)
+    listed.add_argument('--path', required=True)
     for name in ('check', 'write'):
         command = commands.add_parser(name)
         command.add_argument('--target', type=target_choice, required=True)
@@ -929,17 +1325,26 @@ def main(argv=None):
     def progress(phase, target, done):
         now = time.monotonic()
         if phase != last[0] or now - last[1] >= 0.2 or done == target['size_bytes']:
-            print(json.dumps({'event': 'progress', 'operation': args.command, 'phase': phase, 'partition': target['label'],
-                              'bytes_done': done, 'bytes_total': target['size_bytes']}, separators=(',', ':')),
-                  file=sys.stderr, flush=True)
+            # 2026-11-12 review: a reader that went away (the interface restarted) made the next line
+            # raise BrokenPipeError inside the write loop and stopped a write halfway. Reporting is
+            # best effort; a write never depends on it.
+            with contextlib.suppress(OSError, ValueError):
+                print(json.dumps({'event': 'progress', 'operation': args.command, 'phase': phase, 'partition': target['label'],
+                                  'bytes_done': done, 'bytes_total': target['size_bytes']}, separators=(',', ':')),
+                      file=sys.stderr, flush=True)
             last[:] = [phase, now]
 
     try:
         context = install.FixtureContext(args.fixture) if args.fixture else install.DeviceContext()
         if args.command == 'targets':
             result = targets(context)
+        elif args.command == 'resume':
+            with operation_lock(context.lock_path, context.mode):
+                result = resume(context, progress)
         elif args.command == 'check':
             result = check(context, args, progress)
+        elif args.command == 'members':
+            result = members(context, args)
         else:
             result = write(context, args, progress)
         print(json.dumps({'ok': True, 'operation': args.command, **result}, separators=(',', ':')), flush=True)

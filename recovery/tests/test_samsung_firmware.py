@@ -12,6 +12,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -250,6 +251,54 @@ class Firmware(unittest.TestCase):
         self.assertEqual((code, failed['error']['code']), (2, 'FIRMWARE_DAMAGED'), failed)
         self.assertFalse(any(p.name.startswith('.part-') for p in (self.root / 'usb/broken').iterdir()))
 
+    def test_a_zip_without_room_beside_it_unpacks_on_userdata(self):
+        """2026-11-13, on the phone: a 5.8 GB ZIP on a 16 GB card has no room for its 7.2 GB of tars
+        beside it; they go to userdata, which the installation formats anyway. Userdata encrypted
+        by Android cannot take them: the refusal says what to do."""
+        import zipfile
+        from unittest import mock
+        fw = self.root / 'usb/fw'
+        bundle = self.root / 'usb/SAMFW.COM_SM-A226B_VD2_A226BXXSBDZC3_fac.zip'
+        with zipfile.ZipFile(bundle, 'w', zipfile.ZIP_DEFLATED) as z:
+            for item in sorted(fw.iterdir()):
+                z.write(item, item.name)
+        shutil.rmtree(fw)
+        config = json.loads((self.root / 'filesystem-fixture.json').read_text())
+        for v in config['volumes']:
+            if v['id'] == 'usb-p1':
+                v['read_only'] = False
+        (self.root / 'filesystem-fixture.json').write_text(json.dumps(config))
+        usb = str(self.root / 'usb')
+        real = os.fstatvfs
+
+        def short_on_usb(fd):
+            st = real(fd)
+            if os.path.realpath('/proc/self/fd/%d' % fd).startswith(usb):
+                return os.statvfs_result((st.f_bsize, st.f_frsize, st.f_blocks, 0, 0) + tuple(st)[5:])
+            return st
+        context = sf.install.FixtureContext(self.root)
+        with mock.patch.object(sf.os, 'fstatvfs', short_on_usb):
+            done = sf.unpack_zip(context, 'usb-p1', self.token(), '/' + bundle.name, True, lambda *a: None)
+        self.assertEqual((done['volume'], done['folder']), ('userdata', '/A22xFirmware/SAMFW.COM_SM-A226B_VD2_A226BXXSBDZC3_fac'))
+        self.assertEqual(done['volume_token'], context.fs.volume('userdata')['volume_token'])
+        self.assertTrue((self.root / 'data' / done['ap'].lstrip('/')).is_file())
+        self.assertFalse((self.root / 'usb/SAMFW.COM_SM-A226B_VD2_A226BXXSBDZC3_fac').exists())
+        code, plan, _ = self.run_helper('inspect', '--volume', 'userdata', '--volume-token', done['volume_token'], '--path', done['ap'])
+        self.assertEqual((code, plan['blockers']), (0, []), plan)
+        # Userdata encrypted by Android: nothing is unpacked anywhere.
+        shutil.rmtree(self.root / 'data/A22xFirmware')
+        for v in config['volumes']:
+            if v['id'] == 'userdata':
+                v['fscrypt_feature'] = True
+        (self.root / 'filesystem-fixture.json').write_text(json.dumps(config))
+        with mock.patch.object(sf.os, 'fstatvfs', short_on_usb):
+            with self.assertRaises(sf.fs.FilesystemError) as refused:
+                sf.unpack_zip(sf.install.FixtureContext(self.root), 'usb-p1', self.token(), '/' + bundle.name,
+                                            True, lambda *a: None)
+        self.assertEqual(refused.exception.code, 'INSUFFICIENT_SPACE')
+        self.assertIn('format userdata in Wipe', str(refused.exception))
+        self.assertFalse((self.root / 'data/A22xFirmware').exists())
+
     def test_an_ap_without_super_or_boot_is_blocked(self):
         samsung_tar(self.ap, [('boot.img.lz4', lz4(self.images['boot']))])
         code, plan, _ = self.inspect()
@@ -257,6 +306,34 @@ class Firmware(unittest.TestCase):
         self.assertEqual(plan['blockers'], ['AP_INCOMPLETE'])
         code, refused, _ = self.install(plan['plan_sha256'])
         self.assertEqual((code, refused['error']['code']), (2, 'PLAN_BLOCKED'))
+
+
+class MetadataReset(unittest.TestCase):
+    """2026-11-12: metadata gets an empty ext4 as the fstab describes it, never zeros alone."""
+    def test_metadata_is_formatted_ext4_like_the_fstab_says(self):
+        import install
+        self.assertEqual(install.RESET_MAKE_METADATA[:2], ('/sbin/mkfs.ext4', '-F'))
+        self.assertIn('4096', install.RESET_MAKE_METADATA)
+        source = (Path(install.__file__)).read_text()
+        start = source.rindex('def reset_android')
+        reset = source[start:source.index('def check_offline', start)]
+        self.assertLess(reset.index('RESET_MAKE_METADATA'), reset.index('RESET_MAKE_F2FS'))
+
+
+class Lz4Bounded(unittest.TestCase):
+    """2026-11-13 review: boot.img.lz4 was unpacked whole into RAM before its size was checked."""
+    @unittest.skipUnless(shutil.which('lz4'), 'lz4 is needed')
+    def test_a_stream_that_unpacks_too_large_is_refused(self):
+        import samsung_firmware as sf
+        bomb = subprocess.run(['lz4', '-c'], input=bytes(100 << 20), stdout=subprocess.PIPE, check=True).stdout
+        with mock.patch.object(sf.flash, 'LZ4', shutil.which('lz4')):
+            with self.assertRaises(sf.fs.FilesystemError) as caught:
+                sf.lz4_bounded(bomb, 8 << 20)
+            self.assertEqual(caught.exception.code, 'INVALID_COMPRESSED_IMAGE')
+            small = subprocess.run(['lz4', '-c'], input=b'boot' * 1000, stdout=subprocess.PIPE, check=True).stdout
+            self.assertEqual(sf.lz4_bounded(small, 8 << 20), b'boot' * 1000)
+            with self.assertRaises(sf.fs.FilesystemError):
+                sf.lz4_bounded(b'not lz4 at all', 8 << 20)
 
 
 if __name__ == '__main__':

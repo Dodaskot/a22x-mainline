@@ -166,6 +166,23 @@ class TestPlatformLibLink(unittest.TestCase):
                 a22x_adapter.install_platform(root, mock.Mock(platform=str(source), platform_paths=[], platform_optional=()))
             owner = os.lstat(source / 'lib')
             self.assertIn((root / 'lib', owner.st_uid, owner.st_gid, False), calls)
+            # 2026-11-14 review: an installed system's plain-file copy of the UCM conf.d entry gives way
+            # to the recovery's link; any other optional file still comes from the installed system.
+            entry = 'usr/share/alsa/ucm2/conf.d/mt6833_mt6359/mt6833-mt6359.conf'
+            fallback = Path(tmp) / 'fallback'
+            (fallback / entry).parent.mkdir(parents=True)
+            (fallback / entry).symlink_to('../../MediaTek/mt6833/mt6359-sia8109/mt6833-mt6359.conf')
+            (fallback / 'etc').mkdir()
+            (fallback / 'etc/other.conf').write_text('recovery')
+            (source / entry).parent.mkdir(parents=True)
+            (source / entry).write_text('Syntax 4\n')
+            (source / 'etc').mkdir()
+            (source / 'etc/other.conf').write_text('installed')
+            with mock.patch.object(a22x_adapter.os, 'chown', record):
+                a22x_adapter.install_platform(root, mock.Mock(platform=str(source), platform_paths=[], platform_fallback=str(fallback),
+                                                              platform_optional=(entry, 'etc/other.conf')))
+            self.assertTrue((root / entry).is_symlink())
+            self.assertEqual((root / 'etc/other.conf').read_text(), 'installed')
 
 
 class TestImageInstall(unittest.TestCase):
@@ -201,6 +218,56 @@ class TestImageInstall(unittest.TestCase):
         self.f.assert_home(self)
         d.switch(self.f.context, d.switch_plan(self.f.context, 'distro-1-0')['plan'], True)
         self.assertTrue((self.f.live / 'usr/bin/a22x-reboot').exists())
+        self.f.assert_home(self)
+
+    def test_links_of_the_image_never_lead_the_adapter_out_of_it(self):
+        """2026-11-12 review: /boot -> / and etc/... -> /etc/... in an image made the adapter, which
+        runs as root, empty and write the recovery's own folders."""
+        outside = Path(self.tmp.name) / 'host'
+        (outside / 'keep').mkdir(parents=True)
+        (outside / 'keep/precious').write_text('host file\n')
+        (outside / 'selinux-config').write_text('SELINUX=enforcing\n')
+        (outside / 'passwd').write_text('host:x:0:0::/:/bin/sh\n')
+        new = self.f.new
+        import shutil
+        if (new / 'boot').is_dir() and not (new / 'boot').is_symlink():
+            shutil.rmtree(new / 'boot')
+        (new / 'boot').symlink_to(str(outside / 'keep'))
+        (new / 'etc/selinux').mkdir(parents=True, exist_ok=True)
+        (new / 'etc/selinux/config').symlink_to(str(outside / 'selinux-config'))
+        (new / 'tmp').exists() and shutil.rmtree(new / 'tmp')
+        (new / 'tmp').symlink_to(str(outside / 'keep'))
+        with tarfile.open(self.f.image, 'w:gz', format=tarfile.PAX_FORMAT) as out:
+            for item in sorted(new.rglob('*')):
+                out.add(item, arcname=item.relative_to(new).as_posix(), recursive=False)
+        d.install(self.f.context, self.plan(), True)
+        self.assertEqual((outside / 'keep/precious').read_text(), 'host file\n')
+        self.assertEqual((outside / 'selinux-config').read_text(), 'SELINUX=enforcing\n')
+        root = self.root('distro-1-0')
+        self.assertTrue((root / 'boot').is_dir() and not (root / 'boot').is_symlink())
+        self.assertTrue((root / 'tmp').is_dir() and not (root / 'tmp').is_symlink())
+
+    def test_an_account_made_in_one_system_does_not_lock_out_the_others(self):
+        """2026-11-12 review: a "New user" of a system installed beside the others has its home in
+        the shared /home, and every switch back failed with HOME_ACCOUNT_MISMATCH."""
+        d.install(self.f.context, self.plan(), True)
+        d.switch(self.f.context, d.switch_plan(self.f.context, 'distro-1-0')['plan'], True)
+        live = self.f.live
+        with open(live / 'etc/passwd', 'a') as out:
+            out.write('anna:x:1501:1501:Anna:/home/anna:/bin/bash\n')
+        with open(live / 'etc/group', 'a') as out:
+            out.write('anna:x:1501:\n')
+        with open(live / 'etc/shadow', 'a') as out:
+            out.write('anna:$y$annahash:20000:0:99999:7:::\n')
+        (live / 'home/anna').mkdir()
+        (live / 'home/anna/notes.txt').write_text('mine\n')
+        d.switch(self.f.context, d.switch_plan(self.f.context, 'original')['plan'], True)
+        self.assertIn('anna:x:1501:1501:Anna:/home/anna:', (live / 'etc/passwd').read_text())
+        self.assertIn('anna:$y$annahash:', (live / 'etc/shadow').read_text())
+        self.assertIn('anna:x:1501:', (live / 'etc/group').read_text())
+        self.assertEqual((live / 'home/anna/notes.txt').read_text(), 'mine\n')
+        # And back again: the account is there in both now.
+        d.switch(self.f.context, d.switch_plan(self.f.context, 'distro-1-0')['plan'], True)
         self.f.assert_home(self)
 
     def platform_bundle(self):
@@ -511,6 +578,34 @@ class TestImageInstall(unittest.TestCase):
         with self.assertRaises(m.ImageError):
             m.extract_tar(target, None, root)
         self.assertFalse((outside / 'owned').exists())
+
+    def test_absolute_parent_and_last_link_members_stay_inside(self):
+        """2026-11-12 review: "/x", "../../x" and a file written over a symlink an earlier member made
+        all got out of ROOT."""
+        outside = Path(self.tmp.name) / 'outside'
+        outside.mkdir()
+        (outside / 'victim').write_text('safe')
+        target = Path(self.tmp.name) / 'evil2.tar'
+        with tarfile.open(target, 'w') as out:
+            for name in (str(outside / 'absolute'), '../../' + str(outside.name) + '/parent'):
+                item = tarfile.TarInfo(name)
+                item.size = 1
+                out.addfile(item, io.BytesIO(b'x'))
+            link = tarfile.TarInfo('last')
+            link.type, link.linkname = tarfile.SYMTYPE, str(outside / 'victim')
+            out.addfile(link)
+            data = tarfile.TarInfo('last')
+            data.size = 5
+            out.addfile(data, io.BytesIO(b'owned'))
+        root = Path(self.tmp.name) / 'root2'
+        root.mkdir()
+        m.extract_tar(target, None, root)
+        self.assertEqual((outside / 'victim').read_text(), 'safe')
+        self.assertFalse((outside / 'absolute').exists() or (outside / 'parent').exists())
+        # An absolute name lands inside the root; the file replaced the link instead of writing through it.
+        self.assertTrue((root / str(outside / 'absolute').lstrip('/')).exists())
+        self.assertFalse((root / 'last').is_symlink())
+        self.assertEqual((root / 'last').read_text(), 'owned')
 
 
 class TestCleanInstall(unittest.TestCase):

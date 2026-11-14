@@ -4,11 +4,7 @@
    manifest of checksums and read back; a copy is written back from the restore page. */
 
 static bool identity_android(const App*a){return a->id_kind==1;}
-static void identity_helper(App*a,char*out,size_t size){
-    /* identity_backup.py sits beside the other helpers in /opt/a22x-recovery. */
-    copy(out,size,a->distro_helper);char*slash=strrchr(out,'/');
-    if(slash&&(size_t)(slash-out)+20<size)strcpy(slash+1,"identity_backup.py");else out[0]=0;
-}
+static void identity_helper(App*a,char*out,size_t size){(void)sibling_helper(a,"identity_backup.py",out,size);}
 static FileVolume*identity_volume(App*a){
     FileVolume*v=a->id_volume_index>=0&&a->id_volume_index<a->volume_count?&a->volumes[a->id_volume_index]:NULL;
     return v&&!strcmp(v->id,a->id_volume_id)&&!strcmp(v->token,a->id_volume_token)?v:NULL;
@@ -50,9 +46,9 @@ static bool start_identity_job(App*a,int kind){
     if(a->job.pid||a->preview||kind<J_ID_LIST||kind>J_ID_DELETE)return false;
     identity_helper(a,a->id_helper,sizeof(a->id_helper));
     if(!a->id_helper[0]){files_problem(a,"IDENTITY_UNAVAILABLE","The identity backup helper is not configured.",IDENTITY);return false;}
-    char*args[16];int n=0;args[n++]=a->python;args[n++]=a->id_helper;
+    char*args[24];int n=0;args[n++]=a->python;args[n++]=a->id_helper;
     if(a->device)args[n++]="--device";else{args[n++]="--fixture";args[n++]=a->fixture;}
-    if(identity_android(a)){args[n++]="--kind";args[n++]="android";}
+    if(identity_android(a)){args[n++]="--kind";args[n++]="android";backup_password_args(a,args,&n,kind==J_ID_BACKUP);}
     if(identity_android(a)&&kind==J_ID_BACKUP){
         a->id_labels_arg[0]=0;
         for(unsigned int k=0;k<a->id_count;k++)if(!(a->id_off&(1u<<k))){if(a->id_labels_arg[0])append(a->id_labels_arg,sizeof(a->id_labels_arg),",");append(a->id_labels_arg,sizeof(a->id_labels_arg),a->id_labels[k]);}
@@ -173,6 +169,7 @@ static void render_identity(App*a){
     else if(android&&v&&a->id_optional&&(a->id_off&a->id_optional)!=a->id_optional)
         text_tile(a,1000,0,ORANGE,"userdata and metadata are saved as they lie there, encrypted, and go back only to this phone, together. Android opens them only while the phone's secure chip keeps the same keys.",5);
     else if(android)text_tile(a,1000,0,MUTED,v?"One compressed archive in A22xAndroidBackups holds every chosen partition and its checksum, and is read back. Recovery and cache are not in it. userdata cannot hold it: a factory reset of Android erases it.":(card?"The card is not open for writing yet: the button above opens it.":"Mount an SD card or USB drive with write access in Files, then come back."),6);
+    else if(v&&a->backup_encrypt)text_tile(a,1000,0,ORANGE,"This copy is saved without the password: a folder of partition images that Download Mode tools can write back. Keep the card somewhere safe.",5);
     else text_tile(a,1000,0,MUTED,v?"A new folder A22xIdentityBackups is written with every partition and its checksum. Keep it off the phone too: no image or firmware download contains it.":(card?"The card is not open for writing yet: the button above opens it.":"Mount an SD card or USB drive with write access in Files, then come back."),5);
     button(a,(Rect){28,1212,664,84},"Restore from a copy",A_ID_RESTORE_OPEN,ui_free(a)&&(android||(v&&a->id_known&&a->id_count>0)),false,0);
     button(a,(Rect){28,1320,664,104},"Hold 2 seconds to back up",A_ID_BACKUP,ui_free(a)&&identity_writable(v)&&a->id_known&&identity_chosen(a,NULL)>0,true,2000);

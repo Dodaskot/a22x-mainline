@@ -16,9 +16,47 @@ import struct
 import sys
 from pathlib import Path
 
-# userdata grown to the end of the eMMC by an image's first start (Manjaro ARM's resize-fs ran
-# sfdisk on 2026-11-08): the same start, ending at the last usable sector of the disk.
-GROWN_SIZES = {"userdata": ((122142720 - 33 - 17850368) * 512,)}
+# 2026-11-13, for every SM-A226B: Samsung's PIT for this model (A22X_EUR_OPEN.pit) gives every
+# partition before userdata a fixed start and size, and userdata "the rest of the device" (count 0).
+# The 64 GB and 128 GB phones differ only there. Stock userdata ends 8192 sectors before the end of
+# the eMMC (observed on the 64 GB phone: 53 393 489 920 bytes); a Linux image's first start grows it
+# to the last usable sector (33 before the end). This is the one place of that rule: install.py,
+# distro.py and qualification.py ask it here (2026-11-13 review: four copies).
+USERDATA_START = 17850368
+GROWN_TAIL = 33         # the backup GPT after the last usable sector
+STOCK_TAIL = 8192       # where the 64 GB phone's stock userdata ends
+MAX_TAIL = 16384        # another eMMC may round the stock end otherwise: not only 8192 is admitted
+
+
+MIN_DISK, MAX_DISK = 120_000_000, 252_000_000
+
+
+def disk_admitted(sectors):
+    """An eMMC of a 64 GB or 128 GB SM-A226B, in 512-byte sectors."""
+    return MIN_DISK <= sectors <= MAX_DISK
+
+
+def userdata_fits(size, disk_sectors):
+    """Whether a userdata of SIZE bytes is partition 54 as this model has it on an eMMC of
+    DISK_SECTORS: from its fixed start to between MAX_TAIL and GROWN_TAIL sectors short of the end."""
+    if not disk_admitted(disk_sectors) or size <= 0 or size % 512:
+        return False
+    return GROWN_TAIL <= disk_sectors - USERDATA_START - size // 512 <= MAX_TAIL
+
+
+def userdata_possible(size):
+    """Whether userdata_fits(SIZE) on some admitted eMMC: the rule off the phone, where its eMMC is
+    unknown (2026-11-14 review: there only the 64 GB phone's two sizes were taken, and every 128 GB
+    phone's snapshot was refused). The phone checks its own eMMC before anything is written."""
+    if size <= 0 or size % 512:
+        return False
+    end = USERDATA_START + size // 512
+    return end + GROWN_TAIL <= MAX_DISK and end + MAX_TAIL >= MIN_DISK
+
+
+def userdata_sizes(disk_sectors):
+    """Stock and grown userdata on an eMMC of DISK_SECTORS (the two the 64 GB phone has)."""
+    return ((disk_sectors - STOCK_TAIL - USERDATA_START) * 512, (disk_sectors - GROWN_TAIL - USERDATA_START) * 512)
 
 from common import (CHUNK, LABELS, RETAINED_LABELS, RecoveryError, beneath, digest, directory_identity, fail,
                     hash_file, no_symlinks, open_regular_fd, read_json, stamp)
@@ -331,7 +369,11 @@ class DeviceContext:
                       if Path(entry["mountpoint"]) == path or Path(entry["mountpoint"]) in path.parents]
         if not candidates:
             fail("UNKNOWN_REPOSITORY_MOUNT", "Cannot identify the backing mount")
-        return max(candidates, key=lambda entry: len(Path(entry["mountpoint"]).parts))
+        # The deepest mount point; of several on the same point, the last one mounted, which is the
+        # one a path reaches (2026-11-13 review: the first, hidden one was taken, so a tmpfs put over
+        # the card's folder passed for the card).
+        depth = max(len(Path(entry["mountpoint"]).parts) for entry in candidates)
+        return [entry for entry in candidates if len(Path(entry["mountpoint"]).parts) == depth][-1]
 
     def user_path(self, path, *, exists=True):
         path = Path(path)
@@ -369,7 +411,11 @@ class DeviceContext:
             size = struct.unpack("Q", fcntl.ioctl(fd, 0x80081272, bytes(8)))[0]
             if size <= 0 or size > 128 * 1024 * 1024 * 1024:
                 fail("GEOMETRY_MISMATCH", "Partition size is outside the supported A226B range", label=label)
-            if not retained and (number != item["number"] or size not in (item["size_bytes"],) + GROWN_SIZES.get(label, ())):
+            # 2026-11-13 review: a retained partition has no admitted size; it was read before this test.
+            if not retained:
+                fits = (userdata_fits(size, int((sysfs.parent / "size").read_text())) if label == "userdata"
+                        else size == item["size_bytes"])
+            if not retained and (number != item["number"] or not fits):
                 fail("GEOMETRY_MISMATCH", "Live partition differs from admitted geometry", label=label,
                      size_bytes=size, partition_number=number)
             if retained:

@@ -144,14 +144,35 @@ class TestBoot(unittest.TestCase):
         self.error('BOOT_OTHER_PHONE', padded(boot(kernel(), ramdisk({'ro.product.bootimage.device': 'a32x'}))))
         self.error('BOOT_OTHER_PHONE', padded(boot(kernel(), ramdisk(), dt_table(fdt('Galaxy A32', ['samsung,a32x', 'mediatek,mt6853'])))))
         self.error('BOOT_PHONE_UNKNOWN', padded(boot(kernel(), ramdisk())))
-        info = bootimage.inspect('boot', padded(boot(kernel(), ramdisk(), dt_table(fdt('MT6833', ['mediatek,MT6833'])))))
-        self.assertEqual((info['device']['this_phone'], info['device']['soc']), (False, True))
+        # 2026-11-12 audit: the chip alone is not this phone, and another maker's board is another phone.
+        self.error('BOOT_PHONE_UNKNOWN', padded(boot(kernel(), ramdisk(), dt_table(fdt('MT6833', ['mediatek,MT6833'])))))
+        self.error('BOOT_OTHER_PHONE', padded(boot(kernel(), ramdisk(), dt_table(fdt('Redmi', ['xiaomi,camellia', 'mediatek,mt6833'])))))
+        self.error('BOOT_OTHER_PHONE', padded(boot(kernel(), ramdisk({'ro.product.model': 'SM-A325F'}))))
 
     def test_headers_this_bootloader_cannot_use_are_refused(self):
         self.error('BOOT_HEADER_UNSUPPORTED', padded(boot(kernel(), ramdisk(), dt_table(MAINLINE_TREE), version=3)))
         self.error('NOT_A_BOOT_IMAGE', bytes(PARTITION))
         image = boot(kernel(), ramdisk(), dt_table(MAINLINE_TREE))
         self.error('BOOT_SECTIONS_OUTSIDE', image[:len(image) - PAGE])
+
+    def test_a_boot_changed_after_signing_is_still_a_boot(self):
+        """2026-11-13, LineageOS 20 for A226B: its BOOT was changed after avbtool signed it (the
+        vbmeta hash and the hash descriptor differ). It is read as such, not refused as no BOOT."""
+        image = bytearray(padded(boot(kernel(), ramdisk(), dt_table(MAINLINE_TREE))))
+        header = bytearray(256)
+        header[:4] = b'AVB0'
+        aux = bytes(64)
+        struct.pack_into('>IIQQIQQQQQQQQQQQII', header, 4, 1, 0, 64, len(aux), 1, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        meta = bytes(header) + b'\x5a' * 32 + bytes(32) + aux  # a hash that is not the header's
+        at = len(image) - 8192
+        image[at:at + len(meta)] = meta
+        image[-64:-64 + 36] = b'AVBf' + struct.pack('>IIQQQ', 1, 0, at, at, len(meta))
+        found = bootimage.inspect_boot(bytes(image))
+        self.assertTrue(found['device']['this_phone'])
+        self.assertEqual(found['avb']['present'], True)
+        with self.assertRaises(bootimage.ImageError) as caught:
+            bootimage.inspect('vbmeta', meta + bytes(4096))  # the vbmeta partition itself stays strict
+        self.assertEqual(caught.exception.code, 'VBMETA_DAMAGED')
 
 
 class TestTables(unittest.TestCase):

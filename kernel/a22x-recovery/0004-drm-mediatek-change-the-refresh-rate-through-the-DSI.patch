@@ -1,7 +1,7 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From 34af43177a20f1d1830c2b5d85460313e81a27bf Mon Sep 17 00:00:00 2001
 From: Dodaskot <pessdres@gmail.com>
 Date: Tue, 10 Nov 2026 06:17:01 +0100
-Subject: [PATCH 4/5] drm/mediatek: change the refresh rate through the DSI
+Subject: [PATCH 04/12] drm/mediatek: change the refresh rate through the DSI
  front porch
 
 The Galaxy A22 5G panel runs at 60 and 90 Hz in video mode on a fixed
@@ -26,7 +26,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  5 files changed, 124 insertions(+)
 
 diff --git a/drivers/gpu/drm/mediatek/mtk_crtc.c b/drivers/gpu/drm/mediatek/mtk_crtc.c
-index 97e3ff412..22409384c 100644
+index 97e3ff412e6e..22409384c172 100644
 --- a/drivers/gpu/drm/mediatek/mtk_crtc.c
 +++ b/drivers/gpu/drm/mediatek/mtk_crtc.c
 @@ -5,6 +5,7 @@
@@ -149,7 +149,7 @@ index 97e3ff412..22409384c 100644
  	.atomic_flush	= mtk_crtc_atomic_flush,
  	.atomic_enable	= mtk_crtc_atomic_enable,
 diff --git a/drivers/gpu/drm/mediatek/mtk_ddp_comp.c b/drivers/gpu/drm/mediatek/mtk_ddp_comp.c
-index 9672ea1f9..0cae682e4 100644
+index 9672ea1f91a2..0cae682e413e 100644
 --- a/drivers/gpu/drm/mediatek/mtk_ddp_comp.c
 +++ b/drivers/gpu/drm/mediatek/mtk_ddp_comp.c
 @@ -319,6 +319,8 @@ static const struct mtk_ddp_comp_funcs ddp_dsc = {
@@ -162,7 +162,7 @@ index 9672ea1f9..0cae682e4 100644
  };
  
 diff --git a/drivers/gpu/drm/mediatek/mtk_ddp_comp.h b/drivers/gpu/drm/mediatek/mtk_ddp_comp.h
-index 3f3d43f43..1e0562bd7 100644
+index 3f3d43f4330d..1e0562bd7bef 100644
 --- a/drivers/gpu/drm/mediatek/mtk_ddp_comp.h
 +++ b/drivers/gpu/drm/mediatek/mtk_ddp_comp.h
 @@ -79,6 +79,10 @@ struct mtk_ddp_comp_funcs {
@@ -198,7 +198,7 @@ index 3f3d43f43..1e0562bd7 100644
  {
  	if (comp->funcs && comp->funcs->power_on)
 diff --git a/drivers/gpu/drm/mediatek/mtk_disp_drv.h b/drivers/gpu/drm/mediatek/mtk_disp_drv.h
-index 679d413bf..cf32c8c3d 100644
+index 679d413bf10b..cf32c8c3d11a 100644
 --- a/drivers/gpu/drm/mediatek/mtk_disp_drv.h
 +++ b/drivers/gpu/drm/mediatek/mtk_disp_drv.h
 @@ -49,6 +49,10 @@ unsigned int mtk_dpi_encoder_index(struct device *dev);
@@ -213,7 +213,7 @@ index 679d413bf..cf32c8c3d 100644
  
  int mtk_gamma_clk_enable(struct device *dev);
 diff --git a/drivers/gpu/drm/mediatek/mtk_dsi.c b/drivers/gpu/drm/mediatek/mtk_dsi.c
-index 61ec5dada..95d764217 100644
+index 61ec5dada2df..95d76421761c 100644
 --- a/drivers/gpu/drm/mediatek/mtk_dsi.c
 +++ b/drivers/gpu/drm/mediatek/mtk_dsi.c
 @@ -1040,6 +1040,29 @@ void mtk_dsi_ddp_stop(struct device *dev)
@@ -246,3 +246,6 @@ index 61ec5dada..95d764217 100644
  static int mtk_dsi_encoder_init(struct drm_device *drm, struct mtk_dsi *dsi)
  {
  	int ret;
+-- 
+2.56.0
+

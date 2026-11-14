@@ -33,13 +33,18 @@ def plausible(now=None):
 def ask(host, port=123, timeout=3.0):
     """The offset (seconds) that makes this clock the server's, half the round trip included."""
     address = socket.getaddrinfo(host, port, socket.AF_INET, socket.SOCK_DGRAM)[0][4]
+    # 2026-11-13 review: any datagram to the port was taken for the answer, so anyone on the same
+    # Wi-Fi could set this clock, and with it what certificates count as valid. The socket now takes
+    # only the server's address, and the answer must echo the random transmit time of the request.
+    nonce = os.urandom(8)
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp:
         udp.settimeout(timeout)
+        udp.connect(address)
         sent = time.time()
-        udp.sendto(b'\x23' + bytes(47), address)  # leap 0, version 4, mode 3 (client)
-        reply, _ = udp.recvfrom(512)
+        udp.send(b'\x23' + bytes(39) + nonce)  # leap 0, version 4, mode 3 (client); transmit = nonce
+        reply = udp.recv(512)
         received = time.time()
-    if len(reply) < 48 or reply[0] & 7 != 4 or not 1 <= reply[1] <= 15:
+    if len(reply) < 48 or reply[0] & 7 != 4 or not 1 <= reply[1] <= 15 or reply[24:32] != nonce:
         raise ValueError('not a time server reply')
     seconds, fraction = struct.unpack('!II', reply[40:48])
     server = seconds - NTP_EPOCH + fraction / 2 ** 32

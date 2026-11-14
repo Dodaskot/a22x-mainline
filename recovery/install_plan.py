@@ -48,9 +48,9 @@ KEYS = {'schema', 'source', 'created_utc', 'system', 'erase_userdata', 'desktop'
 
 
 class PlanError(ValueError):
-    def __init__(self, code, message):
+    def __init__(self, code, message, sha256=None):
         super().__init__(message)
-        self.code = code
+        self.code, self.sha256 = code, sha256
 
 
 def require(condition, code, message):
@@ -115,13 +115,26 @@ def read(root):
     path = Path(root) / PLAN
     if not path.is_file() or path.is_symlink():
         return None, None
-    data = path.read_bytes()[:LIMIT + 1]
-    require(len(data) <= LIMIT, 'PLAN_TOO_LARGE', 'The plan file is too large')
+    # 2026-11-12 review: the digest comes first, of the raw bytes, so that a plan that cannot be read
+    # (cut short when the app restarted, too large, nested too deep) is still shown with it and can be
+    # forgotten; before, it stayed on cache for good.
+    data = path.read_bytes()
+    digest = hashlib.sha256(data).hexdigest()
+    if len(data) > LIMIT:
+        raise PlanError('PLAN_TOO_LARGE', 'The plan file is too large', digest)
     try:
         record = json.loads(data.decode('utf-8'))
-    except (UnicodeDecodeError, ValueError):
-        raise PlanError('PLAN_DAMAGED', 'The plan file is not valid JSON') from None
-    return record, hashlib.sha256(data).hexdigest()
+    except (UnicodeDecodeError, ValueError, RecursionError):
+        raise PlanError('PLAN_DAMAGED', 'The plan file is not valid JSON', digest) from None
+    return record, digest
+
+
+def raw_digest(root):
+    """The SHA-256 of the plan file's bytes, or None when there is none; nothing is parsed."""
+    path = Path(root) / PLAN
+    if not path.is_file() or path.is_symlink():
+        return None
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def script_state(root, name):
@@ -139,7 +152,10 @@ def show(context):
     import settings
     catalog = {e['id']: e for e in distro.catalog_entries(context) if isinstance(e, dict) and e.get('id')}
     with settings.volume_root(context, 'cache', 'ro') as root:
-        record, digest = read(root)
+        try:
+            record, digest = read(root)
+        except PlanError as exc:
+            return {'present': True, 'sha256': exc.sha256, 'valid': False, 'problem': {'code': exc.code, 'message': str(exc)}}
         if record is None:
             return {'present': False}
         try:
@@ -182,8 +198,8 @@ def forget(context, expected):
     if cache['mounted'] and (cache['read_only'] or not cache['write_supported']):
         context.unmount('cache')
     with settings.volume_root(context, 'cache', 'rw') as root:
-        record, digest = read(root)
-        if record is None:
+        digest = raw_digest(root)
+        if digest is None:
             return {'forgotten': False}
         require(digest == expected, 'PLAN_CHANGED', 'The plan changed since it was shown')
         (Path(root) / PLAN).unlink()

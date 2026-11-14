@@ -226,6 +226,46 @@ class FilesystemFixtureTest(FilesystemFixtureSupport):
             fs.delete_entry(self.ctx, 'userdata', '/folder', True)
         self.assertTrue((folder / 'file').exists())
 
+    def test_delete_many_chosen_and_all_but_some(self):
+        """2026-11-13: several entries of one folder at once; folders go with what is in them, a
+        symlink is removed and never followed, a missing name is reported and the rest still goes."""
+        work = self.data / 'many'
+        work.mkdir()
+        for name in ('a.txt', 'b.txt', 'c.txt', 'keep.txt'):
+            (work / name).write_text(name)
+        (work / 'folder' / 'deep').mkdir(parents=True)
+        (work / 'folder' / 'deep' / 'file').write_text('x')
+        outside = self.data / 'outside'
+        outside.mkdir()
+        (outside / 'precious').write_text('stays')
+        (work / 'link').symlink_to(outside)
+        done = fs.delete_many(self.ctx, 'userdata', '/many', False, ['a.txt', 'folder', 'link', 'gone.txt'], True)
+        self.assertEqual((done['deleted'], done['failed']), (3, [{'name': 'gone.txt', 'code': 'NOT_FOUND'}]))
+        self.assertEqual(sorted(p.name for p in work.iterdir()), ['b.txt', 'c.txt', 'keep.txt'])
+        self.assertEqual((outside / 'precious').read_text(), 'stays')
+        # 2026-11-13 review: a folder that is itself a mount point stays, with what is in it.
+        with mock.patch.object(self.ctx, 'is_mountpoint', side_effect=lambda volume, path: path == '/many/c.txt' or path.endswith('/bound')):
+            (work / 'bound').mkdir()
+            (work / 'bound' / 'mounted').write_text('m')
+            done = fs.delete_many(self.ctx, 'userdata', '/many', False, ['bound'], True)
+            self.assertEqual(done['failed'], [{'name': 'bound', 'code': 'NESTED_MOUNT'}])
+            self.assertTrue((work / 'bound' / 'mounted').exists())
+        (work / 'bound' / 'mounted').unlink()
+        (work / 'bound').rmdir()
+        done = fs.delete_many(self.ctx, 'userdata', '/many', True, ['keep.txt'], True)
+        self.assertEqual(done['deleted'], 2)
+        self.assertEqual([p.name for p in work.iterdir()], ['keep.txt'])
+        self.assert_error('CONFIRMATION_REQUIRED', fs.delete_many, self.ctx, 'userdata', '/many', True, [], False)
+        selection = self.root / 'selection.json'
+        selection.write_text(json.dumps({'all': False, 'names': ['../outside']}))
+        self.assert_error('INVALID_SELECTION', fs.selection_file, selection)
+        selection.write_text(json.dumps({'all': True, 'names': []}))
+        result = self.cli('delete-many', '--volume', 'userdata', '--path', '/many', '--selection-file', str(selection), '--confirm')
+        self.assertEqual(result['deleted'], 1)
+        self.assertEqual(list(work.iterdir()), [])
+        self.ctx.mount('userdata', 'ro')
+        self.assert_error('VOLUME_READ_ONLY', fs.delete_many, self.ctx, 'userdata', '/many', True, [], True)
+
     def test_rename_into_self_rejected(self):
         (self.data / 'folder').mkdir()
         self.assert_error('INVALID_DESTINATION', fs.rename_entry, self.ctx, 'userdata', '/folder', '/folder/child', True)
@@ -294,6 +334,7 @@ class FilesystemFixtureTest(FilesystemFixtureSupport):
         (cache / 'a22x-recovery/settings.json').write_text('{"theme": "daylight"}')
         (cache / 'a22x-recovery/scripts/my-setup.sh').write_text('#!/bin/sh\n')
         (cache / 'lost+found').mkdir()
+        (cache / '.a22x-recovery-password').write_text('')  # the mark of a password stays with it (2026-11-14 review)
         (cache / 'recovery').mkdir()
         (cache / 'recovery/last_log').write_text('old log')
         (cache / 'ota.zip').write_bytes(b'PK\x03\x04' + bytes(4000))
@@ -303,8 +344,8 @@ class FilesystemFixtureTest(FilesystemFixtureSupport):
         refused = self.cli('wipe', '--volume', 'cache', ok=False)
         self.assertEqual(refused['error']['code'], 'CONFIRMATION_REQUIRED')
         done = self.cli('wipe', '--volume', 'cache', '--confirm')
-        self.assertEqual((done['removed'], done['kept']), (3, ['a22x-recovery', 'lost+found']))
-        self.assertEqual(sorted(p.name for p in cache.iterdir()), ['a22x-recovery', 'lost+found'])
+        self.assertEqual((done['removed'], done['kept']), (3, ['a22x-recovery', '.a22x-recovery-password', 'lost+found']))
+        self.assertEqual(sorted(p.name for p in cache.iterdir()), ['.a22x-recovery-password', 'a22x-recovery', 'lost+found'])
         self.assertEqual((cache / 'a22x-recovery/scripts/my-setup.sh').read_text(), '#!/bin/sh\n')
         self.assertEqual(self.source.read_text(), 'before\n')  # the symlink's target is untouched
         self.assertTrue(self.ctx.volume('cache')['read_only'])  # read-only again, as it was
@@ -1045,7 +1086,8 @@ class CheckRepairTest(FilesystemFixtureSupport):
     def test_fixture_admission(self):
         self.cli('check', '--volume', 'sdcard-p1', '--confirm', ok=False)  # mounted
         self.config['volumes'][1]['mounted'] = False
-        self.config['volumes'].append({'id': 'usb-1', 'path': 'volumes/sd', 'fs_type': 'vfat', 'mounted': False, 'read_only': False})
+        self.config['volumes'].append({'id': 'usb-1', 'path': 'volumes/sd', 'fs_type': 'exfat', 'mounted': False, 'read_only': False})
+        self.config['volumes'].append({'id': 'usb-2', 'path': 'volumes/sd', 'fs_type': 'vfat', 'mounted': False, 'read_only': False})
         self.config['volumes'].append({'id': 'system', 'path': 'volumes/data', 'fs_type': 'ext4', 'mounted': False, 'read_only': True})
         self.write_config()
         self.assertEqual(self.cli('check', '--volume', 'sdcard-p1', ok=False)['error']['code'], 'CONFIRMATION_REQUIRED')
@@ -1053,6 +1095,35 @@ class CheckRepairTest(FilesystemFixtureSupport):
         self.assertEqual((done['checked'], done['result'], done['exit_code']), ('ext4', 'clean', 0))
         self.assertEqual(self.cli('check', '--volume', 'usb-1', '--confirm', ok=False)['error']['code'], 'UNSUPPORTED_FILESYSTEM')
         self.assertEqual(self.cli('check', '--volume', 'system', '--confirm', ok=False)['error']['code'], 'CHECK_FORBIDDEN')
+        # 2026-11-13: F2FS and FAT are checked too; Android's encrypted F2FS is left to Android.
+        self.assertEqual(self.cli('check', '--volume', 'usb-2', '--confirm')['checked'], 'vfat')
+        fs.check_admitted({'id': 'userdata', 'mounted': False, 'fs_type': 'f2fs', 'fscrypt_feature': False}, False)
+        self.assert_error('CHECK_FORBIDDEN', fs.check_admitted, {'id': 'userdata', 'mounted': False, 'fs_type': 'f2fs', 'fscrypt_feature': True}, False)
+
+    def test_f2fs_and_fat_tools_by_their_exit_codes(self):
+        tools = {}
+        for name, code in (('clean', 0), ('fixed', 1), ('left', 4), ('broken', 8)):
+            path = self.root / name
+            path.write_text('#!/bin/sh\necho "$0 $*" > "%s.args"\necho checked\nexit %d\n' % (path, code))
+            path.chmod(0o755)
+            tools[name] = str(path)
+        done = fs.run_fsck('/dev/x', 'f2fs', {'f2fs': tools['clean'], 'vfat': tools['fixed'], 'ext': tools['broken']})
+        self.assertEqual((done['result'], done['exit_code']), ('clean', 0))
+        self.assertTrue((self.root / 'clean.args').read_text().strip().endswith('-f -y /dev/x'))
+        # fsck.fat says 1 for "repaired" and for "could not read it": a pass that changes nothing decides.
+        flaky = self.root / 'fat'
+        flaky.write_text('#!/bin/sh\necho "$*" >> "%s.args"\ncase $1 in -n) exit ${FAT_AGAIN:-0} ;; esac\nexit 1\n' % flaky)
+        flaky.chmod(0o755)
+        done = fs.run_fsck('/dev/y', 'vfat', {'f2fs': tools['clean'], 'vfat': str(flaky), 'ext': tools['broken']})
+        self.assertEqual((done['result'], done['exit_code']), ('repaired', 1))
+        self.assertEqual((self.root / 'fat.args').read_text().split('\n')[:2], ['-a -w /dev/y', '-n /dev/y'])
+        os.environ['FAT_AGAIN'] = '1'
+        self.addCleanup(os.environ.pop, 'FAT_AGAIN', None)
+        self.assert_error('CHECK_FAILED', fs.run_fsck, '/dev/y', 'vfat', {'f2fs': '', 'vfat': str(flaky), 'ext': ''})
+        os.environ.pop('FAT_AGAIN')
+        self.assert_error('CHECK_ERRORS_LEFT', fs.run_fsck, '/dev/x', 'f2fs', {'f2fs': tools['left'], 'vfat': '', 'ext': ''})
+        self.assert_error('CHECK_FAILED', fs.run_fsck, '/dev/x', 'vfat', {'f2fs': '', 'vfat': tools['broken'], 'ext': ''})
+        self.assert_error('CHECK_UNAVAILABLE', fs.run_fsck, '/dev/x', 'f2fs', {'f2fs': str(self.root / 'none'), 'vfat': '', 'ext': ''})
 
     def test_mounted_volume_is_refused_with_its_reason(self):
         result = self.cli('check', '--volume', 'userdata', '--confirm', ok=False)

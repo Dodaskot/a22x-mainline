@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">A22x Recovery</string>
+    <string name="app_name">Mainline Recovery</string>
     <string name="subtitle">Instalador para el Galaxy A22 5G (SM-A226B)</string>
     <string name="root_missing">No se concedió acceso root. Permítalo para esta app en su gestor de root.</string>
     <string name="compat_title">Compatibilidad</string>
@@ -158,4 +158,24 @@
     <string name="row_language">Idioma</string>
     <string name="row_script">Script</string>
     <string name="hold_save_restart">Mantener 2 s: guardar y reiniciar</string>
+    <string name="update_title">Actualizaciones</string>
+    <string name="update_note">Esta app desde las versiones del proyecto en GitHub, y el BOOT de Android guardado en cache.</string>
+    <string name="update_installed">Instalado: %1$s</string>
+    <string name="update_published">Publicado: %1$s</string>
+    <string name="update_checking">Consultando GitHub…</string>
+    <string name="update_unreadable">No se pudieron leer las versiones. Compruebe la red y vuelva a abrir esta página.</string>
+    <string name="update_newer">Hay una app más nueva publicada.</string>
+    <string name="update_current">Esta app está al día.</string>
+    <string name="update_hold">Mantenga para actualizar la app</string>
+    <string name="update_downloading">Descargando: %1$d%%</string>
+    <string name="update_installing">Instalando la actualización; la app se cierra y se abre de nuevo.</string>
+    <string name="boot_kept_title">BOOT de fábrica</string>
+    <string name="boot_kept_none">Aún no guardado.</string>
+    <string name="boot_kept_path">Guardado en cache: %1$s</string>
+    <string name="boot_kept_already">Ya guardado en cache.</string>
+    <string name="boot_kept_warn">No guardado: %1$s</string>
+    <string name="boot_kept_note">Se guarda solo cada vez que se abre la app y arranca Android: la copia de Magisk del BOOT original si existe, si no el BOOT actual. El recovery lo vuelve a flashear desde Flashear una partición.</string>
+    <string name="boot_keep_now">Guardar ahora</string>
+    <string name="home_update">Actualizar</string>
+    <string name="home_update_sub">App, BOOT de fábrica</string>
 </resources>

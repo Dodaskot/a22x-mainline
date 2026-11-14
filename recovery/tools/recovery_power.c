@@ -118,7 +118,6 @@ int main(int argc, char **argv)
     int lock = operation_lease();
     if (lock < 0) {
         fputs("A recovery operation is still running.\n", stderr);
-        if (lock >= 0) close(lock);
         return 1;
     }
     if (!strcmp(argv[1], "normal") && !transitions_clear()) {

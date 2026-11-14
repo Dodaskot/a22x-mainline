@@ -158,5 +158,23 @@ class Metadata(unittest.TestCase):
         self.assertEqual(caught.exception.code, 'NOT_SUPER')
 
 
+class DropCached(unittest.TestCase):
+    def test_a_failed_flush_of_a_block_device_is_raised(self):
+        # 2026-11-14 review: it was swallowed, and a readback could pass from the page cache.
+        import stat
+        from unittest import mock
+        import lp_metadata
+        read, write = os.pipe()
+        self.addCleanup(os.close, read)
+        self.addCleanup(os.close, write)
+        block = os.stat_result((stat.S_IFBLK | 0o600,) + tuple(os.fstat(read))[1:])
+        with mock.patch.object(lp_metadata.os, 'fstat', return_value=block), \
+                mock.patch.object(lp_metadata.fcntl, 'ioctl', side_effect=OSError(13, 'Permission denied')):
+            with self.assertRaises(OSError):
+                lp_metadata.drop_cached(read)
+        with mock.patch.object(lp_metadata.fcntl, 'ioctl', side_effect=AssertionError('no ioctl on a file')):
+            lp_metadata.drop_cached(read)  # not a block device: its pages are let go, quietly
+
+
 if __name__ == '__main__':
     unittest.main()

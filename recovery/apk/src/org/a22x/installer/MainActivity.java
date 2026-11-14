@@ -66,6 +66,8 @@ public class MainActivity extends Activity {
     static final String KEY_SYNC = "sync";
     static final String KEY_ROOT_GRANTED = "root";
     static final String KEY_THEME = "theme";
+    /** What the last keeping of Android's BOOT on cache answered: A22X:KEPT <path>, or A22X:WARN <why>. */
+    static final String KEY_BOOT_KEPT = "boot_kept";
     static final String[] THEMES = {"graphite", "daylight", "aurora"};
     private static final String BACKUPS = "/sdcard/A22xRecovery/backups";
 
@@ -131,6 +133,8 @@ public class MainActivity extends Activity {
     private Plan.Image image;
     private String password = "", again = "";
     private boolean withRecovery = true, withBoot = false;
+    private AppUpdate.Release latestApp;
+    private boolean appChecked, appChecking;
     // The date of the home page, as the recovery's heading shows it. No clock: Android's own
     // status bar shows the time (the person's wish, 2026-11-10).
     private TextView dateLine;
@@ -189,6 +193,96 @@ public class MainActivity extends Activity {
         root.addView(toast, lp);
         setContentView(root);
         open(this::home);
+        // Android's BOOT kept on cache by itself, at every start of the app (2026-11-12: on a fresh
+        // install the flag "root granted" was not set yet, so nothing was kept): root is asked for,
+        // as every page of this app needs it, and the answer is remembered.
+        new Thread(() -> {
+            if (!Root.available()) return;
+            prefs().edit().putBoolean(KEY_ROOT_GRANTED, true).apply();
+            keepBoot(this);
+        }).start();
+    }
+
+    /** Keep Android's BOOT on cache (RecoveryStore.keepBootAuto) and remember the answer. */
+    static void keepBoot(Context context) {
+        Root.Result r = RecoveryStore.keepBootAuto();
+        String kept = r.marker("KEPT"), warn = r.marker("WARN");
+        if (kept == null && "busy".equals(warn)) return;  // another run keeps it and remembers its answer
+        String answer = kept != null ? "KEPT " + kept : "WARN " + (warn != null ? warn : r.output.trim());
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_BOOT_KEPT, answer).apply();
+    }
+
+    private String installedVersion() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "?";
+        }
+    }
+
+    /** Settings > Updates of the recovery has its twin here (2026-11-12): the app from GitHub, and
+     *  Android's BOOT kept on cache. */
+    private void updatePage() {
+        heading(getString(R.string.update_title), getString(R.string.update_note));
+        final String installed = installedVersion();
+        LinearLayout box = panel(null);
+        box.addView(label(getString(R.string.update_installed, installed), 15, p.text, false));
+        if (!appChecked) {
+            box.addView(label(getString(R.string.update_checking), 14, p.muted, false));
+            if (!appChecking) {
+                appChecking = true;
+                new Thread(() -> {
+                    AppUpdate.Release found = null;
+                    try {
+                        found = AppUpdate.latest();
+                    } catch (Exception ignored) {
+                        // Shown as unreadable.
+                    }
+                    final AppUpdate.Release result = found;
+                    runOnUiThread(() -> {
+                        latestApp = result;
+                        appChecked = true;
+                        appChecking = false;
+                        refresh();
+                    });
+                }).start();
+            }
+        } else if (latestApp == null) {
+            box.addView(label(getString(R.string.update_unreadable), 14, p.red, false));
+        } else {
+            box.addView(label(getString(R.string.update_published, latestApp.version), 15, p.text, false));
+            final boolean newer = AppUpdate.newer(latestApp.version, installed);
+            box.addView(label(getString(newer ? R.string.update_newer : R.string.update_current), 14, newer ? p.green : p.muted, false));
+            final AppUpdate.Release release = latestApp;
+            hold(content, getString(R.string.update_hold), 2000, newer, () -> background(() -> {
+                try {
+                    final int[] shown = {-1};
+                    File apk = AppUpdate.download(getCacheDir(), release, (done, total) -> {
+                        int percent = (int) (done * 100 / Math.max(1, total));
+                        if (percent / 10 != shown[0]) {
+                            shown[0] = percent / 10;
+                            say(getString(R.string.update_downloading, percent));
+                        }
+                    });
+                    say(getString(R.string.update_installing));
+                    Root.Result r = AppUpdate.install(apk, release.sha256);
+                    if (r.marker("OK") == null) say(getString(R.string.failed, r.marker("ERROR") != null ? r.marker("ERROR") : r.output.trim()));
+                } catch (Exception e) {
+                    say(getString(R.string.failed, String.valueOf(e.getMessage())));
+                }
+            }));
+        }
+        LinearLayout boot = panel(getString(R.string.boot_kept_title));
+        String answer = prefs().getString(KEY_BOOT_KEPT, "");
+        String shown = answer.startsWith("KEPT already") ? getString(R.string.boot_kept_already)
+                : answer.startsWith("KEPT ") ? getString(R.string.boot_kept_path, answer.substring(5))
+                : answer.startsWith("WARN ") ? getString(R.string.boot_kept_warn, answer.substring(5)) : getString(R.string.boot_kept_none);
+        boot.addView(label(shown, 14, answer.startsWith("KEPT") ? p.green : p.muted, false));
+        boot.addView(label(getString(R.string.boot_kept_note), 13, p.muted, false));
+        button(content, getString(R.string.boot_keep_now), false, () -> background(() -> {
+            keepBoot(this);
+            runOnUiThread(this::refresh);
+        }));
     }
 
     // ---------------------------------------------------------------- pages and their animation
@@ -669,14 +763,18 @@ public class MainActivity extends Activity {
                         () -> open(this::installPage)),
                 bento(getString(R.string.compat_title), getString(compat.compatible ? R.string.home_compat_ok : R.string.home_compat_bad), "verify", 1,
                         true, 116, () -> open(this::compatPage))), 1.2f);
-        flex(row(bento(getString(R.string.home_wifi), getString(R.string.home_wifi_sub), "wifi", 2, false, 104, () -> open(this::wifiPage)),
-                bento(getString(R.string.home_sync), getString(R.string.home_sync_sub), "language", 3, false, 104, () -> open(this::syncPage))), 1f);
+        // 2026-11-12, the owner: everything on the home page without scrolling, and these six tiles
+        // all of one size: two rows of three equal cells.
         int[] names = {R.string.theme_graphite, R.string.theme_daylight, R.string.theme_aurora};
-        LinearLayout cells = row(cell(getString(R.string.home_scripts), getString(R.string.home_scripts_sub), "terminal", 3, () -> open(this::scriptsPage)),
-                cell(getString(R.string.theme_title), getString(names[Arrays.asList(THEMES).indexOf(theme)]), "theme", 1, () -> open(this::themePage)),
-                cell(getString(R.string.home_restart), getString(R.string.home_restart_sub), "power", 5, () -> open(this::restartPage)));
-        flex(cells, 0.6f);
+        flex(row(cell(getString(R.string.home_wifi), getString(R.string.home_wifi_sub), "wifi", 2, () -> open(this::wifiPage)),
+                cell(getString(R.string.home_sync), getString(R.string.home_sync_sub), "language", 3, () -> open(this::syncPage)),
+                cell(getString(R.string.home_scripts), getString(R.string.home_scripts_sub), "terminal", 3, () -> open(this::scriptsPage))), 0.7f);
+        LinearLayout cells = row(cell(getString(R.string.theme_title), getString(names[Arrays.asList(THEMES).indexOf(theme)]), "theme", 1, () -> open(this::themePage)),
+                cell(getString(R.string.home_restart), getString(R.string.home_restart_sub), "power", 5, () -> open(this::restartPage)),
+                cell(getString(R.string.home_update), getString(R.string.home_update_sub), "restore", 4, () -> open(this::updatePage)));
+        flex(cells, 0.7f);
         ((LinearLayout.LayoutParams) cells.getLayoutParams()).bottomMargin = 0;
+
         tick.run();
     }
 

@@ -1,7 +1,7 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From 75bd4b80ecdc83bba36f755d959cd3ccfc9612ef Mon Sep 17 00:00:00 2001
 From: Dodaskot <pessdres@gmail.com>
 Date: Tue, 10 Nov 2026 06:17:01 +0100
-Subject: [PATCH 5/5] drm/mediatek: draw the A22x recovery boot splash
+Subject: [PATCH 05/12] drm/mediatek: draw the A22x recovery boot splash
 
 Draw the recovery logo and a progress bar straight into the fbdev
 buffer as soon as it exists, which is before /init runs. Plymouth does
@@ -26,7 +26,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
  create mode 100644 drivers/gpu/drm/mediatek/mtk_boot_splash_logo.h
 
 diff --git a/drivers/gpu/drm/mediatek/Kconfig b/drivers/gpu/drm/mediatek/Kconfig
-index ad8c8b823..b83567cfd 100644
+index ad8c8b823681..b83567cfddc6 100644
 --- a/drivers/gpu/drm/mediatek/Kconfig
 +++ b/drivers/gpu/drm/mediatek/Kconfig
 @@ -21,6 +21,13 @@ config DRM_MEDIATEK
@@ -44,7 +44,7 @@ index ad8c8b823..b83567cfd 100644
  	tristate "DRM DPTX Support for MediaTek SoCs"
  	depends on DRM_MEDIATEK
 diff --git a/drivers/gpu/drm/mediatek/Makefile b/drivers/gpu/drm/mediatek/Makefile
-index 952d29464..baa25e1af 100644
+index 952d294642fb..baa25e1af271 100644
 --- a/drivers/gpu/drm/mediatek/Makefile
 +++ b/drivers/gpu/drm/mediatek/Makefile
 @@ -18,6 +18,8 @@ mediatek-drm-y := mtk_crtc.o \
@@ -58,7 +58,7 @@ index 952d29464..baa25e1af 100644
  obj-$(CONFIG_DRM_MEDIATEK_HDMI_COMMON) += mtk_hdmi_common.o
 diff --git a/drivers/gpu/drm/mediatek/mtk_boot_splash.c b/drivers/gpu/drm/mediatek/mtk_boot_splash.c
 new file mode 100644
-index 000000000..2415f29fd
+index 000000000000..2415f29fdbe2
 --- /dev/null
 +++ b/drivers/gpu/drm/mediatek/mtk_boot_splash.c
 @@ -0,0 +1,146 @@
@@ -210,7 +210,7 @@ index 000000000..2415f29fd
 +}
 diff --git a/drivers/gpu/drm/mediatek/mtk_boot_splash.h b/drivers/gpu/drm/mediatek/mtk_boot_splash.h
 new file mode 100644
-index 000000000..8fdbbfddb
+index 000000000000..8fdbbfddb8bf
 --- /dev/null
 +++ b/drivers/gpu/drm/mediatek/mtk_boot_splash.h
 @@ -0,0 +1,13 @@
@@ -229,7 +229,7 @@ index 000000000..8fdbbfddb
 +#endif
 diff --git a/drivers/gpu/drm/mediatek/mtk_boot_splash_logo.h b/drivers/gpu/drm/mediatek/mtk_boot_splash_logo.h
 new file mode 100644
-index 000000000..37cf344aa
+index 000000000000..37cf344aa6ac
 --- /dev/null
 +++ b/drivers/gpu/drm/mediatek/mtk_boot_splash_logo.h
 @@ -0,0 +1,32189 @@
@@ -32423,7 +32423,7 @@ index 000000000..37cf344aa
 +14,16,19,14,16,19,14,16,19,14,16,19,14,16,19,14,16,19,14,16,19,
 +};
 diff --git a/drivers/gpu/drm/mediatek/mtk_drm_drv.c b/drivers/gpu/drm/mediatek/mtk_drm_drv.c
-index 976a9378f..4f0b3f6f0 100644
+index 976a9378f4ed..4f0b3f6f0b55 100644
 --- a/drivers/gpu/drm/mediatek/mtk_drm_drv.c
 +++ b/drivers/gpu/drm/mediatek/mtk_drm_drv.c
 @@ -27,6 +27,7 @@
@@ -32442,3 +32442,6 @@ index 976a9378f..4f0b3f6f0 100644
  
  	return 0;
  
+-- 
+2.56.0
+

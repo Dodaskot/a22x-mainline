@@ -66,5 +66,11 @@ int main(void){
     a->recovery_tz=zone("Europe/Berlin");apply_recovery_tz(a);action(a,A_TZ_UP);
     C(26,a->recovery_tz==-1&&(a->utc_offset==90||a->utc_offset==150));
     action(a,A_TZ_PICK);action(a,A_BACK);C(27,a->screen==TOOLS&&!a->tz_for_recovery);
-    printf("{\"ok\":true,\"checks\":27,\"zones\":%u}\n",TZ_ZONES);free(a->pixels);free(a);return 0;
+    /* 2026-11-14 review: Home from the recovery's zone page left the flag up, and a new system's zone
+       page then set the recovery's clock. */
+    action(a,A_TZ_PICK);render(a);nav_home(a);C(28,a->screen==HOME&&!a->tz_for_recovery);
+    a->tz_for_recovery=true;screen(a,SYSTEMS_SETUP);action(a,A_TZ_OPEN);C(29,a->screen==SYSTEMS_TIMEZONE&&!a->tz_for_recovery);
+    int recovery_before=a->recovery_tz;render(a);action(a,A_TZ_ITEM+kyiv_index);
+    C(30,a->screen==SYSTEMS_SETUP&&a->systems_tz==kyiv_index&&a->recovery_tz==recovery_before);
+    printf("{\"ok\":true,\"checks\":30,\"zones\":%u}\n",TZ_ZONES);free(a->pixels);free(a);return 0;
 }

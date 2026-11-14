@@ -43,6 +43,20 @@ def field(data, name):
             'thumb_w': values[place + 7], 'thumb_h': values[place + 8], 'code': values[place + 9].rstrip(b'\0'), 'name': values[place + 10].rstrip(b'\0')}[name]
 
 
+class WriteFile(unittest.TestCase):
+    def test_a_failed_write_leaves_no_temporary_file(self):
+        # 2026-11-14 review: each failed import left its own temporary file on a full cache.
+        from unittest import mock
+        folder = Path(tempfile.mkdtemp(dir=os.environ.get('TMPDIR')))
+        self.addCleanup(shutil.rmtree, folder, True)
+        with mock.patch.object(themes.os, 'fsync', side_effect=OSError(28, 'No space left on device')):
+            with self.assertRaises(OSError):
+                themes.write_file(folder, 'x.theme', b'data')
+        self.assertEqual(list(folder.iterdir()), [])
+        themes.write_file(folder, 'x.theme', b'data')
+        self.assertEqual([p.name for p in folder.iterdir()], ['x.theme'])
+
+
 class Compile(unittest.TestCase):
     def build(self, source):
         return themes.compile_theme(json.dumps(source).encode())

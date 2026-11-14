@@ -1,9 +1,31 @@
 # Settings helper
 
-`settings.py` keeps preferences and the optional password in
-`a22x-recovery/settings.json` on `cache`, or on `userdata` when `cache` cannot be
-used. Recovery runs from RAM, and `cache` survives a userdata wipe and an Android
-install. `/run/a22x-recovery/settings.json` avoids a mount for every read.
+`settings.py` keeps preferences and the optional password in the `misc` partition, and
+the saved Wi-Fi networks beside them (since 2026-11-14, `misc_store.py`). Each is one record
+kept twice, in its own 64 KiB of the last 128 KiB of `misc` (settings at 384 KiB, Wi-Fi at
+448 KiB): each copy has a generation and a SHA-256, a read takes the newest whole copy, and a
+write replaces both, one after the other, so a save that stops halfway leaves a whole copy of
+the state before or after it, and one damaged copy leaves the other, which is the same. No
+filesystem is involved: no mount, no journal, no older copy on another volume. Android uses
+only the first 64 KiB of `misc` (the bootloader message, the system space), the LK only its
+bootloader message, MediaTek's sysenv the `para` partition; bytes in the record's place that
+are not this recovery's are never written over. `/run/a22x-recovery/settings.json` avoids
+reading `misc` for every question; a save `misc` cannot take now stays in RAM (exit 3) and
+the interface tries again after 10 s, then each time twice as late, 5 min at most.
+
+Releases up to 1.0.1 kept the settings in `a22x-recovery/settings.json` on `cache` (or on
+`userdata`), with a password mark beside them. While `misc` holds no record yet, that file is
+read as those releases read it and copied to `misc`, which decides from then on; the file and
+its password marks are then removed, so erasing `misc` gives the defaults, never the older file. While that older file cannot be read (a userdata it
+recognizes that will not mount), the recovery stays locked (exit 2), as those releases did:
+a password may be there. The themes stay on `cache`, with the backups.
+
+`misc` that cannot be read is "cannot be read now" (exit 2), never "no settings"; one copy
+that cannot be read leaves the other. Both copies damaged, or bytes that are no copy of this
+recovery's where its record was, are damaged settings (exit 4), never "no settings": the phone
+stays locked until they are reset together with userdata (userdata first, then both copies and
+the older file on cache). The boot splash reads its theme from `misc` too. Erasing `misc` itself in Download Mode gives the defaults: that takes
+Download Mode, where any recovery can be flashed, which no password here covers.
 
 ```
 settings.py status

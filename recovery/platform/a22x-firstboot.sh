@@ -1024,7 +1024,10 @@ home_shims() {
         [ -f "$file" ] || continue
         target=$(sed -n 's/^Exec=\(\/[^ ]*\).*/\1/p' "$file" | head -1)
         [ -n "$target" ] && [ ! -e "$target" ] || continue
-        case "$target" in /home/*) continue ;; esac
+        # Only where programs live: a launcher in a home is the user's to write, and root must not
+        # make a file in /etc or anywhere else for it (2026-11-13 review: /etc/sudoers.d).
+        case "$target" in *..*|*//*) continue ;; esac
+        case "$target" in /usr/bin/*|/usr/lib/*|/usr/lib64/*|/usr/libexec/*|/usr/games/*|/opt/*) ;; *) continue ;; esac
         program=$(PATH=/usr/bin:/usr/sbin command -v "${target##*/}") || continue
         mkdir -p "${target%/*}"
         printf '#!/bin/sh\nexec %s "$@"\n' "$program" > "$target"
@@ -1815,7 +1818,15 @@ session() {
     systemctl set-default graphical.target
 }
 
-resolv_link=$(readlink /etc/resolv.conf 2>/dev/null)
+# The resolver link as the system had it before the first run, kept across a retry: DHCP here
+# replaces it with a plain file, and a later run would read nothing (2026-11-13 review).
+RESOLV_STATE=/var/lib/a22x-firstboot-resolv-link
+if [ -s "$RESOLV_STATE" ]; then
+    resolv_link=$(cat "$RESOLV_STATE")
+else
+    resolv_link=$(readlink /etc/resolv.conf 2>/dev/null)
+    [ -z "$resolv_link" ] || { mkdir -p /var/lib && printf '%s\n' "$resolv_link" > "$RESOLV_STATE"; }
+fi
 # A booted system gets its /var skeleton from systemd-tmpfiles; a root just unpacked in the
 # recovery's chroot may not have it yet (Fedora 45 Cloud, 2026-11-08).
 mkdir -p /var/log
@@ -1930,6 +1941,9 @@ systemctl stop a22x-firstboot-dhcp.service a22x-firstboot-wifi.service 2>/dev/nu
 systemctl start a22x-wifi.service a22x-wifi-dhcp.service 2>/dev/null
 # DHCP above wrote a plain resolv.conf; the system's own resolver link comes back.
 [ -z "$resolv_link" ] || [ -L /etc/resolv.conf ] || ln -sfn "$resolv_link" /etc/resolv.conf
-rm -f "$CONF" /etc/a22x/wpa.conf /etc/NetworkManager/dispatcher.d/90-a22x-firstboot
+rm -f "$CONF" "$RESOLV_STATE" /etc/a22x/wpa.conf /etc/NetworkManager/dispatcher.d/90-a22x-firstboot
 say "finished"
+# exec replaces this shell, so its EXIT trap would not run: services may start again from here on
+# (2026-11-13 review: apt never started or restarted a service afterwards).
+grep -q a22x-firstboot /usr/sbin/policy-rc.d 2>/dev/null && rm -f /usr/sbin/policy-rc.d
 [ "$DESKTOP" = console ] || [ "$DESKTOP" = image ] || exec /usr/bin/a22x-reboot normal

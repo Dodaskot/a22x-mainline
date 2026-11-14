@@ -19,6 +19,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import stat
 import struct
 import subprocess
@@ -29,15 +30,17 @@ import zlib
 
 import bootimage
 import filesystem as fs
-from operation_lock import operation_lock, ENV_FD
+from lp_metadata import drop_cached
+from operation_lock import operation_lock, lease as borrowed_lease
 
 CHUNK = 1024 * 1024
 MAX_JSON = 2 * CHUNK
 MAX_SOURCE = 8 * 1024 * 1024 * 1024
 # Samsung firmware packs its images as LZ4 frames; the recovery decodes them with lz4(1).
 LZ4 = os.environ.get('A22X_LZ4', '/bin/lz4')
-# A whole partition decoded from a file, userdata included; source files keep MAX_SOURCE.
-MAX_TARGET = 64 * 1024 * 1024 * 1024
+# A whole partition decoded from a file, userdata of a 128 GB phone included (about 116 GiB);
+# source files keep MAX_SOURCE.
+MAX_TARGET = 128 * 1024 * 1024 * 1024
 MAX_SPARSE_CHUNKS = 65536
 MAX_HEADER = 4096
 MAX_IMAGES = 8
@@ -61,7 +64,20 @@ LINUX_BOOT_K121 = 'e3542fcdd905a4b89a10eb828fa983bc9f0837a2635155d0124c692f6c5fb
 LINUX_BOOT_K122 = '9701f48ddced60c648e79a502885778935d1cb5610a011d77fc1898eea01d41a'
 # Kernel 138 (BOOT v147, 2026-11-12): the battery percent kept in the PMIC; same modules.
 LINUX_BOOT_K138 = '5faafaa0035bff7bd77251ab01e2b4c395798755ad24db7b3240cc3d6139ad0f'
-MMC_SECTORS = 122142720
+MMC_SECTORS = 122142720  # the 64 GB phone, for fixtures
+# Every SM-A226B, 64 GB or 128 GB: the eMMC and userdata are judged by backend/storage.py's rule.
+
+
+def disk_admitted(sectors):
+    return _backend_storage().disk_admitted(sectors)
+
+
+def userdata_fits(size, disk_sectors):
+    return _backend_storage().userdata_fits(size, disk_sectors)
+
+
+def userdata_sizes(disk_sectors):
+    return _backend_storage().userdata_sizes(disk_sectors)
 MMC_BOOT_BYTES = 4 * CHUNK
 PLATFORM_BASELINE = {
     'dtbo': '97ed1a566cc30418477d790b3b2f4b21af4f0307bc466769c77d2b4edc21fa16',
@@ -69,8 +85,6 @@ PLATFORM_BASELINE = {
     'vbmeta_system': '22b6c3abbc5dc56a3ff1d75c88655b97ae446f96885d2b3a5f9b979e2855c56e',
 }
 CHECKPOINT_LABELS = ('boot', 'recovery', 'dtbo', 'vbmeta', 'vbmeta_system')
-# userdata grown to the end of the eMMC by an image's first start (see distro.USERDATA_SIZES).
-GROWN_SIZES = {'userdata': ((122142720 - 33 - 17850368) * 512,)}
 PROTECTED_GEOMETRY = {'lk': (17, 415744, 2097152), 'tee1': (14, 370688, 2097152)}
 PROTECTED_HASHES = {
     'bootloader': (362496, '76b7f9754cc54a208b4e2d9d792d59aac16457b7407f071582d64b5a655bd057',
@@ -108,6 +122,13 @@ STOCK_WRITE = tuple(label for label in STOCK_ORDER if label != 'recovery')
 RESET_MAKE_F2FS = ('/bin/make_f2fs', '-g', 'android', '-f', '-O', 'quota', '-O', 'compression', '-O', 'extra_attr',
                    '-l', 'data')
 ANDROID_DATA_FEATURES = 0x2499
+# An empty ext4 on metadata, as the phone's fstab describes it (2026-11-12, on the phone): zeros
+# there were not formatted by first-stage init under a GSI, which then mounts tmpfs on /metadata
+# (TrebleDroid's 00-fix-metadata.sh); userdata's encryption key landed in RAM, and after the next
+# restart Android found no key (vold: No key found in /metadata/vold/metadata_encryption/key) and
+# asked for a reset again, with or without root.
+RESET_MAKE_METADATA = ('/sbin/mkfs.ext4', '-F', '-q', '-b', '4096', '-L', 'metadata')
+EXT4_MAGIC_AT = 1080
 F2FS_MAGIC = b'\x10\x20\xf5\xf2'
 F2FS_FEATURE_AT = 1024 + 2180  # struct f2fs_super_block.feature, the superblock at 1 KiB
 METADATA_CLEAR_BYTES = 16 * CHUNK
@@ -621,7 +642,8 @@ class DeviceContext:
         require(fields.get('PARTNAME') == label and fields.get('PARTUUID')
                 and int((sysfs / 'partition').read_text()) == number
                 and int((sysfs / 'start').read_text()) == start
-                and int((sysfs / 'size').read_text()) * 512 in (size,) + GROWN_SIZES.get(label, ()),
+                and (int((sysfs / 'size').read_text()) * 512 == size if label != 'userdata'
+                     else userdata_fits(int((sysfs / 'size').read_text()) * 512, int((sysfs.parent / 'size').read_text()))),
                 'GPT_GEOMETRY_MISMATCH', 'Kernel GPT identity/geometry differs from the fixed A22x profile', label=label)
         size = int((sysfs / 'size').read_text()) * 512
         return {'label': label, 'path': str(expected), 'size_bytes': size,
@@ -648,6 +670,15 @@ class DeviceContext:
             os.fsync(fd)
         finally:
             os.close(fd)
+        done = subprocess.run([*RESET_MAKE_METADATA, str(paths['metadata'])], stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT, text=True, errors='replace')
+        require(done.returncode == 0, 'METADATA_RESET_FAILED', 'mkfs.ext4 could not format metadata', output=done.stdout[-400:])
+        fd = os.open(paths['metadata'], os.O_RDONLY | os.O_CLOEXEC)
+        try:
+            magic = os.pread(fd, 2, EXT4_MAGIC_AT)
+        finally:
+            os.close(fd)
+        require(magic == b'\x53\xef', 'METADATA_RESET_FAILED', 'metadata holds no ext4 after formatting')
         done = subprocess.run([*RESET_MAKE_F2FS, str(paths['userdata'])], stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, text=True, errors='replace')
         require(done.returncode == 0, 'USERDATA_RESET_FAILED', 'make_f2fs could not format userdata', output=done.stdout[-400:])
@@ -660,7 +691,26 @@ class DeviceContext:
         require(head[1024:1028] == F2FS_MAGIC and features == ANDROID_DATA_FEATURES, 'USERDATA_RESET_FEATURES',
                 "userdata was formatted with other features than Samsung's", features=features)
 
+    def close_logical(self):
+        """Partitions of super that Files opened are closed before super itself is read or written
+        (2026-11-12): their read-only mapping holds super, so the checks below would refuse it, and
+        nothing may read a partition while super changes under it. Inside the caller's lease when
+        it holds one, else under a lease of its own; while another operation runs, nothing is closed
+        and the checks refuse super."""
+        try:
+            with borrowed_lease(self.lock_path, self.mode):  # the one borrowing rule (2026-11-14 review)
+                closed = self.fs.close_logical()
+        except BlockingIOError:
+            return []
+        if closed:
+            # The graph and the mounts were read when this context was made.
+            self.raw = _backend_storage().DeviceContext()
+            self.raw.assert_recovery()
+        return closed
+
     def check_offline(self, targets):
+        if any(target['label'] == 'super' for target in targets):
+            self.close_logical()
         for target in targets:
             self.raw.graph.require_unmounted(target['device'], self.raw.mounts)
             self.raw.graph.require_no_holders(target['device'])
@@ -824,7 +874,7 @@ def decode_ext_csd(raw):
     sectors = int.from_bytes(raw[212:216], 'little')
     area_bytes = raw[226] * 128 * 1024
     selector = (raw[179] >> 3) & 7
-    require(sectors == MMC_SECTORS and area_bytes == MMC_BOOT_BYTES and 5 <= raw[192] <= 9,
+    require(disk_admitted(sectors) and area_bytes == MMC_BOOT_BYTES and 5 <= raw[192] <= 9,
             'EXT_CSD_GEOMETRY_MISMATCH', 'Live EXT_CSD geometry/revision differs from the fixed internal eMMC')
     require(selector in (1, 2), 'ACTIVE_BOOT_SELECTOR_UNSUPPORTED', 'The active eMMC boot selection is not a hardware boot area')
     return {'method': 'mmc-cmd8-readonly-v1', 'ext_csd_sha256': hashlib.sha256(raw).hexdigest(),
@@ -863,7 +913,7 @@ def read_active_boot_selector(context):
     cid = hashlib.sha256((card / 'cid').read_bytes().strip()).hexdigest()
     require(context.raw.internal_disk == devno and (card / 'type').read_text().strip() == 'MMC'
             and context.device['identity'] == 'emmc-cid-sha256:' + cid
-            and int((node / 'size').read_text()) == MMC_SECTORS,
+            and disk_admitted(int((node / 'size').read_text())),
             'WRONG_INTERNAL_DEVICE', 'Live selector source is not the admitted whole internal eMMC')
     path = Path('/dev/mmcblk0')
     named = path.lstat()
@@ -873,9 +923,13 @@ def read_active_boot_selector(context):
     try:
         opened = os.fstat(fd)
         require(stat.S_ISBLK(opened.st_mode) and same_object(opened) == same_object(named)
-                and struct.unpack('Q', fcntl.ioctl(fd, 0x80081272, bytes(8)))[0] == MMC_SECTORS * 512,
+                and struct.unpack('Q', fcntl.ioctl(fd, 0x80081272, bytes(8)))[0] == int((node / 'size').read_text()) * 512,
                 'MMC_IDENTITY_CHANGED', 'Opened MMC descriptor differs from the pinned whole device')
         observed = read_ext_csd_fd(fd)
+        # 2026-11-14 review: both used to equal one fixed number; now each is only in a range, so the
+        # register and the block device must name the same eMMC size.
+        require(observed['user_sector_count'] == int((node / 'size').read_text()), 'MMC_IDENTITY_CHANGED',
+                'The eMMC register and the block device differ in size')
         require(same_object(path.lstat()) == same_object(opened)
                 and hashlib.sha256((card / 'cid').read_bytes().strip()).hexdigest() == cid
                 and Path('/proc/sys/kernel/random/boot_id').read_text().strip() == context.boot_id,
@@ -1577,6 +1631,35 @@ def checkpoint_platform(context, source, original, journal, progress=None, hook=
                           state='ready' if journal['state'] == 'preparing' else journal['state'])
 
 
+KEPT_JOURNALS = 64
+
+
+def prune_journals(context, source, store):
+    """2026-11-12 review: every installation leaves its journal on the card, nothing removed them,
+    and from the 256th on every status, plan and normal-start check failed. Before a new one is
+    made, only the newest KEPT_JOURNALS completed journals stay. A journal not completed, the one the
+    guard names, and a folder without a journal (never guessed at) are never removed."""
+    with source.pin.directory(JOURNAL_BASE) as directory:
+        names = [name for name in os.listdir(directory) if re.fullmatch(r'[0-9a-f]{32}', name)]
+    guard = fs.regular_json(context.guard_path, MAX_JSON) if context.guard_path.exists() else {}
+    done = []
+    for name in names:
+        path = JOURNAL_BASE + '/' + name + '/journal.json'
+        if not store.exists(path) or guard.get('transaction_id') == name:
+            continue
+        try:
+            journal, _ = load_journal(context, source, path)
+        except (OSError, ValueError, fs.FilesystemError):
+            continue
+        if journal['state'] == 'completed' and journal['id'] == name:
+            with source.pin.directory(JOURNAL_BASE) as directory:
+                done.append((os.stat(name + '/journal.json', dir_fd=directory).st_mtime_ns, name))
+    for _, name in sorted(done)[:-KEPT_JOURNALS] if len(done) > KEPT_JOURNALS else ():
+        with source.pin.directory(JOURNAL_BASE) as directory:
+            shutil.rmtree(name, dir_fd=directory)
+            os.fsync(directory)
+
+
 def pending_transactions(context, *, completed=None):
     pending, incomplete, present = [], [], False
     volumes = context.fs.volumes()
@@ -1689,6 +1772,7 @@ def execute(context, plan, confirmation, progress=None, hook=None):
                     with source.pin.directory(JOURNAL_BASE) as directory:
                         require(not os.listdir(directory), 'UNOWNED_JOURNAL_DIRECTORY', 'A nonempty installer directory lacks its ownership record')
                     store.write(JOURNAL_BASE + '/owner.json', owner, create=True)
+                prune_journals(context, source, store)
                 base = plan['journal_path'].rsplit('/', 1)[0]
                 store.mkdir(base)
                 original_sha = store.write(base + '/plan.json', plan, create=True)
@@ -1765,6 +1849,7 @@ def execute(context, plan, confirmation, progress=None, hook=None):
                                 and reader.input_hash.hexdigest() == entry['input_sha256'],
                                 'SOURCE_CHANGED', 'Complete stream differs from its preverified image')
                         os.fsync(writers[label])
+                        drop_cached(writers[label])  # read back from the eMMC, not the page cache (2026-11-14 review)
                         transaction = journal_update(store, plan['journal_path'], transaction, state='verifying')
                         require(hash_fd(writers[label], entry['target_bytes'], progress=progress, label=label, phase='readback') == entry['target_sha256'],
                                 'INSTALL_READBACK_MISMATCH', 'Complete target readback differs from the verified image', label=label)
@@ -1949,7 +2034,8 @@ def main(argv=None):
         key = (value.get('phase'), value.get('partition'))
         now = time.monotonic()
         if key != last[0] or now - last[1] >= 0.2 or value.get('bytes_done') == value.get('bytes_total'):
-            print(json.dumps(value, separators=(',', ':')), file=sys.stderr, flush=True)
+            with contextlib.suppress(OSError, ValueError):  # best effort: a write never depends on it (2026-11-12 review)
+                print(json.dumps(value, separators=(',', ':')), file=sys.stderr, flush=True)
             last[:] = [key, now]
     try:
         args = parser().parse_args(argv)
