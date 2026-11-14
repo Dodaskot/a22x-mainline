@@ -23,7 +23,7 @@ themes, Graphite, Daylight and Aurora:
 
 ![The three themes](docs/screenshots/themes.jpg)
 
-Taken on the phone with 1.0.1 (the screenshot keys, Power + Volume down):
+Taken on the phone with 1.0.1 in the default theme, Graphite (the screenshot keys, Power + Volume down):
 
 ![Home, Install, Android, Linux systems](docs/screenshots/release-1.0.1-1.jpg)
 ![Backup, Files, Settings, Updates](docs/screenshots/release-1.0.1-2.jpg)

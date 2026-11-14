@@ -3,7 +3,7 @@ A touch recovery on the mainline Linux kernel, for every SM-A226B (64 GB and 128
 
 [IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/release-1.0.1-1.jpg[/IMG]
 [IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/release-1.0.1-2.jpg[/IMG]
-[I]Screenshots taken on the phone with 1.0.1.[/I]
+[I]Screenshots taken on the phone with 1.0.1, in the default theme (Graphite).[/I]
 
 [SIZE=5][B]What it does[/B][/SIZE]
 
