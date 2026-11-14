@@ -51,6 +51,8 @@ New in 1.0.1:
   password set): proven by tests only.
 - The behaviour on a media error in `misc`, and the 120 s limit of the cache check at the start:
   tests only.
+- The installer app 1.0.1 on a phone: built and checked only (68 checks, signatures v2 and v3).
+  The app of 0.6.206 was run on the phone (see 0.6.206 below).
 
 ### Reported by others
 
@@ -115,9 +117,8 @@ Done by touch on the phone unless said otherwise.
 
 - A **128 GB** SM-A226B: the sizes follow Samsung's PIT and are tested on the computer only.
 - Check and repair on a real F2FS or FAT volume (done on scratch filesystems on the phone only).
-- The installer app 1.0.0 on a phone (its build checks passed: signatures v2/v3, the update order, the scripts).
-- Android opening its data after a restore from a copy.
-- The Android app on a phone (its scripts were run in the recovery against test devices).
+- The installer app 1.0.0 on a phone (its build checks passed: signatures v2/v3, the update order,
+  the scripts). The app of 0.6.206 was run on the phone (see 0.6.206 below).
 
 ## Earlier: 0.6.206
 
@@ -206,6 +207,7 @@ Done by touch on the phone unless said otherwise.
 | Root with Magisk on Evolution X, data kept across restarts | 206 | works after the metadata fix; with 204 Android asked for a reset after its first restart |
 | Full copy of Evolution X with its data; then Arch Linux ARM with Plasma Mobile and automatic sign-in installed over it; then the copy restored (done by the owner) | 206 | Arch Linux: started the first time. After the restore Evolution X started with the same data: setup done, Magisk root (31.1) and both apps from before the copy, no reset asked |
 | Installer app: updates page, Android's BOOT kept on cache by itself | 205 | works |
+| Installer app on Evolution X with Magisk: updated itself from 0.6.205 to 0.6.206 from GitHub (SHA-256 checked, `pm install` through Magisk); then installed recovery 0.6.206 from the release, the old recovery saved first | 206 | works: after the restart the recovery partition held exactly the published image |
 
 #### Android images tried on this phone
 
@@ -213,7 +215,7 @@ Done by touch on the phone unless said otherwise.
 |---|---|
 | crDroid 12.12 (Treble GSI), without Google apps | starts |
 | AlphaDroid 4.6 (Treble GSI), with Google apps | starts |
-| crDroid 12.12 (Treble GSI), with microG | installed from the catalog on 2026-11-12; not started yet |
+| crDroid 12.12 (Treble GSI), with microG | installed from the catalog on 2026-11-12; not started |
 | LineageOS 22.2 light, without Google apps | does not start: restarts |
 | Google's Android 15 GSI | does not start: needs kernel 4.19, the phone's Android kernel is 4.14; removed from the catalog |
 | Samsung firmware restored from the recovery's own copy | starts |
@@ -221,9 +223,8 @@ Done by touch on the phone unless said otherwise.
 #### Not proven on the phone then
 
 - Phosh under the owner's own finger in the Manjaro image (touches were sent to the touchscreen's input node from a computer).
-- Android opening its data after a restore from a copy (the restore itself is checked above).
-- The Android images installed on 2026-11-12 have not been started: Android is not started without the owner at the phone.
-- The Android app on a phone (its scripts were run in the recovery against test devices).
+- crDroid 12.12 with microG, installed on 2026-11-12, has not been started (Evolution X, installed the
+  same day, starts: see above).
 
 #### Found while testing, 2026-11-12
 

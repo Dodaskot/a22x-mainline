@@ -96,6 +96,9 @@ recovery restart; `settings.py` writes to `cache` and reads back after the RAM
 copy is gone; `flash.py check` recognised the real `vbmeta` and refused the
 same file for `dtbo`; the haptic motor vibrates. Only on a computer: writing
 with `flash.py` (raw, sparse, gzip, lz4, saving the old content, readback).
+(Later checked on the phone: the recovery images of 1.0.15, 1.0.16 and 1.0.1 written through
+Flash, the old content saved first and the partition read back; a damaged vbmeta_system written
+back from a copy in 1.0.0; see docs/TEST_RESULTS.md.)
 Fixed: pixelation (a 720×1600 canvas was stretched without filtering); the
 brightness slider (every request cancelled the touch and frames came every
 70 ms); USB sticks (`device/cid` does not exist for USB media).

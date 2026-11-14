@@ -26,7 +26,8 @@ first. The helper does not automatically mount a volume.
 
 Only a prepared ARM64 bundle carrying this phone's audited platform profile is
 admitted by the backend. A generic ISO/rootfs is not advertised as bootable. An
-imported slot remains labeled **boot not yet tested** until actual qualification.
+imported slot is labeled **boot not yet tested** until the system has started once
+(0.6.196); a system that has started is shown as a saved system.
 If import validation leaves a staging directory, Systems reports incomplete
 import state; it does not automatically remove unknown directories.
 
