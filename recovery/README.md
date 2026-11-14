@@ -75,8 +75,8 @@ a computer.
 - **Flashable ZIPs** with their own installer (`update-binary`, edify), one or
   several in a row, each in an isolated room that sees only the partitions an
   Android ROM may change; `adb sideload` works as in TWRP. Tested on the phone:
-  LineageOS 20 for the A226B (by Loftenth), AnyKernel3 kernels, Magisk; BakaSU (by
-  Kazaf 132) also started. A block-based ROM whose
+  LineageOS 20 for the A226B (by Loftenth), AnyKernel3 kernels, Magisk; the BakaSU
+  root kernel (by Kazaf 132) also started. A block-based ROM whose
   own installer fails is written by the recovery itself, and super is laid out for
   a ROM whose partitions do not fit.
 - After a ZIP changed Android's BOOT, the recovery offers to reset Android's data:

@@ -84,12 +84,12 @@ A touch recovery on the mainline Linux kernel, for every SM-A226B (64 GB and 128
 [*]Many fixes from code reviews. No new features.
 [/LIST]
 
-[SIZE=5][B]Tested by users[/B][/SIZE]
+[SIZE=5][B]Third-party builds tested with this recovery[/B][/SIZE]
 [LIST]
-[*][B]LineageOS 20[/B] by [B]Loftenth[/B]: tested with this recovery.
-[*][B]BakaSU[/B] by [B]Kazaf 132[/B]: started successfully.
+[*][B]LineageOS 20[/B] for the A226B by [B]Loftenth[/B]: installed and started.
+[*][B]BakaSU[/B] root kernel by [B]Kazaf 132[/B]: installed and started.
 [/LIST]
-Thank you both!
+Thanks to their authors!
 
 [SIZE=5][B]Not available yet[/B][/SIZE]
 [LIST]

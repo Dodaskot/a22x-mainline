@@ -71,10 +71,10 @@ New in 1.0.1:
 - The installer app 1.0.1 on a phone: built and checked only (68 checks, signatures v2 and v3).
   The app of 0.6.206 was run on the phone (see 0.6.206 below).
 
-### Reported by others
+### Third-party builds tested with this recovery
 
-- **LineageOS 20** for A226B by **Loftenth**: tested (installed and started from this recovery).
-- **BakaSU** by **Kazaf 132**: started successfully.
+- **LineageOS 20** for A226B by **Loftenth**: installed from this recovery and started.
+- The **BakaSU** root kernel by **Kazaf 132**: installed from this recovery and started.
 
 ### Not available
 

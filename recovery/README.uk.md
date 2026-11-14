@@ -74,7 +74,7 @@ Codex, а відтоді Claude — для написання й перевір�
 - **ZIP з інсталятором** (`update-binary`, edify), один або кілька поспіль, кожен в
   ізольованому середовищі, що бачить лише ті розділи, які ROM для Android може
   змінювати; `adb sideload` працює, як у TWRP. Перевірено на телефоні: LineageOS 20
-  для A226B (від Loftenth), ядра AnyKernel3, Magisk; BakaSU (від Kazaf 132) теж запускається. Блочний ROM, чий власний інсталятор упав, recovery
+  для A226B (від Loftenth), ядра AnyKernel3, Magisk; root-ядро BakaSU (від Kazaf 132) теж запускається. Блочний ROM, чий власний інсталятор упав, recovery
   записує сам, а super розмічається під ROM, чиї розділи не вміщаються.
 - Після ZIP, що змінив BOOT Android, recovery пропонує скинути дані Android: на цьому
   Samsung Android зі зміненим BOOT не запускається на старих даних.

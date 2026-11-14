@@ -41,8 +41,8 @@ sign-in screen, the language, the account and the apps. Several systems can
 stay side by side with a shared `/home` and switch in both directions. The
 recovery README lists what works and the known problems, with screenshots and
 the [test results](recovery/docs/TEST_RESULTS.md). It also installs Android:
-Samsung's firmware, GSIs and ROM files; LineageOS 20 by Loftenth was tested with
-it, and BakaSU by Kazaf 132 started. Decrypting Android's data is not available
+Samsung's firmware, GSIs and ROM files; LineageOS 20 (by Loftenth) and the BakaSU
+root kernel (by Kazaf 132) were installed with it and started. Decrypting Android's data is not available
 yet. The recovery image for any SM-A226B and the installer app are published with
 the releases of [mainline-recovery](https://github.com/Dodaskot/mainline-recovery/releases).
 
