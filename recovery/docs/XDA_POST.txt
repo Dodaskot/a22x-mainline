@@ -1,12 +1,12 @@
 [CENTER][SIZE=6][B]Mainline Recovery 1.0.2 for the Galaxy A22 5G (SM-A226B)[/B][/SIZE]
 A touch recovery on the mainline Linux kernel, for every SM-A226B (64 GB and 128 GB)[/CENTER]
 
-[I]Screenshots taken on the phone with 1.0.1, in the default theme (Graphite).[/I]
+[CENTER][I]Screenshots taken on the phone with 1.0.1, in the default theme (Graphite).[/I]
 
-[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/home.png[/IMG]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/home.png[/IMG][/CENTER]
 
 [SPOILER="More screenshots"]
-[B]Install[/B]
+[CENTER][B]Install[/B]
 [IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/install.png[/IMG]
 
 [B]Android[/B]
@@ -37,7 +37,7 @@ A touch recovery on the mainline Linux kernel, for every SM-A226B (64 GB and 128
 
 [B]A theme of your own: the Beaver example[/B] (themes/beaver.json in the source; how to make one: [URL]https://github.com/Dodaskot/mainline-recovery/blob/main/THEMES_API.md[/URL])
 [IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/home-beaver.png[/IMG]
-[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/install-beaver.png[/IMG]
+[IMG]https://raw.githubusercontent.com/Dodaskot/mainline-recovery/main/docs/screenshots/en/install-beaver.png[/IMG][/CENTER]
 [/SPOILER]
 
 [SIZE=5][B]What it does[/B][/SIZE]
